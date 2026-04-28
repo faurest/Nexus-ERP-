@@ -1,0 +1,531 @@
+import React, { useState, useEffect } from 'react';
+import { collection, onSnapshot, query, addDoc, serverTimestamp, where } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { FolderKanban, Handshake, Search, Plus, Calendar, DollarSign, ExternalLink, Filter, CreditCard, Receipt, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import Table, { TableRow } from './ui/Table';
+import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
+import { useCompany } from '../lib/CompanyContext';
+import { cn } from '../lib/utils';
+
+// ... interface declarations ...
+
+interface Project {
+  id: string;
+  name: string;
+  partnerId: string;
+  partnerName?: string;
+  startDate: any;
+  endDate: any;
+  status: 'planned' | 'active' | 'completed' | 'on_hold';
+  budget: number;
+}
+
+interface Partner {
+  id: string;
+  name: string;
+  type: 'Supplier' | 'Partner';
+  contactEmail: string;
+  activeProjectsCount: number;
+}
+
+interface Expense {
+  id: string;
+  projectId: string;
+  amount: number;
+  date: any;
+  category: string;
+  description: string;
+}
+
+interface Invoice {
+  id: string;
+  projectId: string;
+  partnerId: string;
+  amount: number;
+  issueDate: any;
+  dueDate: any;
+  status: 'pending' | 'paid' | 'overdue';
+}
+
+interface Payment {
+  id: string;
+  projectId: string;
+  amount: number;
+  date: any;
+  type: 'inbound' | 'outbound';
+}
+
+export default function ProjectModule() {
+  const { currentCompany } = useCompany();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [activeView, setActiveView] = useState<'projects' | 'partners' | 'financials'>('projects');
+  const [isAddingFinancial, setIsAddingFinancial] = useState<'expense' | 'invoice' | 'payment' | null>(null);
+  const [formData, setFormData] = useState<any>({});
+
+  useEffect(() => {
+    if (!currentCompany) return;
+
+    const queryWithCompany = (collectionName: string) => 
+      query(collection(db, collectionName), where('companyId', '==', currentCompany.id));
+
+    const unsubProjects = onSnapshot(queryWithCompany('projects'), (snap) => {
+      setProjects(snap.docs.map(d => ({ id: d.id, ...d.data() } as Project)));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'projects'));
+
+    const unsubPartners = onSnapshot(queryWithCompany('partners'), (snap) => {
+      setPartners(snap.docs.map(d => ({ id: d.id, ...d.data() } as Partner)));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'partners'));
+
+    const unsubExpenses = onSnapshot(queryWithCompany('expenses'), (snap) => {
+      setExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() } as Expense)));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'expenses'));
+
+    const unsubInvoices = onSnapshot(queryWithCompany('invoices'), (snap) => {
+      setInvoices(snap.docs.map(d => ({ id: d.id, ...d.data() } as Invoice)));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'invoices'));
+
+    const unsubPayments = onSnapshot(queryWithCompany('payments'), (snap) => {
+      setPayments(snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment)));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'payments'));
+
+    return () => { 
+      unsubProjects(); 
+      unsubPartners(); 
+      unsubExpenses();
+      unsubInvoices();
+      unsubPayments();
+    };
+  }, [currentCompany]);
+
+  const handleAddFinancial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAddingFinancial || !currentCompany) return;
+
+    try {
+      const collectionName = isAddingFinancial === 'expense' ? 'expenses' : 
+                            isAddingFinancial === 'invoice' ? 'invoices' : 'payments';
+      
+      await addDoc(collection(db, collectionName), {
+        ...formData,
+        amount: Number(formData.amount),
+        companyId: currentCompany.id,
+        createdAt: serverTimestamp(),
+      });
+
+      setIsAddingFinancial(null);
+      setFormData({});
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, isAddingFinancial);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-slate-800 uppercase tracking-wider">Gestion des Projets & Partenaires</h2>
+          <p className="text-xs text-slate-500 font-medium">Pilotage stratégique avec fournisseurs et collaborateurs externes.</p>
+        </div>
+        
+        <div className="flex p-1 bg-white border border-slate-200 rounded-lg shadow-sm">
+          <button 
+            onClick={() => setActiveView('projects')}
+            className={cn(
+              "px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest transition-all rounded-md",
+              activeView === 'projects' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:text-slate-900"
+            )}
+          >
+            Vue Projets
+          </button>
+          <button 
+            onClick={() => setActiveView('partners')}
+            className={cn(
+              "px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest transition-all rounded-md",
+              activeView === 'partners' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:text-slate-900"
+            )}
+          >
+            Annuaires Partenaires
+          </button>
+          <button 
+            onClick={() => setActiveView('financials')}
+            className={cn(
+              "px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest transition-all rounded-md",
+              activeView === 'financials' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:text-slate-900"
+            )}
+          >
+            Suivi Financier
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-8 space-y-4">
+          <div className="flex gap-3">
+            <div className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 flex items-center gap-3 shadow-sm">
+              <Search className="opacity-30 text-slate-500" size={16} />
+              <input 
+                type="text" 
+                placeholder="Rechercher..." 
+                className="flex-1 bg-transparent outline-none text-xs text-slate-600 font-medium"
+              />
+            </div>
+            <button className="px-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all text-slate-400">
+              <Filter size={16} />
+            </button>
+            <button 
+              onClick={() => {
+                if (activeView === 'financials') setIsAddingFinancial('expense');
+                // Other views' add logic...
+              }}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-blue-100 italic"
+            >
+              + NOUVEAU
+            </button>
+          </div>
+
+          {activeView === 'projects' ? (
+            <Table headers={['Identifiant', 'Projet', 'Partenaire', 'Échéance', 'Status', 'Budget']}>
+              {projects.map((p) => (
+                <TableRow key={p.id}>
+                  <span className="font-mono text-[10px] text-slate-400">#PRJ-{p.id.slice(0, 4).toUpperCase()}</span>
+                  <span className="font-bold text-slate-800">{p.name}</span>
+                  <div className="flex items-center gap-2">
+                    <Handshake size={14} className="text-slate-300" />
+                    <span className="text-slate-600">{partners.find(part => part.id === p.partnerId)?.name || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
+                    <Calendar size={12} />
+                    {p.endDate ? new Date(p.endDate.seconds * 1000).toLocaleDateString() : 'En attente'}
+                  </div>
+                  <div>
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase",
+                      p.status === 'active' ? "bg-green-100 text-green-700" :
+                      p.status === 'completed' ? "bg-blue-100 text-blue-700" :
+                      p.status === 'on_hold' ? "bg-amber-100 text-amber-700" :
+                      "bg-slate-100 text-slate-600"
+                    )}>
+                      {p.status}
+                    </span>
+                  </div>
+                  <div className="text-right font-mono text-slate-600 font-bold">
+                    {p.budget?.toLocaleString()} €
+                  </div>
+                </TableRow>
+              ))}
+              {projects.length === 0 && (
+                <div className="p-12 text-center opacity-30 text-slate-400 italic text-xs">
+                  Aucun projet actif à afficher.
+                </div>
+              )}
+            </Table>
+          ) : activeView === 'partners' ? (
+            <Table headers={['Nom Partenaire', 'Type / Secteur', 'Dossiers', 'Contact Email', 'Lien']}>
+              {partners.map((pt) => (
+                <TableRow key={pt.id}>
+                  <span className="font-bold text-slate-800">{pt.name}</span>
+                  <span className={cn(
+                    "text-[10px] font-bold px-2 py-0.5 rounded border",
+                    pt.type === 'Supplier' ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-indigo-50 border-indigo-100 text-indigo-700"
+                  )}>
+                    {pt.type === 'Supplier' ? 'FOURNISSEUR' : 'PARTENAIRE'}
+                  </span>
+                  <div className="font-bold text-slate-500">{projects.filter(p => p.partnerId === pt.id).length}</div>
+                  <div className="text-slate-400 font-medium truncate">{pt.contactEmail}</div>
+                  <button className="text-blue-600 hover:text-blue-800">
+                    <ExternalLink size={14} />
+                  </button>
+                </TableRow>
+              ))}
+            </Table>
+          ) : (
+            <div className="space-y-8">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                      <Receipt size={18} />
+                    </div>
+                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">INVOICED</span>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Facturation Totale</p>
+                  <h4 className="text-xl font-bold text-slate-900">{invoices.reduce((acc, inv) => acc + inv.amount, 0).toLocaleString()} €</h4>
+                </div>
+                <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="p-2 bg-red-50 text-red-600 rounded-lg">
+                      <TrendingDown size={18} />
+                    </div>
+                    <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">EXPENSES</span>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dépenses Projets</p>
+                  <h4 className="text-xl font-bold text-slate-900">{expenses.reduce((acc, exp) => acc + exp.amount, 0).toLocaleString()} €</h4>
+                </div>
+                <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="p-2 bg-green-50 text-green-600 rounded-lg">
+                      <CreditCard size={18} />
+                    </div>
+                    <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">PAYMENTS</span>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Paiements Reçus</p>
+                  <h4 className="text-xl font-bold text-slate-900">{payments.filter(p => p.type === 'inbound').reduce((acc, p) => acc + p.amount, 0).toLocaleString()} €</h4>
+                </div>
+              </div>
+
+              {/* Invoices Table */}
+              <section className="space-y-3">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <Receipt size={16} className="text-blue-600" />
+                  Factures Projets
+                </h3>
+                <Table headers={['Projet', 'Partenaire', 'Montant', 'Échéance', 'Statut']}>
+                  {invoices.map((inv) => (
+                    <TableRow key={inv.id}>
+                      <span className="font-bold text-slate-700">{projects.find(p => p.id === inv.projectId)?.name || 'PRJ-EXP'}</span>
+                      <span className="text-slate-500">{partners.find(p => p.id === inv.partnerId)?.name || 'PART-EXP'}</span>
+                      <span className="font-mono font-bold text-slate-900">{inv.amount.toLocaleString()} €</span>
+                      <span className="text-[11px] text-slate-400">
+                        {inv.dueDate ? new Date(inv.dueDate.seconds * 1000).toLocaleDateString() : 'N/A'}
+                      </span>
+                      <span className={cn(
+                        "text-[9px] font-bold px-2 py-0.5 rounded-full uppercase",
+                        inv.status === 'paid' ? "bg-green-100 text-green-700" :
+                        inv.status === 'overdue' ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                      )}>
+                        {inv.status}
+                      </span>
+                    </TableRow>
+                  ))}
+                </Table>
+              </section>
+
+              {/* Expenses & Payments Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <section className="space-y-3">
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <TrendingDown size={16} className="text-red-500" />
+                    Dépenses Récentes
+                  </h3>
+                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-50">
+                    {expenses.slice(0, 5).map(exp => (
+                      <div key={exp.id} className="p-3 hover:bg-slate-50 transition-all flex justify-between items-center">
+                        <div>
+                          <p className="text-xs font-bold text-slate-700">{exp.description}</p>
+                          <p className="text-[9px] text-slate-400 uppercase font-medium">{exp.category} • {projects.find(p => p.id === exp.projectId)?.name}</p>
+                        </div>
+                        <span className="text-xs font-bold text-red-600">-{exp.amount.toLocaleString()} €</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <CreditCard size={16} className="text-green-500" />
+                    Flux de Trésorerie
+                  </h3>
+                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-50">
+                    {payments.slice(0, 5).map(pay => (
+                      <div key={pay.id} className="p-3 hover:bg-slate-50 transition-all flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "p-1.5 rounded-lg",
+                            pay.type === 'inbound' ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
+                          )}>
+                            {pay.type === 'inbound' ? <ArrowDownRight size={14} /> : <ArrowUpRight size={14} />}
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-700">{pay.type === 'inbound' ? 'Recette' : 'Décaissement'}</p>
+                            <p className="text-[9px] text-slate-400 uppercase font-medium">{projects.find(p => p.id === pay.projectId)?.name}</p>
+                          </div>
+                        </div>
+                        <span className={cn(
+                          "text-xs font-bold",
+                          pay.type === 'inbound' ? "text-green-600" : "text-red-600"
+                        )}>
+                          {pay.type === 'inbound' ? '+' : '-'}{pay.amount.toLocaleString()} €
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="lg:col-span-4 space-y-6">
+          <section className="bg-white border border-slate-200 p-5 rounded-lg shadow-sm">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-50 pb-2">Résumé Budgétaire Projets</h3>
+            <div className="space-y-6">
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Engagement Annuel</p>
+                  <p className="text-3xl font-bold text-slate-900 tracking-tight">128,400 €</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-bold text-green-600 uppercase">+12% vs LY</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3 pt-4 border-t border-slate-50">
+                <div className="flex justify-between text-[10px] font-bold text-slate-500">
+                  <span>RÉPARTITION PAR STATUS</span>
+                  <span className="text-blue-600">6 ACTIVE</span>
+                </div>
+                <div className="flex h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-600 w-[60%]" />
+                  <div className="h-full bg-amber-500 w-[25%]" />
+                  <div className="h-full bg-slate-300 w-[15%]" />
+                </div>
+                <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span> Actif (60%)</span>
+                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Pause (25%)</span>
+                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span> Autre (15%)</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="bg-indigo-600 text-white p-5 rounded-lg relative overflow-hidden shadow-xl shadow-indigo-100">
+            <h3 className="text-xs font-bold uppercase tracking-widest mb-4 opacity-80">Audit Stratégique</h3>
+            <p className="text-sm font-medium mb-6 leading-relaxed relative z-10 opacity-90">
+              "La revue trimestrielle avec les partenaires clés est prévue pour la semaine prochaine."
+            </p>
+            <button className="w-full bg-white text-indigo-600 py-2.5 rounded-lg text-xs font-bold shadow-sm relative z-10 hover:bg-slate-50 transition-all">
+              OUVRIR LE DOSSIER
+            </button>
+            <FolderKanban className="absolute -bottom-6 -right-6 opacity-10 rotate-12" size={100} />
+          </section>
+        </div>
+      </div>
+      {/* Modal for adding financials */}
+      {isAddingFinancial && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+            <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <DollarSign size={24} className="text-blue-600" />
+              Nouveau {isAddingFinancial === 'expense' ? 'Achat / Dépense' : isAddingFinancial === 'invoice' ? 'Facturation' : 'Flux Paiement'}
+            </h3>
+            
+            <form onSubmit={handleAddFinancial} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Projet Concerné</label>
+                <select 
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                  value={formData.projectId || ''}
+                  onChange={e => setFormData({...formData, projectId: e.target.value})}
+                >
+                  <option value="">Sélectionner un projet...</option>
+                  {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Montant (€)</label>
+                  <input 
+                    required
+                    type="number" 
+                    step="0.01"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    value={formData.amount || ''}
+                    onChange={e => setFormData({...formData, amount: e.target.value})}
+                  />
+                </div>
+                {isAddingFinancial === 'invoice' ? (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Statut</label>
+                    <select 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                      value={formData.status || 'pending'}
+                      onChange={e => setFormData({...formData, status: e.target.value})}
+                    >
+                      <option value="pending">En attente</option>
+                      <option value="paid">Payée</option>
+                      <option value="overdue">En retard</option>
+                    </select>
+                  </div>
+                ) : isAddingFinancial === 'payment' ? (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Type Flux</label>
+                    <select 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                      value={formData.type || 'inbound'}
+                      onChange={e => setFormData({...formData, type: e.target.value})}
+                    >
+                      <option value="inbound">Entrée (Recette)</option>
+                      <option value="outbound">Sortie (Dépense)</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Catégorie</label>
+                    <input 
+                      type="text" 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                      placeholder="e.g. Matériel, Transport"
+                      value={formData.category || ''}
+                      onChange={e => setFormData({...formData, category: e.target.value})}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {isAddingFinancial === 'invoice' && (
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Partenaire</label>
+                  <select 
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    value={formData.partnerId || ''}
+                    onChange={e => setFormData({...formData, partnerId: e.target.value})}
+                  >
+                    <option value="">Sélectionner le partenaire...</option>
+                    {partners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Description</label>
+                <textarea 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 h-20"
+                  value={formData.description || ''}
+                  onChange={e => setFormData({...formData, description: e.target.value})}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <button 
+                  type="button"
+                  onClick={() => setIsAddingFinancial(null)}
+                  className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"
+                >
+                  Annuler
+                </button>
+                <button 
+                  type="submit"
+                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono"
+                >
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).join(' ');
+}

@@ -1,0 +1,155 @@
+{
+  "entities": {
+    "Company": {
+      "title": "Company",
+      "description": "Represents an enterprise or tenant.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["name", "ownerId"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Represents a customer of the enterprise.",
+      "type": "object",
+      "properties": {
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "salesTotal": { "type": "number" },
+        "loyaltyPoints": { "type": "integer" },
+        "lastInteraction": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email"]
+    },
+    "Staff": {
+      "title": "Staff",
+      "description": "Personnel folder for an employee.",
+      "type": "object",
+      "properties": {
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "status": { "type": "string", "enum": ["active", "on_leave", "resigned"] },
+        "department": { "type": "string" },
+        "tasksAssignedCount": { "type": "integer" }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A task assigned to a staff member.",
+      "type": "object",
+      "properties": {
+        "companyId": { "type": "string" },
+        "title": { "type": "string" },
+        "assigneeId": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "status": { "type": "string", "enum": ["pending", "in_progress", "completed"] }
+      },
+      "required": ["title", "status"]
+    },
+    "Resource": {
+      "title": "Resource",
+      "description": "Material resources or inventory items.",
+      "type": "object",
+      "properties": {
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["Stock", "Material"] },
+        "quantity": { "type": "number" },
+        "status": { "type": "string", "enum": ["Available", "Low", "Out"] },
+        "location": { "type": "string" }
+      },
+      "required": ["name", "type", "quantity"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Enterprise project involving partners or suppliers.",
+      "type": "object",
+      "properties": {
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "partnerId": { "type": "string" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["planned", "active", "completed", "on_hold"] },
+        "budget": { "type": "number" }
+      },
+      "required": ["name", "status"]
+    },
+    "Partner": {
+      "title": "Partner",
+      "description": "Supplier or partner organisation.",
+      "type": "object",
+      "properties": {
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["Supplier", "Partner"] },
+        "contactEmail": { "type": "string", "format": "email" },
+        "activeProjectsCount": { "type": "integer" }
+      },
+      "required": ["name", "type"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Project-related expense.",
+      "type": "object",
+      "properties": {
+        "companyId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" },
+        "category": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["projectId", "amount", "date"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Invoice issued for or from a project.",
+      "type": "object",
+      "properties": {
+        "companyId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "partnerId": { "type": "string" },
+        "amount": { "type": "number" },
+        "issueDate": { "type": "string", "format": "date-time" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "paid", "overdue"] }
+      },
+      "required": ["projectId", "partnerId", "amount", "status"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Payment received or made for a project.",
+      "type": "object",
+      "properties": {
+        "companyId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "invoiceId": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["inbound", "outbound"] }
+      },
+      "required": ["projectId", "amount", "date", "type"]
+    }
+  },
+  "firestore": {
+    "/companies": { "schema": "Company", "description": "Tenants or enterprises using the app" },
+    "/clients": { "schema": "Client", "description": "Global client list" },
+    "/personnel": { "schema": "Staff", "description": "Employee directory" },
+    "/tasks": { "schema": "Task", "description": "Global task pool" },
+    "/resources": { "schema": "Resource", "description": "Inventory and material directory" },
+    "/projects": { "schema": "Project", "description": "Project management list" },
+    "/partners": { "schema": "Partner", "description": "Suppliers and partners directory" },
+    "/expenses": { "schema": "Expense", "description": "Project expenses tracking" },
+    "/invoices": { "schema": "Invoice", "description": "Project invoices tracking" },
+    "/payments": { "schema": "Payment", "description": "Project payments tracking" }
+  }
+}
