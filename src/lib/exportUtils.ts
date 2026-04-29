@@ -1,8 +1,8 @@
-import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc } from './firebase';
 import { db } from './firebase';
 
 export async function exportCompanyDataAsJSON(companyId: string, companyName: string) {
-  const collectionsToExport = ['clients', 'personnel', 'resources', 'projects', 'tasks'];
+  const collectionsToExport = ['clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners'];
   const exportData: Record<string, any[]> = {};
 
   for (const collectionName of collectionsToExport) {
@@ -31,7 +31,7 @@ export async function importCompanyDataFromJSON(companyId: string, jsonData: any
     throw new Error('Format de fichier invalide. Aucune donnée trouvée.');
   }
 
-  const collectionsToImport = ['clients', 'personnel', 'resources', 'projects', 'tasks'];
+  const collectionsToImport = ['clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners'];
   
   for (const collectionName of collectionsToImport) {
     const items = jsonData.data[collectionName];

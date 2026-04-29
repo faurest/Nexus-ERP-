@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, or } from 'firebase/firestore';
-import { db, auth } from './firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { collection, query, where, onSnapshot, or } from '../lib/firebase';
+import { db, auth, onAuthStateChanged } from './firebase';
 
 export interface Company {
   id: string;

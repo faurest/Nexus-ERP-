@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, addDoc, serverTimestamp, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, addDoc, serverTimestamp, where, doc, updateDoc, deleteDoc } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { FolderKanban, Handshake, Search, Plus, Calendar, DollarSign, ExternalLink, Filter, CreditCard, Receipt, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { FolderKanban, Handshake, Search, Plus, Calendar, DollarSign, ExternalLink, Filter, CreditCard, Receipt, TrendingDown, ArrowUpRight, ArrowDownRight, Edit2, Trash2, MoreVertical } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
 import { useCompany } from '../lib/CompanyContext';
@@ -12,6 +12,7 @@ import { cn } from '../lib/utils';
 interface Project {
   id: string;
   name: string;
+  description?: string;
   partnerId: string;
   partnerName?: string;
   startDate: any;
@@ -64,6 +65,8 @@ export default function ProjectModule() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [activeView, setActiveView] = useState<'projects' | 'partners' | 'financials'>('projects');
   const [isAddingFinancial, setIsAddingFinancial] = useState<'expense' | 'invoice' | 'payment' | null>(null);
+  const [isAddingProject, setIsAddingProject] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState<any>({});
 
   useEffect(() => {
@@ -123,41 +126,78 @@ export default function ProjectModule() {
     }
   };
 
+  const handleAddProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany) return;
+
+    try {
+      if (editingProject) {
+        await updateDoc(doc(db, 'projects', editingProject.id), {
+          ...formData,
+          budget: Number(formData.budget || 0),
+          updatedAt: serverTimestamp(),
+        });
+      } else {
+        await addDoc(collection(db, 'projects'), {
+          ...formData,
+          budget: Number(formData.budget || 0),
+          companyId: currentCompany.id,
+          createdAt: serverTimestamp(),
+          status: 'planned'
+        });
+      }
+      setIsAddingProject(false);
+      setEditingProject(null);
+      setFormData({});
+    } catch(err) {
+      handleFirestoreError(err, editingProject ? OperationType.UPDATE : OperationType.WRITE, 'projects');
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')) return;
+    try {
+      await deleteDoc(doc(db, 'projects', projectId));
+    } catch(err) {
+      handleFirestoreError(err, OperationType.DELETE, 'projects');
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-800 uppercase tracking-wider">Gestion des Projets & Partenaires</h2>
           <p className="text-xs text-slate-500 font-medium">Pilotage stratégique avec fournisseurs et collaborateurs externes.</p>
         </div>
         
-        <div className="flex p-1 bg-white border border-slate-200 rounded-lg shadow-sm">
+        <div className="flex flex-wrap p-1 bg-white border border-slate-200 rounded-lg shadow-sm w-full sm:w-auto">
           <button 
             onClick={() => setActiveView('projects')}
             className={cn(
-              "px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest transition-all rounded-md",
+              "flex-1 sm:flex-none px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest transition-all rounded-md",
               activeView === 'projects' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:text-slate-900"
             )}
           >
-            Vue Projets
+            Projets
           </button>
           <button 
             onClick={() => setActiveView('partners')}
             className={cn(
-              "px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest transition-all rounded-md",
+              "flex-1 sm:flex-none px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest transition-all rounded-md",
               activeView === 'partners' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:text-slate-900"
             )}
           >
-            Annuaires Partenaires
+            Annuaires
           </button>
           <button 
             onClick={() => setActiveView('financials')}
             className={cn(
-              "px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest transition-all rounded-md",
+              "flex-1 sm:flex-none px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest transition-all rounded-md",
               activeView === 'financials' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:text-slate-900"
             )}
           >
-            Suivi Financier
+            Finances
           </button>
         </div>
       </div>
@@ -179,16 +219,16 @@ export default function ProjectModule() {
             <button 
               onClick={() => {
                 if (activeView === 'financials') setIsAddingFinancial('expense');
-                // Other views' add logic...
+                if (activeView === 'projects') setIsAddingProject(true);
               }}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-blue-100 italic"
             >
-              + NOUVEAU
+              <Plus size={14} /> NOUVEAU
             </button>
           </div>
 
           {activeView === 'projects' ? (
-            <Table headers={['Identifiant', 'Projet', 'Partenaire', 'Échéance', 'Status', 'Budget']}>
+            <Table headers={['Identifiant', 'Projet', 'Partenaire', 'Échéance', 'Status', 'Budget', 'Actions']}>
               {projects.map((p) => (
                 <TableRow key={p.id}>
                   <span className="font-mono text-[10px] text-slate-400">#PRJ-{p.id.slice(0, 4).toUpperCase()}</span>
@@ -199,7 +239,7 @@ export default function ProjectModule() {
                   </div>
                   <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
                     <Calendar size={12} />
-                    {p.endDate ? new Date(p.endDate.seconds * 1000).toLocaleDateString() : 'En attente'}
+                    {p.endDate ? new Date((p.endDate.seconds || p.endDate / 1000) * 1000).toLocaleDateString() : 'En attente'}
                   </div>
                   <div>
                     <span className={cn(
@@ -214,6 +254,24 @@ export default function ProjectModule() {
                   </div>
                   <div className="text-right font-mono text-slate-600 font-bold">
                     {p.budget?.toLocaleString()} €
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => {
+                        setEditingProject(p);
+                        setFormData(p);
+                        setIsAddingProject(true);
+                      }}
+                      className="p-1 px-2 border rounded-md hover:bg-slate-50 text-slate-400 hover:text-blue-600 transition-all font-bold text-[9px] flex items-center gap-1 uppercase"
+                    >
+                      <Edit2 size={10} /> Éditer
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteProject(p.id)}
+                      className="p-1 px-2 border border-red-50 rounded-md hover:bg-red-50 text-slate-300 hover:text-red-600 transition-all font-bold text-[9px] flex items-center gap-1 uppercase"
+                    >
+                      <Trash2 size={10} />
+                    </button>
                   </div>
                 </TableRow>
               ))}
@@ -405,6 +463,119 @@ export default function ProjectModule() {
           </section>
         </div>
       </div>
+      {isAddingProject && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+            <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <FolderKanban size={24} className="text-blue-600" />
+              {editingProject ? 'Modifier le Projet' : 'Nouveau Projet'}
+            </h3>
+            
+            <form onSubmit={handleAddProject} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nom du Projet</label>
+                <input 
+                  required
+                  type="text"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                  value={formData.name || ''}
+                  onChange={e => setFormData({...formData, name: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Description et détails</label>
+                <textarea 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 h-20"
+                  value={formData.description || ''}
+                  onChange={e => setFormData({...formData, description: e.target.value})}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Partenaire</label>
+                  <select 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    value={formData.partnerId || ''}
+                    onChange={e => setFormData({...formData, partnerId: e.target.value})}
+                  >
+                    <option value="">(Optionnel) Choisir...</option>
+                    {partners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Budget (€)</label>
+                  <input 
+                    type="number"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    value={formData.budget || ''}
+                    onChange={e => setFormData({...formData, budget: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              {editingProject && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Status</label>
+                <select 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                  value={formData.status || ''}
+                  onChange={e => setFormData({...formData, status: e.target.value})}
+                >
+                  <option value="planned">Planifié</option>
+                  <option value="active">Actif</option>
+                  <option value="completed">Terminé</option>
+                  <option value="on_hold">En pause</option>
+                </select>
+              </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Date de début</label>
+                  <input 
+                    type="date"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    value={formData.startDate || ''}
+                    onChange={e => setFormData({...formData, startDate: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Date de fin</label>
+                  <input 
+                    type="date"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    value={formData.endDate || ''}
+                    onChange={e => setFormData({...formData, endDate: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setIsAddingProject(false);
+                    setEditingProject(null);
+                    setFormData({});
+                  }}
+                  className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"
+                >
+                  Annuler
+                </button>
+                <button 
+                  type="submit"
+                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono"
+                >
+                  {editingProject ? 'Enregistrer' : 'Créer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Modal for adding financials */}
       {isAddingFinancial && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
@@ -526,6 +697,3 @@ export default function ProjectModule() {
   );
 }
 
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
-}

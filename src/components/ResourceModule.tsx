@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { Plus, Search, Package, ShieldCheck, AlertTriangle, ArrowRightLeft } from 'lucide-react';
+import { Plus, Search, Package, ShieldCheck, AlertTriangle, ArrowRightLeft, Edit2, Trash2 } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
 import { cn } from '../lib/utils';
@@ -21,6 +21,9 @@ export default function ResourceModule() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('Tous les actifs');
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingResource, setEditingResource] = useState<Resource | null>(null);
+  const [formData, setFormData] = useState<any>({ type: 'Stock', quantity: 0, status: 'Available' });
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -34,6 +37,40 @@ export default function ResourceModule() {
     return unsubscribe;
   }, [currentCompany]);
 
+  const handleSaveResource = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany || !formData.name) return;
+    try {
+      if (editingResource) {
+        await updateDoc(doc(db, 'resources', editingResource.id), {
+          ...formData,
+          quantity: Number(formData.quantity)
+        });
+      } else {
+        await addDoc(collection(db, 'resources'), {
+          ...formData,
+          quantity: Number(formData.quantity),
+          companyId: currentCompany.id,
+          createdAt: serverTimestamp()
+        });
+      }
+      setIsAdding(false);
+      setEditingResource(null);
+      setFormData({ type: 'Stock', quantity: 0, status: 'Available' });
+    } catch(err) {
+      handleFirestoreError(err, editingResource ? OperationType.UPDATE : OperationType.WRITE, 'resources');
+    }
+  };
+
+  const handleDeleteResource = async (id: string) => {
+    if (!confirm('Voulez-vous supprimer cet actif ?')) return;
+    try {
+      await deleteDoc(doc(db, 'resources', id));
+    } catch(err) {
+      handleFirestoreError(err, OperationType.DELETE, 'resources');
+    }
+  };
+
   const filteredResources = resources.filter(res => 
     res.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     res.location.toLowerCase().includes(searchTerm.toLowerCase())
@@ -41,16 +78,19 @@ export default function ResourceModule() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Ressources & Matériel</h2>
-          <p className="text-slate-500 text-sm">Gestion des actifs, stocks et équipement de l'entreprise.</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Ressources & Matériel</h2>
+          <p className="text-slate-500 text-xs sm:text-sm text-balance">Gestion des actifs, stocks et équipement de l'entreprise.</p>
         </div>
-        <div className="flex gap-3">
-          <button className="bg-white border border-slate-200 px-5 py-2.5 rounded-lg text-sm font-bold text-slate-600 flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
+        <div className="flex gap-3 w-full sm:w-auto">
+          <button className="flex-1 sm:flex-none justify-center bg-white border border-slate-200 px-5 py-2.5 rounded-lg text-xs font-bold text-slate-600 flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
             <ArrowRightLeft size={16} /> Mouvement
           </button>
-          <button className="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-sm">
+          <button 
+            onClick={() => setIsAdding(true)}
+            className="flex-1 sm:flex-none justify-center bg-blue-600 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-sm"
+          >
             <Plus size={16} /> Nouvel Actif
           </button>
         </div>
@@ -86,7 +126,7 @@ export default function ResourceModule() {
             />
           </div>
 
-          <Table headers={['Identifiant Actif', 'Type / Catégorie', 'Qté / Stock', 'Emplacement', 'État']}>
+          <Table headers={['Identifiant Actif', 'Type / Catégorie', 'Qté / Stock', 'Emplacement', 'État', 'Actions']}>
             {filteredResources.map((res) => (
               <TableRow key={res.id}>
                 <div className="flex items-center gap-3">
@@ -113,6 +153,10 @@ export default function ResourceModule() {
                   <span className="text-[10px] uppercase font-bold text-slate-700 tracking-tight">
                     {res.status === 'Available' ? 'En Stock' : res.status === 'Low' ? 'Stock Bas' : 'Rupture'}
                   </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => { setEditingResource(res); setFormData(res); setIsAdding(true); }} className="p-1 text-slate-400 hover:text-blue-600"><Edit2 size={14}/></button>
+                  <button onClick={() => handleDeleteResource(res.id)} className="p-1 text-slate-400 hover:text-red-600"><Trash2 size={14}/></button>
                 </div>
               </TableRow>
             ))}
@@ -166,6 +210,53 @@ export default function ResourceModule() {
           </div>
         </div>
       </div>
+      {isAdding && (
+         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+           <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+             <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+               <Package size={24} className="text-blue-600" />
+               {editingResource ? 'Modifier l\'actif' : 'Nouvel Actif'}
+             </h3>
+             <form onSubmit={handleSaveResource} className="space-y-4">
+               <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nom de l'actif</label>
+                  <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} required/>
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Catégorie</label>
+                    <select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+                      <option value="Stock">Stock Consommable</option>
+                      <option value="Material">Matériel / Équipement</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Emplacement</label>
+                    <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.location || ''} onChange={e => setFormData({...formData, location: e.target.value})} required/>
+                  </div>
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Quantité</label>
+                    <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.quantity || 0} onChange={e => setFormData({...formData, quantity: e.target.value})} required/>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">État</label>
+                    <select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
+                      <option value="Available">Disponible</option>
+                      <option value="Low">Bas</option>
+                      <option value="Out">Rupture</option>
+                    </select>
+                  </div>
+               </div>
+               <div className="grid grid-cols-2 gap-4 mt-8">
+                 <button type="button" onClick={() => { setIsAdding(false); setEditingResource(null); setFormData({ type: 'Stock', quantity: 0, status: 'Available' }); }} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
+                 <button type="submit" className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono">{editingResource ? 'Mettre à jour' : 'Enregistrer'}</button>
+               </div>
+             </form>
+           </div>
+         </div>
+      )}
     </div>
   );
 }

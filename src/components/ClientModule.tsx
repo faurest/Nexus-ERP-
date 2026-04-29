@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, addDoc, serverTimestamp, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, addDoc, serverTimestamp, where, doc, updateDoc, deleteDoc } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { Plus, Search, Filter, Phone, Mail, Award, TrendingUp, UserPlus } from 'lucide-react';
+import { Plus, Search, Filter, Phone, Mail, Award, TrendingUp, UserPlus, Edit2, Trash2 } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
 import { motion } from 'motion/react';
@@ -22,6 +22,7 @@ export default function ClientModule() {
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [newClient, setNewClient] = useState({ name: '', email: '', phone: '' });
 
   useEffect(() => {
@@ -40,17 +41,34 @@ export default function ClientModule() {
     e.preventDefault();
     if (!currentCompany) return;
     try {
-      await addDoc(collection(db, 'clients'), {
-        ...newClient,
-        companyId: currentCompany.id,
-        salesTotal: 0,
-        loyaltyPoints: 0,
-        createdAt: serverTimestamp(),
-      });
+      if (editingClient) {
+        await updateDoc(doc(db, 'clients', editingClient.id), {
+          ...newClient,
+          updatedAt: serverTimestamp(),
+        });
+      } else {
+        await addDoc(collection(db, 'clients'), {
+          ...newClient,
+          companyId: currentCompany.id,
+          salesTotal: 0,
+          loyaltyPoints: 0,
+          createdAt: serverTimestamp(),
+        });
+      }
       setNewClient({ name: '', email: '', phone: '' });
       setIsAdding(false);
+      setEditingClient(null);
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'clients');
+      handleFirestoreError(error, editingClient ? OperationType.UPDATE : OperationType.CREATE, 'clients');
+    }
+  };
+
+  const handleDeleteClient = async (clientId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) return;
+    try {
+      await deleteDoc(doc(db, 'clients', clientId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, 'clients');
     }
   };
 
@@ -61,14 +79,14 @@ export default function ClientModule() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Gestion Clientèle</h2>
-          <p className="text-slate-500 text-sm">Vente, suivi et fidélisation des comptes clients.</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Gestion Clientèle</h2>
+          <p className="text-slate-500 text-xs sm:text-sm text-balance">Vente, suivi et fidélisation des comptes clients.</p>
         </div>
         <button 
           onClick={() => setIsAdding(true)}
-          className="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-sm"
+          className="w-full sm:w-auto justify-center bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-sm"
         >
           <Plus size={16} /> Nouveau Client
         </button>
@@ -92,7 +110,7 @@ export default function ClientModule() {
             </button>
           </div>
 
-          <Table headers={['Client', 'Contact', 'Fidélité', 'Volume Ventes']}>
+          <Table headers={['Client', 'Contact', 'Fidélité', 'Volume Ventes', 'Actions']}>
             {filteredClients.map((client) => (
               <TableRow key={client.id}>
                 <div className="flex flex-col">
@@ -116,6 +134,24 @@ export default function ClientModule() {
                 <div className="flex items-center gap-2">
                   <TrendingUp size={14} className="text-green-500" />
                   <span className="text-sm font-bold text-slate-900">{(client.salesTotal || 0).toLocaleString()} €</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      setEditingClient(client);
+                      setNewClient({ name: client.name, email: client.email, phone: client.phone });
+                      setIsAdding(true);
+                    }}
+                    className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteClient(client.id)}
+                    className="p-1 text-slate-400 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </TableRow>
             ))}
@@ -164,8 +200,8 @@ export default function ClientModule() {
                 <UserPlus size={24} />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-slate-900">Enregistrement Client</h3>
-                <p className="text-sm text-slate-500">Ajouter un nouveau partenaire commercial.</p>
+                <h3 className="text-xl font-bold text-slate-900">{editingClient ? 'Modifier Partenaire' : 'Enregistrement Client'}</h3>
+                <p className="text-sm text-slate-500">{editingClient ? 'Mettre à jour les informations du client.' : 'Ajouter un nouveau partenaire commercial.'}</p>
               </div>
             </div>
 
@@ -202,7 +238,11 @@ export default function ClientModule() {
               <div className="grid grid-cols-2 gap-4 mt-8">
                 <button 
                   type="button"
-                  onClick={() => setIsAdding(false)}
+                  onClick={() => {
+                    setIsAdding(false);
+                    setEditingClient(null);
+                    setNewClient({ name: '', email: '', phone: '' });
+                  }}
                   className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all"
                 >
                   Annuler
@@ -211,7 +251,7 @@ export default function ClientModule() {
                   type="submit"
                   className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
                 >
-                  Confirmer
+                  {editingClient ? 'Mettre à jour' : 'Confirmer'}
                 </button>
               </div>
             </form>

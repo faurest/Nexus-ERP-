@@ -8,7 +8,9 @@ import {
   Package, 
   Briefcase,
   Download,
-  Upload
+  Upload,
+  Activity,
+  Plus
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
@@ -16,10 +18,25 @@ import { cn } from '../lib/utils';
 import { useCompany } from '../lib/CompanyContext';
 import { exportCompanyDataAsJSON, importCompanyDataFromJSON } from '../lib/exportUtils';
 
-export default function DashboardModule() {
+export default function DashboardModule({ user }: { user?: any }) {
   const { currentCompany } = useCompany();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+
+  const role = user?.role || 'Directeur';
+
+  const welcomeMessages: Record<string, string> = {
+    'owner': 'Bienvenue dans votre poste de commande global.',
+    'Directeur': 'Bienvenue dans votre poste de commande global.',
+    'Secrétaire': 'Prête pour la gestion administrative ? Voici les priorités du jour.',
+    'Comptable': 'Analyse financière et consolidation des flux en cours.',
+  };
+
+  const coordinationFlux = [
+    { from: 'Direction', to: 'Tous', msg: 'Réunion de coordination à 14h00.', time: 'Il y a 10 min', type: 'info' },
+    { from: 'Secrétariat', to: 'Comptabilité', msg: 'Factures clients reçues et scannées.', time: 'Il y a 45 min', type: 'success' },
+    { from: 'Logistique', to: 'Secrétariat', msg: 'Nouveau stock de consommables arrivant demain.', time: 'Il y a 2h', type: 'warning' },
+  ];
 
   const handleExport = async () => {
     if (!currentCompany) return;
@@ -81,12 +98,12 @@ export default function DashboardModule() {
   return (
     <div className="space-y-12">
       {/* Header and Export */}
-      <div className="flex justify-between items-center bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white border border-slate-200 p-4 sm:p-6 rounded-2xl shadow-sm gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Tableau de bord</h2>
-          <p className="text-slate-500 text-sm mt-1">Vue d'ensemble de vos activités et métriques clés.</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Tableau de bord</h2>
+          <p className="text-slate-500 text-xs sm:text-sm mt-1">{welcomeMessages[role] || "Vue d'ensemble de vos activités."}</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3 w-full sm:w-auto">
           <input 
             type="file" 
             accept=".json" 
@@ -98,26 +115,33 @@ export default function DashboardModule() {
           <button 
             onClick={() => document.getElementById('import-json')?.click()}
             disabled={isImporting || isExporting}
-            className="bg-white border-2 border-slate-900 text-slate-900 px-5 py-3 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 transition-all shadow-sm"
+            className="flex-1 sm:flex-none justify-center bg-white border-2 border-slate-900 text-slate-900 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 transition-all shadow-sm"
           >
-            <Upload size={18} />
-            {isImporting ? 'Importation en cours...' : 'Importer'}
+            <Upload size={16} />
+            <span className="hidden xs:inline">{isImporting ? 'Import...' : 'Importer'}</span>
+            <span className="xs:hidden">{isImporting ? '...' : 'Import'}</span>
           </button>
           
           <button 
             onClick={handleExport}
             disabled={isExporting || isImporting}
-            className="bg-slate-900 text-white px-5 py-3 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-800 disabled:opacity-50 transition-all shadow-md hover:shadow-lg"
+            className="flex-1 sm:flex-none justify-center bg-slate-900 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 hover:bg-slate-800 disabled:opacity-50 transition-all shadow-md hover:shadow-lg"
           >
-            <Download size={18} />
-            {isExporting ? 'Extraction en cours...' : 'Extraire (JSON)'}
+            <Download size={16} />
+            <span className="hidden xs:inline">{isExporting ? 'Extraction...' : 'Extraire'}</span>
+            <span className="xs:hidden">{isExporting ? '...' : 'Extraire'}</span>
           </button>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 px-1">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Connecté au réseau NTRP (Nexus Transfer Registry Protocol)</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat, i) => (
           <motion.div 
             key={i}
             initial={{ opacity: 0, y: 20 }}
@@ -147,9 +171,56 @@ export default function DashboardModule() {
             </div>
           </motion.div>
         ))}
+        </div>
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Coordination Flux */}
+        <section className="bg-slate-900 text-white rounded-3xl p-6 shadow-xl lg:col-span-2 overflow-hidden relative group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
+             <Activity size={120} />
+          </div>
+          <div className="flex items-center justify-between mb-8 relative z-10">
+            <div>
+              <h2 className="text-lg font-bold tracking-tight">Flux de Coordination Inter-Services</h2>
+              <p className="text-slate-400 text-xs mt-1">Echanges et synchronisation en temps réel entre la Direction, le Secrétariat et la Comptabilité.</p>
+            </div>
+            <button className="bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all">
+              <Plus size={20} />
+            </button>
+          </div>
+
+          <div className="space-y-4 relative z-10">
+            {coordinationFlux.map((item, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
+              >
+                <div className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center shrink-0 border",
+                  item.type === 'info' ? "bg-blue-500/20 border-blue-500/30 text-blue-400" :
+                  item.type === 'success' ? "bg-green-500/20 border-green-500/30 text-green-400" :
+                  "bg-amber-500/20 border-amber-500/30 text-amber-400"
+                )}>
+                  {item.from.charAt(0)}
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                      De: {item.from} {">"} A: {item.to}
+                    </span>
+                    <span className="text-[9px] font-medium text-slate-500">{item.time}</span>
+                  </div>
+                  <p className="text-sm font-medium mt-1">{item.msg}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
         {/* Recent Tasks */}
         <section>
           <div className="flex items-center justify-between mb-6">

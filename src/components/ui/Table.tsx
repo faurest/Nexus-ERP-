@@ -9,16 +9,20 @@ interface TableProps {
 
 export default function Table({ headers, children, className }: TableProps) {
   return (
-    <div className={cn("bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm", className)}>
-      <div className="flex items-center bg-slate-50 border-b border-slate-100 min-w-full">
-        {headers.map((header, i) => (
-          <div key={i} className="flex-1 px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">
-            {header}
+    <div className={cn("bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden", className)}>
+      <div className="overflow-x-auto">
+        <div className="min-w-[800px] md:min-w-full">
+          <div className="flex items-center bg-slate-50 border-b border-slate-100">
+            {headers.map((header, i) => (
+              <div key={i} className="flex-1 px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">
+                {header}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <div className="divide-y divide-slate-50">
-        {children}
+          <div className="divide-y divide-slate-50">
+            {children}
+          </div>
+        </div>
       </div>
     </div>
   );
