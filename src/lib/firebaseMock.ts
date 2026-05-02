@@ -144,7 +144,7 @@ export function or(...conditions: any[]) {
   return conditions;
 }
 
-export function onSnapshot(q: any, callback: (snap: any) => void) {
+export function onSnapshot(q: any, callback: (snap: any) => void, errCb?: any) {
   let isCancelled = false;
   
   const pull = async () => {

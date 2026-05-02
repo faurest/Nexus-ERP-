@@ -10,10 +10,13 @@ import { useCompany } from '../lib/CompanyContext';
 interface Resource {
   id: string;
   name: string;
-  type: 'Stock' | 'Material';
+  type: 'Stock' | 'Material' | 'Software' | 'Human';
   quantity: number;
-  status: 'Available' | 'Low' | 'Out';
+  status: 'Available' | 'Low' | 'Out' | 'Assigned' | 'Maintenance';
   location: string;
+  condition?: string;     // état
+  duration?: string;      // durée
+  warranty?: string;      // garantie
 }
 
 export default function ResourceModule() {
@@ -22,8 +25,9 @@ export default function ResourceModule() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('Tous les actifs');
   const [isAdding, setIsAdding] = useState(false);
+  const [viewingResource, setViewingResource] = useState<Resource | null>(null);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
-  const [formData, setFormData] = useState<any>({ type: 'Stock', quantity: 0, status: 'Available' });
+  const [formData, setFormData] = useState<any>({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '' });
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -56,7 +60,7 @@ export default function ResourceModule() {
       }
       setIsAdding(false);
       setEditingResource(null);
-      setFormData({ type: 'Stock', quantity: 0, status: 'Available' });
+      setFormData({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '' });
     } catch(err) {
       handleFirestoreError(err, editingResource ? OperationType.UPDATE : OperationType.WRITE, 'resources');
     }
@@ -72,8 +76,8 @@ export default function ResourceModule() {
   };
 
   const filteredResources = resources.filter(res => 
-    res.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    res.location.toLowerCase().includes(searchTerm.toLowerCase())
+    (res.name && res.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (res.location && res.location.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -84,7 +88,7 @@ export default function ResourceModule() {
           <p className="text-slate-500 text-xs sm:text-sm text-balance">Gestion des actifs, stocks et équipement de l'entreprise.</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
-          <button className="flex-1 sm:flex-none justify-center bg-white border border-slate-200 px-5 py-2.5 rounded-lg text-xs font-bold text-slate-600 flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
+          <button onClick={() => alert("Action de mouvement de stock en cours de liaison")} className="flex-1 sm:flex-none justify-center bg-white border border-slate-200 px-5 py-2.5 rounded-lg text-xs font-bold text-slate-600 flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
             <ArrowRightLeft size={16} /> Mouvement
           </button>
           <button 
@@ -97,7 +101,7 @@ export default function ResourceModule() {
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {['Tous les actifs', 'Stock Consommable', 'Matériel Bureautique', 'Équipement Technique', 'Véhicules'].map((filter) => (
+        {['Tous les actifs', 'Stock Consommable', 'Matériel Bureautique', 'Logiciel', 'Ressource Humaine', 'Véhicules'].map((filter) => (
           <button 
             key={filter} 
             onClick={() => setActiveFilter(filter)}
@@ -148,13 +152,22 @@ export default function ResourceModule() {
                 <div className="flex items-center gap-2">
                   <span className={cn(
                     "w-2 h-2 rounded-full ring-4 ring-opacity-20",
-                    res.status === 'Available' ? "bg-green-500 ring-green-500" : res.status === 'Low' ? "bg-amber-500 ring-amber-500" : "bg-red-500 ring-red-500"
+                    res.status === 'Available' ? "bg-green-500 ring-green-500" :
+                    res.status === 'Low' ? "bg-amber-500 ring-amber-500" :
+                    res.status === 'Assigned' ? "bg-blue-500 ring-blue-500" :
+                    res.status === 'Maintenance' ? "bg-purple-500 ring-purple-500" :
+                    "bg-red-500 ring-red-500"
                   )} />
                   <span className="text-[10px] uppercase font-bold text-slate-700 tracking-tight">
-                    {res.status === 'Available' ? 'En Stock' : res.status === 'Low' ? 'Stock Bas' : 'Rupture'}
+                    {res.status === 'Available' ? 'Dispo.' : 
+                     res.status === 'Low' ? 'Stock Bas' : 
+                     res.status === 'Assigned' ? 'Assigné' :
+                     res.status === 'Maintenance' ? 'Maintenance' :
+                     'Rupture'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button onClick={() => setViewingResource(res)} className="p-1 text-slate-400 hover:text-green-600"><Search size={14}/></button>
                   <button onClick={() => { setEditingResource(res); setFormData(res); setIsAdding(true); }} className="p-1 text-slate-400 hover:text-blue-600"><Edit2 size={14}/></button>
                   <button onClick={() => handleDeleteResource(res.id)} className="p-1 text-slate-400 hover:text-red-600"><Trash2 size={14}/></button>
                 </div>
@@ -206,10 +219,69 @@ export default function ResourceModule() {
                 <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-600 rounded">5 UNITÉS</span>
               </div>
             </div>
-            <button className="w-full text-[10px] font-bold uppercase tracking-widest text-amber-800 hover:text-amber-900 transition-colors">Réapprovisionner</button>
+            <button onClick={() => alert("Alerte de réapprovisionnement envoyée au gestionnaire.")} className="w-full text-[10px] font-bold uppercase tracking-widest text-amber-800 hover:text-amber-900 transition-colors">Réapprovisionner</button>
           </div>
         </div>
       </div>
+      {viewingResource && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center font-bold text-xl border border-indigo-100">
+                  <Package size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 leading-none">{viewingResource.name}</h3>
+                  <p className="text-sm font-medium text-slate-500 mt-1">{viewingResource.type}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Emplacement</span>
+                  <span className="text-sm font-bold text-slate-900">{viewingResource.location}</span>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Disponibilité</span>
+                  <span className="text-sm font-bold text-slate-900">{viewingResource.status}</span>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Quantité / Heures</span>
+                  <span className="text-sm font-bold text-slate-900">{viewingResource.quantity}</span>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">État</span>
+                  <span className="text-sm font-bold text-slate-900">{viewingResource.condition || 'Non renseigné'}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Durée Prévue</span>
+                  <span className="text-sm font-bold text-slate-900">{viewingResource.duration || 'Non renseignée'}</span>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Garantie</span>
+                  <span className="text-sm font-bold text-slate-900">{viewingResource.warranty || 'Non renseignée'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <button 
+                onClick={() => setViewingResource(null)} 
+                className="w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-slate-200 transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isAdding && (
          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
            <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
@@ -228,29 +300,47 @@ export default function ResourceModule() {
                     <select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
                       <option value="Stock">Stock Consommable</option>
                       <option value="Material">Matériel / Équipement</option>
+                      <option value="Software">Abonnement / Logiciel</option>
+                      <option value="Human">Ressource Humaine / Externe</option>
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Emplacement</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Emplacement / Affectation</label>
                     <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.location || ''} onChange={e => setFormData({...formData, location: e.target.value})} required/>
                   </div>
                </div>
                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Quantité</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Quantité / Heures</label>
                     <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.quantity || 0} onChange={e => setFormData({...formData, quantity: e.target.value})} required/>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">État</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Statut / Disponibilité</label>
                     <select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
                       <option value="Available">Disponible</option>
-                      <option value="Low">Bas</option>
-                      <option value="Out">Rupture</option>
+                      <option value="Assigned">Assigné</option>
+                      <option value="Maintenance">En Maintenance</option>
+                      <option value="Low">Bas (Quantité faible)</option>
+                      <option value="Out">Rupture / Indisponible</option>
                     </select>
                   </div>
                </div>
+               <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">État</label>
+                    <input type="text" placeholder="Neuf, Usagé..." className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.condition || ''} onChange={e => setFormData({...formData, condition: e.target.value})} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Durée (Mois/Jours)</label>
+                    <input type="text" placeholder="Ex: 24 mois" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.duration || ''} onChange={e => setFormData({...formData, duration: e.target.value})} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Garantie</label>
+                    <input type="text" placeholder="Ex: 1 an" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.warranty || ''} onChange={e => setFormData({...formData, warranty: e.target.value})} />
+                  </div>
+               </div>
                <div className="grid grid-cols-2 gap-4 mt-8">
-                 <button type="button" onClick={() => { setIsAdding(false); setEditingResource(null); setFormData({ type: 'Stock', quantity: 0, status: 'Available' }); }} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
+                 <button type="button" onClick={() => { setIsAdding(false); setEditingResource(null); setFormData({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '' }); }} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
                  <button type="submit" className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono">{editingResource ? 'Mettre à jour' : 'Enregistrer'}</button>
                </div>
              </form>

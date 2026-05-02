@@ -35,7 +35,7 @@ export const loginWithEmail = async (email: string, pass: string) => {
 
   if (!res.ok) {
     const err = await res.json();
-    const error: any = new Error(err.error);
+    const error: any = new Error(err.message || err.error);
     error.code = 'auth/' + err.error;
     throw error;
   }
@@ -55,9 +55,18 @@ export const logout = async () => {
 };
 
 export const createEmployeeAccount = async (email: string, pass: string) => {
-  // In this SQLite version, we don't strictly need a separate account creation
-  // but we keep the signature for compatibility.
-  return { user: { uid: 'emp_' + Math.random().toString(36).substring(2, 10), email } };
+  const res = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password: pass })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    const error: any = new Error(err.message || 'Error registering');
+    error.code = 'auth/' + err.error;
+    throw error;
+  }
+  return { user: { email } }; // Do not update currentUser for secondary auth flow
 };
 
 export const secondaryAuth = {
@@ -93,27 +102,49 @@ async function fetchData(path: string, queryParams?: any[]) {
     if (!res.ok) {
         throw new Error(`Server error: ${res.status} ${res.statusText}`);
     }
-    return res.json();
+    
+    const text = await res.text();
+    if (text.trim().startsWith('<')) {
+        throw new Error(`Invalid JSON response (HTML intercepted): ${text.slice(0, 50)}`);
+    }
+    
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        throw new Error(`Failed to parse JSON: ${e.message}`);
+    }
 }
 
 async function triggerListener(l: any) {
-  const pathParts = l.path.split('/');
-  if (pathParts.length % 2 === 0) { // Doc
-      const data = await fetchData(l.path);
-      l.cb({
-          id: pathParts[pathParts.length-1],
-          exists: () => !!data,
-          data: () => data
-      });
-  } else { // Collection
-      const items = await fetchData(l.path, l.queryParams);
-      l.cb({
-        docs: items.map((data: any) => ({
-            id: data.id,
+  try {
+    const pathParts = l.path.split('/');
+    if (pathParts.length % 2 === 0) { // Doc
+        const data = await fetchData(l.path);
+        l.cb({
+            id: pathParts[pathParts.length-1],
+            exists: () => !!data,
             data: () => data
-        })),
-        empty: items.length === 0
-      });
+        });
+    } else { // Collection
+        const items = await fetchData(l.path, l.queryParams);
+        l.cb({
+          docs: items.map((data: any) => ({
+              id: data.id,
+              data: () => data
+          })),
+          empty: items.length === 0
+        });
+    }
+  } catch (error: any) {
+    if (l.errCb) l.errCb(error);
+    else {
+      // Suppress transient network errors from dev server restarts
+      if (error && (error.message.includes('Failed to fetch') || error.message.includes('HTML intercepted'))) {
+         // silently ignore transient network fetch errors to prevent console spam
+         return;
+      }
+      console.error("Error in triggerListener:", error);
+    }
   }
 }
 
@@ -206,8 +237,8 @@ export async function getDocs(query: any): Promise<any> {
     };
 }
 
-export function onSnapshot(queryOrDoc: any, cb: any) {
-  let l = { path: queryOrDoc.path, cb, queryParams: queryOrDoc.constraints || [] };
+export function onSnapshot(queryOrDoc: any, cb: any, errCb?: any) {
+  let l = { path: queryOrDoc.path, cb, errCb, queryParams: queryOrDoc.constraints || [] };
   dbListeners.push(l);
   triggerListener(l);
   

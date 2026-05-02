@@ -11,7 +11,8 @@ import {
   DollarSign, 
   ArrowDownCircle, 
   ArrowUpCircle,
-  FileText
+  FileText,
+  Activity
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -103,6 +104,9 @@ export default function AccountingModule() {
   const totalRevenue = sales.filter(s => s.status === 'completed').reduce((acc, s) => acc + (s.total || 0), 0);
   const totalExpenses = expenses.reduce((acc, e) => acc + (e.amount || 0), 0);
   const netIncome = totalRevenue - totalExpenses;
+  const margeProfit = totalRevenue > 0 ? ((netIncome / totalRevenue) * 100).toFixed(1) : '0.0';
+  
+  const isRentable = netIncome > 0;
 
   // Prepare chart data
   const chartData = [
@@ -152,7 +156,7 @@ export default function AccountingModule() {
             >
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Recettes (Entrées)</p>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{totalRevenue.toLocaleString()} €</h3>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{totalRevenue.toLocaleString()} FCFA</h3>
                 <div className="flex items-center gap-1 text-green-500 mt-1">
                   <ArrowUpCircle size={14} />
                   <span className="text-[10px] font-bold">+15% vs mois dernier</span>
@@ -171,7 +175,7 @@ export default function AccountingModule() {
             >
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Dépenses (Sorties)</p>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{totalExpenses.toLocaleString()} €</h3>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{totalExpenses.toLocaleString()} FCFA</h3>
                 <div className="flex items-center gap-1 text-red-500 mt-1">
                   <ArrowDownCircle size={14} />
                   <span className="text-[10px] font-bold">+5% vs mois dernier</span>
@@ -188,18 +192,43 @@ export default function AccountingModule() {
               transition={{ delay: 0.2 }}
               className={cn(
                 "p-6 rounded-[2rem] border shadow-xl flex items-center justify-between",
-                netIncome >= 0 ? "bg-blue-600 border-blue-500 text-white shadow-blue-200" : "bg-slate-900 border-slate-800 text-white shadow-slate-200"
+                netIncome >= 0 ? "bg-blue-600 border-blue-500 text-white shadow-blue-200/50" : "bg-slate-900 border-slate-800 text-white shadow-slate-200/50"
               )}
             >
               <div>
-                <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest mb-1">Résultat Net</p>
-                <h3 className="text-3xl font-black tracking-tighter">{netIncome.toLocaleString()} €</h3>
-                <p className="text-[10px] font-bold mt-1 opacity-80">Bénéfice opérationnel net</p>
+                <p className="text-[10px] font-bold opacity-70 uppercase tracking-widest mb-1">Marge Nette ({margeProfit}%)</p>
+                <h3 className="text-3xl font-black tracking-tighter">{netIncome.toLocaleString()} FCFA</h3>
+                <p className="text-[10px] font-bold mt-1 opacity-80">
+                  {isRentable ? "Rentabilité positive garantie" : "Déficit d'exploitation détecté"}
+                </p>
               </div>
               <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-white">
                 <DollarSign size={28} />
               </div>
             </motion.div>
+          </div>
+
+          {/* Strategic Insight Block for Profitability */}
+          <div className="bg-slate-900 p-6 sm:p-8 rounded-[2.5rem] shadow-2xl shadow-slate-900/20 relative overflow-hidden text-white flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="absolute right-0 top-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+            <div className="relative z-10 flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <div className={cn("px-2 py-1 rounded text-[9px] font-black tracking-widest uppercase", isRentable ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400")}>
+                  Diagnostic Stratégique
+                </div>
+              </div>
+              <h3 className="text-xl font-black tracking-tight mb-2">Recommandation Opérationnelle de Rentabilité</h3>
+              <p className="text-sm font-medium text-slate-300 leading-relaxed max-w-3xl">
+                {isRentable 
+                  ? `L'entreprise affiche une marge nette de ${margeProfit}%. Son modèle d'affaires (services ou ventes) dégage un bénéfice consistant. Songez à réinvestir ces marges directement dans les ressources (embauches, outillages) ou dans le marketing (fidélisation des clients) pour augmenter le volume d'activité des prestations.`
+                  : `L'entreprise ne couvre actuellement pas l'ensemble de ses charges (Marge Nette: ${margeProfit}%). Il est prioritaire soit de réduire les dépenses fixes non essentielles, soit d'ajuster le catalogue de prix pour vos prestations et ventes de services.`}
+              </p>
+            </div>
+            <div className="shrink-0 relative z-10">
+              <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur border border-white/5 flex items-center justify-center">
+                <Activity className={isRentable ? "text-emerald-400" : "text-red-400"} size={32} />
+              </div>
+            </div>
           </div>
 
           {/* Charts Section */}
@@ -298,7 +327,7 @@ export default function AccountingModule() {
                   </span>
                   <span className="font-bold text-slate-900">{expense.description}</span>
                   <span className="font-black text-red-600 font-mono tracking-tighter">
-                    -{expense.amount.toLocaleString()} €
+                    -{expense.amount.toLocaleString()} FCFA
                   </span>
                   <div className="flex justify-end">
                     <button 
@@ -358,7 +387,7 @@ export default function AccountingModule() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Montant (€)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Montant (FCFA)</label>
                   <input 
                     type="number" 
                     required

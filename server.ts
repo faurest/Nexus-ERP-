@@ -23,6 +23,10 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS personnel (
     id TEXT PRIMARY KEY,
     companyId TEXT NOT NULL,
+    firstName TEXT,
+    lastName TEXT,
+    phone TEXT,
+    notes TEXT,
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     role TEXT,
@@ -136,10 +140,59 @@ db.exec(`
     displayName TEXT,
     password TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS tasks (
+    id TEXT PRIMARY KEY,
+    companyId TEXT NOT NULL,
+    title TEXT NOT NULL,
+    assignedTo TEXT,
+    startDate TEXT,
+    endDate TEXT,
+    status TEXT DEFAULT 'pending',
+    createdAt INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS services (
+    id TEXT PRIMARY KEY,
+    companyId TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    price TEXT,
+    createdAt INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS interventions (
+    id TEXT PRIMARY KEY,
+    companyId TEXT NOT NULL,
+    client TEXT NOT NULL,
+    message TEXT NOT NULL,
+    date TEXT,
+    status TEXT,
+    createdAt INTEGER
+  );
 `);
 
 // Try Schema Migrations
+try { db.prepare('UPDATE users SET email = LOWER(TRIM(email))').run(); } catch(e) {}
 try { db.exec('ALTER TABLE companies ADD COLUMN employees TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE companies ADD COLUMN roles TEXT'); } catch (e) {}
+
+try { db.exec('ALTER TABLE personnel ADD COLUMN firstName TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE personnel ADD COLUMN lastName TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE personnel ADD COLUMN phone TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE personnel ADD COLUMN notes TEXT'); } catch (e) {}
+try { 
+  db.exec(`CREATE TABLE IF NOT EXISTS tasks (
+    id TEXT PRIMARY KEY,
+    companyId TEXT NOT NULL,
+    title TEXT NOT NULL,
+    assignedTo TEXT,
+    startDate TEXT,
+    endDate TEXT,
+    status TEXT DEFAULT 'pending',
+    createdAt INTEGER
+  )`);
+} catch (e) {}
 
 // Pre-seed Master User and Master Company
 try {
@@ -163,6 +216,27 @@ try {
     db.prepare('INSERT INTO companies (id, name, ownerId, ownerEmail, joinCode, createdAt) VALUES (?, ?, ?, ?, ?, ?)')
       .run('comp_nexus_master', 'Nexus Enterprise Global', masterUid, masterEmail, 'NEXUS-ADMIN', Date.now());
   }
+
+  // Create La PAUSE 237 Company if not exists
+  const pauseExists = db.prepare('SELECT * FROM companies WHERE joinCode = ?').get('PAUSE-237');
+  if (!pauseExists) {
+    db.prepare('INSERT INTO companies (id, name, ownerId, ownerEmail, joinCode, createdAt) VALUES (?, ?, ?, ?, ?, ?)')
+      .run('comp_lapause237', 'La PAUSE 237', masterUid, 'lapause237@gmail.com', 'PAUSE-237', Date.now());
+    
+    // Seed some products/resources for the bar
+    db.prepare('INSERT INTO resources (id, companyId, name, type, quantity, status, location, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run('res_vin_rouge_01', 'comp_lapause237', 'Bordeaux Rouge - Château Margaux', 'Stock', 24, 'Available', 'Cave à vin', Date.now());
+    
+    db.prepare('INSERT INTO resources (id, companyId, name, type, quantity, status, location, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run('res_champagne_01', 'comp_lapause237', 'Champagne Dom Pérignon', 'Stock', 5, 'Low', 'Cave à vin', Date.now());
+
+    db.prepare('INSERT INTO resources (id, companyId, name, type, quantity, status, location, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run('res_whisky_01', 'comp_lapause237', 'Whisky Hibiki 21 ans', 'Stock', 12, 'Available', 'Comptoir', Date.now());
+      
+    // Seed some services for the restaurant
+    db.prepare('INSERT INTO services (id, companyId, name, description, price, createdAt) VALUES (?, ?, ?, ?, ?, ?)')
+      .run('srv_degustation', 'comp_lapause237', 'Dégustation Vins & Fromages', 'Séance de dégustation avec un sommelier pour 2 personnes', '85', Date.now());
+  }
 } catch (e) {
   console.error("Master seeding failed:", e);
 }
@@ -175,48 +249,96 @@ async function startServer() {
   // --- API ROUTES ---
 
   // Auth (Simplified for demo, but server-side)
+  app.post('/api/auth/register', (req, res) => {
+    let { email, password } = req.body;
+    email = email?.trim().toLowerCase();
+    password = password?.trim();
+    
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: 'weak-password', message: 'Le mot de passe doit contenir au moins 6 caractères.' });
+    }
+
+    const existingUser = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+    if (existingUser) {
+      db.prepare('UPDATE users SET password = ? WHERE email = ?').run(password, email);
+      return res.status(400).json({ error: 'email-already-in-use', message: 'Cet utilisateur existe déjà. Le mot de passe a été mis à jour.' });
+    }
+
+    const uid = 'user_' + Math.random().toString(36).substring(2, 10);
+    db.prepare('INSERT INTO users (uid, email, displayName, password) VALUES (?, ?, ?, ?)')
+      .run(uid, email, email.split('@')[0], password);
+    return res.json({ uid, email, displayName: email.split('@')[0] });
+  });
+
   app.post('/api/auth/login', (req, res) => {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+    email = email?.trim().toLowerCase();
+    password = password?.trim();
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
     
-    // Master bypass/permissive login
-    if (user && (user.password === password || email === 'hackeurfaurest@gmail.com' || email === 'dangafelicite@gmail.com')) {
-      // Check if this user is also in the personnel table to get their specific role
-      const personnel = db.prepare('SELECT role FROM personnel WHERE email = ? AND companyId IS NOT NULL').get(email) as any;
-      
-      const { password: _, ...safeUser } = user;
-      return res.json({ 
-        ...safeUser, 
-        role: personnel ? personnel.role : 'owner' // Default to owner if not in personnel
-      });
+    if (user) {
+      if (user.password?.trim() === password || email === 'dangafelicite@gmail.com' || email === 'hackeurfaurest@gmail.com') {
+        const { password: _, ...safeUser } = user;
+        return res.json(safeUser);
+      }
     }
     
     // Auto-signup logic if user doesn't exist (as per previous mock logic)
     if (!user) {
+      if (!password || password.length < 6) {
+        return res.status(400).json({ error: 'weak-password', message: 'Le mot de passe doit contenir au moins 6 caractères.' });
+      }
+
       const uid = 'user_' + Math.random().toString(36).substring(2, 10);
       db.prepare('INSERT INTO users (uid, email, displayName, password) VALUES (?, ?, ?, ?)')
         .run(uid, email, email.split('@')[0], password);
       return res.json({ uid, email, displayName: email.split('@')[0] });
     }
 
-    res.status(401).json({ error: 'invalid-credential' });
+    res.status(401).json({ error: 'invalid-credential', message: 'Email ou mot de passe incorrect.' });
   });
 
   // Generic CRUD Proxy
   app.get('/api/data/:collection', (req, res) => {
     try {
       const { collection } = req.params;
-      const { companyId, joinCode } = req.query;
+      const { requestUserEmail, ownerId, ...otherQuerys } = req.query;
       
       let query = `SELECT * FROM ${collection}`;
       const params: any[] = [];
+      const conditions: string[] = [];
 
-      if (companyId) {
-        query += ` WHERE companyId = ?`;
-        params.push(companyId);
-      } else if (joinCode) {
-        query += ` WHERE joinCode = ?`;
-        params.push(joinCode);
+      if (ownerId && collection === 'companies') {
+        if (ownerId === 'master_nexus_01' || requestUserEmail === 'hackeurfaurest@gmail.com' || requestUserEmail === 'dangafelicite@gmail.com') {
+          // If super admin, no additional condition, return all companies
+        } else {
+          conditions.push(`(ownerId = ? OR memberEmails LIKE ?)`);
+          params.push(ownerId);
+          params.push(`%${requestUserEmail}%`);
+        }
+      } else if (ownerId) {
+        conditions.push(`ownerId = ?`);
+        params.push(ownerId);
+      }
+
+      Object.keys(otherQuerys).forEach(key => {
+        conditions.push(`${key} = ?`);
+        // Handle case-insensitivity manually for 'email' to match existing user queries easily
+        if (key === 'email' && typeof otherQuerys[key] === 'string') {
+           params.push((otherQuerys[key] as string).trim().toLowerCase());
+        } else {
+           params.push(otherQuerys[key]);
+        }
+      });
+      
+      // if column 'email' exists we want to be case-insensitive for sqlite equal matching
+      if (otherQuerys['email']) {
+         // replace the last condition
+         conditions[conditions.length - 1] = `LOWER(TRIM(${'email'})) = ?`;
+      }
+
+      if (conditions.length > 0) {
+        query += ` WHERE ` + conditions.join(' AND ');
       }
 
       const rows = db.prepare(query).all(...params).map((row: any) => {
@@ -235,6 +357,31 @@ async function startServer() {
         return parsedRow;
       });
       res.json(rows);
+    } catch (err: any) {
+      console.error(err);
+      res.status(500).send(err.message);
+    }
+  });
+
+  app.get('/api/data/:collection/:id', (req, res) => {
+    try {
+      const { collection, id } = req.params;
+      const row = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id);
+      if (!row) return res.json(null);
+      
+      const parsedRow: any = {};
+      for (const [key, value] of Object.entries(row)) {
+        if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
+          try {
+            parsedRow[key] = JSON.parse(value);
+          } catch {
+            parsedRow[key] = value;
+          }
+        } else {
+          parsedRow[key] = value;
+        }
+      }
+      res.json(parsedRow);
     } catch (err: any) {
       console.error(err);
       res.status(500).send(err.message);

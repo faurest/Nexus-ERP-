@@ -20,7 +20,8 @@ import {
   AlertCircle,
   Building2,
   Shield,
-  Calculator
+  Calculator,
+  Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -34,6 +35,7 @@ import ProjectModule from './components/ProjectModule';
 import SalesModule from './components/SalesModule';
 import AdminModule from './components/AdminModule';
 import AccountingModule from './components/AccountingModule';
+import PrestationsModule from './components/PrestationsModule';
 
 import { bootstrapDemoData } from './lib/bootstrap';
 import { useCompany } from './lib/CompanyContext';
@@ -41,10 +43,13 @@ import { useCompany } from './lib/CompanyContext';
 export const DEFAULT_ROLES: Record<string, string[]> = {
   'owner': ['dashboard', 'sales', 'clients', 'personnel', 'resources', 'projects', 'accounting'],
   'Directeur': ['dashboard', 'sales', 'clients', 'personnel', 'resources', 'projects', 'accounting'],
-  'Secrétaire': ['dashboard', 'clients', 'personnel', 'resources'],
+  'Secrétaire': ['dashboard', 'clients', 'personnel', 'resources', 'projects'],
   'Comptable': ['dashboard', 'sales', 'projects', 'accounting'],
-  'Agent Commercial': ['dashboard', 'sales', 'clients'],
-  'Collaborateur': ['dashboard', 'projects'],
+  'Agent Commercial': ['dashboard', 'sales', 'clients', 'projects'],
+  'Vendeur de bière': ['dashboard', 'sales', 'resources'],
+  'Vendeur de nourriture': ['dashboard', 'sales', 'resources'],
+  'Collaborateur': ['dashboard', 'projects', 'resources', 'clients', 'sales'],
+  'Personnel': ['dashboard', 'projects', 'resources', 'clients'],
 };
 
 function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], user: User, onSelect: any }) {
@@ -59,16 +64,14 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
     e.preventDefault();
     setErrorMsg('');
     if (!newCompanyName.trim()) return;
-    if (adminCode !== 'NEXUS-ADMIN') {
-      setErrorMsg('Code d\'autorisation administrateur invalide.');
-      return;
-    }
+
     setCreatingLocally(true);
     try {
       const generatedJoinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const docRef = await addDoc(collection(db, 'companies'), {
         name: newCompanyName,
         ownerId: user.uid,
+        ownerEmail: user.email,
         memberEmails: [user.email],
         employees: [user.uid],
         joinCode: generatedJoinCode
@@ -95,12 +98,30 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         const companyDoc = snap.docs[0];
         const company = { id: companyDoc.id, ...companyDoc.data() } as any;
         
-        const companyEmployees = Array.isArray(company.employees) ? company.employees : [];
-        
-        await updateDoc(doc(db, 'companies', company.id), {
-          employees: arrayUnion(user.uid),
-          memberEmails: arrayUnion(user.email)
+        // Ensure user is in personnel, block if not registered
+        const personnelQ = query(
+          collection(db, 'personnel'), 
+          where('companyId', '==', company.id)
+        );
+        const personnelSnap = await getDocs(personnelQ);
+        const isRegistered = personnelSnap.docs.some(doc => {
+           const data = doc.data();
+           return data.email && data.email.trim().toLowerCase() === user.email?.trim().toLowerCase();
         });
+        const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com';
+        if (!isRegistered && user.uid !== company.ownerId && user.email !== company.ownerEmail && !isMaster) {
+           setErrorMsg('Accès refusé. Vous devez être enregistré dans le personnel de cette entreprise.');
+           setCreatingLocally(false);
+           return;
+        }
+        
+        const companyEmployees = Array.isArray(company.employees) ? company.employees : [];
+        if (!companyEmployees.includes(user.uid)) {
+          await updateDoc(doc(db, 'companies', company.id), {
+            employees: arrayUnion(user.uid),
+            memberEmails: arrayUnion(user.email.trim().toLowerCase())
+          });
+        }
         
         onSelect({ ...company, employees: [...companyEmployees, user.uid] });
       } else {
@@ -221,20 +242,6 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
 
         {mode === 'create' && (
           <form onSubmit={handleCreate} className="space-y-4 cursor-default text-left">
-            <div className="p-3 bg-blue-50 text-blue-700 rounded-xl text-xs font-medium border border-blue-100">
-              <strong>Création Restreinte :</strong> La création de nouvelles entreprises est soumise à une autorisation.
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Code Administrateur</label>
-              <input 
-                type="text" 
-                value={adminCode}
-                onChange={e => setAdminCode(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-medium text-sm"
-                placeholder="NEXUS-ADMIN"
-                required
-              />
-            </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Nom de l'entreprise</label>
               <input 
@@ -298,6 +305,8 @@ function LoginScreen() {
       let errorMessage = 'Erreur lors de l\'authentification.';
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
         errorMessage = 'Email ou mot de passe incorrect.';
+      } else if (err.code === 'auth/weak-password') {
+        errorMessage = err.message || 'Mot de passe trop faible.';
       } else if (err.code === 'auth/operation-not-allowed') {
         errorMessage = 'L\'authentification par email n\'est pas activée. Contactez l\'administrateur.';
       }
@@ -378,6 +387,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth > 1024);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [isBlocked, setIsBlocked] = useState(false);
   const { currentCompany, companies, setCurrentCompany, loading: companyLoading } = useCompany();
 
   useEffect(() => {
@@ -388,8 +398,9 @@ export default function App() {
 
   useEffect(() => {
     if (user && currentCompany && !user.role) {
-      if (currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid) {
+      if (currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid || user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com') {
         setUser(prev => prev ? { ...prev, role: 'owner' } : null);
+        setIsBlocked(false);
       } else {
         // Try to find the user in the personnel collection for this company
         const findRole = async () => {
@@ -402,7 +413,11 @@ export default function App() {
             const snap = await getDocs(q);
             if (!snap.empty) {
               const memberData = snap.docs[0].data();
-              setUser(prev => prev ? { ...prev, role: memberData.role || 'Personnel' } : null);
+              if (memberData.status === 'blocked') {
+                setIsBlocked(true);
+              } else {
+                setUser(prev => prev ? { ...prev, role: memberData.role || 'Personnel' } : null);
+              }
             }
           } catch (err) {
             console.error("Role lookup failed:", err);
@@ -432,17 +447,18 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
-      
-      // Check if current activeTab is allowed for new user role
-      if (u) {
-        const allowed = (currentCompany?.roles || DEFAULT_ROLES)[u.role] || ['dashboard'];
-        if (!allowed.includes(activeTab)) {
-          setActiveTab('dashboard');
-        }
-      }
     });
     return unsubscribe;
-  }, [activeTab, currentCompany]);
+  }, []);
+
+  useEffect(() => {
+    if (user && user.role && currentCompany) {
+      const allowed = (currentCompany.roles || DEFAULT_ROLES)[user.role] || ['dashboard'];
+      if (!allowed.includes(activeTab) && activeTab !== 'admin') {
+        setActiveTab('dashboard');
+      }
+    }
+  }, [user, currentCompany, activeTab]);
 
   if (loading || (user && companyLoading)) {
     return (
@@ -463,8 +479,32 @@ export default function App() {
     return <WorkspaceSelector companies={companies} user={user} onSelect={setCurrentCompany} />;
   }
 
+  if (isBlocked) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+        <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6">
+          <AlertCircle size={32} />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">Compte Bloqué</h2>
+        <p className="text-slate-500 max-w-md mx-auto mb-8">
+          Votre accès à l'espace de travail "{currentCompany.name}" a été suspendu par l'administrateur. Veuillez contacter votre responsable ou le service des ressources humaines.
+        </p>
+        <button 
+          onClick={() => {
+            setCurrentCompany(null);
+            setIsBlocked(false);
+          }}
+          className="px-6 py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition-colors"
+        >
+          Retour aux espaces de travail
+        </button>
+      </div>
+    );
+  }
+
   const navItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+    { id: 'services', label: 'Services & Prestations', icon: Layers },
     { id: 'sales', label: 'Ventes & Facturation', icon: TrendingUp },
     { id: 'clients', label: 'Partenaires Clients', icon: Users },
     { id: 'personnel', label: 'Ressources Humaines', icon: Briefcase },
@@ -665,7 +705,8 @@ export default function App() {
               transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
               className="max-w-[1400px] mx-auto"
             >
-              {activeTab === 'dashboard' && <DashboardModule user={user} />}
+              {activeTab === 'dashboard' && <DashboardModule user={user} companies={companies} />}
+              {activeTab === 'services' && <PrestationsModule />}
               {activeTab === 'sales' && <SalesModule />}
               {activeTab === 'clients' && <ClientModule />}
               {activeTab === 'personnel' && <PersonnelModule />}

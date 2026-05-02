@@ -52,10 +52,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       const q = query(
         collection(db, 'companies'), 
-        or(
-          where('ownerId', '==', user.uid),
-          where('memberEmails', 'array-contains', user.email || '')
-        )
+        where('ownerId', '==', user.uid),
+        where('requestUserEmail', '==', user.email || '')
       );
       
       unsubscribeSnap = onSnapshot(q, async (snap) => {
@@ -72,6 +70,9 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
             if (savedId) {
               const saved = fetchedCompanies.find(c => c.id === savedId);
               if (saved) return saved;
+            }
+            if (fetchedCompanies.length === 1) {
+              return fetchedCompanies[0];
             }
             return null; // Forces standard selection screen
           });

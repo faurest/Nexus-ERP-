@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, 
   Users, 
@@ -10,20 +10,107 @@ import {
   Download,
   Upload,
   Activity,
-  Plus
+  Plus,
+  Trash2,
+  Edit2,
+  Save,
+  MessageSquare
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
 import { cn } from '../lib/utils';
 import { useCompany } from '../lib/CompanyContext';
 import { exportCompanyDataAsJSON, importCompanyDataFromJSON } from '../lib/exportUtils';
+import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc } from '../lib/firebase';
+import { db } from '../lib/firebase';
+import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
 
-export default function DashboardModule({ user }: { user?: any }) {
+export default function DashboardModule({ user, companies = [] }: { user?: any, companies?: any[] }) {
   const { currentCompany } = useCompany();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
+  const [services, setServices] = useState<any[]>([]);
+  const [interventions, setInterventions] = useState<any[]>([]);
+  
+  const [newService, setNewService] = useState({ name: '', description: '', price: '' });
+  const [newIntervention, setNewIntervention] = useState({ client: '', message: '', date: '', status: 'Planifié' });
+  
+  const [isAddingService, setIsAddingService] = useState(false);
+  const [isAddingIntervention, setIsAddingIntervention] = useState(false);
+  const [editingService, setEditingService] = useState<any | null>(null);
+  const [editingIntervention, setEditingIntervention] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (!currentCompany) return;
+
+    const unsubServices = onSnapshot(query(collection(db, 'services'), where('companyId', '==', currentCompany.id)), snap => {
+      setServices(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'services'));
+
+    const unsubInterventions = onSnapshot(query(collection(db, 'interventions'), where('companyId', '==', currentCompany.id)), snap => {
+      setInterventions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'interventions'));
+
+    return () => { unsubServices(); unsubInterventions(); };
+  }, [currentCompany]);
+
+  const handleSaveService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany) return;
+    try {
+      if (editingService) {
+        await updateDoc(doc(db, 'services', editingService.id), newService);
+      } else {
+        await addDoc(collection(db, 'services'), { ...newService, companyId: currentCompany.id });
+      }
+      setIsAddingService(false);
+      setEditingService(null);
+      setNewService({ name: '', description: '', price: '' });
+    } catch (err: any) {
+      handleFirestoreError(err, editingService ? OperationType.UPDATE : OperationType.WRITE, 'services');
+    }
+  };
+
+  const handleDeleteService = async (id: string) => {
+    if(!confirm('Supprimer ce service ?')) return;
+    try {
+      await deleteDoc(doc(db, 'services', id));
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.DELETE, 'services');
+    }
+  };
+
+  const handleSaveIntervention = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany) return;
+    try {
+      if (editingIntervention) {
+        await updateDoc(doc(db, 'interventions', editingIntervention.id), newIntervention);
+      } else {
+        await addDoc(collection(db, 'interventions'), { ...newIntervention, companyId: currentCompany.id });
+      }
+      setIsAddingIntervention(false);
+      setEditingIntervention(null);
+      setNewIntervention({ client: '', message: '', date: '', status: 'Planifié' });
+    } catch (err: any) {
+      handleFirestoreError(err, editingIntervention ? OperationType.UPDATE : OperationType.WRITE, 'interventions');
+    }
+  };
+
+  const handleDeleteIntervention = async (id: string) => {
+    if(!confirm('Supprimer ce message ?')) return;
+    try {
+      await deleteDoc(doc(db, 'interventions', id));
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.DELETE, 'interventions');
+    }
+  };
+
   const role = user?.role || 'Directeur';
+
+  // Determine if it's a newly created enterprise (< 1 day)
+  const isNewEnterprise = currentCompany?.createdAt && (Date.now() - new Date(currentCompany.createdAt).getTime()) < 24 * 60 * 60 * 1000;
 
   const welcomeMessages: Record<string, string> = {
     'owner': 'Bienvenue dans votre poste de commande global.',
@@ -89,7 +176,7 @@ export default function DashboardModule({ user }: { user?: any }) {
   };
 
   const stats = [
-    { label: 'Ventes du mois', value: '45,200 €', icon: TrendingUp, trend: '+12%', color: 'text-green-600' },
+    { label: 'Ventes du mois', value: '45,200 FCFA', icon: TrendingUp, trend: '+12%', color: 'text-green-600' },
     { label: 'Nouveaux Clients', value: '24', icon: Users, trend: '+5%', color: 'text-blue-600' },
     { label: 'Tâches en retard', value: '8', icon: AlertCircle, trend: '-2', color: 'text-red-500' },
     { label: 'Ruptures Stock', value: '3', icon: Package, trend: 'Critique', color: 'text-orange-600' },
@@ -103,35 +190,38 @@ export default function DashboardModule({ user }: { user?: any }) {
           <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Tableau de bord</h2>
           <p className="text-slate-500 text-xs sm:text-sm mt-1">{welcomeMessages[role] || "Vue d'ensemble de vos activités."}</p>
         </div>
-        <div className="flex flex-wrap gap-3 w-full sm:w-auto">
-          <input 
-            type="file" 
-            accept=".json" 
-            id="import-json" 
-            hidden 
-            onChange={handleImport}
-            disabled={isImporting || isExporting}
-          />
-          <button 
-            onClick={() => document.getElementById('import-json')?.click()}
-            disabled={isImporting || isExporting}
-            className="flex-1 sm:flex-none justify-center bg-white border-2 border-slate-900 text-slate-900 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 transition-all shadow-sm"
-          >
-            <Upload size={16} />
-            <span className="hidden xs:inline">{isImporting ? 'Import...' : 'Importer'}</span>
-            <span className="xs:hidden">{isImporting ? '...' : 'Import'}</span>
-          </button>
-          
-          <button 
-            onClick={handleExport}
-            disabled={isExporting || isImporting}
-            className="flex-1 sm:flex-none justify-center bg-slate-900 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 hover:bg-slate-800 disabled:opacity-50 transition-all shadow-md hover:shadow-lg"
-          >
-            <Download size={16} />
-            <span className="hidden xs:inline">{isExporting ? 'Extraction...' : 'Extraire'}</span>
-            <span className="xs:hidden">{isExporting ? '...' : 'Extraire'}</span>
-          </button>
-        </div>
+        
+        {(!isNewEnterprise || role === 'owner') && (
+          <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+            <input 
+              type="file" 
+              accept=".json" 
+              id="import-json" 
+              hidden 
+              onChange={handleImport}
+              disabled={isImporting || isExporting}
+            />
+            <button 
+              onClick={() => document.getElementById('import-json')?.click()}
+              disabled={isImporting || isExporting}
+              className="flex-1 sm:flex-none justify-center bg-white border-2 border-slate-900 text-slate-900 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 transition-all shadow-sm"
+            >
+              <Upload size={16} />
+              <span className="hidden xs:inline">{isImporting ? 'Import...' : 'Importer'}</span>
+              <span className="xs:hidden">{isImporting ? '...' : 'Import'}</span>
+            </button>
+            
+            <button 
+              onClick={handleExport}
+              disabled={isExporting || isImporting}
+              className="flex-1 sm:flex-none justify-center bg-slate-900 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 hover:bg-slate-800 disabled:opacity-50 transition-all shadow-md hover:shadow-lg"
+            >
+              <Download size={16} />
+              <span className="hidden xs:inline">{isExporting ? 'Extraction...' : 'Extraire'}</span>
+              <span className="xs:hidden">{isExporting ? '...' : 'Extraire'}</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Stats Grid */}
@@ -175,120 +265,227 @@ export default function DashboardModule({ user }: { user?: any }) {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Coordination Flux */}
-        <section className="bg-slate-900 text-white rounded-3xl p-6 shadow-xl lg:col-span-2 overflow-hidden relative group">
+        {/* Coordination Flux / Interventions */}
+        <section className="bg-slate-900 text-white rounded-3xl p-6 shadow-xl lg:col-span-1 overflow-hidden relative group">
           <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
-             <Activity size={120} />
+             <MessageSquare size={120} />
           </div>
           <div className="flex items-center justify-between mb-8 relative z-10">
             <div>
-              <h2 className="text-lg font-bold tracking-tight">Flux de Coordination Inter-Services</h2>
-              <p className="text-slate-400 text-xs mt-1">Echanges et synchronisation en temps réel entre la Direction, le Secrétariat et la Comptabilité.</p>
+              <h2 className="text-lg font-bold tracking-tight">Messages d'Intervention / Rendez-vous</h2>
+              <p className="text-slate-400 text-xs mt-1">Gérer les interventions et communications de rendez-vous.</p>
             </div>
-            <button className="bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all">
+            <button 
+              onClick={() => {
+                setEditingIntervention(null);
+                setNewIntervention({ client: '', message: '', date: '', status: 'Planifié' });
+                setIsAddingIntervention(true);
+              }}
+              className="bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all"
+            >
               <Plus size={20} />
             </button>
           </div>
 
-          <div className="space-y-4 relative z-10">
-            {coordinationFlux.map((item, i) => (
+          <div className="space-y-4 relative z-10 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            {interventions.length === 0 ? (
+              <p className="text-center text-slate-500 text-sm py-4">Aucun message d'intervention enregistré.</p>
+            ) : interventions.map((item, i) => (
               <motion.div 
-                key={i}
+                key={item.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
+                className="flex flex-col items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
               >
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center shrink-0 border",
-                  item.type === 'info' ? "bg-blue-500/20 border-blue-500/30 text-blue-400" :
-                  item.type === 'success' ? "bg-green-500/20 border-green-500/30 text-green-400" :
-                  "bg-amber-500/20 border-amber-500/30 text-amber-400"
-                )}>
-                  {item.from.charAt(0)}
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start w-full">
+                  <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                      De: {item.from} {">"} A: {item.to}
+                      Client: {item.client}
                     </span>
-                    <span className="text-[9px] font-medium text-slate-500">{item.time}</span>
+                    <span className={cn(
+                      "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
+                      item.status === 'Terminé' ? "bg-green-500/20 text-green-400" :
+                      item.status === 'Annulé' ? "bg-red-500/20 text-red-400" :
+                      "bg-blue-500/20 text-blue-400"
+                    )}>
+                      {item.status}
+                    </span>
                   </div>
-                  <p className="text-sm font-medium mt-1">{item.msg}</p>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => { setEditingIntervention(item); setNewIntervention(item); setIsAddingIntervention(true); }} className="text-slate-400 hover:text-blue-400"><Edit2 size={12} /></button>
+                    <button onClick={() => handleDeleteIntervention(item.id)} className="text-slate-400 hover:text-red-400"><Trash2 size={12} /></button>
+                  </div>
+                </div>
+                <div className="w-full">
+                  <span className="text-[9px] font-medium text-slate-500 block mb-1">Date: {item.date || 'Non spécifiée'}</span>
+                  <p className="text-sm font-medium mt-1">{item.message}</p>
                 </div>
               </motion.div>
             ))}
           </div>
         </section>
 
-        {/* Recent Tasks */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <Clock size={16} />
-              Tâches Récentes
-            </h2>
-            <button className="text-[10px] font-bold text-blue-600 hover:underline">VOIR TOUT</button>
+        {/* Services */}
+        <section className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6 lg:col-span-1 overflow-hidden relative group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
+             <Briefcase size={120} />
           </div>
-          
-          <Table headers={['Tâche', 'Assigné', 'Priorité', 'Status']}>
-            <TableRow>
-              <span className="font-semibold text-slate-700">Relance client "Danga"</span>
-              <span className="text-slate-500">Jean Dupont</span>
-              <span className="text-red-600 font-bold">HAUTE</span>
-              <span className="text-slate-400 font-medium">EN COURS</span>
-            </TableRow>
-            <TableRow>
-              <span className="font-semibold text-slate-700">Inventaire Entrepôt A</span>
-              <span className="text-slate-500">Marie Curie</span>
-              <span className="text-blue-600 font-bold">MOYENNE</span>
-              <span className="text-slate-400 font-medium">À FAIRE</span>
-            </TableRow>
-          </Table>
-        </section>
+          <div className="flex items-center justify-between mb-8 relative z-10">
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-slate-900">Services Disponibles</h2>
+              <p className="text-slate-500 text-xs mt-1">Découvrez et gérez les services proposés.</p>
+            </div>
+            <button 
+              onClick={() => {
+                setEditingService(null);
+                setNewService({ name: '', description: '', price: '' });
+                setIsAddingService(true);
+              }}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl transition-all"
+            >
+              <Plus size={20} />
+            </button>
+          </div>
 
-        {/* Project Status */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <CheckCircle2 size={16} />
-              Projets Actifs
-            </h2>
-            <button className="text-[10px] font-bold text-white bg-slate-900 px-3 py-1.5 rounded-md hover:bg-slate-800">NOUVEAU</button>
-          </div>
-          
-          <div className="space-y-4">
-            {[
-              { name: 'Migration Cloud', partner: 'Google Cloud', progress: 75, status: 'Active' },
-              { name: 'Logistique Export', partner: 'CMA CGM', progress: 40, status: 'Delayed' },
-              { name: 'Audit Financier', partner: 'Deloitte', progress: 95, status: 'Finalization' }
-            ].map((p, i) => (
-              <div key={i} className="bg-white border border-slate-200 p-4 rounded-lg flex items-center gap-4 hover:border-blue-200 transition-all shadow-sm">
-                <div className="w-10 h-10 bg-slate-50 rounded flex items-center justify-center shrink-0 border border-slate-100">
-                  <Briefcase size={18} className="text-slate-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="text-sm font-bold text-slate-900 truncate">{p.name}</h4>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">{p.status}</span>
+          <div className="space-y-4 relative z-10 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            {services.length === 0 ? (
+              <p className="text-center text-slate-400 text-sm py-4">Aucun service défini.</p>
+            ) : services.map((s, i) => (
+              <div key={s.id} className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex flex-col items-start gap-4 hover:border-blue-200 transition-all shadow-sm">
+                <div className="flex justify-between items-start w-full">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded flex items-center justify-center shrink-0 border border-slate-200 shadow-sm">
+                      <Briefcase size={18} className="text-blue-500" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900 truncate">{s.name}</h4>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">{s.price ? `${s.price} FCFA` : 'Sur devis'}</span>
+                    </div>
                   </div>
-                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${p.progress}%` }}
-                      className="h-full bg-blue-600"
-                    />
-                  </div>
-                  <div className="flex justify-between mt-1.5">
-                    <span className="text-[10px] font-medium text-slate-400 italic">{p.partner}</span>
-                    <span className="text-[10px] font-bold text-slate-900">{p.progress}%</span>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => { setEditingService(s); setNewService(s); setIsAddingService(true); }} className="p-1 text-slate-400 hover:text-blue-600"><Edit2 size={14}/></button>
+                    <button onClick={() => handleDeleteService(s.id)} className="p-1 text-slate-400 hover:text-red-600"><Trash2 size={14}/></button>
                   </div>
                 </div>
+                {s.description && (
+                  <p className="text-xs text-slate-600">{s.description}</p>
+                )}
               </div>
             ))}
           </div>
         </section>
       </div>
+
+      {/* Cross-tenant Global Overview */}
+      {companies.filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email).length > 0 && (
+        <div className="mt-12 bg-white rounded-3xl border border-blue-100 p-8 shadow-xl shadow-blue-900/5">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">Vue d'ensemble de vos opérations</h3>
+              <p className="text-sm font-medium text-slate-500 mt-1">Status et performances des entités sous votre direction.</p>
+            </div>
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
+              <Briefcase size={24} />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {companies
+              .filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email)
+              .map(c => (
+              <div key={c.id} className="p-5 border border-slate-200 rounded-2xl flex flex-col gap-4 hover:border-blue-300 transition-colors bg-slate-50 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-100/50 rounded-bl-full -mr-12 -mt-12 group-hover:bg-blue-200/50 transition-colors" />
+                <div className="flex items-center gap-4 relative z-10">
+                  <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-200 flex items-center justify-center font-black text-slate-400 group-hover:text-blue-600 transition-colors">
+                    {c.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-900">{c.name}</h4>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{c.joinCode}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between mt-auto relative z-10 pt-4 border-t border-slate-200">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-slate-500">Membres</span>
+                    <span className="font-bold text-slate-900">{Array.isArray(c.employees) ? c.employees.length : (c.memberEmails?.length || 1)}</span>
+                  </div>
+                  <div className="flex flex-col text-right">
+                    <span className="text-xs text-slate-500">Status</span>
+                    <span className="font-bold text-emerald-600">Actif</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Service Modal */}
+      {isAddingService && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+            <h3 className="text-xl font-bold text-slate-900 mb-6">{editingService ? 'Modifier Service' : 'Nouveau Service'}</h3>
+            <form onSubmit={handleSaveService} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nom du service</label>
+                <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newService.name} onChange={e => setNewService({...newService, name: e.target.value})} required/>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Prix (ou vide si sur devis)</label>
+                <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newService.price} onChange={e => setNewService({...newService, price: e.target.value})} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Description</label>
+                <textarea className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none h-24 resize-none" value={newService.description} onChange={e => setNewService({...newService, description: e.target.value})} />
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <button type="button" onClick={() => setIsAddingService(false)} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
+                <button type="submit" className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all font-mono shadow-md">{editingService ? 'Mettre à jour' : 'Enregistrer'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Intervention Modal */}
+      {isAddingIntervention && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+            <h3 className="text-xl font-bold text-slate-900 mb-6">{editingIntervention ? 'Modifier Intervention/Message' : 'Nouveau Message de Rendez-vous'}</h3>
+            <form onSubmit={handleSaveIntervention} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nom du client</label>
+                  <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newIntervention.client} onChange={e => setNewIntervention({...newIntervention, client: e.target.value})} required/>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Date</label>
+                  <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newIntervention.date} onChange={e => setNewIntervention({...newIntervention, date: e.target.value})} required/>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Message / Détails de l'intervention</label>
+                <textarea className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none h-24 resize-none" value={newIntervention.message} onChange={e => setNewIntervention({...newIntervention, message: e.target.value})} required/>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Statut</label>
+                <select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newIntervention.status} onChange={e => setNewIntervention({...newIntervention, status: e.target.value})}>
+                  <option value="Planifié">Planifié</option>
+                  <option value="En cours">En cours</option>
+                  <option value="Terminé">Terminé</option>
+                  <option value="Annulé">Annulé</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <button type="button" onClick={() => setIsAddingIntervention(false)} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
+                <button type="submit" className="px-6 py-3 rounded-xl bg-slate-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-slate-800 transition-all font-mono shadow-md">{editingIntervention ? 'Mettre à jour' : 'Enregistrer'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, addDoc, updateDoc, doc, arrayUnion, deleteDoc, createEmployeeAccount, secondaryAuth } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save } from 'lucide-react';
+import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save, Ban } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
 import { cn } from '../lib/utils';
@@ -11,9 +11,13 @@ import { DEFAULT_ROLES } from '../App';
 interface Staff {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  notes?: string;
   role: string;
   email: string;
-  status: 'active' | 'on_leave' | 'resigned';
+  status: 'active' | 'on_leave' | 'resigned' | 'blocked';
   department: string;
   tasksAssignedCount: number;
 }
@@ -34,10 +38,11 @@ export default function PersonnelModule() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [viewingStaff, setViewingStaff] = useState<Staff | null>(null);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', assignedTo: '', startDate: '', endDate: '' });
-  const [newStaff, setNewStaff] = useState({ name: '', email: '', role: 'Collaborateur', department: 'Général', password: 'Password123!' });
+  const [newStaff, setNewStaff] = useState({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général', password: 'Password123' });
   const [creationMessage, setCreationMessage] = useState('');
   
   const companyRoles = currentCompany?.roles || DEFAULT_ROLES;
@@ -93,12 +98,17 @@ export default function PersonnelModule() {
 
 
   const handleCreate = async () => {
-    if (!currentCompany || !newStaff.name.trim() || !newStaff.email.trim()) return;
+    if (!currentCompany || (!newStaff.firstName.trim() && !newStaff.lastName.trim()) || !newStaff.email.trim()) return;
     try {
+      const fullName = `${newStaff.firstName} ${newStaff.lastName}`.trim();
       if (editingStaff) {
         await updateDoc(doc(db, 'personnel', editingStaff.id), {
-          name: newStaff.name,
+          firstName: newStaff.firstName,
+          lastName: newStaff.lastName,
+          name: fullName,
           email: newStaff.email,
+          phone: newStaff.phone,
+          notes: newStaff.notes,
           role: newStaff.role,
           department: newStaff.department,
         });
@@ -110,12 +120,23 @@ export default function PersonnelModule() {
         }, 1500);
       } else {
         if (!newStaff.password) return;
-        await createEmployeeAccount(newStaff.email.trim(), newStaff.password);
-        await secondaryAuth.signOut(); // Log out in the secondary instance
+        try {
+          await createEmployeeAccount(newStaff.email.trim(), newStaff.password);
+          await secondaryAuth.signOut(); // Log out in the secondary instance
+        } catch (authErr: any) {
+          if (authErr.code !== 'auth/email-already-in-use') {
+            throw authErr;
+          }
+          // If already in use, we just proceed to link them to the company
+        }
 
         await addDoc(collection(db, 'personnel'), {
-          name: newStaff.name,
-          email: newStaff.email,
+          firstName: newStaff.firstName,
+          lastName: newStaff.lastName,
+          name: fullName,
+          email: newStaff.email.trim().toLowerCase(),
+          phone: newStaff.phone,
+          notes: newStaff.notes,
           role: newStaff.role,
           department: newStaff.department,
           companyId: currentCompany.id,
@@ -123,10 +144,10 @@ export default function PersonnelModule() {
           tasksAssignedCount: 0
         });
         await updateDoc(doc(db, 'companies', currentCompany.id), {
-          memberEmails: arrayUnion(newStaff.email.trim())
+          memberEmails: arrayUnion(newStaff.email.trim().toLowerCase())
         });
         setCreationMessage(`Employé créé avec succès ! Identifiant: ${newStaff.email} | Mot de passe: ${newStaff.password}`);
-        setNewStaff({ name: '', email: '', role: 'Collaborateur', department: 'Général', password: 'Password123!' });
+        setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général', password: 'Password123' });
       }
     } catch (err: any) {
       console.error(err);
@@ -147,10 +168,21 @@ export default function PersonnelModule() {
     }
   };
 
+  const handleToggleBlockStaff = async (staffId: string, currentStatus: string) => {
+    if (!confirm(`Êtes-vous sûr de vouloir ${currentStatus === 'blocked' ? 'débloquer' : 'bloquer'} ce membre du personnel ?`)) return;
+    try {
+      await updateDoc(doc(db, 'personnel', staffId), {
+        status: currentStatus === 'blocked' ? 'active' : 'blocked'
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'personnel');
+    }
+  };
+
   const filteredStaff = staffList.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.department.toLowerCase().includes(searchTerm.toLowerCase())
+    (s.name && s.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (s.role && s.role.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (s.department && s.department.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -223,17 +255,29 @@ export default function PersonnelModule() {
                     "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase",
                     staff.status === 'active' ? "bg-green-100 text-green-700" :
                     staff.status === 'on_leave' ? "bg-amber-100 text-amber-700" :
+                    staff.status === 'blocked' ? "bg-red-100 text-red-700" :
                     "bg-slate-100 text-slate-500"
                   )}>
-                    {staff.status === 'active' ? 'Actif' : staff.status === 'on_leave' ? 'Congé' : 'Départ'}
+                    {staff.status === 'active' ? 'Actif' : staff.status === 'on_leave' ? 'Congé' : staff.status === 'blocked' ? 'Bloqué' : 'Départ'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => {
+                      setViewingStaff(staff);
+                    }}
+                    className="p-1 text-slate-400 hover:text-green-600 transition-colors"
+                  >
+                    <User size={14} />
+                  </button>
+                  <button 
+                    onClick={() => {
                       setEditingStaff(staff);
                       setNewStaff({ 
-                        name: staff.name, 
+                        firstName: staff.firstName || '', 
+                        lastName: staff.lastName || '', 
+                        phone: staff.phone || '',
+                        notes: staff.notes || '',
                         email: staff.email, 
                         role: staff.role, 
                         department: staff.department, 
@@ -244,6 +288,13 @@ export default function PersonnelModule() {
                     className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
                   >
                     <Edit2 size={14} />
+                  </button>
+                  <button 
+                    onClick={() => handleToggleBlockStaff(staff.id, staff.status)}
+                    className="p-1 text-slate-400 hover:text-amber-600 transition-colors"
+                    title={staff.status === 'blocked' ? 'Débloquer' : 'Bloquer'}
+                  >
+                    <Ban size={14} className={staff.status === 'blocked' ? "text-red-500" : ""} />
                   </button>
                   <button 
                     onClick={() => handleDeleteStaff(staff.id)}
@@ -397,6 +448,68 @@ export default function PersonnelModule() {
         </div>
       )}
 
+      {/* Modal for viewing staff info */}
+      {viewingStaff && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-bold text-xl border border-blue-100">
+                  {viewingStaff.name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 leading-none">{viewingStaff.name}</h3>
+                  <p className="text-sm font-medium text-slate-500 mt-1">{viewingStaff.role} • {viewingStaff.department}</p>
+                </div>
+              </div>
+              <span className={cn(
+                "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase",
+                viewingStaff.status === 'active' ? "bg-green-100 text-green-700" :
+                viewingStaff.status === 'on_leave' ? "bg-amber-100 text-amber-700" :
+                "bg-slate-100 text-slate-500"
+              )}>
+                {viewingStaff.status === 'active' ? 'Actif' : viewingStaff.status === 'on_leave' ? 'Congé' : 'Départ'}
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Email</span>
+                  <a href={`mailto:${viewingStaff.email}`} className="text-sm font-bold text-blue-600 truncate block">{viewingStaff.email}</a>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Téléphone</span>
+                  <span className="text-sm font-bold text-slate-900">{viewingStaff.phone || 'Non renseigné'}</span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Dossier RH / Notes</span>
+                <p className="text-sm font-medium text-slate-700 whitespace-pre-wrap">{viewingStaff.notes || 'Aucun dossier ou note.'}</p>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Activité de tâches</span>
+                <div className="flex items-center gap-2">
+                  <Activity size={16} className={viewingStaff.tasksAssignedCount > 5 ? 'text-red-500' : 'text-blue-500'} />
+                  <span className="text-sm font-bold text-slate-900">{viewingStaff.tasksAssignedCount} tâches assignées</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <button 
+                onClick={() => setViewingStaff(null)} 
+                className="w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-slate-200 transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal for recruiting */}
       {isAdding && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
@@ -414,11 +527,19 @@ export default function PersonnelModule() {
             <div className="space-y-4 mb-8">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nom Complet</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Prénom</label>
                   <input 
-                    value={newStaff.name} 
-                    onChange={e => setNewStaff({...newStaff, name: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" 
+                    value={newStaff.firstName} 
+                    onChange={e => setNewStaff({...newStaff, firstName: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" 
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nom</label>
+                  <input 
+                    value={newStaff.lastName} 
+                    onChange={e => setNewStaff({...newStaff, lastName: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" 
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -427,7 +548,16 @@ export default function PersonnelModule() {
                     type="email"
                     value={newStaff.email} 
                     onChange={e => setNewStaff({...newStaff, email: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" 
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Téléphone</label>
+                  <input 
+                    type="tel"
+                    value={newStaff.phone} 
+                    onChange={e => setNewStaff({...newStaff, phone: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" 
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -436,7 +566,7 @@ export default function PersonnelModule() {
                     value={newStaff.department} 
                     onChange={e => setNewStaff({...newStaff, department: e.target.value})}
                     placeholder="e.g. Logistique, Commercial"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" 
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -444,10 +574,19 @@ export default function PersonnelModule() {
                   <select 
                     value={newStaff.role} 
                     onChange={e => setNewStaff({...newStaff, role: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm appearance-none outline-none focus:ring-2 focus:ring-blue-100"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm appearance-none outline-none focus:border-blue-400"
                   >
                     {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Notes / Dossier Staff</label>
+                  <textarea 
+                    value={newStaff.notes} 
+                    onChange={e => setNewStaff({...newStaff, notes: e.target.value})}
+                    placeholder="Informations supplémentaires..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-blue-400 resize-none h-20"
+                  />
                 </div>
               </div>
               {!editingStaff && (
@@ -477,7 +616,7 @@ export default function PersonnelModule() {
                 onClick={() => { 
                   setIsAdding(false); 
                   setEditingStaff(null);
-                  setNewStaff({ name: '', email: '', role: 'Collaborateur', department: 'Général', password: 'Password123!' });
+                  setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général', password: 'Password123' });
                   setCreationMessage(''); 
                 }} 
                 className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"

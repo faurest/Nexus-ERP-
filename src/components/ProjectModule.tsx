@@ -213,7 +213,7 @@ export default function ProjectModule() {
                 className="flex-1 bg-transparent outline-none text-xs text-slate-600 font-medium"
               />
             </div>
-            <button className="px-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all text-slate-400">
+            <button onClick={() => alert("Filtrage avancé bientôt disponible")} className="px-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all text-slate-400">
               <Filter size={16} />
             </button>
             <button 
@@ -253,7 +253,7 @@ export default function ProjectModule() {
                     </span>
                   </div>
                   <div className="text-right font-mono text-slate-600 font-bold">
-                    {p.budget?.toLocaleString()} €
+                    {p.budget?.toLocaleString()} FCFA
                   </div>
                   <div className="flex items-center gap-2">
                     <button 
@@ -294,7 +294,7 @@ export default function ProjectModule() {
                   </span>
                   <div className="font-bold text-slate-500">{projects.filter(p => p.partnerId === pt.id).length}</div>
                   <div className="text-slate-400 font-medium truncate">{pt.contactEmail}</div>
-                  <button className="text-blue-600 hover:text-blue-800">
+                  <button onClick={() => alert("Redirection vers le profil public partenaire")} className="text-blue-600 hover:text-blue-800">
                     <ExternalLink size={14} />
                   </button>
                 </TableRow>
@@ -312,7 +312,7 @@ export default function ProjectModule() {
                     <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">INVOICED</span>
                   </div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Facturation Totale</p>
-                  <h4 className="text-xl font-bold text-slate-900">{invoices.reduce((acc, inv) => acc + inv.amount, 0).toLocaleString()} €</h4>
+                  <h4 className="text-xl font-bold text-slate-900">{invoices.reduce((acc, inv) => acc + inv.amount, 0).toLocaleString()} FCFA</h4>
                 </div>
                 <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
                   <div className="flex justify-between items-start mb-2">
@@ -322,7 +322,7 @@ export default function ProjectModule() {
                     <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">EXPENSES</span>
                   </div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dépenses Projets</p>
-                  <h4 className="text-xl font-bold text-slate-900">{expenses.reduce((acc, exp) => acc + exp.amount, 0).toLocaleString()} €</h4>
+                  <h4 className="text-xl font-bold text-slate-900">{expenses.reduce((acc, exp) => acc + exp.amount, 0).toLocaleString()} FCFA</h4>
                 </div>
                 <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
                   <div className="flex justify-between items-start mb-2">
@@ -332,7 +332,7 @@ export default function ProjectModule() {
                     <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">PAYMENTS</span>
                   </div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Paiements Reçus</p>
-                  <h4 className="text-xl font-bold text-slate-900">{payments.filter(p => p.type === 'inbound').reduce((acc, p) => acc + p.amount, 0).toLocaleString()} €</h4>
+                  <h4 className="text-xl font-bold text-slate-900">{payments.filter(p => p.type === 'inbound').reduce((acc, p) => acc + p.amount, 0).toLocaleString()} FCFA</h4>
                 </div>
               </div>
 
@@ -347,7 +347,7 @@ export default function ProjectModule() {
                     <TableRow key={inv.id}>
                       <span className="font-bold text-slate-700">{projects.find(p => p.id === inv.projectId)?.name || 'PRJ-EXP'}</span>
                       <span className="text-slate-500">{partners.find(p => p.id === inv.partnerId)?.name || 'PART-EXP'}</span>
-                      <span className="font-mono font-bold text-slate-900">{inv.amount.toLocaleString()} €</span>
+                      <span className="font-mono font-bold text-slate-900">{inv.amount.toLocaleString()} FCFA</span>
                       <span className="text-[11px] text-slate-400">
                         {inv.dueDate ? new Date(inv.dueDate.seconds * 1000).toLocaleDateString() : 'N/A'}
                       </span>
@@ -377,7 +377,7 @@ export default function ProjectModule() {
                           <p className="text-xs font-bold text-slate-700">{exp.description}</p>
                           <p className="text-[9px] text-slate-400 uppercase font-medium">{exp.category} • {projects.find(p => p.id === exp.projectId)?.name}</p>
                         </div>
-                        <span className="text-xs font-bold text-red-600">-{exp.amount.toLocaleString()} €</span>
+                        <span className="text-xs font-bold text-red-600">-{exp.amount.toLocaleString()} FCFA</span>
                       </div>
                     ))}
                   </div>
@@ -407,7 +407,7 @@ export default function ProjectModule() {
                           "text-xs font-bold",
                           pay.type === 'inbound' ? "text-green-600" : "text-red-600"
                         )}>
-                          {pay.type === 'inbound' ? '+' : '-'}{pay.amount.toLocaleString()} €
+                          {pay.type === 'inbound' ? '+' : '-'}{pay.amount.toLocaleString()} FCFA
                         </span>
                       </div>
                     ))}
@@ -425,7 +425,7 @@ export default function ProjectModule() {
               <div className="flex justify-between items-end">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Engagement Annuel</p>
-                  <p className="text-3xl font-bold text-slate-900 tracking-tight">128,400 €</p>
+                  <p className="text-3xl font-bold text-slate-900 tracking-tight">128,400 FCFA</p>
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] font-bold text-green-600 uppercase">+12% vs LY</p>
@@ -456,7 +456,7 @@ export default function ProjectModule() {
             <p className="text-sm font-medium mb-6 leading-relaxed relative z-10 opacity-90">
               "La revue trimestrielle avec les partenaires clés est prévue pour la semaine prochaine."
             </p>
-            <button className="w-full bg-white text-indigo-600 py-2.5 rounded-lg text-xs font-bold shadow-sm relative z-10 hover:bg-slate-50 transition-all">
+            <button onClick={() => alert("Ouverture du rapport d'audit...")} className="w-full bg-white text-indigo-600 py-2.5 rounded-lg text-xs font-bold shadow-sm relative z-10 hover:bg-slate-50 transition-all">
               OUVRIR LE DOSSIER
             </button>
             <FolderKanban className="absolute -bottom-6 -right-6 opacity-10 rotate-12" size={100} />
@@ -505,7 +505,7 @@ export default function ProjectModule() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Budget (€)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Budget (FCFA)</label>
                   <input 
                     type="number"
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
@@ -601,7 +601,7 @@ export default function ProjectModule() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Montant (€)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Montant (FCFA)</label>
                   <input 
                     required
                     type="number" 

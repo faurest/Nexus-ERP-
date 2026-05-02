@@ -13,6 +13,8 @@ interface Client {
   name: string;
   email: string;
   phone: string;
+  address?: string;
+  interactions?: string;
   salesTotal: number;
   loyaltyPoints: number;
 }
@@ -22,8 +24,9 @@ export default function ClientModule() {
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [newClient, setNewClient] = useState({ name: '', email: '', phone: '' });
+  const [newClient, setNewClient] = useState({ name: '', email: '', phone: '', address: '', interactions: '' });
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -55,7 +58,7 @@ export default function ClientModule() {
           createdAt: serverTimestamp(),
         });
       }
-      setNewClient({ name: '', email: '', phone: '' });
+      setNewClient({ name: '', email: '', phone: '', address: '', interactions: '' });
       setIsAdding(false);
       setEditingClient(null);
     } catch (error) {
@@ -73,8 +76,9 @@ export default function ClientModule() {
   };
 
   const filteredClients = clients.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (c.name && c.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (c.phone && c.phone.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -105,7 +109,7 @@ export default function ClientModule() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <button className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 transition-colors mr-1">
+            <button onClick={() => alert("Fonction de filtrage en développement")} className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 transition-colors mr-1">
               <Filter size={18} />
             </button>
           </div>
@@ -133,13 +137,19 @@ export default function ClientModule() {
                 </div>
                 <div className="flex items-center gap-2">
                   <TrendingUp size={14} className="text-green-500" />
-                  <span className="text-sm font-bold text-slate-900">{(client.salesTotal || 0).toLocaleString()} €</span>
+                  <span className="text-sm font-bold text-slate-900">{(client.salesTotal || 0).toLocaleString()} FCFA</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
+                    onClick={() => setViewingClient(client)}
+                    className="p-1 text-slate-400 hover:text-green-600 transition-colors"
+                  >
+                    <UserPlus size={14} />
+                  </button>
+                  <button 
                     onClick={() => {
                       setEditingClient(client);
-                      setNewClient({ name: client.name, email: client.email, phone: client.phone });
+                      setNewClient({ name: client.name, email: client.email, phone: client.phone, address: client.address || '', interactions: client.interactions || '' });
                       setIsAdding(true);
                     }}
                     className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
@@ -188,6 +198,56 @@ export default function ClientModule() {
         </div>
       </div>
 
+      {viewingClient && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center font-bold text-xl border border-indigo-100">
+                  {viewingClient.name.split(' ').map((n: string) => n[0]).join('')}
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 leading-none">{viewingClient.name}</h3>
+                  <p className="text-sm font-medium text-slate-500 mt-1">Niveau: {viewingClient.loyaltyPoints} pts</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Email</span>
+                  <a href={`mailto:${viewingClient.email}`} className="text-sm font-bold text-blue-600 truncate block">{viewingClient.email}</a>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Téléphone</span>
+                  <span className="text-sm font-bold text-slate-900">{viewingClient.phone || 'Non renseigné'}</span>
+                </div>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Adresse</span>
+                <span className="text-sm font-bold text-slate-900">{viewingClient.address || 'Non renseignée'}</span>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Évolution & Interactions</span>
+                <p className="text-sm font-medium text-slate-700 whitespace-pre-wrap">{viewingClient.interactions || 'Aucune interaction enregistrée.'}</p>
+              </div>
+
+            </div>
+
+            <div className="mt-8">
+              <button 
+                onClick={() => setViewingClient(null)} 
+                className="w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-slate-200 transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isAdding && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
           <motion.div 
@@ -235,13 +295,31 @@ export default function ClientModule() {
                   onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
                 />
               </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Adresse</label>
+                <input 
+                  type="text" 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+                  value={newClient.address}
+                  onChange={(e) => setNewClient({...newClient, address: e.target.value})}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Historique d'Interactions / Évolution</label>
+                <textarea 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all resize-none h-24"
+                  value={newClient.interactions}
+                  onChange={(e) => setNewClient({...newClient, interactions: e.target.value})}
+                  placeholder="Notes sur les rendez-vous, appels, intérêts..."
+                />
+              </div>
               <div className="grid grid-cols-2 gap-4 mt-8">
                 <button 
                   type="button"
                   onClick={() => {
                     setIsAdding(false);
                     setEditingClient(null);
-                    setNewClient({ name: '', email: '', phone: '' });
+                    setNewClient({ name: '', email: '', phone: '', address: '', interactions: '' });
                   }}
                   className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all"
                 >

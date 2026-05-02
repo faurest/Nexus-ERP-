@@ -97,19 +97,27 @@ export default function AdminModule() {
     }
   };
 
-  const handleExportData = () => {
-    const exportData = {
-      companies,
-      sales: globalSales,
-      expenses: globalExpenses
-    };
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `nexus_backup_${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+  const handleExportData = async () => {
+    try {
+      const exportData: Record<string, any[]> = { companies };
+      const collectionsToExport = ['clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners'];
+      
+      for (const coll of collectionsToExport) {
+          const snap = await getDocs(collection(db, coll));
+          exportData[coll] = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      }
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `nexus_global_backup_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert("Erreur lors de l'exportation des données.");
+    }
   };
 
   const handleImportData = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,17 +128,23 @@ export default function AdminModule() {
     reader.onload = async (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
-        if (data.companies && Array.isArray(data.companies)) {
-          for (const comp of data.companies) {
-            const { id, ...rest } = comp;
-            await addDoc(collection(db, 'companies'), rest);
+        const collectionsToImport = ['companies', 'clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners'];
+        for (const coll of collectionsToImport) {
+          if (data[coll] && Array.isArray(data[coll])) {
+            for (const item of data[coll]) {
+              await fetch(`/api/data/${coll}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(item)
+              });
+            }
           }
         }
-        alert('Import réussi !');
+        alert('Import global réussi !');
         fetchGlobalData();
       } catch (err) {
         console.error(err);
-        alert('Erreur lors de l\'importation');
+        alert("Erreur lors de l'importation");
       }
     };
     reader.readAsText(file);
@@ -185,7 +199,7 @@ export default function AdminModule() {
           className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 flex items-center justify-between group hover:border-purple-200 transition-all"
         >
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Flux Global (€)</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Flux Global (FCFA)</p>
             <h3 className="text-3xl font-black text-slate-900 tracking-tighter">{totalRevenue.toLocaleString()}</h3>
           </div>
           <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all">
@@ -302,7 +316,7 @@ export default function AdminModule() {
             </ResponsiveContainer>
             <div className="absolute flex flex-col items-center">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Global</span>
-              <span className="text-xl font-black text-slate-900 tracking-tight">{totalRevenue.toLocaleString()}€</span>
+              <span className="text-xl font-black text-slate-900 tracking-tight">{totalRevenue.toLocaleString()}FCFA</span>
             </div>
           </div>
         </motion.div>
