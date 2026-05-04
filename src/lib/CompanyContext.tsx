@@ -80,6 +80,9 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
         if (fetchedCompanies.length > 0) {
           setCurrentCompany(prev => {
+            // Si on est déjà sur la console maître, on n'y bouge pas
+            if (prev?.id === 'comp_nexus_master') return prev;
+
             const savedId = localStorage.getItem('nexus_company_id');
             if (prev && fetchedCompanies.find(c => c.id === prev.id)) {
               return prev;
@@ -88,13 +91,11 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
               const saved = fetchedCompanies.find(c => c.id === savedId);
               if (saved) return saved;
             }
-            if (fetchedCompanies.length === 1) {
-              return fetchedCompanies[0];
-            }
-            return null;
+            // Retrait de l'auto-switch vers la seule entreprise pour éviter les surprises
+            return prev;
           });
         } else {
-          setCurrentCompany(null);
+          setCurrentCompany(prev => prev?.id === 'comp_nexus_master' ? prev : null);
         }
         
         // CRITICAL: Always stop loading once we have an answer from Supabase

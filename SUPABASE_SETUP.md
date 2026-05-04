@@ -173,6 +173,146 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS "roles" JSONB DEFAULT '{}'::jsonb
 UPDATE companies SET "joinCode" = substring(md5(random()::text), 0, 7) WHERE "joinCode" IS NULL;
 ```
 
+## ☢️ OPTION NUCLÉAIRE (Réinitialisation Totale)
+Si vous avez trop d'erreurs de colonnes "not found" ou des problèmes de type, exécutez ce script qui supprime TOUT et recréé proprement :
+⚠️ **Attention : Cela effacera toutes les données actuelles de Supabase.**
+
+```sql
+-- Suppression massive
+DROP TABLE IF EXISTS sales, sales_invoices, expenses, personnel, clients, projects, resources, services, tasks, interventions, notifications, invoices, payments, open_orders, companies, users CASCADE;
+
+-- Recréation propre avec guillemets doubles pour respecter la casse "companyId"
+CREATE TABLE companies (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  "ownerId" TEXT,
+  "ownerEmail" TEXT NOT NULL,
+  "joinCode" TEXT UNIQUE NOT NULL,
+  "memberEmails" JSONB DEFAULT '[]'::jsonb,
+  employees JSONB DEFAULT '[]'::jsonb,
+  roles JSONB DEFAULT '{}'::jsonb,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE personnel (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  "firstName" TEXT,
+  "lastName" TEXT,
+  phone TEXT,
+  notes TEXT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  role TEXT,
+  department TEXT,
+  status TEXT DEFAULT 'active',
+  "tasksAssignedCount" INTEGER DEFAULT 0,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE clients (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  address TEXT,
+  interactions JSONB DEFAULT '[]'::jsonb,
+  "salesTotal" REAL DEFAULT 0,
+  "loyaltyPoints" INTEGER DEFAULT 0,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE sales (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  "itemName" TEXT NOT NULL,
+  type TEXT,
+  quantity INTEGER,
+  price REAL,
+  total REAL,
+  status TEXT,
+  date TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE projects (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  name TEXT NOT NULL,
+  "partnerId" TEXT,
+  budget REAL,
+  status TEXT,
+  "startDate" TIMESTAMP WITH TIME ZONE,
+  "endDate" TIMESTAMP WITH TIME ZONE,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE resources (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  name TEXT NOT NULL,
+  type TEXT,
+  quantity INTEGER,
+  location TEXT,
+  status TEXT,
+  condition TEXT,
+  duration TEXT,
+  warranty TEXT,
+  price REAL,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE tasks (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  title TEXT NOT NULL,
+  "assignedTo" TEXT,
+  "startDate" TEXT,
+  "endDate" TEXT,
+  status TEXT DEFAULT 'pending',
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE services (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  price TEXT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE interventions (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  client TEXT NOT NULL,
+  message TEXT NOT NULL,
+  date TEXT,
+  status TEXT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE users (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  uid TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  "displayName" TEXT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Désactivation RLS (Sécurité à configurer plus tard)
+ALTER TABLE companies DISABLE ROW LEVEL SECURITY;
+ALTER TABLE personnel DISABLE ROW LEVEL SECURITY;
+ALTER TABLE clients DISABLE ROW LEVEL SECURITY;
+ALTER TABLE sales DISABLE ROW LEVEL SECURITY;
+ALTER TABLE projects DISABLE ROW LEVEL SECURITY;
+ALTER TABLE resources DISABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks DISABLE ROW LEVEL SECURITY;
+ALTER TABLE services DISABLE ROW LEVEL SECURITY;
+ALTER TABLE interventions DISABLE ROW LEVEL SECURITY;
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+```
+
 ## 🔄 Récupération des données (La Pause 237, etc.)
 Si vous aviez des données sur le serveur local qui ne sont plus là :
 1. Allez dans l'onglet **Administration** (maintenant accessible pour vous).

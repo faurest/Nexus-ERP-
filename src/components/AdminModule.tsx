@@ -95,13 +95,14 @@ export default function AdminModule() {
       const snap = await addDoc(collection(db, 'companies'), {
         ...newCompany,
         joinCode,
-        ownerId: 'manual', // In this mock it's just a string
-        memberEmails: [newCompany.ownerEmail],
+        ownerId: 'manual',
+        memberEmails: [newCompany.ownerEmail.trim().toLowerCase()],
         createdAt: Date.now()
       });
       setShowCreateModal(false);
       setNewCompany({ name: '', ownerEmail: '', joinCode: '' });
       fetchGlobalData();
+      alert(`Entreprise ${newCompany.name} créée avec succès ! Code d'accès : ${joinCode}`);
     } catch (err) {
       console.error(err);
       alert('Failed to create company');
@@ -547,11 +548,17 @@ export default function AdminModule() {
                <Activity className="text-blue-600" />
                Migration SQLite vers Supabase
              </h3>
-             <p className="text-sm text-slate-500 mb-8 leading-relaxed">
-               Si vous avez commencé sur le serveur local et que vous venez de configurer Supabase,
-               utilisez cet outil pour envoyer toutes vos données (Entreprises, clients, ventes, comptes)
-               vers votre nouvelle base cloud.
-             </p>
+             <div className="space-y-4 mb-8 text-sm text-slate-500 leading-relaxed">
+               <p>
+                 Pour récupérer vos données (ex: La Pause 237) :
+               </p>
+               <ol className="list-decimal pl-5 space-y-2">
+                 <li>Assurez-vous que le serveur local est actif.</li>
+                 <li>Configurez vos clés Supabase dans les <strong>Paramètres</strong>.</li>
+                 <li>Utilisez l'option <strong>Nucléaire</strong> dans le guide SQL si vous avez des erreurs de colonnes.</li>
+                 <li>Cliquez sur le bouton ci-dessous pour transférer les données.</li>
+               </ol>
+             </div>
              <button 
                onClick={handleMigrateFromSQLite}
                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-3"
