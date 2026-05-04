@@ -5,20 +5,30 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 // @ts-ignore
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Validation simple de l'URL
+// Validation plus stricte de l'URL
 const isValidUrl = (url: string | undefined): boolean => {
   if (!url) return false;
   try {
-    return url.startsWith('http://') || url.startsWith('https://');
+    const isStandardUrl = url.startsWith('https://') && url.includes('.supabase.co');
+    // Si l'utilisateur utilise api.supabase.com, c'est une erreur classique
+    if (url.includes('api.supabase.com')) {
+      console.error("❌ ERREUR DE CONFIGURATION : Vous utilisez 'api.supabase.com' au lieu de l'URL de votre projet (qui se termine par .supabase.co).");
+      return false;
+    }
+    return isStandardUrl;
   } catch {
     return false;
   }
 };
 
-export const isSupabaseConfigured = Boolean(isValidUrl(supabaseUrl) && supabaseAnonKey);
+export const isSupabaseConfigured = Boolean(isValidUrl(supabaseUrl) && supabaseAnonKey && supabaseAnonKey.length > 20);
 
 if (!isSupabaseConfigured) {
-  console.warn("⚠️ NEXUS ERP : Supabase n'est pas encore configuré ou l'URL est invalide. Les données seront perdues au rafraîchissement. Veuillez ajouter une URL valide (https://...) et VITE_SUPABASE_ANON_KEY dans les paramètres.");
+  if (supabaseUrl && supabaseUrl.includes('api.supabase.com')) {
+     console.warn("⚠️ NEXUS : L'URL Supabase est incorrecte. Elle doit ressembler à https://xyz.supabase.co");
+  } else {
+     console.warn("⚠️ NEXUS : Supabase n'est pas encore configuré. Les données seront locales (démo).");
+  }
 }
 
 // Utilisation d'une URL de secours structurellement correcte pour éviter l'erreur "Invalid supabaseUrl"
