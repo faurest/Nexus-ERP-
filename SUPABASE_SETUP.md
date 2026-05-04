@@ -7,8 +7,8 @@ Copiez le code SQL suivant et collez-le dans le **SQL Editor** de votre tableau 
 
 ```sql
 -- Table des Entreprises
-CREATE TABLE companies (
-  id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS companies (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   ownerId TEXT,
   ownerEmail TEXT NOT NULL,
@@ -20,8 +20,8 @@ CREATE TABLE companies (
 );
 
 -- Table du Personnel
-CREATE TABLE personnel (
-  id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS personnel (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   companyId TEXT NOT NULL,
   firstName TEXT,
   lastName TEXT,
@@ -37,8 +37,8 @@ CREATE TABLE personnel (
 );
 
 -- Table des Clients
-CREATE TABLE clients (
-  id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS clients (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   companyId TEXT NOT NULL,
   name TEXT NOT NULL,
   email TEXT,
@@ -51,8 +51,8 @@ CREATE TABLE clients (
 );
 
 -- Table des Ventes
-CREATE TABLE sales (
-  id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS sales (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   companyId TEXT NOT NULL,
   itemName TEXT NOT NULL,
   type TEXT,
@@ -65,8 +65,8 @@ CREATE TABLE sales (
 );
 
 -- Table des Dépenses
-CREATE TABLE expenses (
-  id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS expenses (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   companyId TEXT NOT NULL,
   description TEXT NOT NULL,
   amount REAL NOT NULL,
@@ -75,8 +75,8 @@ CREATE TABLE expenses (
 );
 
 -- Table des Projets
-CREATE TABLE projects (
-  id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS projects (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   companyId TEXT NOT NULL,
   name TEXT NOT NULL,
   partnerId TEXT,
@@ -88,8 +88,8 @@ CREATE TABLE projects (
 );
 
 -- Table des Ressources
-CREATE TABLE resources (
-  id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS resources (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   companyId TEXT NOT NULL,
   name TEXT NOT NULL,
   type TEXT,
@@ -104,8 +104,8 @@ CREATE TABLE resources (
 );
 
 -- Table des Services
-CREATE TABLE services (
-  id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS services (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   companyId TEXT NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
@@ -114,8 +114,8 @@ CREATE TABLE services (
 );
 
 -- Table des Tâches
-CREATE TABLE tasks (
-  id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS tasks (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   companyId TEXT NOT NULL,
   title TEXT NOT NULL,
   assignedTo TEXT,
@@ -126,8 +126,8 @@ CREATE TABLE tasks (
 );
 
 -- Table des Notifications
-CREATE TABLE notifications (
-  id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS notifications (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   companyId TEXT NOT NULL,
   userId TEXT,
   title TEXT NOT NULL,
@@ -143,3 +143,24 @@ CREATE TABLE notifications (
 Ajoutez les variables suivantes dans les paramètres de votre application Nexus ERP :
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+
+## 3. Sécurité (RLS - Row Level Security)
+Par défaut, Supabase active le RLS. Pour que l'application puisse accéder aux données, vous avez deux options :
+
+### Option A : Désactiver le RLS (Rapide pour test)
+Dans le tableau de bord Supabase, allez dans **Table Editor**, sélectionnez chaque table, cliquez sur **RLS disabled**.
+
+### Option B : Configurer des politiques (Sécurisé)
+Exécutez ce script SQL pour autoriser les membres de votre ERP à accéder aux données :
+```sql
+DO $$ 
+DECLARE 
+  t text;
+BEGIN
+  FOR t IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' 
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS "Allow authenticated access" ON %I', t);
+    EXECUTE format('CREATE POLICY "Allow authenticated access" ON %I FOR ALL TO authenticated USING (true);', t);
+  END LOOP;
+END $$;
+```
