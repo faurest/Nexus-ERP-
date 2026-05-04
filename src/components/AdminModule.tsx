@@ -111,7 +111,7 @@ export default function AdminModule() {
   const handleExportData = async () => {
     try {
       const exportData: Record<string, any[]> = { companies };
-      const collectionsToExport = ['clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners'];
+      const collectionsToExport = ['clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners', 'services', 'interventions', 'notifications', 'invoices', 'payments', 'open_orders'];
       
       for (const coll of collectionsToExport) {
           const snap = await getDocs(collection(db, coll));
@@ -139,7 +139,7 @@ export default function AdminModule() {
     reader.onload = async (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
-        const collectionsToImport = ['companies', 'clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners', 'users'];
+        const collectionsToImport = ['companies', 'clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners', 'users', 'services', 'interventions', 'notifications', 'invoices', 'payments', 'open_orders'];
         for (const coll of collectionsToImport) {
           if (data[coll] && Array.isArray(data[coll])) {
             for (const item of data[coll]) {
@@ -167,7 +167,7 @@ export default function AdminModule() {
     
     setLoading(true);
     try {
-      const collections = ['companies', 'clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners', 'users'];
+      const collections = ['companies', 'clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners', 'users', 'services', 'interventions', 'notifications', 'invoices', 'payments', 'open_orders'];
       let migratedCount = 0;
 
       for (const coll of collections) {

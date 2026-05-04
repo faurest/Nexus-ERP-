@@ -20,14 +20,11 @@ Si vous voyez l'erreur **"Failed to fetch (api.supabase.com)"**, c'est que l'URL
    - `VITE_SUPABASE_ANON_KEY` = (Collez votre clé anon)
 4. **Important** : Ne mettez pas de guillemets autour des valeurs.
 
-## 🗄️ Étape 3 : Initialiser la Base de Données
-Si ce n'est pas déjà fait, allez dans le **SQL Editor** de Supabase et exécutez le script ci-dessous :
+## 🗄️ Étape 3 : Initialiser la Base de Données (RÉPARTION COMPLÈTE)
+Si vous voyez des erreurs sur 'services', 'tasks', 'personnel', etc., exécutez ce script dans le **SQL Editor** de Supabase :
 
 ```sql
--- Réinitialisation (Optionnel)
--- DROP TABLE IF EXISTS companies, personnel, clients, sales, expenses, projects, resources, services, tasks, notifications CASCADE;
-
--- Tables minimales
+-- Création de toutes les tables nécessaires
 CREATE TABLE IF NOT EXISTS companies (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -40,7 +37,104 @@ CREATE TABLE IF NOT EXISTS companies (
   "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Table des Utilisateurs
+CREATE TABLE IF NOT EXISTS personnel (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  "firstName" TEXT,
+  "lastName" TEXT,
+  phone TEXT,
+  notes TEXT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  role TEXT,
+  department TEXT,
+  status TEXT DEFAULT 'active',
+  "tasksAssignedCount" INTEGER DEFAULT 0,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS clients (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  address TEXT,
+  interactions JSONB DEFAULT '[]'::jsonb,
+  "salesTotal" REAL DEFAULT 0,
+  "loyaltyPoints" INTEGER DEFAULT 0,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS sales (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  "itemName" TEXT NOT NULL,
+  type TEXT,
+  quantity INTEGER,
+  price REAL,
+  total REAL,
+  status TEXT,
+  date TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS projects (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  name TEXT NOT NULL,
+  "partnerId" TEXT,
+  budget REAL,
+  status TEXT,
+  "startDate" TIMESTAMP WITH TIME ZONE,
+  "endDate" TIMESTAMP WITH TIME ZONE,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS resources (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  name TEXT NOT NULL,
+  type TEXT,
+  quantity INTEGER,
+  location TEXT,
+  status TEXT,
+  condition TEXT,
+  duration TEXT,
+  warranty TEXT,
+  price REAL,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS tasks (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  title TEXT NOT NULL,
+  "assignedTo" TEXT,
+  "startDate" TEXT,
+  "endDate" TEXT,
+  status TEXT DEFAULT 'pending',
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS services (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  price TEXT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS interventions (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  client TEXT NOT NULL,
+  message TEXT NOT NULL,
+  date TEXT,
+  status TEXT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   uid TEXT UNIQUE NOT NULL,
@@ -50,16 +144,24 @@ CREATE TABLE IF NOT EXISTS users (
   "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Désactiver RLS pour simplifier le test initial
+-- Désactiver RLS pour simplifier le test initial sur TOUTES les tables
 ALTER TABLE companies DISABLE ROW LEVEL SECURITY;
+ALTER TABLE personnel DISABLE ROW LEVEL SECURITY;
+ALTER TABLE clients DISABLE ROW LEVEL SECURITY;
+ALTER TABLE sales DISABLE ROW LEVEL SECURITY;
+ALTER TABLE projects DISABLE ROW LEVEL SECURITY;
+ALTER TABLE resources DISABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks DISABLE ROW LEVEL SECURITY;
+ALTER TABLE services DISABLE ROW LEVEL SECURITY;
+ALTER TABLE interventions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+```
 
 ## 🛠️ Correction d'Erreurs
 ### Si vous avez l'erreur "column createdAt/joinCode does not exist" :
-Exécutez ce script de **Réparation Totale** dans le SQL Editor :
+Exécutez ce script de **Réparation Spécifique** dans le SQL Editor :
 
 ```sql
--- S'assurer que les colonnes indispensables existent
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS "joinCode" TEXT;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS "ownerId" TEXT;
@@ -68,12 +170,7 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS "memberEmails" JSONB DEFAULT '[]'
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS "employees" JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS "roles" JSONB DEFAULT '{}'::jsonb;
 
--- Remplir les codes de jointure vides
 UPDATE companies SET "joinCode" = substring(md5(random()::text), 0, 7) WHERE "joinCode" IS NULL;
-
--- S'assurer que RLS est désactivé le temps des tests
-ALTER TABLE companies DISABLE ROW LEVEL SECURITY;
-ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 ```
 
 ## 🔄 Récupération des données (La Pause 237, etc.)
