@@ -31,23 +31,23 @@ Si ce n'est pas déjà fait, allez dans le **SQL Editor** de Supabase et exécut
 CREATE TABLE IF NOT EXISTS companies (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
-  ownerId TEXT,
-  ownerEmail TEXT NOT NULL,
-  joinCode TEXT UNIQUE NOT NULL,
-  memberEmails JSONB DEFAULT '[]'::jsonb,
+  "ownerId" TEXT,
+  "ownerEmail" TEXT NOT NULL,
+  "joinCode" TEXT UNIQUE NOT NULL,
+  "memberEmails" JSONB DEFAULT '[]'::jsonb,
   employees JSONB DEFAULT '[]'::jsonb,
   roles JSONB DEFAULT '{}'::jsonb,
-  createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Table des Utilisateurs (Replication de Auth)
+-- Table des Utilisateurs
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
   uid TEXT UNIQUE NOT NULL,
   email TEXT UNIQUE NOT NULL,
-  displayName TEXT,
-  password TEXT, -- Optionnel pour la replication
-  createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  "displayName" TEXT,
+  password TEXT,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Désactiver RLS pour simplifier le test initial
@@ -55,13 +55,25 @@ ALTER TABLE companies DISABLE ROW LEVEL SECURITY;
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 
 ## 🛠️ Correction d'Erreurs
-### Si vous avez l'erreur "column joinCode does not exist" :
-Exécutez ceci dans le SQL Editor :
+### Si vous avez l'erreur "column createdAt/joinCode does not exist" :
+Exécutez ce script de **Réparation Totale** dans le SQL Editor :
+
 ```sql
-ALTER TABLE companies ADD COLUMN IF NOT EXISTS joinCode TEXT;
-UPDATE companies SET joinCode = substring(md5(random()::text), 0, 7) WHERE joinCode IS NULL;
--- ALTER TABLE companies ALTER COLUMN joinCode SET NOT NULL; -- Optionnel si deja existant
--- ALTER TABLE companies ADD CONSTRAINT companies_joinCode_key UNIQUE (joinCode); -- Optionnel
+-- S'assurer que les colonnes indispensables existent
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS "joinCode" TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS "ownerId" TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS "ownerEmail" TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS "memberEmails" JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS "employees" JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS "roles" JSONB DEFAULT '{}'::jsonb;
+
+-- Remplir les codes de jointure vides
+UPDATE companies SET "joinCode" = substring(md5(random()::text), 0, 7) WHERE "joinCode" IS NULL;
+
+-- S'assurer que RLS est désactivé le temps des tests
+ALTER TABLE companies DISABLE ROW LEVEL SECURITY;
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 ```
 
 ## 🔄 Récupération des données (La Pause 237, etc.)
