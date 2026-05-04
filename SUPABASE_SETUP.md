@@ -64,6 +64,16 @@ CREATE TABLE sales (
   date TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Table des Dépenses
+CREATE TABLE expenses (
+  id TEXT PRIMARY KEY,
+  companyId TEXT NOT NULL,
+  description TEXT NOT NULL,
+  amount REAL NOT NULL,
+  category TEXT NOT NULL,
+  date TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Table des Projets
 CREATE TABLE projects (
   id TEXT PRIMARY KEY,

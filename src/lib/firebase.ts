@@ -230,7 +230,7 @@ async function triggerDbListener(l: any) {
         data: () => data
       });
     } else {
-      let q = supabase.from(table).select('*');
+      let q: any = supabase.from(table).select('*');
       
       if (l.queryParams) {
         l.queryParams.forEach((qConstraint: any) => {
@@ -260,7 +260,7 @@ export async function getDocs(query: any): Promise<any> {
     const parts = query.path.split('/');
     const table = parts[0];
     
-    let q = supabase.from(table).select('*');
+    let q: any = supabase.from(table).select('*');
     if (query.constraints) {
         query.constraints.forEach((c: any) => {
             if (c.type === 'where' && c.op === '==') {

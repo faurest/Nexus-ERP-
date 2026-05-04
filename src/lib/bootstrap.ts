@@ -86,7 +86,7 @@ export async function bootstrapDemoData(companyId: string) {
 
     await addDoc(collection(db, 'projects'), {
       companyId,
-      title: 'Migration Infrastructure',
+      name: 'Migration Infrastructure',
       partnerId: google.id,
       status: 'active',
       budget: 85000,

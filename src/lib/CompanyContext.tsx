@@ -6,7 +6,12 @@ export interface Company {
   id: string;
   name: string;
   ownerId: string;
+  ownerEmail: string;
   memberEmails?: string[];
+  joinCode?: string;
+  roles?: Record<string, string[]>;
+  employees?: any[];
+  createdAt?: any;
 }
 
 interface CompanyContextType {
