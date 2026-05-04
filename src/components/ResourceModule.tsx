@@ -6,6 +6,7 @@ import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
 import { cn } from '../lib/utils';
 import { useCompany } from '../lib/CompanyContext';
+import { createNotification } from '../lib/notifications';
 
 interface Resource {
   id: string;
@@ -17,6 +18,7 @@ interface Resource {
   condition?: string;     // état
   duration?: string;      // durée
   warranty?: string;      // garantie
+  price?: number;
 }
 
 export default function ResourceModule() {
@@ -27,7 +29,7 @@ export default function ResourceModule() {
   const [isAdding, setIsAdding] = useState(false);
   const [viewingResource, setViewingResource] = useState<Resource | null>(null);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
-  const [formData, setFormData] = useState<any>({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '' });
+  const [formData, setFormData] = useState<any>({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '', price: 0 });
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -45,22 +47,40 @@ export default function ResourceModule() {
     e.preventDefault();
     if (!currentCompany || !formData.name) return;
     try {
+      const newQuantity = Number(formData.quantity);
       if (editingResource) {
         await updateDoc(doc(db, 'resources', editingResource.id), {
           ...formData,
-          quantity: Number(formData.quantity)
+          quantity: newQuantity
         });
       } else {
         await addDoc(collection(db, 'resources'), {
           ...formData,
-          quantity: Number(formData.quantity),
+          quantity: newQuantity,
           companyId: currentCompany.id,
           createdAt: serverTimestamp()
         });
       }
+
+      if (newQuantity < 10) {
+        // Find owner or managers to notify. We'll simply notify the owner and anyone with dashboard access, 
+        // to simplify we notify all current employees, or just the current user testing it.
+        // Let's notify owner + employees.
+        const recipients = [...(currentCompany.employees || [])];
+        if (currentCompany.ownerId && !recipients.includes(currentCompany.ownerId)) recipients.push(currentCompany.ownerId);
+
+        await createNotification(
+          currentCompany.id,
+          recipients,
+          'Alerte de Stock Faible',
+          `Le niveau de stock pour "${formData.name}" est faible (${newQuantity} restants).`,
+          'alert'
+        );
+      }
+
       setIsAdding(false);
       setEditingResource(null);
-      setFormData({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '' });
+      setFormData({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '', price: 0 });
     } catch(err) {
       handleFirestoreError(err, editingResource ? OperationType.UPDATE : OperationType.WRITE, 'resources');
     }
@@ -267,6 +287,10 @@ export default function ResourceModule() {
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Garantie</span>
                   <span className="text-sm font-bold text-slate-900">{viewingResource.warranty || 'Non renseignée'}</span>
                 </div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 col-span-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Prix Unitaire</span>
+                  <span className="text-sm font-bold text-slate-900">{viewingResource.price ? `${viewingResource.price} FCFA` : 'Non renseigné'}</span>
+                </div>
               </div>
             </div>
 
@@ -339,8 +363,14 @@ export default function ResourceModule() {
                     <input type="text" placeholder="Ex: 1 an" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.warranty || ''} onChange={e => setFormData({...formData, warranty: e.target.value})} />
                   </div>
                </div>
+               <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Prix Unitaire (FCFA)</label>
+                    <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.price || 0} onChange={e => setFormData({...formData, price: Number(e.target.value)})} />
+                  </div>
+               </div>
                <div className="grid grid-cols-2 gap-4 mt-8">
-                 <button type="button" onClick={() => { setIsAdding(false); setEditingResource(null); setFormData({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '' }); }} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
+                 <button type="button" onClick={() => { setIsAdding(false); setEditingResource(null); setFormData({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '', price: 0 }); }} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
                  <button type="submit" className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono">{editingResource ? 'Mettre à jour' : 'Enregistrer'}</button>
                </div>
              </form>

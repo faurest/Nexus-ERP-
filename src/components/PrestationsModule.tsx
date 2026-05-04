@@ -164,16 +164,7 @@ export default function PrestationsModule() {
                 <div className="p-4 border-b border-slate-100 bg-slate-50">
                   <h3 className="font-bold text-slate-800">Projets & Saisies en cours</h3>
                 </div>
-                <Table>
-                  <thead>
-                    <tr>
-                      <th className="pb-4 pt-2 px-4 text-left font-bold text-slate-400 text-xs uppercase">Client</th>
-                      <th className="pb-4 pt-2 px-4 text-left font-bold text-slate-400 text-xs uppercase">Description</th>
-                      <th className="pb-4 pt-2 px-4 text-left font-bold text-slate-400 text-xs uppercase">Statut</th>
-                      <th className="pb-4 pt-2 px-4 text-right font-bold text-slate-400 text-xs uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table headers={['Client', 'Description', 'Statut', 'Actions']}>
                     {interventions.filter(i => i.status !== 'completed').map(i => (
                       <TableRow key={i.id}>
                         <div className="py-2"><span className="font-bold text-slate-800">{i.client}</span></div>
@@ -191,10 +182,6 @@ export default function PrestationsModule() {
                         </div>
                       </TableRow>
                     ))}
-                    {interventions.filter(i => i.status !== 'completed').length === 0 && (
-                       <tr><td colSpan={4} className="p-6 text-center text-slate-400">Aucun projet en attente.</td></tr>
-                    )}
-                  </tbody>
                 </Table>
               </div>
             </div>

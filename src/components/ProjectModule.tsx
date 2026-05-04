@@ -6,6 +6,7 @@ import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
+import { createNotification } from '../lib/notifications';
 
 // ... interface declarations ...
 
@@ -131,12 +132,24 @@ export default function ProjectModule() {
     if (!currentCompany) return;
 
     try {
+      const recipients = [...(currentCompany.employees || [])];
+      if (!recipients.includes(currentCompany.ownerId)) recipients.push(currentCompany.ownerId);
+
       if (editingProject) {
         await updateDoc(doc(db, 'projects', editingProject.id), {
           ...formData,
           budget: Number(formData.budget || 0),
           updatedAt: serverTimestamp(),
         });
+        if (editingProject.status !== formData.status) {
+          await createNotification(
+            currentCompany.id,
+            recipients,
+            'Mise à jour du Projet',
+            `Le statut du projet "${formData.name}" est passé à "${formData.status}".`,
+            'project'
+          );
+        }
       } else {
         await addDoc(collection(db, 'projects'), {
           ...formData,
@@ -145,6 +158,13 @@ export default function ProjectModule() {
           createdAt: serverTimestamp(),
           status: 'planned'
         });
+        await createNotification(
+          currentCompany.id,
+          recipients,
+          'Nouveau Projet',
+          `Le projet "${formData.name}" a été créé.`,
+          'project'
+        );
       }
       setIsAddingProject(false);
       setEditingProject(null);

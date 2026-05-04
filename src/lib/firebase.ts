@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 export const db = {} as any;
 export const auth = {} as any;
 
@@ -9,6 +11,19 @@ export function onAuthStateChanged(auth: any, cb: (user: any) => void) {
   if (userStr) {
     currentUser = JSON.parse(userStr);
   }
+  
+  // Check session with Supabase
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session) {
+      currentUser = {
+        uid: session.user.id,
+        email: session.user.email,
+        displayName: session.user.user_metadata?.displayName || session.user.email?.split('@')[0]
+      };
+      notifyAuth();
+    }
+  });
+
   cb(currentUser);
   listeners.push(cb);
   return () => {
@@ -27,126 +42,82 @@ function notifyAuth() {
 }
 
 export const loginWithEmail = async (email: string, pass: string) => {
-  const res = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password: pass })
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password: pass,
   });
 
-  if (!res.ok) {
-    const err = await res.json();
-    const error: any = new Error(err.message || err.error);
-    error.code = 'auth/' + err.error;
-    throw error;
+  if (error) {
+    if (error.message.toLowerCase().includes('invalid login credentials')) {
+       return signupWithEmail(email, pass);
+    }
+    const err: any = new Error(error.message);
+    err.code = 'auth/' + error.status;
+    throw err;
   }
 
-  currentUser = await res.json();
-  notifyAuth();
+  if (data.user) {
+    currentUser = {
+      uid: data.user.id,
+      email: data.user.email,
+      displayName: data.user.user_metadata?.displayName || data.user.email?.split('@')[0]
+    };
+    notifyAuth();
+  }
   return { user: currentUser };
 };
 
 export async function signupWithEmail(email: string, pass: string) {
-  return loginWithEmail(email, pass);
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password: pass,
+    options: {
+      data: {
+        displayName: email.split('@')[0]
+      }
+    }
+  });
+
+  if (error) {
+    const err: any = new Error(error.message);
+    err.code = 'auth/' + error.status;
+    throw err;
+  }
+
+  if (data.user) {
+    currentUser = {
+      uid: data.user.id,
+      email: data.user.email,
+      displayName: data.user.user_metadata?.displayName || data.user.email?.split('@')[0]
+    };
+    notifyAuth();
+  }
+  return { user: currentUser };
 }
 
 export const logout = async () => {
+  await supabase.auth.signOut();
   currentUser = null;
   notifyAuth();
 };
 
 export const createEmployeeAccount = async (email: string, pass: string) => {
-  const res = await fetch('/api/auth/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password: pass })
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password: pass,
   });
-  if (!res.ok) {
-    const err = await res.json();
-    const error: any = new Error(err.message || 'Error registering');
-    error.code = 'auth/' + err.error;
-    throw error;
-  }
-  return { user: { email } }; // Do not update currentUser for secondary auth flow
+  if (error) throw error;
+  return { user: { email } };
 };
 
 export const secondaryAuth = {
   signOut: async () => {}
 };
 
-export const serverTimestamp = () => Date.now();
+export const serverTimestamp = () => new Date().toISOString();
 export const arrayUnion = (...args: any[]) => ({ _arrayUnion: args });
 
 const dbListeners: { path: string, cb: any, queryParams?: any[] }[] = [];
-
-async function fetchData(path: string, queryParams?: any[]) {
-    const parts = path.split('/');
-    const coll = parts[0];
-    const id = parts[1];
-    
-    let url = `/api/data/${coll}`;
-    if (id) url += `/${id}`;
-    
-    // Add query filters if any
-    const searchParams = new URLSearchParams();
-    if (queryParams) {
-        queryParams.forEach(q => {
-            if (q.type === 'where' && q.op === '==') {
-                searchParams.append(q.field, q.value);
-            }
-        });
-    }
-    
-    if (searchParams.toString()) url += `?${searchParams.toString()}`;
-
-    const res = await fetch(url);
-    if (!res.ok) {
-        throw new Error(`Server error: ${res.status} ${res.statusText}`);
-    }
-    
-    const text = await res.text();
-    if (text.trim().startsWith('<')) {
-        throw new Error(`Invalid JSON response (HTML intercepted): ${text.slice(0, 50)}`);
-    }
-    
-    try {
-        return JSON.parse(text);
-    } catch (e) {
-        throw new Error(`Failed to parse JSON: ${e.message}`);
-    }
-}
-
-async function triggerListener(l: any) {
-  try {
-    const pathParts = l.path.split('/');
-    if (pathParts.length % 2 === 0) { // Doc
-        const data = await fetchData(l.path);
-        l.cb({
-            id: pathParts[pathParts.length-1],
-            exists: () => !!data,
-            data: () => data
-        });
-    } else { // Collection
-        const items = await fetchData(l.path, l.queryParams);
-        l.cb({
-          docs: items.map((data: any) => ({
-              id: data.id,
-              data: () => data
-          })),
-          empty: items.length === 0
-        });
-    }
-  } catch (error: any) {
-    if (l.errCb) l.errCb(error);
-    else {
-      // Suppress transient network errors from dev server restarts
-      if (error && (error.message.includes('Failed to fetch') || error.message.includes('HTML intercepted'))) {
-         // silently ignore transient network fetch errors to prevent console spam
-         return;
-      }
-      console.error("Error in triggerListener:", error);
-    }
-  }
-}
 
 export function collection(db: any, path: string) {
   return { type: 'collection', path };
@@ -172,18 +143,17 @@ export function where(field: string, op: string, value: any) {
 }
 
 export async function addDoc(col: any, data: any) {
-  const res = await fetch(`/api/data/${col.path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  if (!res.ok) {
-     const errorText = await res.text();
-     throw new Error(errorText || `Server error: ${res.status}`);
+  const { data: result, error } = await supabase
+    .from(col.path)
+    .insert([{ ...data, createdAt: serverTimestamp() }])
+    .select();
+
+  if (error) {
+    console.error("Supabase addDoc error:", error);
+    throw error;
   }
-  const result = await res.json();
   notifyDb(col.path);
-  return result;
+  return { id: result[0].id };
 }
 
 export function or(...args: any[]) {
@@ -192,62 +162,135 @@ export function or(...args: any[]) {
 
 export async function setDoc(docRef: any, data: any, options?: any) {
   const parts = docRef.path.split('/');
-  await fetch(`/api/data/${parts[0]}/${parts[1]}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
+  const table = parts[0];
+  const id = parts[1];
+
+  const { error } = await supabase
+    .from(table)
+    .upsert({ id, ...data, updatedAt: serverTimestamp() });
+
+  if (error) throw error;
   notifyDb(docRef.path);
 }
 
 export async function updateDoc(docRef: any, data: any) {
   const parts = docRef.path.split('/');
-  await fetch(`/api/data/${parts[0]}/${parts[1]}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
+  const table = parts[0];
+  const id = parts[1];
+
+  const { error } = await supabase
+    .from(table)
+    .update(data)
+    .eq('id', id);
+
+  if (error) throw error;
   notifyDb(docRef.path);
 }
 
 export async function deleteDoc(docRef: any) {
   const parts = docRef.path.split('/');
-  await fetch(`/api/data/${parts[0]}/${parts[1]}`, {
-    method: 'DELETE'
-  });
+  const table = parts[0];
+  const id = parts[1];
+
+  const { error } = await supabase
+    .from(table)
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
   notifyDb(docRef.path);
 }
 
 function notifyDb(path: string) {
   dbListeners.forEach(l => {
     if (path.startsWith(l.path)) {
-      triggerListener(l);
+      triggerDbListener(l);
     }
   });
 }
 
-export async function getDocs(query: any): Promise<any> {
-    const items = await fetchData(query.path, query.constraints);
-    return {
-        docs: items.map((data: any) => ({
-            id: data.id,
-            data: () => data
+async function triggerDbListener(l: any) {
+  try {
+    const parts = l.path.split('/');
+    const table = parts[0];
+    const id = parts[1];
+
+    if (id) {
+      const { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      l.cb({
+        id,
+        exists: () => !!data,
+        data: () => data
+      });
+    } else {
+      let q = supabase.from(table).select('*');
+      
+      if (l.queryParams) {
+        l.queryParams.forEach((qConstraint: any) => {
+          if (qConstraint.type === 'where' && qConstraint.op === '==') {
+            q = q.eq(qConstraint.field, qConstraint.value);
+          }
+        });
+      }
+
+      const { data, error } = await q;
+      if (error) throw error;
+      
+      l.cb({
+        docs: (data || []).map((item: any) => ({
+          id: item.id,
+          data: () => item
         })),
-        empty: items.length === 0
+        empty: !data || data.length === 0
+      });
+    }
+  } catch (error) {
+    if (l.errCb) l.errCb(error);
+  }
+}
+
+export async function getDocs(query: any): Promise<any> {
+    const parts = query.path.split('/');
+    const table = parts[0];
+    
+    let q = supabase.from(table).select('*');
+    if (query.constraints) {
+        query.constraints.forEach((c: any) => {
+            if (c.type === 'where' && c.op === '==') {
+                q = q.eq(c.field, c.value);
+            }
+        });
+    }
+
+    const { data, error } = await q;
+    if (error) throw error;
+
+    return {
+        docs: (data || []).map((item: any) => ({
+            id: item.id,
+            data: () => item
+        })),
+        empty: !data || data.length === 0
     };
 }
 
 export function onSnapshot(queryOrDoc: any, cb: any, errCb?: any) {
-  let l = { path: queryOrDoc.path, cb, errCb, queryParams: queryOrDoc.constraints || [] };
+  const l = { path: queryOrDoc.path, cb, errCb, queryParams: queryOrDoc.constraints || [] };
   dbListeners.push(l);
-  triggerListener(l);
+  triggerDbListener(l);
   
-  // Poll every 5 seconds for multi-user updates
-  const interval = setInterval(() => triggerListener(l), 5000);
+  const interval = setInterval(() => triggerDbListener(l), 5000);
   
   return () => {
     clearInterval(interval);
-    let idx = dbListeners.indexOf(l);
+    const idx = dbListeners.indexOf(l);
     if (idx > -1) dbListeners.splice(idx, 1);
-  }
+  };
 }

@@ -42,6 +42,8 @@ db.exec(`
     name TEXT NOT NULL,
     email TEXT,
     phone TEXT,
+    address TEXT,
+    interactions TEXT,
     salesTotal REAL DEFAULT 0,
     loyaltyPoints INTEGER DEFAULT 0,
     createdAt INTEGER
@@ -170,6 +172,29 @@ db.exec(`
     status TEXT,
     createdAt INTEGER
   );
+
+  CREATE TABLE IF NOT EXISTS notifications (
+    id TEXT PRIMARY KEY,
+    companyId TEXT NOT NULL,
+    userId TEXT,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT,
+    isRead INTEGER DEFAULT 0,
+    date INTEGER,
+    createdAt INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS open_orders (
+    id TEXT PRIMARY KEY,
+    companyId TEXT NOT NULL,
+    clientName TEXT,
+    tableNumber TEXT,
+    items TEXT,
+    status TEXT DEFAULT 'open',
+    createdAt INTEGER,
+    updatedAt INTEGER
+  );
 `);
 
 // Try Schema Migrations
@@ -191,6 +216,44 @@ try {
     endDate TEXT,
     status TEXT DEFAULT 'pending',
     createdAt INTEGER
+  )`);
+} catch (e) {}
+
+try { db.exec('ALTER TABLE resources ADD COLUMN condition TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE resources ADD COLUMN duration TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE resources ADD COLUMN warranty TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE resources ADD COLUMN price INTEGER'); } catch (e) {}
+try { db.exec('ALTER TABLE sales ADD COLUMN clientName TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE sales_invoices ADD COLUMN clientName TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE sales_invoices ADD COLUMN tableNumber TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE sales_invoices ADD COLUMN items TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE clients ADD COLUMN address TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE clients ADD COLUMN interactions TEXT'); } catch (e) {}
+
+try {
+  db.exec(`CREATE TABLE IF NOT EXISTS notifications (
+    id TEXT PRIMARY KEY,
+    companyId TEXT NOT NULL,
+    userId TEXT,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT,
+    isRead INTEGER DEFAULT 0,
+    date INTEGER,
+    createdAt INTEGER
+  )`);
+} catch (e) {}
+
+try {
+  db.exec(`CREATE TABLE IF NOT EXISTS open_orders (
+    id TEXT PRIMARY KEY,
+    companyId TEXT NOT NULL,
+    clientName TEXT,
+    tableNumber TEXT,
+    items TEXT,
+    status TEXT DEFAULT 'open',
+    createdAt INTEGER,
+    updatedAt INTEGER
   )`);
 } catch (e) {}
 

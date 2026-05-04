@@ -1,0 +1,16 @@
+{
+  "short_name": "ZenConcept",
+  "name": "Zen Concept App",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#6d28d9",
+  "background_color": "#ffffff"
+}

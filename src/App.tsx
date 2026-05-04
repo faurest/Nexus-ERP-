@@ -16,12 +16,14 @@ import {
   Bell,
   ChevronRight,
   ChevronLeft,
+  DownloadCloud,
   TrendingUp,
   AlertCircle,
   Building2,
   Shield,
   Calculator,
-  Layers
+  Layers,
+  FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -36,9 +38,50 @@ import SalesModule from './components/SalesModule';
 import AdminModule from './components/AdminModule';
 import AccountingModule from './components/AccountingModule';
 import PrestationsModule from './components/PrestationsModule';
+import NotificationBell from './components/NotificationBell';
 
 import { bootstrapDemoData } from './lib/bootstrap';
 import { useCompany } from './lib/CompanyContext';
+
+export const NexusLogo = ({ className = "" }: { className?: string }) => (
+  <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <defs>
+      <linearGradient id="primary" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#0EA5E9" />
+        <stop offset="100%" stopColor="#2563EB" />
+      </linearGradient>
+      <linearGradient id="secondary" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#38BDF8" />
+        <stop offset="100%" stopColor="#6EE7B7" />
+      </linearGradient>
+      <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="6" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+    </defs>
+    
+    <g transform="translate(60, 60)">
+      {/* Outer Orbit */}
+      <circle cx="0" cy="0" r="45" fill="none" stroke="url(#primary)" strokeWidth="2" strokeDasharray="8 6" opacity="0.4" />
+      
+      {/* Connecting nodes */}
+      <circle cx="0" cy="-45" r="4" fill="#0EA5E9" />
+      <circle cx="39" cy="22.5" r="4" fill="#2563EB" />
+      <circle cx="-39" cy="22.5" r="4" fill="#38BDF8" />
+
+      {/* Inner geometric structure */}
+      <path d="M0 -25 L21.6 12.5 L-21.6 12.5 Z" fill="none" stroke="url(#secondary)" strokeWidth="4" strokeLinejoin="round" />
+      
+      <path d="M0 -45 L0 -25" stroke="url(#secondary)" strokeWidth="3" opacity="0.6"/>
+      <path d="M39 22.5 L21.6 12.5" stroke="url(#secondary)" strokeWidth="3" opacity="0.6"/>
+      <path d="M-39 22.5 L-21.6 12.5" stroke="url(#secondary)" strokeWidth="3" opacity="0.6"/>
+
+      {/* The Core */}
+      <circle cx="0" cy="0" r="12" fill="url(#primary)" filter="url(#glow)" />
+      <circle cx="0" cy="0" r="6" fill="#FFFFFF" />
+    </g>
+  </svg>
+);
 
 export const DEFAULT_ROLES: Record<string, string[]> = {
   'owner': ['dashboard', 'sales', 'clients', 'personnel', 'resources', 'projects', 'accounting'],
@@ -323,13 +366,11 @@ function LoginScreen() {
         animate={{ opacity: 1, scale: 1 }}
         className="max-w-md w-full bg-white rounded-3xl p-10 shadow-2xl shadow-slate-200 border border-slate-100"
       >
-        <div className="flex items-center gap-4 mb-8 justify-center">
-          <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-600/30">
-            <LayoutDashboard size={28} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">NexusERP</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Enterprise Management</p>
+        <div className="flex flex-col items-center gap-4 mb-8 justify-center">
+          <NexusLogo className="w-20 h-20 drop-shadow-2xl" />
+          <div className="text-center">
+            <h1 className="text-3xl font-black tracking-tight bg-gradient-to-br from-blue-900 to-blue-600 bg-clip-text text-transparent">NexusERP</h1>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-2">Enterprise Management</p>
           </div>
         </div>
 
@@ -388,7 +429,26 @@ export default function App() {
   const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth > 1024);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { currentCompany, companies, setCurrentCompany, loading: companyLoading } = useCompany();
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -546,18 +606,19 @@ export default function App() {
         )}
       >
         <div className="p-6 h-20 flex items-center justify-between border-b border-slate-100">
-          <AnimatePresence>
-            {isSidebarOpen && (
-              <motion.div 
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="flex items-center gap-3 w-full"
-              >
-                <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-600/20 shrink-0">
-                  {currentCompany.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="overflow-hidden">
+          <div className="flex items-center gap-3 w-full">
+            <div className="shrink-0 flex items-center justify-center">
+              <NexusLogo className="w-10 h-10 drop-shadow-md" />
+            </div>
+            
+            <AnimatePresence>
+              {isSidebarOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0, width: 0 }}
+                  className="overflow-hidden flex-1"
+                >
                   <select 
                     value={currentCompany.id}
                     onChange={(e) => {
@@ -575,13 +636,14 @@ export default function App() {
                       Code: <span className="font-mono font-bold text-slate-600">{currentCompany.joinCode}</span>
                     </div>
                   )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           <button 
             onClick={() => setSidebarOpen(!isSidebarOpen)} 
-            className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-all rounded-xl"
+            className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-all rounded-xl absolute right-4"
           >
             {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -608,7 +670,27 @@ export default function App() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-100">
+        <div className="p-4 border-t border-slate-100 flex flex-col gap-2">
+          <a
+            href="/brochure.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all group outline-none"
+          >
+            <FileText size={20} className="group-hover:scale-110 transition-transform" />
+            {isSidebarOpen && <span className="text-xs font-bold uppercase tracking-wider text-inherit">Brochure Commerciale</span>}
+          </a>
+
+          {deferredPrompt && (
+            <button 
+              onClick={handleInstallClick}
+              className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-green-50 text-green-600 hover:bg-green-100 transition-all group"
+            >
+              <DownloadCloud size={20} className="group-hover:scale-110 transition-transform" />
+              {isSidebarOpen && <span className="text-xs font-bold uppercase tracking-wider text-inherit">Installer l'App</span>}
+            </button>
+          )}
+
           <button 
             onClick={() => setCurrentCompany(null)}
             className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-all group"
@@ -668,10 +750,7 @@ export default function App() {
               />
             </div>
             
-            <button className="p-2.5 text-slate-400 hover:text-slate-900 bg-slate-50 rounded-full relative transition-all group">
-              <Bell size={18} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-blue-600 rounded-full ring-2 ring-white" />
-            </button>
+            <NotificationBell user={user} />
 
             <div className="flex items-center gap-4 pl-6 border-l border-slate-200">
               <div className="text-right hidden sm:block">

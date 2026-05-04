@@ -1,6 +1,6 @@
 {
-  "name": "Entreprise360 - Gestion ERP",
-  "description": "Système de gestion intégré complet pour clients, personnel, ressources et projets avec base de données flexible.",
+  "name": "Nexus ERP - Solution de Gestion Intelligente",
+  "description": "ERP complet avec gestion des clients, personnel, projets et comptabilité avancée. Inclut des analyses de flux monétaires par Intelligence Artificielle et exports de rapports.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

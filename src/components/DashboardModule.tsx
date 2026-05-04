@@ -21,9 +21,10 @@ import Table, { TableRow } from './ui/Table';
 import { cn } from '../lib/utils';
 import { useCompany } from '../lib/CompanyContext';
 import { exportCompanyDataAsJSON, importCompanyDataFromJSON } from '../lib/exportUtils';
-import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc } from '../lib/firebase';
+import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
+import { createNotification } from '../lib/notifications';
 
 export default function DashboardModule({ user, companies = [] }: { user?: any, companies?: any[] }) {
   const { currentCompany } = useCompany();
@@ -41,6 +42,11 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
   const [editingService, setEditingService] = useState<any | null>(null);
   const [editingIntervention, setEditingIntervention] = useState<any | null>(null);
 
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [newTask, setNewTask] = useState({ title: '', assignedTo: '', endDate: '' });
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [personnel, setPersonnel] = useState<any[]>([]);
+
   useEffect(() => {
     if (!currentCompany) return;
 
@@ -52,7 +58,15 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       setInterventions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => handleFirestoreError(err, OperationType.LIST, 'interventions'));
 
-    return () => { unsubServices(); unsubInterventions(); };
+    const unsubTasks = onSnapshot(query(collection(db, 'tasks'), where('companyId', '==', currentCompany.id)), snap => {
+      setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'tasks'));
+
+    const unsubPersonnel = onSnapshot(query(collection(db, 'personnel'), where('companyId', '==', currentCompany.id)), snap => {
+      setPersonnel(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'personnel'));
+
+    return () => { unsubServices(); unsubInterventions(); unsubTasks(); unsubPersonnel(); };
   }, [currentCompany]);
 
   const handleSaveService = async (e: React.FormEvent) => {
@@ -104,6 +118,35 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       await deleteDoc(doc(db, 'interventions', id));
     } catch (err: any) {
       handleFirestoreError(err, OperationType.DELETE, 'interventions');
+    }
+  };
+
+  const handleSaveTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany) return;
+    try {
+      await addDoc(collection(db, 'tasks'), {
+        ...newTask,
+        companyId: currentCompany.id,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+      
+      const recipients = [...(currentCompany.employees || [])];
+      if (!recipients.includes(currentCompany.ownerId)) recipients.push(currentCompany.ownerId);
+
+      await createNotification(
+        currentCompany.id,
+        recipients,
+        'Nouvelle Tâche',
+        `Une nouvelle tâche "${newTask.title}" a été assignée.`,
+        'task'
+      );
+
+      setIsAddingTask(false);
+      setNewTask({ title: '', assignedTo: '', endDate: '' });
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.WRITE, 'tasks');
     }
   };
 
@@ -264,7 +307,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
         </div>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Coordination Flux / Interventions */}
         <section className="bg-slate-900 text-white rounded-3xl p-6 shadow-xl lg:col-span-1 overflow-hidden relative group">
           <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
@@ -375,6 +418,45 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
             ))}
           </div>
         </section>
+
+        {/* Tasks Hub */}
+        <section className="bg-white border text-slate-800 border-slate-200 shadow-sm rounded-3xl p-6 lg:col-span-1 overflow-hidden relative group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
+             <CheckCircle2 size={120} />
+          </div>
+          <div className="flex items-center justify-between mb-8 relative z-10">
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-slate-900">Tâches & Assignations</h2>
+              <p className="text-slate-500 text-xs mt-1">Gérer les tâches en cours.</p>
+            </div>
+            <button 
+              onClick={() => setIsAddingTask(true)}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl transition-all"
+            >
+              <Plus size={20} />
+            </button>
+          </div>
+
+          <div className="space-y-4 relative z-10 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            {tasks.length === 0 ? (
+              <p className="text-center text-slate-400 text-sm py-4">Aucune tâche active.</p>
+            ) : tasks.map((t) => (
+              <div key={t.id} className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex flex-col items-start gap-4 hover:border-blue-200 transition-all shadow-sm">
+                <div className="flex justify-between items-start w-full">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded flex items-center justify-center shrink-0 border border-slate-200 shadow-sm">
+                      <Clock size={18} className={t.status === 'completed' ? 'text-green-500' : 'text-amber-500'} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900 truncate">{t.title}</h4>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">{personnel.find(p => p.id === t.assignedTo)?.name || 'Non Assigné'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
 
       {/* Cross-tenant Global Overview */}
@@ -481,6 +563,38 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
               <div className="grid grid-cols-2 gap-4 mt-8">
                 <button type="button" onClick={() => setIsAddingIntervention(false)} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
                 <button type="submit" className="px-6 py-3 rounded-xl bg-slate-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-slate-800 transition-all font-mono shadow-md">{editingIntervention ? 'Mettre à jour' : 'Enregistrer'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Task Modal */}
+      {isAddingTask && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+            <h3 className="text-xl font-bold text-slate-900 mb-6">Nouvelle Tâche</h3>
+            <form onSubmit={handleSaveTask} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Titre de la tâche</label>
+                <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})} required/>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Assigné à</label>
+                  <select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newTask.assignedTo} onChange={e => setNewTask({...newTask, assignedTo: e.target.value})}>
+                    <option value="">Sélectionner...</option>
+                    {personnel.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Échéance</label>
+                  <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newTask.endDate} onChange={e => setNewTask({...newTask, endDate: e.target.value})}/>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <button type="button" onClick={() => setIsAddingTask(false)} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
+                <button type="submit" className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all font-mono shadow-md">Enregistrer</button>
               </div>
             </form>
           </div>

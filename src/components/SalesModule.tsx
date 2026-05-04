@@ -22,11 +22,14 @@ interface Sale {
 
 interface Invoice {
   id: string;
-  saleId: string;
+  saleId?: string;
   invoiceNumber: string;
   amount: number;
   status: 'paid' | 'unpaid';
   date: any;
+  clientName?: string;
+  tableNumber?: string;
+  items?: any[];
 }
 
 export default function SalesModule() {
@@ -35,7 +38,13 @@ export default function SalesModule() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
-  const [cart, setCart] = useState<any[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
+  const [cart, setCart] = useState<any[]>([]); // Current new cart if no active order is selected
+  const [openOrders, setOpenOrders] = useState<any[]>([]);
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  const [isAddingOrder, setIsAddingOrder] = useState(false);
+  const [newOrderName, setNewOrderName] = useState('');
+  const [newOrderTable, setNewOrderTable] = useState('');
   const [activeTab, setActiveTab] = useState<'sales' | 'invoices' | 'reports' | 'pos'>('sales');
   const [isAdding, setIsAdding] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
@@ -49,7 +58,14 @@ export default function SalesModule() {
     }, err => handleFirestoreError(err, OperationType.LIST, 'sales'));
 
     const unsubInvoices = onSnapshot(query(collection(db, 'sales_invoices'), where('companyId', '==', currentCompany.id)), snap => {
-      setInvoices(snap.docs.map(d => ({ id: d.id, ...d.data() } as Invoice)));
+      setInvoices(snap.docs.map(d => {
+        const data = d.data();
+        let items = data.items || [];
+        if (typeof items === 'string') {
+          try { items = JSON.parse(items) } catch(e) { items = [] }
+        }
+        return { id: d.id, ...data, items } as Invoice;
+      }));
     }, err => handleFirestoreError(err, OperationType.LIST, 'sales_invoices'));
 
     const unsubExpenses = onSnapshot(query(collection(db, 'expenses'), where('companyId', '==', currentCompany.id)), snap => {
@@ -60,7 +76,23 @@ export default function SalesModule() {
       setResources(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => handleFirestoreError(err, OperationType.LIST, 'resources'));
 
-    return () => { unsubSales(); unsubInvoices(); unsubExpenses(); unsubResources(); };
+    const unsubClients = onSnapshot(query(collection(db, 'clients'), where('companyId', '==', currentCompany.id)), snap => {
+      setClients(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'clients'));
+
+    const unsubOpenOrders = onSnapshot(query(collection(db, 'open_orders'), where('companyId', '==', currentCompany.id)), snap => {
+      // Need to ensure items is parsed correctly if it's coming from standard firebase mock or sqlite
+      setOpenOrders(snap.docs.map(d => {
+        const data = d.data();
+        let items = data.items || [];
+        if (typeof items === 'string') {
+          try { items = JSON.parse(items) } catch(e) { items = [] }
+        }
+        return { id: d.id, ...data, items };
+      }));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'open_orders'));
+
+    return () => { unsubSales(); unsubInvoices(); unsubExpenses(); unsubResources(); unsubClients(); unsubOpenOrders(); };
   }, [currentCompany]);
 
   const handleCreateSale = async (e: React.FormEvent) => {
@@ -96,8 +128,32 @@ export default function SalesModule() {
           amount: total,
           status: 'unpaid',
           companyId: currentCompany.id,
-          date: serverTimestamp()
+          date: serverTimestamp(),
+          clientName: formData.clientName || '',
+          items: JSON.stringify([{
+            name: formData.itemName,
+            quantity: Number(formData.quantity),
+            price: Number(formData.price),
+            total
+          }])
         });
+
+        // Inscription ou check du client
+        if (formData.clientName) {
+           const existingClient = clients.find(c => c.name.toLowerCase().trim() === formData.clientName.toLowerCase().trim());
+           if (!existingClient) {
+              await addDoc(collection(db, 'clients'), {
+                 companyId: currentCompany.id,
+                 name: formData.clientName.trim(),
+                 email: '',
+                 phone: '',
+                 address: '',
+                 salesTotal: total,
+                 loyaltyPoints: Math.floor(total / 1000),
+                 createdAt: serverTimestamp()
+              });
+           }
+        }
       }
 
       setIsAdding(false);
@@ -121,8 +177,81 @@ export default function SalesModule() {
   const calculatePendingRevenue = () => invoices.filter(s => s.status === 'unpaid').reduce((acc, sum) => acc + sum.amount, 0);
   const calculateTotalExpenses = () => expenses.reduce((acc, e) => acc + (e.amount || 0), 0);
 
+  const activeOrder = activeOrderId ? openOrders.find(o => o.id === activeOrderId) : null;
+  const currentCart = activeOrder ? activeOrder.items : cart;
+
+  const handleUpdateCart = async (newCart: any[]) => {
+    if (activeOrderId) {
+      try {
+        await updateDoc(doc(db, 'open_orders', activeOrderId), {
+          items: newCart,
+          updatedAt: serverTimestamp()
+        });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, 'open_orders');
+      }
+    } else {
+      setCart(newCart);
+    }
+  };
+
+  const handleCreateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany || (!newOrderName && !newOrderTable)) return;
+    try {
+      const res = await addDoc(collection(db, 'open_orders'), {
+        companyId: currentCompany.id,
+        clientName: newOrderName,
+        tableNumber: newOrderTable,
+        items: [],
+        status: 'open',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      
+      // Inscription automatique du client
+      if (newOrderName) {
+         const existingClient = clients.find(c => c.name.toLowerCase().trim() === newOrderName.toLowerCase().trim());
+         if (!existingClient) {
+            await addDoc(collection(db, 'clients'), {
+               companyId: currentCompany.id,
+               name: newOrderName.trim(),
+               email: '',
+               phone: '',
+               address: '',
+               salesTotal: 0,
+               loyaltyPoints: 0,
+               createdAt: serverTimestamp()
+            });
+         }
+      }
+
+      setActiveOrderId(res.id);
+      setIsAddingOrder(false);
+      setNewOrderName('');
+      setNewOrderTable('');
+    } catch(err) {
+      handleFirestoreError(err, OperationType.WRITE, 'open_orders');
+    }
+  };
+
+  const handleDeleteOrder = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Supprimer cette commande en cours ?')) return;
+    try {
+      if (activeOrderId === id) setActiveOrderId(null);
+      await deleteDoc(doc(db, 'open_orders', id));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, 'open_orders');
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <datalist id="clients-list">
+        {clients.slice().sort((a,b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.name} />)}
+      </datalist>
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-800 uppercase tracking-wider">Ventes & Facturation</h2>
@@ -220,26 +349,85 @@ export default function SalesModule() {
         )}
 
         {activeTab === 'pos' && (
-          <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 bg-slate-50 border-t border-slate-200">
+          <div className="p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 bg-slate-50 border-t border-slate-200">
+            {/* Commandes en Cours Sidebar */}
+            <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col h-[500px]">
+               <div className="flex justify-between items-center mb-4">
+                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Commandes</h3>
+                 <button 
+                   onClick={() => setIsAddingOrder(true)}
+                   className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-1.5 rounded-lg transition-all"
+                 >
+                   <Plus size={16} />
+                 </button>
+               </div>
+               
+               <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                 <button 
+                   onClick={() => setActiveOrderId(null)}
+                   className={cn(
+                     "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between",
+                     activeOrderId === null ? "bg-slate-900 border-slate-900 text-white" : "bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-800"
+                   )}
+                 >
+                   <div>
+                     <span className="text-xs font-bold block">Vente Rapide</span>
+                     <span className={cn("text-[10px]", activeOrderId === null ? "text-slate-300" : "text-slate-500")}>Client de passage</span>
+                   </div>
+                 </button>
+
+                 {openOrders.map(order => (
+                   <button 
+                     key={order.id}
+                     onClick={() => setActiveOrderId(order.id)}
+                     className={cn(
+                       "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between group",
+                       activeOrderId === order.id ? "bg-blue-600 border-blue-600 text-white" : "bg-white border-slate-200 hover:border-blue-300 text-slate-800"
+                     )}
+                   >
+                     <div>
+                       <span className="text-xs font-bold block">{order.clientName || 'Client'} {order.tableNumber ? `- Table ${order.tableNumber}` : ''}</span>
+                       <span className={cn("text-[10px]", activeOrderId === order.id ? "text-blue-200" : "text-slate-500")}>
+                         {order.items?.length || 0} article(s)
+                       </span>
+                     </div>
+                     <div 
+                       onClick={(e) => handleDeleteOrder(order.id, e)}
+                       className={cn(
+                         "p-1.5 rounded-lg transition-colors opacity-0 group-hover:opacity-100",
+                         activeOrderId === order.id ? "text-white hover:bg-white/20" : "text-red-500 hover:bg-red-50"
+                       )}
+                     >
+                       <Trash2 size={14} />
+                     </div>
+                   </button>
+                 ))}
+               </div>
+            </div>
+
+            {/* Main Catalogue */}
             <div className="lg:col-span-2 space-y-4">
                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4">Catalogue (Produits & Boissons)</h3>
-               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3">
                  {resources.filter(r => r.type === 'Stock').map(r => (
                    <button 
                      key={r.id} 
                      onClick={() => {
-                        const existing = cart.find(c => c.id === r.id);
+                        const existing = currentCart.find((c: any) => c.id === r.id);
+                        let newCart;
                         if (existing) {
-                           setCart(cart.map(c => c.id === r.id ? { ...c, quantity: c.quantity + 1 } : c));
+                           newCart = currentCart.map((c: any) => c.id === r.id ? { ...c, quantity: c.quantity + 1 } : c);
                         } else {
-                           setCart([...cart, { id: r.id, name: r.name, price: 5, quantity: 1 }]); // Default price 5 if none
+                           newCart = [...currentCart, { id: r.id, name: r.name, price: r.price || 0, quantity: 1 }];
                         }
+                        handleUpdateCart(newCart);
                      }}
                      className="bg-white p-3 rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all text-left flex flex-col justify-between h-24 relative overflow-hidden group"
                    >
                      <span className="text-xs font-bold text-slate-700 break-words line-clamp-2">{r.name}</span>
                      <div className="mt-auto flex justify-between items-end">
                        <span className="text-[10px] font-bold text-slate-400">Stock: {r.quantity}</span>
+                       <span className="text-[10px] font-bold text-slate-900">{r.price ? `${r.price} FCFA` : ''}</span>
                      </div>
                      <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                    </button>
@@ -248,42 +436,43 @@ export default function SalesModule() {
                </div>
             </div>
             
+            {/* Cart */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col h-[500px]">
                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-                 <ShoppingCart size={16} /> Panier Courant
+                 <ShoppingCart size={16} /> Panier {activeOrder ? `(${activeOrder.clientName})` : ''}
                </h3>
                
                <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-                 {cart.length === 0 ? (
+                 {currentCart.length === 0 ? (
                    <div className="h-full flex items-center justify-center text-slate-400 text-xs italic">
                      Panier vide
                    </div>
                  ) : (
-                   cart.map(item => (
+                   currentCart.map((item: any) => (
                      <div key={item.id} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
                        <div className="flex-1 min-w-0 pr-2">
                          <div className="text-xs font-bold text-slate-800 truncate">{item.name}</div>
                          <div className="flex items-center gap-2 mt-1">
                            <button onClick={() => {
                               if (item.quantity > 1) {
-                                setCart(cart.map(c => c.id === item.id ? { ...c, quantity: c.quantity - 1 } : c));
+                                handleUpdateCart(currentCart.map((c: any) => c.id === item.id ? { ...c, quantity: c.quantity - 1 } : c));
                               } else {
-                                setCart(cart.filter(c => c.id !== item.id));
+                                handleUpdateCart(currentCart.filter((c: any) => c.id !== item.id));
                               }
                            }} className="w-5 h-5 bg-white border border-slate-200 rounded flex items-center justify-center font-bold text-xs hover:bg-slate-100">-</button>
                            <span className="text-[10px] font-bold w-4 text-center">{item.quantity}</span>
                            <button onClick={() => {
-                              setCart(cart.map(c => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c));
+                              handleUpdateCart(currentCart.map((c: any) => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c));
                            }} className="w-5 h-5 bg-white border border-slate-200 rounded flex items-center justify-center font-bold text-xs hover:bg-slate-100">+</button>
                          </div>
                        </div>
                        <div className="text-right shrink-0">
                          <div className="text-xs font-black text-slate-900 border-b border-transparent group-hover:border-slate-200 focus-within:border-blue-400 pb-0.5">
                            <input type="number" className="w-12 text-right bg-transparent outline-none" value={item.price} onChange={(e) => {
-                             setCart(cart.map(c => c.id === item.id ? { ...c, price: Number(e.target.value) } : c));
+                             handleUpdateCart(currentCart.map((c: any) => c.id === item.id ? { ...c, price: Number(e.target.value) } : c));
                            }} /> FCFA
                          </div>
-                         <button onClick={() => setCart(cart.filter(c => c.id !== item.id))} className="text-[9px] text-red-500 hover:underline mt-1 font-bold">Retirer</button>
+                         <button onClick={() => handleUpdateCart(currentCart.filter((c: any) => c.id !== item.id))} className="text-[9px] text-red-500 hover:underline mt-1 font-bold">Retirer</button>
                        </div>
                      </div>
                    ))
@@ -293,13 +482,14 @@ export default function SalesModule() {
                <div className="mt-4 pt-4 border-t border-slate-100">
                  <div className="flex justify-between items-center mb-4">
                    <span className="text-xs font-bold uppercase text-slate-500">Total à encaisser</span>
-                   <span className="text-2xl font-black text-slate-900">{cart.reduce((sum, item) => sum + (item.price * item.quantity), 0).toLocaleString()} FCFA</span>
+                   <span className="text-2xl font-black text-slate-900">{currentCart.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0).toLocaleString()} FCFA</span>
                  </div>
                  <button 
-                   disabled={cart.length === 0}
+                   disabled={currentCart.length === 0}
                    onClick={async () => {
                      try {
-                        const batchSales = cart.map(item => ({
+                        const batchSales = currentCart.map((item: any) => ({
+                          resourceId: item.id,
                           itemName: item.name,
                           quantity: item.quantity,
                           price: item.price,
@@ -307,20 +497,58 @@ export default function SalesModule() {
                           type: 'product',
                           status: 'completed',
                           companyId: currentCompany.id,
+                          clientName: activeOrder ? activeOrder.clientName : '',
                           date: serverTimestamp()
                         }));
+
+                        let totalAmount = 0;
+                        const itemsForInvoice = [];
+
                         for (let s of batchSales) {
-                           const res = await addDoc(collection(db, 'sales'), s);
-                           await addDoc(collection(db, 'sales_invoices'), {
-                              saleId: res.id,
-                              invoiceNumber: `FA-POS-${Date.now().toString().slice(-6)}`,
-                              amount: s.total,
-                              status: 'paid',
-                              companyId: currentCompany.id,
-                              date: serverTimestamp()
+                           const sData = { ...s };
+                           delete sData.resourceId; // optional, to not clutter sales table, but let's keep it or remove it
+                           
+                           const res = await addDoc(collection(db, 'sales'), sData);
+                           
+                           // Décrémenter le stock
+                           if (s.resourceId) {
+                               const resource = resources.find(r => r.id === s.resourceId);
+                               if (resource && typeof resource.quantity === 'number') {
+                                  await updateDoc(doc(db, 'resources', s.resourceId), {
+                                     quantity: Math.max(0, resource.quantity - s.quantity)
+                                  });
+                               }
+                           }
+                           
+                           totalAmount += s.total;
+                           itemsForInvoice.push({
+                             name: s.itemName,
+                             quantity: s.quantity,
+                             price: s.price,
+                             total: s.total
                            });
                         }
-                        setCart([]);
+
+                        // Create a single invoice for the entire order
+                        await addDoc(collection(db, 'sales_invoices'), {
+                           saleId: activeOrderId || `direct-${Date.now()}`,
+                           clientName: activeOrder ? activeOrder.clientName : '',
+                           tableNumber: activeOrder ? activeOrder.tableNumber : '',
+                           invoiceNumber: `FA-POS-${Date.now().toString().slice(-6)}`,
+                           amount: totalAmount,
+                           status: 'paid',
+                           companyId: currentCompany.id,
+                           date: serverTimestamp(),
+                           items: JSON.stringify(itemsForInvoice)
+                        });
+
+                        if (activeOrderId) {
+                          await deleteDoc(doc(db, 'open_orders', activeOrderId));
+                          setActiveOrderId(null);
+                        } else {
+                          setCart([]);
+                        }
+
                         alert('Encaissement réussi !');
                      } catch(e) {
                         alert('Erreur lors de l\'encaissement');
@@ -331,7 +559,7 @@ export default function SalesModule() {
                  >
                    <CheckCircle2 size={16} /> Valider l'Encaissement
                  </button>
-                 <button onClick={() => setCart([])} disabled={cart.length === 0} className="w-full mt-2 text-center text-[10px] uppercase font-bold text-slate-400 hover:text-slate-600 disabled:opacity-50 py-2">
+                 <button onClick={() => handleUpdateCart([])} disabled={currentCart.length === 0} className="w-full mt-2 text-center text-[10px] uppercase font-bold text-slate-400 hover:text-slate-600 disabled:opacity-50 py-2">
                    Vider le panier
                  </button>
                </div>
@@ -340,14 +568,22 @@ export default function SalesModule() {
         )}
 
         {activeTab === 'invoices' && (
-          <Table headers={['N° Facture', 'Vente Liée', 'Date', 'Montant', 'Statut']}>
+          <Table headers={['N° Facture', 'Client / Table', 'Détails des Produits', 'Date & Heure', 'Montant', 'Statut']}>
             {invoices.map(inv => (
               <TableRow key={inv.id}>
                 <span className="font-mono font-bold text-blue-600">{inv.invoiceNumber}</span>
-                <span className="text-slate-600 text-xs">{sales.find(s => s.id === inv.saleId)?.itemName || 'Inconnu'}</span>
-                <span className="text-[10px] font-bold text-slate-400">{inv.date ? new Date(inv.date.seconds * 1000).toLocaleDateString() : 'Auj'}</span>
+                <div className="flex flex-col">
+                   <span className="font-bold text-slate-800 text-xs">{inv.clientName || 'Générique'}</span>
+                   {inv.tableNumber && <span className="text-[10px] text-slate-500">Table: {inv.tableNumber}</span>}
+                </div>
+                <div className="text-[10px] text-slate-600 max-w-[200px] truncate" title={inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ')}>
+                   {inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ') || sales.find(s => s.id === inv.saleId)?.itemName || 'Inconnu'}
+                </div>
+                <span className="text-[10px] font-bold text-slate-500">
+                  {inv.date ? new Date(inv.date.seconds * 1000).toLocaleString() : 'Auj'}
+                </span>
                 <span className="font-black text-slate-900 font-mono">{inv.amount.toLocaleString()} FCFA</span>
-                <span className={cn("px-2 py-0.5 rounded text-[9px] uppercase font-bold border", inv.status === 'paid' ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200")}>
+                <span className={cn("px-2 py-0.5 rounded text-[10px] uppercase font-bold border", inv.status === 'paid' ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200")}>
                   {inv.status === 'paid' ? 'RÉGLÉE' : 'IMPAYÉE'}
                 </span>
               </TableRow>
@@ -402,7 +638,7 @@ export default function SalesModule() {
                  </div>
                  <div className="space-y-1.5">
                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Client/Partenaire</label>
-                   <input type="text" placeholder="Nom du client" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900" value={formData.clientName || ''} onChange={e => setFormData({...formData, clientName: e.target.value})} required/>
+                   <input type="text" list="clients-list" placeholder="Nom du client" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900" value={formData.clientName || ''} onChange={e => setFormData({...formData, clientName: e.target.value})} />
                  </div>
               </div>
 
@@ -430,6 +666,30 @@ export default function SalesModule() {
               <div className="grid grid-cols-2 gap-4 mt-8">
                 <button type="button" onClick={() => { setIsAdding(false); setEditingSale(null); setFormData({ type: 'product', quantity: 1, price: 0 }); }} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
                 <button type="submit" className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono">{editingSale ? 'Mettre à jour' : 'Facturer'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isAddingOrder && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-slate-100">
+            <h3 className="text-xl font-bold text-slate-900 mb-6">Nouvelle Commande</h3>
+            <form onSubmit={handleCreateOrder} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nom du client</label>
+                <input type="text" list="clients-list" placeholder="Ex: Jean" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900" value={newOrderName} onChange={e => setNewOrderName(e.target.value)} required/>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Numéro de table</label>
+                <input type="text" placeholder="Ex: 3" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900" value={newOrderTable} onChange={e => setNewOrderTable(e.target.value)} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <button type="button" onClick={() => setIsAddingOrder(false)} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
+                <button type="submit" className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono">Créer</button>
               </div>
             </form>
           </div>

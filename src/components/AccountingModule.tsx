@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, where, addDoc, serverTimestamp, deleteDoc, doc } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { 
@@ -12,7 +12,10 @@ import {
   ArrowDownCircle, 
   ArrowUpCircle,
   FileText,
-  Activity
+  Activity,
+  Download,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -25,13 +28,17 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  LineChart,
+  Line
 } from 'recharts';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
 import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
+import { getFinancialSuggestions } from '../lib/gemini';
+import Markdown from 'react-markdown';
 
 interface Expense {
   id: string;
@@ -57,6 +64,8 @@ export default function AccountingModule() {
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [newExpense, setNewExpense] = useState({ description: '', amount: 0, category: 'Autres' });
   const [activeTab, setActiveTab] = useState<'report' | 'expenses'>('report');
+  const [aiSuggestions, setAiSuggestions] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const categories = ['Loyers', 'Salaires', 'Fournitures', 'Marketing', 'Logistique', 'Taxes', 'Autres'];
 
@@ -108,24 +117,93 @@ export default function AccountingModule() {
   
   const isRentable = netIncome > 0;
 
-  // Prepare chart data
-  const chartData = [
-    { name: 'Jan', revenue: totalRevenue * 0.1, expenses: totalExpenses * 0.12 },
-    { name: 'Fév', revenue: totalRevenue * 0.15, expenses: totalExpenses * 0.1 },
-    { name: 'Mar', revenue: totalRevenue * 0.2, expenses: totalExpenses * 0.15 },
-    { name: 'Avr', revenue: totalRevenue * 0.55, expenses: totalExpenses * 0.63 }, // Simulate current month growth
-  ];
+  // Real data processing for charts
+  const monthlyData = useMemo(() => {
+    const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
+    const data: Record<string, { name: string, revenue: number, expenses: number }> = {};
+
+    // Current year months up to current month
+    const now = new Date();
+    for (let i = 0; i <= now.getMonth(); i++) {
+        data[months[i]] = { name: months[i], revenue: 0, expenses: 0 };
+    }
+
+    sales.filter(s => s.status === 'completed').forEach(s => {
+      if (!s.date) return;
+      const d = new Date((s.date.seconds || s.date/1000) * 1000);
+      const m = months[d.getMonth()];
+      if (data[m]) data[m].revenue += s.total;
+    });
+
+    expenses.forEach(e => {
+      if (!e.date) return;
+      const d = new Date((e.date.seconds || e.date/1000) * 1000);
+      const m = months[d.getMonth()];
+      if (data[m]) data[m].expenses += e.amount;
+    });
+
+    return Object.values(data);
+  }, [sales, expenses]);
 
   const pieData = categories.map(cat => ({
     name: cat,
     value: expenses.filter(e => e.category === cat).reduce((acc, e) => acc + e.amount, 0)
   })).filter(d => d.value > 0);
 
+  const fetchAiSuggestions = async () => {
+    setIsAnalyzing(true);
+    const result = await getFinancialSuggestions({
+      totalRevenue,
+      totalExpenses,
+      transactions: [
+        ...sales.slice(0, 5).map(s => ({ type: 'revenue', amount: s.total, date: s.date })),
+        ...expenses.slice(0, 5).map(e => ({ type: 'expense', amount: e.amount, date: e.date, desc: e.description }))
+      ]
+    });
+    setAiSuggestions(result);
+    setIsAnalyzing(false);
+  };
+
+  const exportToCSV = () => {
+    const headers = ["Type", "Date", "Catégorie/Client", "Description", "Montant"];
+    const rows = [
+      ...sales.filter(s => s.status === 'completed').map(s => [
+        "RECETTE",
+        s.date ? new Date((s.date.seconds || s.date/1000) * 1000).toLocaleDateString() : 'N/A',
+        "Client Direct",
+        "Vente Produit/Service",
+        s.total
+      ]),
+      ...expenses.map(e => [
+        "DÉPENSE",
+        e.date ? new Date((e.date.seconds || e.date/1000) * 1000).toLocaleDateString() : 'N/A',
+        e.category,
+        e.description,
+        e.amount
+      ])
+    ];
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(r => r.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `rapport_financier_${currentCompany?.name || 'nexus'}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-none">Rapport Comptable</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-none">Rapport Comptable Avancé</h2>
           <p className="text-slate-500 text-xs sm:text-sm mt-2 uppercase tracking-widest font-bold">Analyse financière et gestion des flux</p>
         </div>
         
@@ -147,6 +225,23 @@ export default function AccountingModule() {
 
       {activeTab === 'report' && (
         <div className="space-y-8">
+          <div className="flex flex-wrap gap-4">
+            <button 
+              onClick={exportToCSV}
+              className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm"
+            >
+              <Download size={14} /> Exporter en CSV
+            </button>
+            <button 
+              onClick={fetchAiSuggestions}
+              disabled={isAnalyzing}
+              className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+            >
+              {isAnalyzing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} className="text-amber-400" />}
+              {isAnalyzing ? "Analyse en cours..." : "Générer Conseils IA"}
+            </button>
+          </div>
+
           {/* Financial Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <motion.div 
@@ -159,7 +254,7 @@ export default function AccountingModule() {
                 <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{totalRevenue.toLocaleString()} FCFA</h3>
                 <div className="flex items-center gap-1 text-green-500 mt-1">
                   <ArrowUpCircle size={14} />
-                  <span className="text-[10px] font-bold">+15% vs mois dernier</span>
+                  <span className="text-[10px] font-bold">Flux entrant total</span>
                 </div>
               </div>
               <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 shadow-inner">
@@ -178,7 +273,7 @@ export default function AccountingModule() {
                 <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{totalExpenses.toLocaleString()} FCFA</h3>
                 <div className="flex items-center gap-1 text-red-500 mt-1">
                   <ArrowDownCircle size={14} />
-                  <span className="text-[10px] font-bold">+5% vs mois dernier</span>
+                  <span className="text-[10px] font-bold">Charges opérationnelles</span>
                 </div>
               </div>
               <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center text-red-600 shadow-inner">
@@ -208,28 +303,69 @@ export default function AccountingModule() {
             </motion.div>
           </div>
 
-          {/* Strategic Insight Block for Profitability */}
-          <div className="bg-slate-900 p-6 sm:p-8 rounded-[2.5rem] shadow-2xl shadow-slate-900/20 relative overflow-hidden text-white flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="absolute right-0 top-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
-            <div className="relative z-10 flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <div className={cn("px-2 py-1 rounded text-[9px] font-black tracking-widest uppercase", isRentable ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400")}>
-                  Diagnostic Stratégique
+          {/* AI Suggestions Block */}
+          <AnimatePresence>
+            {(aiSuggestions || isAnalyzing) && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl shadow-slate-900/20 relative overflow-hidden text-white"
+              >
+                <div className="absolute right-0 top-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+                <div className="relative z-10">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-[10px] font-black tracking-widest uppercase flex items-center gap-2">
+                      <Sparkles size={12} /> Analyse par Intelligence Artificielle
+                    </div>
+                  </div>
+                  
+                  {isAnalyzing ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-4">
+                      <Loader2 className="animate-spin text-amber-400" size={40} />
+                      <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Le Nexus Core analyse vos flux financiers...</p>
+                    </div>
+                  ) : (
+                    <div className="prose prose-invert max-w-none prose-sm">
+                      <Markdown>{aiSuggestions || ''}</Markdown>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {!aiSuggestions && !isAnalyzing && (
+            <div className="bg-slate-900 p-6 sm:p-8 rounded-[2.5rem] shadow-2xl shadow-slate-900/20 relative overflow-hidden text-white flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="absolute right-0 top-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+              <div className="relative z-10 flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className={cn("px-2 py-1 rounded text-[9px] font-black tracking-widest uppercase", isRentable ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400")}>
+                    Diagnostic Statistique
+                  </div>
+                </div>
+                <h3 className="text-xl font-black tracking-tight mb-2">Recommandation Opérationnelle</h3>
+                <p className="text-sm font-medium text-slate-300 leading-relaxed max-w-3xl">
+                  {isRentable 
+                    ? `L'entreprise affiche une marge nette de ${margeProfit}%. Son modèle d'affaires dégage un bénéfice consistant. Songez à réinvestir ces marges directement dans les ressources ou le marketing pour augmenter le volume d'activité.`
+                    : `L'entreprise ne couvre actuellement pas l'ensemble de ses charges (Marge Nette: ${margeProfit}%). Il est prioritaire de réduire les dépenses fixes non essentielles ou d'ajuster vos tarifs.`}
+                </p>
+                <div className="mt-4">
+                  <button 
+                    onClick={fetchAiSuggestions}
+                    className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 hover:text-white transition-colors"
+                  >
+                    Obtenir une analyse IA détaillée →
+                  </button>
                 </div>
               </div>
-              <h3 className="text-xl font-black tracking-tight mb-2">Recommandation Opérationnelle de Rentabilité</h3>
-              <p className="text-sm font-medium text-slate-300 leading-relaxed max-w-3xl">
-                {isRentable 
-                  ? `L'entreprise affiche une marge nette de ${margeProfit}%. Son modèle d'affaires (services ou ventes) dégage un bénéfice consistant. Songez à réinvestir ces marges directement dans les ressources (embauches, outillages) ou dans le marketing (fidélisation des clients) pour augmenter le volume d'activité des prestations.`
-                  : `L'entreprise ne couvre actuellement pas l'ensemble de ses charges (Marge Nette: ${margeProfit}%). Il est prioritaire soit de réduire les dépenses fixes non essentielles, soit d'ajuster le catalogue de prix pour vos prestations et ventes de services.`}
-              </p>
-            </div>
-            <div className="shrink-0 relative z-10">
-              <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur border border-white/5 flex items-center justify-center">
-                <Activity className={isRentable ? "text-emerald-400" : "text-red-400"} size={32} />
+              <div className="shrink-0 relative z-10">
+                <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur border border-white/5 flex items-center justify-center">
+                  <Activity className={isRentable ? "text-emerald-400" : "text-red-400"} size={32} />
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -240,13 +376,13 @@ export default function AccountingModule() {
             >
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Évolution Mensuelle</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Comparatif entrées / sorties</p>
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Évolution Réelle</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Comparatif entrées / sorties par mois</p>
                 </div>
                 <BarChartIcon className="text-slate-200" size={24} />
               </div>
               <ResponsiveContainer width="100%" height="80%">
-                <BarChart data={chartData}>
+                <BarChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
@@ -269,8 +405,8 @@ export default function AccountingModule() {
             >
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Répartition des Charges</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Structure des coûts</p>
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Structure des Coûts</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Répartition des charges par catégorie</p>
                 </div>
                 <PieChartIcon className="text-slate-200" size={24} />
               </div>
@@ -297,6 +433,36 @@ export default function AccountingModule() {
               </ResponsiveContainer>
             </motion.div>
           </div>
+
+          {/* Performance Trend */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-200/40"
+          >
+             <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Tendance de Profitabilité</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Évolution linéaire de la performance</p>
+                </div>
+                <TrendingUp className="text-slate-200" size={24} />
+              </div>
+              <div className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                    />
+                    <Line type="monotone" dataKey="revenue" stroke="#3B82F6" strokeWidth={4} dot={{ r: 4, fill: '#3B82F6', strokeWidth: 2, stroke: '#fff' }} name="Recettes" />
+                    <Line type="monotone" dataKey="expenses" stroke="#EF4444" strokeWidth={4} dot={{ r: 4, fill: '#EF4444', strokeWidth: 2, stroke: '#fff' }} name="Dépenses" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+          </motion.div>
         </div>
       )}
 
