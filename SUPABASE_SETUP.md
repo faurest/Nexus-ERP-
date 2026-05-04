@@ -300,6 +300,84 @@ CREATE TABLE users (
   "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE TABLE open_orders (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  "clientName" TEXT,
+  "tableNumber" TEXT,
+  items JSONB DEFAULT '[]'::jsonb,
+  status TEXT DEFAULT 'open',
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE sales_invoices (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  "saleId" TEXT,
+  "invoiceNumber" TEXT UNIQUE NOT NULL,
+  amount REAL,
+  status TEXT DEFAULT 'unpaid',
+  date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  "clientName" TEXT,
+  "tableNumber" TEXT,
+  items TEXT -- Stores items as JSON string for now to match current code
+);
+
+CREATE TABLE expenses (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  "projectId" TEXT,
+  amount REAL,
+  category TEXT,
+  description TEXT,
+  date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE invoices (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  "projectId" TEXT,
+  "partnerId" TEXT,
+  amount REAL,
+  status TEXT DEFAULT 'pending',
+  "issueDate" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  "dueDate" TIMESTAMP WITH TIME ZONE,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE payments (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  "projectId" TEXT,
+  amount REAL,
+  type TEXT,
+  date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE notifications (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  "recipientIds" JSONB DEFAULT '[]'::jsonb,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  type TEXT,
+  read BOOLEAN DEFAULT FALSE,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE partners (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyId" TEXT NOT NULL,
+  name TEXT NOT NULL,
+  type TEXT,
+  "contactEmail" TEXT,
+  "activeProjectsCount" INTEGER DEFAULT 0,
+  "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Désactivation RLS (Sécurité à configurer plus tard)
 ALTER TABLE companies DISABLE ROW LEVEL SECURITY;
 ALTER TABLE personnel DISABLE ROW LEVEL SECURITY;
@@ -311,6 +389,13 @@ ALTER TABLE tasks DISABLE ROW LEVEL SECURITY;
 ALTER TABLE services DISABLE ROW LEVEL SECURITY;
 ALTER TABLE interventions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE open_orders DISABLE ROW LEVEL SECURITY;
+ALTER TABLE sales_invoices DISABLE ROW LEVEL SECURITY;
+ALTER TABLE expenses DISABLE ROW LEVEL SECURITY;
+ALTER TABLE invoices DISABLE ROW LEVEL SECURITY;
+ALTER TABLE payments DISABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;
+ALTER TABLE partners DISABLE ROW LEVEL SECURITY;
 ```
 
 ## 🔄 Récupération des données (La Pause 237, etc.)

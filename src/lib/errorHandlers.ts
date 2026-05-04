@@ -57,5 +57,17 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
+  
+  // Alert the user with a friendly message
+  if (typeof window !== 'undefined') {
+    let friendlyMessage = "Une erreur est survenue lors de l'opération.";
+    if (errorMessage.includes('not found') || errorMessage.includes('relation') || errorMessage.includes('does not exist')) {
+      friendlyMessage = `Erreur : La table ou la colonne pour '${path}' est manquante dans votre base de données Supabase. Veuillez exécuter le script SQL dans SUPABASE_SETUP.md.`;
+    } else if (errorMessage.includes('permission') || errorMessage.includes('denied')) {
+      friendlyMessage = "Erreur : Vous n'avez pas les permissions nécessaires pour effectuer cette action.";
+    }
+    alert(friendlyMessage + "\n\nDétails : " + errorMessage);
+  }
+
   throw new Error(JSON.stringify(errInfo));
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, collection, getDocs, addDoc } from '../lib/firebase';
+import { db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from '../lib/firebase';
 import { 
   Building2, 
   Plus, 
@@ -15,7 +15,13 @@ import {
   BarChart3,
   PieChart as PieChartIcon,
   Download,
-  Upload
+  Upload,
+  Edit2,
+  Trash2,
+  UserPlus,
+  X,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
@@ -43,6 +49,11 @@ export default function AdminModule() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeAdminTab, setActiveAdminTab] = useState<'companies' | 'users' | 'tools'>('companies');
   const [systemUsers, setSystemUsers] = useState<any[]>([]);
+  const [editingCompany, setEditingCompany] = useState<any | null>(null);
+  const [showMemberModal, setShowMemberModal] = useState<any | null>(null);
+  const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [showUserAssignModal, setShowUserAssignModal] = useState<any | null>(null);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
 
   const fetchGlobalData = async () => {
     try {
@@ -106,6 +117,140 @@ export default function AdminModule() {
     } catch (err) {
       console.error(err);
       alert('Failed to create company');
+    }
+  };
+
+  const handleUpdateCompany = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCompany || !editingCompany.name) return;
+
+    try {
+      await updateDoc(doc(db, 'companies', editingCompany.id), {
+        name: editingCompany.name,
+        joinCode: editingCompany.joinCode,
+        ownerEmail: editingCompany.ownerEmail
+      });
+      setEditingCompany(null);
+      fetchGlobalData();
+      alert('Entreprise mise à jour avec succès');
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors de la mise à jour');
+    }
+  };
+
+  const handleDeleteCompany = async (id: string, name: string) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer définitvement l'entreprise "${name}" ? Cette action est irréversible.`)) return;
+
+    try {
+      await deleteDoc(doc(db, 'companies', id));
+      fetchGlobalData();
+      alert('Entreprise supprimée');
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors de la suppression');
+    }
+  };
+
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!showMemberModal || !newMemberEmail) return;
+
+    try {
+      const company = showMemberModal;
+      const email = newMemberEmail.trim().toLowerCase();
+      if (company.memberEmails?.includes(email)) {
+        alert('Cet utilisateur est déjà membre.');
+        return;
+      }
+
+      const updatedEmails = [...(company.memberEmails || []), email];
+      await updateDoc(doc(db, 'companies', company.id), {
+        memberEmails: updatedEmails
+      });
+      
+      setNewMemberEmail('');
+      setShowMemberModal({ ...company, memberEmails: updatedEmails });
+      fetchGlobalData();
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors de l\'ajout du membre');
+    }
+  };
+
+  const handleRemoveMember = async (companyId: string, email: string) => {
+    if (!window.confirm(`Retirer ${email} de cette entreprise ?`)) return;
+
+    try {
+      const company = companies.find(c => c.id === companyId);
+      if (!company) return;
+
+      const updatedEmails = company.memberEmails.filter((e: string) => e !== email);
+      await updateDoc(doc(db, 'companies', companyId), {
+        memberEmails: updatedEmails
+      });
+      
+      if (showMemberModal?.id === companyId) {
+        setShowMemberModal({ ...showMemberModal, memberEmails: updatedEmails });
+      }
+      fetchGlobalData();
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors du retrait');
+    }
+  };
+
+  const handleAssignUserToCompany = async (userEmail: string, companyId: string) => {
+    try {
+      const company = companies.find(c => c.id === companyId);
+      if (!company) return;
+
+      if (company.memberEmails?.includes(userEmail)) {
+        alert('Cet utilisateur est déjà membre de cette entreprise.');
+        return;
+      }
+
+      await updateDoc(doc(db, 'companies', companyId), {
+        memberEmails: [...(company.memberEmails || []), userEmail]
+      });
+      
+      setShowUserAssignModal(null);
+      fetchGlobalData();
+      alert('Utilisateur affecté avec succès');
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors de l\'affectation');
+    }
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser || !editingUser.email) return;
+
+    try {
+      await updateDoc(doc(db, 'users', editingUser.id), {
+        displayName: editingUser.displayName,
+        email: editingUser.email
+      });
+      setEditingUser(null);
+      fetchGlobalData();
+      alert('Utilisateur mis à jour');
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors de la mise à jour');
+    }
+  };
+
+  const handleDeleteUser = async (id: string, email: string) => {
+    if (!window.confirm(`Supprimer l'utilisateur ${email} ? Cette action supprimera sa fiche dans la base Nexus.`)) return;
+
+    try {
+      await deleteDoc(doc(db, 'users', id));
+      fetchGlobalData();
+      alert('Utilisateur supprimé');
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors de la suppression');
     }
   };
 
@@ -474,7 +619,29 @@ export default function AdminModule() {
                       <span className="text-[10px] font-black text-slate-400 ml-2">+{company.memberEmails?.length || 0}</span>
                     </div>
                   </div>
-                  <div className="pr-8 text-right">
+                  <div className="pr-8 text-right flex items-center justify-end gap-2">
+                    <button 
+                      onClick={() => setShowMemberModal(company)}
+                      className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                      title="Gérer l'équipe"
+                    >
+                      <Users size={16} />
+                    </button>
+                    <button 
+                      onClick={() => setEditingCompany(company)}
+                      className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
+                      title="Modifier"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteCompany(company.id, company.name)}
+                      className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                      title="Supprimer"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    <div className="h-6 w-px bg-slate-100 mx-2" />
                     <button 
                       onClick={() => {
                         localStorage.setItem('nexus_switch_company', JSON.stringify(company));
@@ -506,7 +673,7 @@ export default function AdminModule() {
             </div>
           </div>
 
-          <Table headers={["Utilisateur", "Email", "Statut", "Entreprise(s)"]}>
+          <Table headers={["Utilisateur", "Email", "Statut", "Entreprise(s)", "Actions"]}>
             {systemUsers.map((u) => (
               <TableRow key={u.id} className="border-b border-slate-50 last:border-0 grow">
                 <div className="py-5">
@@ -533,11 +700,92 @@ export default function AdminModule() {
                         {c.name}
                       </span>
                     ))}
+                    <button 
+                      onClick={() => setShowUserAssignModal(u)}
+                      className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black hover:bg-blue-600 hover:text-white transition-all flex items-center gap-1"
+                    >
+                      <Plus size={10} /> Affecter
+                    </button>
                   </div>
+                </div>
+                <div className="flex items-center gap-2 pr-4">
+                  <button 
+                    onClick={() => setEditingUser(u)}
+                    className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
+                    title="Modifier"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteUser(u.id, u.email)}
+                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                    title="Supprimer"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </TableRow>
             ))}
           </Table>
+        </div>
+      )}
+
+      {editingUser && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
+          >
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                <Users size={28} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Modifier Utilisateur</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">{editingUser.email}</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleUpdateUser} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nom Complet</label>
+                <input 
+                  type="text" 
+                  required
+                  value={editingUser.displayName || ''}
+                  onChange={e => setEditingUser({...editingUser, displayName: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
+                <input 
+                  type="email" 
+                  required
+                  value={editingUser.email || ''}
+                  onChange={e => setEditingUser({...editingUser, email: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all"
+                />
+              </div>
+
+              <div className="flex gap-4 pt-6">
+                <button 
+                  type="button" 
+                  onClick={() => setEditingUser(null)}
+                  className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
+                >
+                  Annuler
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all active:scale-95"
+                >
+                  Mettre à jour
+                </button>
+              </div>
+            </form>
+          </motion.div>
         </div>
       )}
 
@@ -595,7 +843,193 @@ export default function AdminModule() {
         </div>
       )}
 
-      {/* Modal - Better separate component in real app */}
+      {editingCompany && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
+          >
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                <Edit2 size={28} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Modifier l'Entité</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">{editingCompany.name}</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleUpdateCompany} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nom de l'entité</label>
+                <input 
+                  type="text" 
+                  required
+                  value={editingCompany.name}
+                  onChange={e => setEditingCompany({...editingCompany, name: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email Propriétaire</label>
+                <input 
+                  type="email" 
+                  required
+                  value={editingCompany.ownerEmail}
+                  onChange={e => setEditingCompany({...editingCompany, ownerEmail: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Code Nexus</label>
+                <input 
+                  type="text" 
+                  required
+                  value={editingCompany.joinCode}
+                  onChange={e => setEditingCompany({...editingCompany, joinCode: e.target.value.toUpperCase()})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all"
+                />
+              </div>
+
+              <div className="flex gap-4 pt-6">
+                <button 
+                  type="button" 
+                  onClick={() => setEditingCompany(null)}
+                  className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
+                >
+                  Annuler
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-[2] py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-slate-800 transition-all active:scale-95"
+                >
+                  Sauvegarder
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {showMemberModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden max-h-[90vh] flex flex-col"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-emerald-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-emerald-600/20">
+                  <Users size={28} />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Gestion de l'Équipe</h3>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">{showMemberModal.name}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowMemberModal(null)} className="p-2 bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition-all">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddMember} className="mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Ajouter un email utilisateur</label>
+              <div className="flex gap-2">
+                <input 
+                  type="email" 
+                  required
+                  placeholder="exemple@mail.com"
+                  className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent font-bold text-sm"
+                  value={newMemberEmail}
+                  onChange={e => setNewMemberEmail(e.target.value)}
+                />
+                <button 
+                  type="submit"
+                  className="px-5 py-3 bg-emerald-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center gap-2"
+                >
+                  <Plus size={16} /> Ajouter
+                </button>
+              </div>
+            </form>
+
+            <div className="flex-1 overflow-y-auto pr-2">
+              <div className="space-y-2">
+                {showMemberModal.memberEmails?.map((email: string) => (
+                  <div key={email} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl group hover:border-emerald-200 transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-[10px] font-black text-slate-400">
+                        {email.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-xs font-bold text-slate-700">{email}</span>
+                      {email === showMemberModal.ownerEmail && (
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded-md text-[8px] font-black uppercase tracking-tighter">Proprio</span>
+                      )}
+                    </div>
+                    {email !== showMemberModal.ownerEmail && (
+                      <button 
+                        onClick={() => handleRemoveMember(showMemberModal.id, email)}
+                        className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {showUserAssignModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                  <UserPlus size={28} />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Affectation Entreprise</h3>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">{showUserAssignModal.email}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowUserAssignModal(null)} className="p-2 bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition-all">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Choisir une entreprise pour cet utilisateur :</p>
+              {companies.map((comp) => (
+                <button
+                  key={comp.id}
+                  onClick={() => handleAssignUserToCompany(showUserAssignModal.email, comp.id)}
+                  className="w-full text-left p-4 rounded-2xl border bg-white border-slate-100 hover:border-blue-600 hover:shadow-lg transition-all flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                      {comp.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">{comp.name}</p>
+                    </div>
+                  </div>
+                  <Plus size={18} className="text-slate-200 group-hover:text-blue-600" />
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modal - Create Company */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
           <motion.div 
