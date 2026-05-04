@@ -182,6 +182,14 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
 
   const ownedCompanies = companies.filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email);
   const joinedCompanies = companies.filter(c => c.ownerId !== user?.uid && c.ownerEmail !== user?.email);
+  const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com';
+
+  useEffect(() => {
+    if (isMaster && companies.length === 0 && mode === 'select') {
+      // Auto-suggest master console if nothing else exists
+      console.log("Master user detected with no companies, hinting at admin console");
+    }
+  }, [isMaster, companies.length, mode]);
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-slate-900 font-sans relative overflow-hidden">
@@ -196,16 +204,23 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
           <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-blue-600/30 text-white">
             <Building2 size={32} />
           </div>
-          <h2 className="text-2xl font-bold tracking-tight">Bienvenue, {user.displayName || user.email?.split('@')[0]}</h2>
-          <p className="text-sm text-slate-500 mt-2">Sélectionnez ou rejoignez un espace de travail.</p>
-          {(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com') && (
-            <button 
-              onClick={() => onSelect({ id: 'comp_nexus_master', name: 'Nexus Enterprise Global', ownerId: 'master_nexus_01', joinCode: 'NEXUS-ADMIN' })}
-              className="mt-4 inline-flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all shadow-lg shadow-slate-900/10"
-            >
-              <Shield size={14} className="text-blue-400" />
-              Console Maître NEXUS
-            </button>
+          <h2 className="text-2xl font-bold tracking-tight">Bonjour, {user.displayName || user.email?.split('@')[0]}</h2>
+          <p className="text-sm text-slate-500 mt-2">Prêt à piloter vos écosystèmes ?</p>
+          
+          {isMaster && (
+            <div className="mt-6 p-4 bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
+              <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-3">Privilèges Maître Détectés</p>
+              <button 
+                onClick={() => onSelect({ id: 'comp_nexus_master', name: 'Nexus Enterprise Global', ownerId: 'master_nexus_01', joinCode: 'NEXUS-ADMIN' })}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-white hover:text-blue-600 transition-all group"
+              >
+                <Shield size={18} className="group-hover:rotate-12 transition-transform" />
+                Accéder à la Console Globale
+              </button>
+              <p className="text-[8px] text-slate-500 mt-3 italic leading-relaxed px-2">
+                Permet de superviser toutes les entreprises, migrer les données et gérer les comptes utilisateurs.
+              </p>
+            </div>
           )}
         </div>
 
