@@ -434,7 +434,7 @@ export default function AdminModule() {
             <Table headers={["Institution", "Accès Principal", "Code Nexus", "Équipe", "Actions"]}>
               {filteredCompanies.map((company) => (
                 <TableRow key={company.id} className="group hover:bg-slate-50/80 transition-all border-b border-slate-50 last:border-0 rounded-2xl">
-                  <td className="py-7 pl-8">
+                  <div className="py-7 pl-8">
                     <div className="flex items-center gap-5">
                       <div className="w-14 h-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all transform group-hover:rotate-3 shadow-md">
                         {company.name?.charAt(0).toUpperCase()}
@@ -444,8 +444,8 @@ export default function AdminModule() {
                         <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Nexus ID: {company.id?.substring(0, 8)}</p>
                       </div>
                     </div>
-                  </td>
-                  <td>
+                  </div>
+                  <div>
                     <div className="space-y-1">
                       <p className="text-xs font-bold text-slate-700">{company.ownerEmail}</p>
                       <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-all">
@@ -453,13 +453,13 @@ export default function AdminModule() {
                         <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Propriétaire</span>
                       </div>
                     </div>
-                  </td>
-                  <td>
+                  </div>
+                  <div>
                     <span className="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-900 rounded-xl text-[11px] font-black tracking-[0.2em] uppercase border border-slate-200">
                       {company.joinCode}
                     </span>
-                  </td>
-                  <td>
+                  </div>
+                  <div>
                     <div className="flex items-center gap-3">
                       <div className="flex -space-x-4">
                         {Array.from({ length: Math.min(3, company.memberEmails?.length || 1) }).map((_, i) => (
@@ -473,8 +473,8 @@ export default function AdminModule() {
                       </div>
                       <span className="text-[10px] font-black text-slate-400 ml-2">+{company.memberEmails?.length || 0}</span>
                     </div>
-                  </td>
-                  <td className="pr-8 text-right">
+                  </div>
+                  <div className="pr-8 text-right">
                     <button 
                       onClick={() => {
                         localStorage.setItem('nexus_switch_company', JSON.stringify(company));
@@ -486,7 +486,7 @@ export default function AdminModule() {
                       Ouvrir
                       <ArrowUpRight size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
                     </button>
-                  </td>
+                  </div>
                 </TableRow>
               ))}
             </Table>
@@ -509,7 +509,7 @@ export default function AdminModule() {
           <Table headers={["Utilisateur", "Email", "Statut", "Entreprise(s)"]}>
             {systemUsers.map((u) => (
               <TableRow key={u.id} className="border-b border-slate-50 last:border-0 grow">
-                <td className="py-5">
+                <div className="py-5">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center font-black text-slate-400 text-sm">
                       {u.displayName?.charAt(0) || u.email?.charAt(0)}
@@ -519,14 +519,14 @@ export default function AdminModule() {
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">ID: {u.uid?.substring(0, 8)}</p>
                     </div>
                   </div>
-                </td>
-                <td className="text-xs font-bold text-slate-600">{u.email}</td>
-                <td>
+                </div>
+                <div className="text-xs font-bold text-slate-600">{u.email}</div>
+                <div>
                   <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest">
                     Actif
                   </span>
-                </td>
-                <td>
+                </div>
+                <div>
                   <div className="flex flex-wrap gap-1">
                     {companies.filter(c => c.memberEmails?.includes(u.email) || c.ownerEmail === u.email).map(c => (
                       <span key={c.id} className="px-2 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-bold">
@@ -534,7 +534,7 @@ export default function AdminModule() {
                       </span>
                     ))}
                   </div>
-                </td>
+                </div>
               </TableRow>
             ))}
           </Table>
