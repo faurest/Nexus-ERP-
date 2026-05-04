@@ -29,14 +29,20 @@ export const supabase = createClient(safeUrl, safeKey);
 
 // Test de connexion rapide
 export async function checkSupabaseConnection() {
-  if (!isSupabaseConfigured) return false;
+  if (!isSupabaseConfigured) {
+    console.warn("NEXUS : Configuration Supabase manquante.");
+    return false;
+  }
   try {
-    const { error } = await supabase.from('companies').select('id').limit(1);
-    if (error) throw error;
-    console.log("✅ Connexion Supabase établie avec succès.");
+    const { data, error } = await supabase.from('companies').select('id').limit(1);
+    if (error) {
+       console.error("❌ Erreur de réponse Supabase (Vérifiez le RLS ou le nom de la table) :", error.message);
+       return false;
+    }
+    console.log("✅ Connexion Supabase établie. Données reçues :", data);
     return true;
   } catch (err) {
-    console.error("❌ Erreur de connexion Supabase :", err);
+    console.error("❌ Erreur fatale de connexion Supabase :", err);
     return false;
   }
 }

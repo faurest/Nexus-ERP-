@@ -57,12 +57,21 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       const q = query(
         collection(db, 'companies'), 
-        where('ownerId', '==', user.uid),
-        where('requestUserEmail', '==', user.email || '')
+        where('ownerId', '==', user.uid)
       );
       
-      unsubscribeSnap = onSnapshot(q, async (snap) => {
-        const fetchedCompanies = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
+      const timer = setTimeout(() => {
+        setLoading(currentLoading => {
+          if (currentLoading) {
+            console.warn("Nexus : Chargement trop long. Vérifiez la connexion Supabase ou le RLS.");
+            return false;
+          }
+          return currentLoading;
+        });
+      }, 10000);
+
+      unsubscribeSnap = onSnapshot(q, (snap) => {
+        const fetchedCompanies = snap.docs ? snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)) : [];
         
         setCompanies(fetchedCompanies);
 
@@ -79,12 +88,19 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
             if (fetchedCompanies.length === 1) {
               return fetchedCompanies[0];
             }
-            return null; // Forces standard selection screen
+            return null;
           });
         } else {
           setCurrentCompany(null);
         }
+        
+        // CRITICAL: Always stop loading once we have an answer from Supabase
         setLoading(false);
+        clearTimeout(timer);
+      }, (error) => {
+        console.error("Erreur onSnapshot companies:", error);
+        setLoading(false);
+        clearTimeout(timer);
       });
     });
 

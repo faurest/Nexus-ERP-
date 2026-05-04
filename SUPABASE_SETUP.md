@@ -2,9 +2,15 @@
 
 Pour garantir que vos données soient conservées de façon permanente, suivez ces étapes :
 
-## 1. Création des Tables
-Copiez le code SQL suivant et collez-le dans le **SQL Editor** de votre tableau de bord Supabase, puis cliquez sur **Run**.
+## 1. Création des Tables (Version Robuste)
 
+**IMPORTANT : Réinitialisation**
+Si vous avez déjà créé les tables et que vous avez des erreurs, exécutez d'abord ceci pour repartir sur une base propre :
+```sql
+DROP TABLE IF EXISTS companies, personnel, clients, sales, expenses, projects, resources, services, tasks, notifications CASCADE;
+```
+
+**Script de Création (Copiez tout le bloc ci-dessous)** :
 ```sql
 -- Table des Entreprises
 CREATE TABLE IF NOT EXISTS companies (
@@ -13,9 +19,9 @@ CREATE TABLE IF NOT EXISTS companies (
   ownerId TEXT,
   ownerEmail TEXT NOT NULL,
   joinCode TEXT UNIQUE NOT NULL,
-  memberEmails TEXT,
-  employees TEXT,
-  roles TEXT,
+  memberEmails JSONB DEFAULT '[]'::jsonb,
+  employees JSONB DEFAULT '[]'::jsonb,
+  roles JSONB DEFAULT '{}'::jsonb,
   createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -44,7 +50,7 @@ CREATE TABLE IF NOT EXISTS clients (
   email TEXT,
   phone TEXT,
   address TEXT,
-  interactions JSONB,
+  interactions JSONB DEFAULT '[]'::jsonb,
   salesTotal REAL DEFAULT 0,
   loyaltyPoints INTEGER DEFAULT 0,
   createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -145,13 +151,7 @@ Ajoutez les variables suivantes dans les paramètres de votre application Nexus 
 - `VITE_SUPABASE_ANON_KEY`
 
 ## 3. Sécurité (RLS - Row Level Security)
-Par défaut, Supabase active le RLS. Pour que l'application puisse accéder aux données, vous avez deux options :
-
-### Option A : Désactiver le RLS (Rapide pour test)
-Dans le tableau de bord Supabase, allez dans **Table Editor**, sélectionnez chaque table, cliquez sur **RLS disabled**.
-
-### Option B : Configurer des politiques (Sécurisé)
-Exécutez ce script SQL pour autoriser les membres de votre ERP à accéder aux données :
+Exécutez ce script SQL pour autoriser l'accès complet pour le moment (plus simple) :
 ```sql
 DO $$ 
 DECLARE 
@@ -159,8 +159,7 @@ DECLARE
 BEGIN
   FOR t IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' 
   LOOP
-    EXECUTE format('DROP POLICY IF EXISTS "Allow authenticated access" ON %I', t);
-    EXECUTE format('CREATE POLICY "Allow authenticated access" ON %I FOR ALL TO authenticated USING (true);', t);
+    EXECUTE format('ALTER TABLE %I DISABLE ROW LEVEL SECURITY;', t);
   END LOOP;
 END $$;
 ```

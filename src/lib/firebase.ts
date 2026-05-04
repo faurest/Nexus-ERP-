@@ -152,6 +152,11 @@ export async function addDoc(col: any, data: any) {
     console.error("Supabase addDoc error:", error);
     throw error;
   }
+  
+  if (!result || result.length === 0) {
+    throw new Error("Supabase n'a pas renvoyé de données après l'insertion.");
+  }
+  
   notifyDb(col.path);
   return { id: result[0].id };
 }

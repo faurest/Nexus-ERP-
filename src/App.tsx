@@ -122,9 +122,9 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         joinCode: generatedJoinCode
       });
       onSelect({ id: docRef.id, name: newCompanyName, ownerId: user.uid, joinCode: generatedJoinCode });
-    } catch(err) {
-      console.error(err);
-      setErrorMsg('Erreur lors de la création.');
+    } catch(err: any) {
+      console.error("Create Company Error:", err);
+      setErrorMsg(`Erreur : ${err.message || 'Problème de connexion'}`);
       setCreatingLocally(false);
     }
   };
@@ -172,9 +172,9 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
       } else {
         setErrorMsg('Code d\'entreprise invalide.');
       }
-    } catch(err) {
-      console.error(err);
-      setErrorMsg('Erreur lors de l\'intégration.');
+    } catch(err: any) {
+      console.error("Join Company Error:", err);
+      setErrorMsg(`Erreur integration : ${err.message || 'Inconnue'}`);
     } finally {
       setCreatingLocally(false);
     }
