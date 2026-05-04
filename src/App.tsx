@@ -792,7 +792,7 @@ export default function App() {
               <div className="text-right hidden sm:block">
                 <p className="text-xs font-black text-slate-900 leading-tight">{user.displayName}</p>
                 <p className="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">
-                  {user.email === 'hackeurfaurest@gmail.com' ? 'Accès Maître' : 'Accès Standard'}
+                  {user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' ? 'Accès Maître' : 'Accès Standard'}
                 </p>
               </div>
               <div className="relative">
@@ -828,7 +828,7 @@ export default function App() {
               {activeTab === 'resources' && <ResourceModule />}
               {activeTab === 'projects' && <ProjectModule />}
               {activeTab === 'accounting' && <AccountingModule />}
-              {activeTab === 'admin' && user.email === 'hackeurfaurest@gmail.com' && <AdminModule />}
+              {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com') && <AdminModule />}
             </motion.div>
           </AnimatePresence>
         </div>

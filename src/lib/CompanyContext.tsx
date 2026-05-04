@@ -55,10 +55,13 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       }
 
       setLoading(true);
-      const q = query(
-        collection(db, 'companies'), 
-        where('ownerId', '==', user.uid)
-      );
+      
+      const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com';
+      
+      // Si c'est un maître, on ne filtre pas par ownerId pour voir TOUTES les entreprises (La Pause 237, etc.)
+      const q = isMaster 
+        ? collection(db, 'companies') 
+        : query(collection(db, 'companies'), where('ownerId', '==', user.uid));
       
       const timer = setTimeout(() => {
         setLoading(currentLoading => {

@@ -40,8 +40,36 @@ CREATE TABLE IF NOT EXISTS companies (
   createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Table des Utilisateurs (Replication de Auth)
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+  uid TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  displayName TEXT,
+  password TEXT, -- Optionnel pour la replication
+  createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Désactiver RLS pour simplifier le test initial
 ALTER TABLE companies DISABLE ROW LEVEL SECURITY;
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+
+## 🛠️ Correction d'Erreurs
+### Si vous avez l'erreur "column joinCode does not exist" :
+Exécutez ceci dans le SQL Editor :
+```sql
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS joinCode TEXT;
+UPDATE companies SET joinCode = substring(md5(random()::text), 0, 7) WHERE joinCode IS NULL;
+-- ALTER TABLE companies ALTER COLUMN joinCode SET NOT NULL; -- Optionnel si deja existant
+-- ALTER TABLE companies ADD CONSTRAINT companies_joinCode_key UNIQUE (joinCode); -- Optionnel
+```
+
+## 🔄 Récupération des données (La Pause 237, etc.)
+Si vous aviez des données sur le serveur local qui ne sont plus là :
+1. Allez dans l'onglet **Administration** (maintenant accessible pour vous).
+2. Allez dans le sous-onglet **Outils & Migration**.
+3. Cliquez sur **Démarrer la Migration Globale**.
+4. Toutes les entreprises (y compris La Pause 237) et leurs données seront envoyées vers votre Supabase.
 ```
 
 ## 🚨 Test final

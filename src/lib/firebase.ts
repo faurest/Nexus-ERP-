@@ -62,6 +62,19 @@ export const loginWithEmail = async (email: string, pass: string) => {
       email: data.user.email,
       displayName: data.user.user_metadata?.displayName || data.user.email?.split('@')[0]
     };
+    
+    // Synchro avec la table users publique pour l'admin
+    try {
+      await supabase.from('users').upsert({
+        uid: currentUser.uid,
+        email: currentUser.email,
+        displayName: currentUser.displayName,
+        updatedAt: serverTimestamp()
+      }, { onConflict: 'uid' });
+    } catch (e) {
+      console.warn("Synchro users table échouée, continue...", e);
+    }
+
     notifyAuth();
   }
   return { user: currentUser };
@@ -90,6 +103,19 @@ export async function signupWithEmail(email: string, pass: string) {
       email: data.user.email,
       displayName: data.user.user_metadata?.displayName || data.user.email?.split('@')[0]
     };
+
+    // Synchro avec la table users publique
+    try {
+      await supabase.from('users').insert([{
+        uid: currentUser.uid,
+        email: currentUser.email,
+        displayName: currentUser.displayName,
+        createdAt: serverTimestamp()
+      }]);
+    } catch (e) {
+      console.warn("User record creation failed:", e);
+    }
+
     notifyAuth();
   }
   return { user: currentUser };

@@ -41,9 +41,12 @@ export default function AdminModule() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newCompany, setNewCompany] = useState({ name: '', ownerEmail: '', joinCode: '' });
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeAdminTab, setActiveAdminTab] = useState<'companies' | 'users' | 'tools'>('companies');
+  const [systemUsers, setSystemUsers] = useState<any[]>([]);
 
   const fetchGlobalData = async () => {
     try {
+      setLoading(true);
       const [compSnap, salesSnap, expSnap] = await Promise.all([
         getDocs(collection(db, 'companies')),
         getDocs(collection(db, 'sales')),
@@ -53,6 +56,14 @@ export default function AdminModule() {
       setCompanies(compSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       setGlobalSales(salesSnap.docs.map(d => d.data()));
       setGlobalExpenses(expSnap.docs.map(d => d.data()));
+
+      // Fetch users if the table exists
+      try {
+        const usersSnap = await getDocs(collection(db, 'users'));
+        setSystemUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (err) {
+        console.warn("Table users non trouvée ou inaccessible");
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -128,19 +139,19 @@ export default function AdminModule() {
     reader.onload = async (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
-        const collectionsToImport = ['companies', 'clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners'];
+        const collectionsToImport = ['companies', 'clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners', 'users'];
         for (const coll of collectionsToImport) {
           if (data[coll] && Array.isArray(data[coll])) {
             for (const item of data[coll]) {
-              await fetch(`/api/data/${coll}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
-              });
+              try {
+                await addDoc(collection(db, coll), item);
+              } catch (err) {
+                console.error(`Erreur import ${coll}:`, err);
+              }
             }
           }
         }
-        alert('Import global réussi !');
+        alert('Import global réussi vers Supabase !');
         fetchGlobalData();
       } catch (err) {
         console.error(err);
@@ -149,6 +160,40 @@ export default function AdminModule() {
     };
     reader.readAsText(file);
     e.target.value = '';
+  };
+
+  const handleMigrateFromSQLite = async () => {
+    if (!window.confirm("Voulez-vous migrer les données du serveur local (SQLite) vers Supabase ? Cela peut créer des doublons si déjà fait.")) return;
+    
+    setLoading(true);
+    try {
+      const collections = ['companies', 'clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners', 'users'];
+      let migratedCount = 0;
+
+      for (const coll of collections) {
+        try {
+          const res = await fetch(`/api/data/${coll}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              for (const item of data) {
+                await addDoc(collection(db, coll), item);
+                migratedCount++;
+              }
+            }
+          }
+        } catch (e) {
+          console.warn(`Migration failed for ${coll}`, e);
+        }
+      }
+      alert(`Migration terminée ! ${migratedCount} éléments migrés.`);
+      fetchGlobalData();
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la migration");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredCompanies = companies.filter(c => 
@@ -322,109 +367,226 @@ export default function AdminModule() {
         </motion.div>
       </div>
 
-      {/* Main List Section */}
-      <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 relative overflow-hidden backdrop-blur-xl bg-white/90">
-        <div className="p-10 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Répertoire des Écosystèmes</h2>
-            <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest flex items-center gap-2">
-              <Layers size={14} />
-              Supervision de {companies.length} structures de travail
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 transition"
-            >
-              <Plus size={16} /> Créer Entité
-            </button>
-            <button
-              onClick={handleExportData}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-200 transition"
-            >
-              <Download size={16} /> Exporter Données
-            </button>
-            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-200 transition cursor-pointer">
-              <Upload size={16} /> Importer
-              <input type="file" accept=".json" onChange={handleImportData} className="hidden" />
-            </label>
+      {/* Navigation Tabs */}
+      <div className="flex gap-4 border-b border-slate-100 pb-1">
+        <button 
+          onClick={() => setActiveAdminTab('companies')}
+          className={cn(
+            "pb-3 px-2 text-sm font-black transition-all border-b-2 uppercase tracking-widest",
+            activeAdminTab === 'companies' ? "text-blue-600 border-blue-600" : "text-slate-400 border-transparent hover:text-slate-600"
+          )}
+        >
+          Entreprises
+        </button>
+        <button 
+          onClick={() => setActiveAdminTab('users')}
+          className={cn(
+            "pb-3 px-2 text-sm font-black transition-all border-b-2 uppercase tracking-widest",
+            activeAdminTab === 'users' ? "text-blue-600 border-blue-600" : "text-slate-400 border-transparent hover:text-slate-600"
+          )}
+        >
+          Utilisateurs
+        </button>
+        <button 
+          onClick={() => setActiveAdminTab('tools')}
+          className={cn(
+            "pb-3 px-2 text-sm font-black transition-all border-b-2 uppercase tracking-widest",
+            activeAdminTab === 'tools' ? "text-blue-600 border-blue-600" : "text-slate-400 border-transparent hover:text-slate-600"
+          )}
+        >
+          Outils & Migration
+        </button>
+      </div>
 
-            <div className="relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={16} />
-              <input 
-                type="text" 
-                placeholder="Rechercher une entité..." 
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="pl-11 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-xs font-black w-72 focus:ring-4 focus:ring-blue-50 focus:bg-white transition-all shadow-inner"
-              />
+      {activeAdminTab === 'companies' && (
+        <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 relative overflow-hidden backdrop-blur-xl bg-white/90">
+          <div className="p-10 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Répertoire des Écosystèmes</h2>
+              <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest flex items-center gap-2">
+                <Layers size={14} />
+                Supervision de {companies.length} structures de travail
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 transition"
+              >
+                <Plus size={16} /> Créer Entité
+              </button>
+              
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={16} />
+                <input 
+                  type="text" 
+                  placeholder="Rechercher..." 
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="pl-11 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-xs font-black w-72 focus:ring-4 focus:ring-blue-50 focus:bg-white transition-all shadow-inner"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="overflow-x-auto px-4 pb-8">
-          <Table headers={["Institution", "Accès Principal", "Code Nexus", "Équipe", "Actions"]}>
-            {filteredCompanies.map((company) => (
-              <TableRow key={company.id} className="group hover:bg-slate-50/80 transition-all border-b border-slate-50 last:border-0 rounded-2xl">
-                <td className="py-7 pl-8">
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all transform group-hover:rotate-3 shadow-md">
-                      {company.name?.charAt(0).toUpperCase()}
+          <div className="overflow-x-auto px-4 pb-8">
+            <Table headers={["Institution", "Accès Principal", "Code Nexus", "Équipe", "Actions"]}>
+              {filteredCompanies.map((company) => (
+                <TableRow key={company.id} className="group hover:bg-slate-50/80 transition-all border-b border-slate-50 last:border-0 rounded-2xl">
+                  <td className="py-7 pl-8">
+                    <div className="flex items-center gap-5">
+                      <div className="w-14 h-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all transform group-hover:rotate-3 shadow-md">
+                        {company.name?.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-base font-black text-slate-900 tracking-tight">{company.name}</p>
+                        <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Nexus ID: {company.id?.substring(0, 8)}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-slate-700">{company.ownerEmail}</p>
+                      <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-all">
+                        <ShieldCheck size={10} className="text-emerald-500" />
+                        <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Propriétaire</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-900 rounded-xl text-[11px] font-black tracking-[0.2em] uppercase border border-slate-200">
+                      {company.joinCode}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="flex -space-x-4">
+                        {Array.from({ length: Math.min(3, company.memberEmails?.length || 1) }).map((_, i) => (
+                          <div key={i} className={cn(
+                            "w-10 h-10 rounded-2xl border-4 border-white flex items-center justify-center text-[11px] font-black shadow-sm",
+                            i === 0 ? "bg-blue-600 text-white" : i === 1 ? "bg-slate-800 text-white" : "bg-slate-200 text-slate-600"
+                          )}>
+                            {company.memberEmails?.[i]?.charAt(0).toUpperCase() || 'U'}
+                          </div>
+                        ))}
+                      </div>
+                      <span className="text-[10px] font-black text-slate-400 ml-2">+{company.memberEmails?.length || 0}</span>
+                    </div>
+                  </td>
+                  <td className="pr-8 text-right">
+                    <button 
+                      onClick={() => {
+                        localStorage.setItem('nexus_switch_company', JSON.stringify(company));
+                        window.dispatchEvent(new Event('storage'));
+                        window.location.reload();
+                      }}
+                      className="group/btn inline-flex items-center gap-3 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-slate-900/10 active:scale-95"
+                    >
+                      Ouvrir
+                      <ArrowUpRight size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+                    </button>
+                  </td>
+                </TableRow>
+              ))}
+            </Table>
+          </div>
+        </div>
+      )}
+
+      {activeAdminTab === 'users' && (
+        <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 p-10">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Base Utilisateurs Globale</h2>
+              <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest leading-relaxed">
+                Liste exhaustive des comptes enregistrés sur la plateforme.<br />
+                Note: Les utilisateurs sans entreprise rattachée apparaissent ici.
+              </p>
+            </div>
+          </div>
+
+          <Table headers={["Utilisateur", "Email", "Statut", "Entreprise(s)"]}>
+            {systemUsers.map((u) => (
+              <TableRow key={u.id} className="border-b border-slate-50 last:border-0 grow">
+                <td className="py-5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center font-black text-slate-400 text-sm">
+                      {u.displayName?.charAt(0) || u.email?.charAt(0)}
                     </div>
                     <div>
-                      <p className="text-base font-black text-slate-900 tracking-tight">{company.name}</p>
-                      <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Zone: EU-WEST-1</p>
+                      <p className="text-sm font-black text-slate-900">{u.displayName || 'Utilisateur Anonyme'}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">ID: {u.uid?.substring(0, 8)}</p>
                     </div>
                   </div>
                 </td>
+                <td className="text-xs font-bold text-slate-600">{u.email}</td>
                 <td>
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold text-slate-700">{company.ownerEmail}</p>
-                    <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-all">
-                      <ShieldCheck size={10} className="text-emerald-500" />
-                      <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Administrateur Local</span>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <span className="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-900 rounded-xl text-[11px] font-black tracking-[0.2em] uppercase border border-slate-200">
-                    {company.joinCode}
+                  <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest">
+                    Actif
                   </span>
                 </td>
                 <td>
-                  <div className="flex items-center gap-3">
-                    <div className="flex -space-x-4">
-                      {Array.from({ length: Math.min(3, company.memberEmails?.length || 1) }).map((_, i) => (
-                        <div key={i} className={cn(
-                          "w-10 h-10 rounded-2xl border-4 border-white flex items-center justify-center text-[11px] font-black shadow-sm",
-                          i === 0 ? "bg-blue-600 text-white" : i === 1 ? "bg-slate-800 text-white" : "bg-slate-200 text-slate-600"
-                        )}>
-                          {company.memberEmails?.[i]?.charAt(0).toUpperCase() || 'U'}
-                        </div>
-                      ))}
-                    </div>
-                    <span className="text-[10px] font-black text-slate-400 ml-2">+{company.memberEmails?.length || 0}</span>
+                  <div className="flex flex-wrap gap-1">
+                    {companies.filter(c => c.memberEmails?.includes(u.email) || c.ownerEmail === u.email).map(c => (
+                      <span key={c.id} className="px-2 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-bold">
+                        {c.name}
+                      </span>
+                    ))}
                   </div>
-                </td>
-                <td className="pr-8 text-right">
-                  <button 
-                    onClick={() => {
-                      localStorage.setItem('nexus_switch_company', JSON.stringify(company));
-                      window.dispatchEvent(new Event('storage'));
-                      window.location.reload();
-                    }}
-                    className="group/btn inline-flex items-center gap-3 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-slate-900/10 active:scale-95"
-                  >
-                    Ouvrir Espace
-                    <ArrowUpRight size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-                  </button>
                 </td>
               </TableRow>
             ))}
           </Table>
         </div>
-      </div>
+      )}
+
+      {activeAdminTab === 'tools' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-xl">
+             <h3 className="text-xl font-black text-slate-900 tracking-tight mb-4 flex items-center gap-2">
+               <Activity className="text-blue-600" />
+               Migration SQLite vers Supabase
+             </h3>
+             <p className="text-sm text-slate-500 mb-8 leading-relaxed">
+               Si vous avez commencé sur le serveur local et que vous venez de configurer Supabase,
+               utilisez cet outil pour envoyer toutes vos données (Entreprises, clients, ventes, comptes)
+               vers votre nouvelle base cloud.
+             </p>
+             <button 
+               onClick={handleMigrateFromSQLite}
+               className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-3"
+             >
+               <Upload size={18} />
+               Démarrer la Migration Globale
+             </button>
+          </div>
+
+          <div className="bg-slate-900 p-10 rounded-[2.5rem] text-white">
+             <h3 className="text-xl font-black tracking-tight mb-4 flex items-center gap-2">
+               <Download className="text-blue-400" />
+               Sauvegarde Locale (JSON)
+             </h3>
+             <p className="text-sm text-slate-400 mb-8 leading-relaxed">
+               Exportez l'intégralité de la base de données actuelle (Supabase) dans un seul fichier JSON.
+               Utile pour les sauvegardes de sécurité ou pour transférer vers un autre projet.
+             </p>
+             <div className="flex flex-col gap-3">
+               <button 
+                 onClick={handleExportData}
+                 className="w-full py-4 bg-white/10 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/20 transition-all flex items-center justify-center gap-3"
+               >
+                 <Download size={18} />
+                 Télécharger le Backup
+               </button>
+               <label className="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center justify-center gap-3 cursor-pointer">
+                 <Upload size={18} />
+                 Restaurer depuis Backup
+                 <input type="file" accept=".json" onChange={handleImportData} className="hidden" />
+               </label>
+             </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal - Better separate component in real app */}
       {showCreateModal && (
