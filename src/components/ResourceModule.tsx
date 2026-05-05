@@ -34,7 +34,7 @@ export default function ResourceModule() {
 
   useEffect(() => {
     if (!currentCompany) return;
-    const q = query(collection(db, 'resources'), where('companyid', '==', currentCompany.id));
+    const q = query(collection(db, 'resources'), where('companyId', '==', currentCompany.id));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Resource));
       setResources(data);
@@ -59,7 +59,7 @@ export default function ResourceModule() {
         await addDoc(collection(db, 'resources'), {
           ...formData,
           quantity: newQuantity,
-          companyid: currentCompany.id,
+          companyId: currentCompany.id,
           createdAt: serverTimestamp()
         });
       }

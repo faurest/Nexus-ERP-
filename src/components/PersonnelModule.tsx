@@ -79,10 +79,10 @@ export default function PersonnelModule() {
 
   useEffect(() => {
     if (!currentCompany) return;
-    const unsubStaff = onSnapshot(query(collection(db, 'personnel'), where('companyid', '==', currentCompany.id)), (snapshot) => {
+    const unsubStaff = onSnapshot(query(collection(db, 'personnel'), where('companyId', '==', currentCompany.id)), (snapshot) => {
       setStaffList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff)));
     });
-    const unsubTasks = onSnapshot(query(collection(db, 'tasks'), where('companyid', '==', currentCompany.id)), (snapshot) => {
+    const unsubTasks = onSnapshot(query(collection(db, 'tasks'), where('companyId', '==', currentCompany.id)), (snapshot) => {
       setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
     });
     return () => { unsubStaff(); unsubTasks(); };
@@ -95,7 +95,7 @@ export default function PersonnelModule() {
     try {
       await addDoc(collection(db, 'tasks'), {
         ...newTask,
-        companyid: currentCompany.id,
+        companyId: currentCompany.id,
         status: 'todo'
       });
       setNewTask({ title: '', assignedTo: '', startDate: '', endDate: '' });

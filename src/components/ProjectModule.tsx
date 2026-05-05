@@ -77,23 +77,23 @@ export default function ProjectModule() {
     const queryWithCompany = (collectionName: string) => 
       query(collection(db, collectionName), where('companyId', '==', currentCompany.id));
 
-    const unsubProjects = onSnapshot(query(collection(db, 'projects'), where('companyid', '==', currentCompany.id)), (snap) => {
+    const unsubProjects = onSnapshot(query(collection(db, 'projects'), where('companyId', '==', currentCompany.id)), (snap) => {
       setProjects(snap.docs.map(d => ({ id: d.id, ...d.data() } as Project)));
     }, err => handleFirestoreError(err, OperationType.LIST, 'projects'));
 
-    const unsubPartners = onSnapshot(query(collection(db, 'partners'), where('companyid', '==', currentCompany.id)), (snap) => {
+    const unsubPartners = onSnapshot(query(collection(db, 'partners'), where('companyId', '==', currentCompany.id)), (snap) => {
       setPartners(snap.docs.map(d => ({ id: d.id, ...d.data() } as Partner)));
     }, err => handleFirestoreError(err, OperationType.LIST, 'partners'));
 
-    const unsubExpenses = onSnapshot(query(collection(db, 'expenses'), where('companyid', '==', currentCompany.id)), (snap) => {
+    const unsubExpenses = onSnapshot(query(collection(db, 'expenses'), where('companyId', '==', currentCompany.id)), (snap) => {
       setExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() } as Expense)));
     }, err => handleFirestoreError(err, OperationType.LIST, 'expenses'));
 
-    const unsubInvoices = onSnapshot(query(collection(db, 'invoices'), where('companyid', '==', currentCompany.id)), (snap) => {
+    const unsubInvoices = onSnapshot(query(collection(db, 'invoices'), where('companyId', '==', currentCompany.id)), (snap) => {
       setInvoices(snap.docs.map(d => ({ id: d.id, ...d.data() } as Invoice)));
     }, err => handleFirestoreError(err, OperationType.LIST, 'invoices'));
 
-    const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('companyid', '==', currentCompany.id)), (snap) => {
+    const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('companyId', '==', currentCompany.id)), (snap) => {
       setPayments(snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment)));
     }, err => handleFirestoreError(err, OperationType.LIST, 'payments'));
 
@@ -118,7 +118,7 @@ export default function ProjectModule() {
       await addDoc(collection(db, collectionName), {
         ...formData,
         amount: Number(formData.amount),
-        companyid: currentCompany.id,
+        companyId: currentCompany.id,
         createdAt: serverTimestamp(),
       });
 
@@ -159,7 +159,7 @@ export default function ProjectModule() {
         await addDoc(collection(db, 'projects'), {
           ...formData,
           budget: Number(formData.budget || 0),
-          companyid: currentCompany.id,
+          companyId: currentCompany.id,
           createdAt: serverTimestamp(),
           status: 'planned'
         });

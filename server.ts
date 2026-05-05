@@ -57,7 +57,9 @@ db.exec(`
     quantity INTEGER,
     price REAL,
     total REAL,
+    amount REAL,
     status TEXT,
+    clientName TEXT,
     date INTEGER
   );
 
@@ -222,8 +224,9 @@ try {
 try { db.exec('ALTER TABLE resources ADD COLUMN condition TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE resources ADD COLUMN duration TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE resources ADD COLUMN warranty TEXT'); } catch (e) {}
-try { db.exec('ALTER TABLE resources ADD COLUMN price INTEGER'); } catch (e) {}
 try { db.exec('ALTER TABLE sales ADD COLUMN clientName TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE sales ADD COLUMN amount REAL'); } catch (e) {}
+try { db.exec('ALTER TABLE sales ADD COLUMN total REAL'); } catch (e) {}
 try { db.exec('ALTER TABLE sales_invoices ADD COLUMN clientName TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE sales_invoices ADD COLUMN tableNumber TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE sales_invoices ADD COLUMN items TEXT'); } catch (e) {}
@@ -362,10 +365,12 @@ async function startServer() {
   });
 
   // Generic CRUD Proxy
+  const getPK = (collection: string) => collection === 'users' ? 'uid' : 'id';
+
   app.get('/api/data/:collection', (req, res) => {
     try {
       const { collection } = req.params;
-      const { requestUserEmail, ownerId, ...otherQuerys } = req.query;
+      const { requestUserEmail, requestUserId, ownerId, ...otherQuerys } = req.query as any;
       
       let query = `SELECT * FROM ${collection}`;
       const params: any[] = [];
@@ -379,15 +384,24 @@ async function startServer() {
           params.push(ownerId);
           params.push(`%${requestUserEmail}%`);
         }
+      } else if (ownerId && collection !== 'companies') {
+         // If ownerId is passed for other collections, it usually refers to company ownership or similar
+         // But our schema uses companyId. 
+         // For now, let's just ignore ownerId if it's not the companies table, 
+         // as filters should come via otherQuerys (e.g., companyId)
       } else if (ownerId) {
         conditions.push(`ownerId = ?`);
         params.push(ownerId);
       }
 
       Object.keys(otherQuerys).forEach(key => {
-        conditions.push(`${key} = ?`);
+        // Fix for companyid vs companyId mismatch
+        let normalizedKey = key;
+        if (key.toLowerCase() === 'companyid') normalizedKey = 'companyId';
+        
+        conditions.push(`${normalizedKey} = ?`);
         // Handle case-insensitivity manually for 'email' to match existing user queries easily
-        if (key === 'email' && typeof otherQuerys[key] === 'string') {
+        if (normalizedKey === 'email' && typeof otherQuerys[key] === 'string') {
            params.push((otherQuerys[key] as string).trim().toLowerCase());
         } else {
            params.push(otherQuerys[key]);
@@ -397,7 +411,10 @@ async function startServer() {
       // if column 'email' exists we want to be case-insensitive for sqlite equal matching
       if (otherQuerys['email']) {
          // replace the last condition
-         conditions[conditions.length - 1] = `LOWER(TRIM(${'email'})) = ?`;
+         const emailIndex = conditions.findIndex(c => c.startsWith('email =') || c.startsWith('email='));
+         if (emailIndex !== -1) {
+            conditions[emailIndex] = `LOWER(TRIM(email)) = ?`;
+         }
       }
 
       if (conditions.length > 0) {
@@ -429,7 +446,8 @@ async function startServer() {
   app.get('/api/data/:collection/:id', (req, res) => {
     try {
       const { collection, id } = req.params;
-      const row = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id);
+      const pk = getPK(collection);
+      const row = db.prepare(`SELECT * FROM ${collection} WHERE ${pk} = ?`).get(id);
       if (!row) return res.json(null);
       
       const parsedRow: any = {};
@@ -454,13 +472,33 @@ async function startServer() {
   app.post('/api/data/:collection', (req, res) => {
     try {
       const { collection } = req.params;
-      const data = req.body;
-      const id = data.id || Math.random().toString(36).substring(2, 10);
-      delete data.id;
+      const data = { ...req.body };
+      
+      // Normalize companyId
+      if (data.companyid) {
+        data.companyId = data.companyid;
+        delete data.companyid;
+      }
 
-      const keys = ['id', ...Object.keys(data)];
+      const pk = getPK(collection);
+      const id = data[pk] || Math.random().toString(36).substring(2, 10);
+      delete data[pk];
+
+      // Get table columns to prevent "no such column" errors
+      const tableInfo = db.prepare(`PRAGMA table_info(${collection})`).all() as any[];
+      const validColumns = tableInfo.map(c => c.name);
+
+      const keys: string[] = [pk];
+      const values: any[] = [id];
+
+      Object.keys(data).forEach(key => {
+         if (validColumns.includes(key)) {
+            keys.push(key);
+            values.push(typeof data[key] === 'object' ? JSON.stringify(data[key]) : data[key]);
+         }
+      });
+
       const placeholders = keys.map(() => '?').join(',');
-      const values = [id, ...Object.values(data).map(v => typeof v === 'object' ? JSON.stringify(v) : v)];
 
       db.prepare(`INSERT INTO ${collection} (${keys.join(',')}) VALUES (${placeholders})`).run(...values);
       res.json({ id });
@@ -473,15 +511,29 @@ async function startServer() {
   app.patch('/api/data/:collection/:id', (req, res) => {
     try {
       const { collection, id } = req.params;
-      const data = req.body;
-      const existing = db.prepare(`SELECT * FROM ${collection} WHERE id = ?`).get(id) as any;
+      const data = { ...req.body };
+
+      // Normalize companyId
+      if (data.companyid) {
+        data.companyId = data.companyid;
+        delete data.companyid;
+      }
+
+      const pk = getPK(collection);
+      const existing = db.prepare(`SELECT * FROM ${collection} WHERE ${pk} = ?`).get(id) as any;
+
+      // Get table columns to prevent "no such column" errors
+      const tableInfo = db.prepare(`PRAGMA table_info(${collection})`).all() as any[];
+      const validColumns = tableInfo.map(c => c.name);
 
       const sets: string[] = [];
       const values: any[] = [];
       
       for (const [k, v] of Object.entries(data)) {
+        if (!validColumns.includes(k)) continue;
+
         sets.push(`${k} = ?`);
-        if (typeof v === 'object' && v !== null && (v as any)._arrayUnion) {
+        if (v && typeof v === 'object' && (v as any)._arrayUnion) {
           let currentArray: any[] = [];
           if (existing && existing[k]) {
              try { currentArray = JSON.parse(existing[k]); } catch {}
@@ -494,9 +546,12 @@ async function startServer() {
           values.push(typeof v === 'object' ? JSON.stringify(v) : v);
         }
       }
+      
+      if (sets.length === 0) return res.json({ success: true, message: 'No valid fields to update' });
+
       values.push(id);
 
-      db.prepare(`UPDATE ${collection} SET ${sets.join(',')} WHERE id = ?`).run(...values);
+      db.prepare(`UPDATE ${collection} SET ${sets.join(',')} WHERE ${pk} = ?`).run(...values);
       res.json({ success: true });
     } catch (err: any) {
       console.error(err);
@@ -507,7 +562,8 @@ async function startServer() {
   app.delete('/api/data/:collection/:id', (req, res) => {
     try {
       const { collection, id } = req.params;
-      db.prepare(`DELETE FROM ${collection} WHERE id = ?`).run(id);
+      const pk = getPK(collection);
+      db.prepare(`DELETE FROM ${collection} WHERE ${pk} = ?`).run(id);
       res.json({ success: true });
     } catch (err: any) {
       console.error(err);

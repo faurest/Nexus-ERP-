@@ -54,11 +54,11 @@ export default function SalesModule() {
   useEffect(() => {
     if (!currentCompany) return;
 
-    const unsubSales = onSnapshot(query(collection(db, 'sales'), where('companyid', '==', currentCompany.id)), snap => {
+    const unsubSales = onSnapshot(query(collection(db, 'sales'), where('companyId', '==', currentCompany.id)), snap => {
       setSales(snap.docs.map(d => ({ id: d.id, ...d.data() } as Sale)));
     }, err => handleFirestoreError(err, OperationType.LIST, 'sales'));
 
-    const unsubInvoices = onSnapshot(query(collection(db, 'sales_invoices'), where('companyid', '==', currentCompany.id)), snap => {
+    const unsubInvoices = onSnapshot(query(collection(db, 'sales_invoices'), where('companyId', '==', currentCompany.id)), snap => {
       setInvoices(snap.docs.map(d => {
         const data = d.data();
         let items = data.items || [];
@@ -69,19 +69,19 @@ export default function SalesModule() {
       }));
     }, err => handleFirestoreError(err, OperationType.LIST, 'sales_invoices'));
 
-    const unsubExpenses = onSnapshot(query(collection(db, 'expenses'), where('companyid', '==', currentCompany.id)), snap => {
+    const unsubExpenses = onSnapshot(query(collection(db, 'expenses'), where('companyId', '==', currentCompany.id)), snap => {
       setExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => handleFirestoreError(err, OperationType.LIST, 'expenses'));
 
-    const unsubResources = onSnapshot(query(collection(db, 'resources'), where('companyid', '==', currentCompany.id)), snap => {
+    const unsubResources = onSnapshot(query(collection(db, 'resources'), where('companyId', '==', currentCompany.id)), snap => {
       setResources(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => handleFirestoreError(err, OperationType.LIST, 'resources'));
 
-    const unsubClients = onSnapshot(query(collection(db, 'clients'), where('companyid', '==', currentCompany.id)), snap => {
+    const unsubClients = onSnapshot(query(collection(db, 'clients'), where('companyId', '==', currentCompany.id)), snap => {
       setClients(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => handleFirestoreError(err, OperationType.LIST, 'clients'));
 
-    const unsubOpenOrders = onSnapshot(query(collection(db, 'open_orders'), where('companyid', '==', currentCompany.id)), snap => {
+    const unsubOpenOrders = onSnapshot(query(collection(db, 'open_orders'), where('companyId', '==', currentCompany.id)), snap => {
       // Need to ensure items is parsed correctly if it's coming from standard firebase mock or sqlite
       setOpenOrders(snap.docs.map(d => {
         const data = d.data();
@@ -117,7 +117,7 @@ export default function SalesModule() {
           quantity: Number(formData.quantity),
           price: Number(formData.price),
           total,
-          companyid: currentCompany.id,
+          companyId: currentCompany.id,
           status: 'pending_payment',
           date: serverTimestamp()
         });
@@ -128,7 +128,7 @@ export default function SalesModule() {
           invoiceNumber,
           amount: total,
           status: 'unpaid',
-          companyid: currentCompany.id,
+          companyId: currentCompany.id,
           date: serverTimestamp(),
           clientName: formData.clientName || '',
           items: JSON.stringify([{
@@ -203,7 +203,7 @@ export default function SalesModule() {
     setSubmitting(true);
     try {
       const res = await addDoc(collection(db, 'open_orders'), {
-        companyid: currentCompany.id,
+        companyId: currentCompany.id,
         clientName: newOrderName,
         tableNumber: newOrderTable,
         items: [],

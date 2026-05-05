@@ -24,7 +24,7 @@ export default function PrestationsModule() {
     
     const unsubs: any[] = [];
     
-    const qServices = query(collection(db, 'services'), where('companyid', '==', currentCompany.id));
+    const qServices = query(collection(db, 'services'), where('companyId', '==', currentCompany.id));
     unsubs.push(onSnapshot(qServices, (snap: any) => {
       setServices(snap.docs.map((d: any) => ({ id: d.id, ...d.data() })));
     }));
@@ -48,7 +48,7 @@ export default function PrestationsModule() {
     setSubmitting(true);
     try {
       await addDoc(collection(db, 'sales'), {
-        companyid: currentCompany.id,
+        companyId: currentCompany.id,
         itemName: serviceName,
         type: 'service',
         quantity: qty,
@@ -74,7 +74,7 @@ export default function PrestationsModule() {
       const desc = (form.elements.namedItem('desc') as HTMLInputElement).value;
       
       await addDoc(collection(db, 'interventions'), {
-        companyid: currentCompany?.id,
+        companyId: currentCompany?.id,
         client: client,
         message: `[${type}] ${desc}`,
         status: 'pending',
@@ -99,7 +99,7 @@ export default function PrestationsModule() {
     setSubmitting(true);
     try {
        await addDoc(collection(db, 'services'), {
-         companyid: currentCompany.id,
+         companyId: currentCompany.id,
          name: serviceForm.name,
          price: serviceForm.price,
          description: serviceForm.description,

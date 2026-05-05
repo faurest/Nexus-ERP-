@@ -220,6 +220,7 @@ async function triggerDbListener(l: any) {
 
     if (id) {
       const response = await fetch(`/api/data/${table}/${id}`);
+      if (!response.ok) throw new Error(await response.text());
       const data = await response.json();
       
       l.cb({
@@ -228,22 +229,32 @@ async function triggerDbListener(l: any) {
         data: () => data
       });
     } else {
-      const url = new URL(`${window.location.origin}/api/data/${table}`);
+      let path = `/api/data/${table}`;
+      const params = new URLSearchParams();
+      
       if (l.queryParams) {
         l.queryParams.forEach((qConstraint: any) => {
           if (qConstraint.type === 'where' && qConstraint.op === '==') {
-            url.searchParams.append(qConstraint.field, qConstraint.value);
+            params.append(qConstraint.field, qConstraint.value);
           }
         });
       }
 
       // Add currentUser info for master filtering on server
       if (currentUser) {
-        url.searchParams.append('requestUserEmail', currentUser.email);
-        url.searchParams.append('requestUserId', currentUser.uid);
+        params.append('requestUserEmail', currentUser.email);
+        params.append('requestUserId', currentUser.uid);
       }
 
-      const response = await fetch(url.toString());
+      const queryString = params.toString();
+      const finalPath = queryString ? `${path}?${queryString}` : path;
+
+      const response = await fetch(finalPath);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API Error (${finalPath}):`, errorText);
+        throw new Error(errorText);
+      }
       const data = await response.json();
       
       l.cb({
@@ -261,21 +272,31 @@ async function triggerDbListener(l: any) {
 
 export async function getDocs(query: any): Promise<any> {
     const table = query.path;
-    const url = new URL(`${window.location.origin}/api/data/${table}`);
+    let path = `/api/data/${table}`;
+    const params = new URLSearchParams();
+    
     if (query.constraints) {
         query.constraints.forEach((c: any) => {
             if (c.type === 'where' && c.op === '==') {
-                url.searchParams.append(c.field, c.value);
+                params.append(c.field, c.value);
             }
         });
     }
     
     if (currentUser) {
-      url.searchParams.append('requestUserEmail', currentUser.email);
-      url.searchParams.append('requestUserId', currentUser.uid);
+      params.append('requestUserEmail', currentUser.email);
+      params.append('requestUserId', currentUser.uid);
     }
 
-    const response = await fetch(url.toString());
+    const queryString = params.toString();
+    const finalPath = queryString ? `${path}?${queryString}` : path;
+
+    const response = await fetch(finalPath);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`getDocs API Error (${finalPath}):`, errorText);
+      throw new Error(errorText);
+    }
     const data = await response.json();
 
     return {
