@@ -42,83 +42,63 @@ function notifyAuth() {
 }
 
 export const loginWithEmail = async (email: string, pass: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password: pass,
-  });
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
 
-  if (error) {
-    if (error.message.toLowerCase().includes('invalid login credentials')) {
-       return signupWithEmail(email, pass);
+    if (!response.ok) {
+      const errorData = await response.json();
+      const err: any = new Error(errorData.message || 'Erreur d\'authentification');
+      err.code = errorData.error ? 'auth/' + errorData.error : 'auth/invalid-credential';
+      throw err;
     }
-    const err: any = new Error(error.message);
-    err.code = 'auth/' + error.status;
-    throw err;
-  }
 
-  if (data.user) {
+    const userData = await response.json();
     currentUser = {
-      uid: data.user.id,
-      email: data.user.email,
-      displayName: data.user.user_metadata?.displayName || data.user.email?.split('@')[0]
+      uid: userData.uid,
+      email: userData.email,
+      displayName: userData.displayName || userData.email.split('@')[0]
     };
-    
-    // Synchro avec la table users publique pour l'admin
-    try {
-      await supabase.from('users').upsert({
-        uid: currentUser.uid,
-        email: currentUser.email,
-        displayName: currentUser.displayName,
-        updatedAt: serverTimestamp()
-      }, { onConflict: 'uid' });
-    } catch (e) {
-      console.warn("Synchro users table échouée, continue...", e);
-    }
 
     notifyAuth();
+    return { user: currentUser };
+  } catch (error: any) {
+    console.error("Login error:", error);
+    throw error;
   }
-  return { user: currentUser };
 };
 
 export async function signupWithEmail(email: string, pass: string) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password: pass,
-    options: {
-      data: {
-        displayName: email.split('@')[0]
-      }
+  try {
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      const err: any = new Error(errorData.message || 'Erreur d\'inscription');
+      err.code = errorData.error ? 'auth/' + errorData.error : 'auth/weak-password';
+      throw err;
     }
-  });
 
-  if (error) {
-    const err: any = new Error(error.message);
-    err.code = 'auth/' + error.status;
-    throw err;
-  }
-
-  if (data.user) {
+    const userData = await response.json();
     currentUser = {
-      uid: data.user.id,
-      email: data.user.email,
-      displayName: data.user.user_metadata?.displayName || data.user.email?.split('@')[0]
+      uid: userData.uid,
+      email: userData.email,
+      displayName: userData.displayName || userData.email.split('@')[0]
     };
 
-    // Synchro avec la table users publique
-    try {
-      await supabase.from('users').insert([{
-        uid: currentUser.uid,
-        email: currentUser.email,
-        displayName: currentUser.displayName,
-        createdAt: serverTimestamp()
-      }]);
-    } catch (e) {
-      console.warn("User record creation failed:", e);
-    }
-
     notifyAuth();
+    return { user: currentUser };
+  } catch (error: any) {
+    console.error("Signup error:", error);
+    throw error;
   }
-  return { user: currentUser };
 }
 
 export const logout = async () => {
@@ -169,22 +149,15 @@ export function where(field: string, op: string, value: any) {
 }
 
 export async function addDoc(col: any, data: any) {
-  const { data: result, error } = await supabase
-    .from(col.path)
-    .insert([{ ...data, createdAt: serverTimestamp() }])
-    .select();
-
-  if (error) {
-    console.error("Supabase addDoc error:", error);
-    throw error;
-  }
-  
-  if (!result || result.length === 0) {
-    throw new Error("Supabase n'a pas renvoyé de données après l'insertion.");
-  }
-  
+  const response = await fetch(`/api/data/${col.path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...data, createdAt: Date.now() })
+  });
+  if (!response.ok) throw new Error(await response.text());
+  const result = await response.json();
   notifyDb(col.path);
-  return { id: result[0].id };
+  return { id: result.id };
 }
 
 export function or(...args: any[]) {
@@ -196,11 +169,12 @@ export async function setDoc(docRef: any, data: any, options?: any) {
   const table = parts[0];
   const id = parts[1];
 
-  const { error } = await supabase
-    .from(table)
-    .upsert({ id, ...data, updatedAt: serverTimestamp() });
-
-  if (error) throw error;
+  const response = await fetch(`/api/data/${table}/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...data, updatedAt: Date.now() })
+  });
+  if (!response.ok) throw new Error(await response.text());
   notifyDb(docRef.path);
 }
 
@@ -209,12 +183,12 @@ export async function updateDoc(docRef: any, data: any) {
   const table = parts[0];
   const id = parts[1];
 
-  const { error } = await supabase
-    .from(table)
-    .update(data)
-    .eq('id', id);
-
-  if (error) throw error;
+  const response = await fetch(`/api/data/${table}/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) throw new Error(await response.text());
   notifyDb(docRef.path);
 }
 
@@ -223,12 +197,10 @@ export async function deleteDoc(docRef: any) {
   const table = parts[0];
   const id = parts[1];
 
-  const { error } = await supabase
-    .from(table)
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+  const response = await fetch(`/api/data/${table}/${id}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) throw new Error(await response.text());
   notifyDb(docRef.path);
 }
 
@@ -247,13 +219,8 @@ async function triggerDbListener(l: any) {
     const id = parts[1];
 
     if (id) {
-      const { data, error } = await supabase
-        .from(table)
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') throw error;
+      const response = await fetch(`/api/data/${table}/${id}`);
+      const data = await response.json();
       
       l.cb({
         id,
@@ -261,18 +228,23 @@ async function triggerDbListener(l: any) {
         data: () => data
       });
     } else {
-      let q: any = supabase.from(table).select('*');
-      
+      const url = new URL(`${window.location.origin}/api/data/${table}`);
       if (l.queryParams) {
         l.queryParams.forEach((qConstraint: any) => {
           if (qConstraint.type === 'where' && qConstraint.op === '==') {
-            q = q.eq(qConstraint.field, qConstraint.value);
+            url.searchParams.append(qConstraint.field, qConstraint.value);
           }
         });
       }
 
-      const { data, error } = await q;
-      if (error) throw error;
+      // Add currentUser info for master filtering on server
+      if (currentUser) {
+        url.searchParams.append('requestUserEmail', currentUser.email);
+        url.searchParams.append('requestUserId', currentUser.uid);
+      }
+
+      const response = await fetch(url.toString());
+      const data = await response.json();
       
       l.cb({
         docs: (data || []).map((item: any) => ({
@@ -288,20 +260,23 @@ async function triggerDbListener(l: any) {
 }
 
 export async function getDocs(query: any): Promise<any> {
-    const parts = query.path.split('/');
-    const table = parts[0];
-    
-    let q: any = supabase.from(table).select('*');
+    const table = query.path;
+    const url = new URL(`${window.location.origin}/api/data/${table}`);
     if (query.constraints) {
         query.constraints.forEach((c: any) => {
             if (c.type === 'where' && c.op === '==') {
-                q = q.eq(c.field, c.value);
+                url.searchParams.append(c.field, c.value);
             }
         });
     }
+    
+    if (currentUser) {
+      url.searchParams.append('requestUserEmail', currentUser.email);
+      url.searchParams.append('requestUserId', currentUser.uid);
+    }
 
-    const { data, error } = await q;
-    if (error) throw error;
+    const response = await fetch(url.toString());
+    const data = await response.json();
 
     return {
         docs: (data || []).map((item: any) => ({
