@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, addDoc, updateDoc, doc, deleteDoc } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { Activity, Printer, PenTool, LayoutDashboard, Search, Plus, Play, CheckCircle2, AlertCircle, ShoppingCart, User, Users, Tags, ArrowRight } from 'lucide-react';
+import { Activity, Printer, PenTool, LayoutDashboard, Search, Plus, Play, CheckCircle2, AlertCircle, ShoppingCart, User, Users, Tags, ArrowRight, Trash2 } from 'lucide-react';
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
 import Table, { TableRow } from './ui/Table';
@@ -9,6 +9,9 @@ import Table, { TableRow } from './ui/Table';
 export default function PrestationsModule() {
   const { currentCompany } = useCompany();
   const [activeTab, setActiveTab] = useState<'pos' | 'tracking' | 'catalog' | 'growth'>('pos');
+  const [submitting, setSubmitting] = useState(false);
+  const [isAddingService, setIsAddingService] = useState(false);
+  const [serviceForm, setServiceForm] = useState({ name: '', price: '', description: '' });
   
   const [services, setServices] = useState<any[]>([]);
   const [interventions, setInterventions] = useState<any[]>([]);
@@ -21,7 +24,7 @@ export default function PrestationsModule() {
     
     const unsubs: any[] = [];
     
-    const qServices = query(collection(db, 'services'), where('companyId', '==', currentCompany.id));
+    const qServices = query(collection(db, 'services'), where('companyid', '==', currentCompany.id));
     unsubs.push(onSnapshot(qServices, (snap: any) => {
       setServices(snap.docs.map((d: any) => ({ id: d.id, ...d.data() })));
     }));
@@ -41,37 +44,74 @@ export default function PrestationsModule() {
   }, [currentCompany]);
 
   const handleCreateSale = async (serviceName: string, amountStr: string, qty: number) => {
-    if (!currentCompany) return;
-    await addDoc(collection(db, 'sales'), {
-      companyId: currentCompany.id,
-      itemName: serviceName,
-      type: 'service',
-      quantity: qty,
-      amount: parseFloat(amountStr) * qty,
-      date: Date.now(),
-      status: 'paid'
-    });
+    if (!currentCompany || submitting) return;
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, 'sales'), {
+        companyid: currentCompany.id,
+        itemName: serviceName,
+        type: 'service',
+        quantity: qty,
+        amount: parseFloat(amountStr) * qty,
+        date: Date.now(),
+        status: 'paid'
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCreateTask = async (e: React.FormEvent, type: string) => {
     e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const client = (form.elements.namedItem('client') as HTMLInputElement).value;
-    const desc = (form.elements.namedItem('desc') as HTMLInputElement).value;
+    if (!currentCompany || submitting) return;
     
-    await addDoc(collection(db, 'interventions'), {
-      companyId: currentCompany?.id,
-      client: client,
-      message: `[${type}] ${desc}`,
-      status: 'pending',
-      date: new Date().toISOString(),
-      createdAt: Date.now()
-    });
-    form.reset();
+    setSubmitting(true);
+    try {
+      const form = e.target as HTMLFormElement;
+      const client = (form.elements.namedItem('client') as HTMLInputElement).value;
+      const desc = (form.elements.namedItem('desc') as HTMLInputElement).value;
+      
+      await addDoc(collection(db, 'interventions'), {
+        companyid: currentCompany?.id,
+        client: client,
+        message: `[${type}] ${desc}`,
+        status: 'pending',
+        date: new Date().toISOString(),
+        createdAt: Date.now()
+      });
+      form.reset();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const updateInterventionStatus = async (id: string, status: string) => {
     await updateDoc(doc(db, 'interventions', id), { status });
+  };
+
+  const handleAddService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany || submitting) return;
+    setSubmitting(true);
+    try {
+       await addDoc(collection(db, 'services'), {
+         companyid: currentCompany.id,
+         name: serviceForm.name,
+         price: serviceForm.price,
+         description: serviceForm.description,
+         createdAt: Date.now()
+       });
+       setIsAddingService(false);
+       setServiceForm({ name: '', price: '', description: '' });
+    } catch (err) {
+       console.error(err);
+    } finally {
+       setSubmitting(false);
+    }
   };
 
   if (!currentCompany) return null;
@@ -105,7 +145,68 @@ export default function PrestationsModule() {
         {/* Main Content Area */}
         <div className="lg:col-span-2 space-y-6">
           
-          {activeTab === 'pos' && (
+          {isAddingService && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
+            <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <Tags size={24} className="text-purple-600" />
+              Nouveau Service
+            </h3>
+            <form onSubmit={handleAddService} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nom du service</label>
+                <input 
+                  type="text" 
+                  value={serviceForm.name}
+                  onChange={e => setServiceForm({...serviceForm, name: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:border-purple-400"
+                  placeholder="Ex: Impression Couleur"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Prix de vente (F)</label>
+                <input 
+                  type="number" 
+                  value={serviceForm.price}
+                  onChange={e => setServiceForm({...serviceForm, price: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:border-purple-400 font-mono"
+                  placeholder="Ex: 50"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Description courte</label>
+                <input 
+                  type="text" 
+                  value={serviceForm.description}
+                  onChange={e => setServiceForm({...serviceForm, description: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:border-purple-400"
+                  placeholder="Ex: Par page A4"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3 mt-8">
+                <button 
+                  type="button" 
+                  onClick={() => setIsAddingService(false)}
+                  className="w-full py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs uppercase tracking-widest"
+                >
+                  Annuler
+                </button>
+                <button 
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full py-3 bg-purple-600 text-white font-bold rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-purple-200 disabled:opacity-50"
+                >
+                  {submitting ? 'Création...' : 'Ajouter'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'pos' && (
             <div className="bg-white border text-center border-slate-200 p-8 rounded-2xl shadow-sm">
               <h3 className="text-xl font-bold text-slate-900 mb-6">Terminal de Vente Rapide</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -113,7 +214,8 @@ export default function PrestationsModule() {
                   <button 
                     key={s.id}
                     onClick={() => handleCreateSale(s.name, s.price, 1)}
-                    className="flex flex-col items-center justify-center p-6 border-2 border-slate-100 hover:border-purple-200 rounded-2xl bg-slate-50 hover:bg-purple-50 transition-all active:scale-95"
+                    disabled={submitting}
+                    className="flex flex-col items-center justify-center p-6 border-2 border-slate-100 hover:border-purple-200 rounded-2xl bg-slate-50 hover:bg-purple-50 transition-all active:scale-95 disabled:opacity-50"
                   >
                     <Plus size={24} className="text-purple-600 mb-2" />
                     <span className="font-bold text-slate-800 text-sm mb-1">{s.name}</span>
@@ -147,7 +249,12 @@ export default function PrestationsModule() {
                     <form onSubmit={(e) => handleCreateTask(e, 'Design')} className="space-y-3">
                       <input name="client" placeholder="Nom du Client / Téléphone" required className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400" />
                       <input name="desc" placeholder="Ex: Logo restaurant + charte graphique" required className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400" />
-                      <button className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm">Ajouter à la file d'attente</button>
+                      <button 
+                        disabled={submitting}
+                        className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm disabled:opacity-50"
+                      >
+                        {submitting ? 'Enregistrement...' : "Ajouter à la file d'attente"}
+                      </button>
                     </form>
                  </div>
                  <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
@@ -155,7 +262,12 @@ export default function PrestationsModule() {
                     <form onSubmit={(e) => handleCreateTask(e, 'Saisie')} className="space-y-3">
                       <input name="client" placeholder="Nom de l'étudiant / Client" required className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-teal-400" />
                       <input name="desc" placeholder="Ex: Rapport de stage de 50 pages" required className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-teal-400" />
-                      <button className="w-full py-3 bg-teal-600 text-white font-bold rounded-xl text-sm">Ajouter à la file</button>
+                      <button 
+                        disabled={submitting}
+                        className="w-full py-3 bg-teal-600 text-white font-bold rounded-xl text-sm disabled:opacity-50"
+                      >
+                        {submitting ? 'Enregistrement...' : 'Ajouter à la file'}
+                      </button>
                     </form>
                  </div>
               </div>
@@ -191,18 +303,40 @@ export default function PrestationsModule() {
             <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-slate-900">Catalogue des offres</h3>
-                <button className="flex items-center gap-2 bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-bold"><Plus size={16} /> Ajouter</button>
+                <button 
+                  onClick={() => setIsAddingService(true)}
+                  className="flex items-center gap-2 bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-slate-800 transition-all"
+                >
+                  <Plus size={16} /> Ajouter
+                </button>
               </div>
               <div className="grid gap-4">
                 {services.map(s => (
-                  <div key={s.id} className="flex justify-between items-center p-4 border border-slate-100 rounded-xl bg-slate-50">
+                  <div key={s.id} className="flex justify-between items-center p-4 border border-slate-100 rounded-xl bg-slate-50 group">
                     <div>
                       <h4 className="font-bold text-slate-800">{s.name}</h4>
                       <p className="text-xs text-slate-500">{s.description}</p>
                     </div>
-                    <div className="font-mono text-lg font-black text-slate-900">{s.price} F</div>
+                    <div className="flex items-center gap-6">
+                      <div className="font-mono text-lg font-black text-slate-900">{s.price} F</div>
+                      <button 
+                         onClick={async () => {
+                           if(confirm('Supprimer ce service ?')) {
+                             await deleteDoc(doc(db, 'services', s.id));
+                           }
+                         }}
+                         className="p-2 text-slate-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 ))}
+                {services.length === 0 && (
+                  <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <p className="text-slate-400 text-sm italic">Aucun service enregistré dans le catalogue.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

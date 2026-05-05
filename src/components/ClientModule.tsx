@@ -27,6 +27,7 @@ export default function ClientModule() {
   const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [newClient, setNewClient] = useState({ name: '', email: '', phone: '', address: '', interactions: '' });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -42,7 +43,8 @@ export default function ClientModule() {
 
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentCompany) return;
+    if (!currentCompany || submitting) return;
+    setSubmitting(true);
     try {
       if (editingClient) {
         await updateDoc(doc(db, 'clients', editingClient.id), {
@@ -63,6 +65,8 @@ export default function ClientModule() {
       setEditingClient(null);
     } catch (error) {
       handleFirestoreError(error, editingClient ? OperationType.UPDATE : OperationType.CREATE, 'clients');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -327,9 +331,10 @@ export default function ClientModule() {
                 </button>
                 <button 
                   type="submit"
-                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
+                  disabled={submitting}
+                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50"
                 >
-                  {editingClient ? 'Mettre à jour' : 'Confirmer'}
+                  {submitting ? 'Traitement...' : (editingClient ? 'Mettre à jour' : 'Confirmer')}
                 </button>
               </div>
             </form>

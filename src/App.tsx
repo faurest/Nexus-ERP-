@@ -649,22 +649,31 @@ export default function App() {
                   exit={{ opacity: 0, width: 0 }}
                   className="overflow-hidden flex-1"
                 >
-                  <select 
-                    value={currentCompany.id}
-                    onChange={(e) => {
-                      const c = companies.find(c => c.id === e.target.value);
-                      if (c) setCurrentCompany(c);
-                    }}
-                    className="font-bold text-lg tracking-tight bg-transparent outline-none cursor-pointer truncate w-full text-slate-900"
-                  >
-                    {companies.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  {currentCompany.joinCode && (
-                    <div className="text-[10px] text-slate-400 font-medium tracking-wide">
-                      Code: <span className="font-mono font-bold text-slate-600">{currentCompany.joinCode}</span>
+                  {activeTab === 'admin' ? (
+                    <div className="font-black text-blue-600 text-lg leading-none tracking-tighter">
+                      NEXUS MASTER
+                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Console Globale</div>
                     </div>
+                  ) : (
+                    <>
+                      <select 
+                        value={currentCompany.id}
+                        onChange={(e) => {
+                          const c = companies.find(c => c.id === e.target.value);
+                          if (c) setCurrentCompany(c);
+                        }}
+                        className="font-bold text-lg tracking-tight bg-transparent outline-none cursor-pointer truncate w-full text-slate-900"
+                      >
+                        {companies.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                      {currentCompany.joinCode && (
+                        <div className="text-[10px] text-slate-400 font-medium tracking-wide">
+                          Code: <span className="font-mono font-bold text-slate-600">{currentCompany.joinCode}</span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </motion.div>
               )}
@@ -749,10 +758,15 @@ export default function App() {
           >
             <Menu size={20} />
           </button>
-          <div>
-            <h1 className="text-sm font-bold text-slate-400 uppercase tracking-widest hidden sm:block">
-              {navItems.find(n => n.id === activeTab)?.label}
+          <div className="flex items-center gap-2">
+            <h1 className="text-sm font-black text-slate-900 uppercase tracking-widest hidden sm:block">
+              {activeTab === 'admin' ? "Console Maître Nexus" : navItems.find(n => n.id === activeTab)?.label}
             </h1>
+            {activeTab === 'admin' && (
+              <span className="bg-slate-900 text-blue-400 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter">
+                Root Access
+              </span>
+            )}
           </div>
           
           <div className="flex items-center gap-6">

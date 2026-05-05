@@ -44,6 +44,7 @@ export default function PersonnelModule() {
   const [newTask, setNewTask] = useState({ title: '', assignedTo: '', startDate: '', endDate: '' });
   const [newStaff, setNewStaff] = useState({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général', password: 'Password123' });
   const [creationMessage, setCreationMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   
   const companyRoles = currentCompany?.roles || DEFAULT_ROLES;
   const roleOptions = Object.keys(companyRoles).filter(r => r !== 'owner');
@@ -55,7 +56,8 @@ export default function PersonnelModule() {
   }, [currentCompany]);
 
   const handleUpdateRoles = async () => {
-    if (!currentCompany) return;
+    if (!currentCompany || submitting) return;
+    setSubmitting(true);
     try {
       await updateDoc(doc(db, 'companies', currentCompany.id), {
         roles: editingRoles
@@ -63,6 +65,8 @@ export default function PersonnelModule() {
       alert('Rôles et permissions mis à jour avec succès.');
     } catch(err) {
       handleFirestoreError(err, OperationType.UPDATE, 'companies');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -75,10 +79,10 @@ export default function PersonnelModule() {
 
   useEffect(() => {
     if (!currentCompany) return;
-    const unsubStaff = onSnapshot(query(collection(db, 'personnel'), where('companyId', '==', currentCompany.id)), (snapshot) => {
+    const unsubStaff = onSnapshot(query(collection(db, 'personnel'), where('companyid', '==', currentCompany.id)), (snapshot) => {
       setStaffList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff)));
     });
-    const unsubTasks = onSnapshot(query(collection(db, 'tasks'), where('companyId', '==', currentCompany.id)), (snapshot) => {
+    const unsubTasks = onSnapshot(query(collection(db, 'tasks'), where('companyid', '==', currentCompany.id)), (snapshot) => {
       setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
     });
     return () => { unsubStaff(); unsubTasks(); };
@@ -86,19 +90,27 @@ export default function PersonnelModule() {
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentCompany || !newTask.title || !newTask.assignedTo) return;
-    await addDoc(collection(db, 'tasks'), {
-      ...newTask,
-      companyId: currentCompany.id,
-      status: 'todo'
-    });
-    setNewTask({ title: '', assignedTo: '', startDate: '', endDate: '' });
-    setIsAddingTask(false);
+    if (!currentCompany || !newTask.title || !newTask.assignedTo || submitting) return;
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, 'tasks'), {
+        ...newTask,
+        companyid: currentCompany.id,
+        status: 'todo'
+      });
+      setNewTask({ title: '', assignedTo: '', startDate: '', endDate: '' });
+      setIsAddingTask(false);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'tasks');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
 
   const handleCreate = async () => {
-    if (!currentCompany || (!newStaff.firstName.trim() && !newStaff.lastName.trim()) || !newStaff.email.trim()) return;
+    if (!currentCompany || (!newStaff.firstName.trim() && !newStaff.lastName.trim()) || !newStaff.email.trim() || submitting) return;
+    setSubmitting(true);
     try {
       const fullName = `${newStaff.firstName} ${newStaff.lastName}`.trim();
       if (editingStaff) {
@@ -156,6 +168,8 @@ export default function PersonnelModule() {
       } else {
           setCreationMessage('Erreur lors de l\'opération.');
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -335,8 +349,8 @@ export default function PersonnelModule() {
                   <input required type="date" value={newTask.endDate} onChange={e => setNewTask({...newTask, endDate: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 outline-none focus:border-blue-400" />
                 </div>
               </div>
-              <button type="submit" className="w-full bg-slate-900 text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-slate-800 transition-all disabled:opacity-50">
-                Assigner
+              <button type="submit" disabled={submitting} className="w-full bg-slate-900 text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-slate-800 transition-all disabled:opacity-50">
+                {submitting ? 'Assignation...' : 'Assigner'}
               </button>
             </form>
           </div>
@@ -382,9 +396,10 @@ export default function PersonnelModule() {
               </button>
               <button 
                 onClick={handleUpdateRoles}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-600/20"
+                disabled={submitting}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-600/20 disabled:opacity-50"
               >
-                <Save size={16} /> Sauvegarder
+                <Save size={16} /> {submitting ? 'Mise à jour...' : 'Sauvegarder'}
               </button>
             </div>
           </div>
@@ -625,9 +640,10 @@ export default function PersonnelModule() {
               </button>
               <button 
                 onClick={handleCreate}
-                className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono"
+                disabled={submitting}
+                className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
               >
-                {editingStaff ? 'Mettre à jour' : 'Enregistrer'}
+                {submitting ? 'Traitement...' : (editingStaff ? 'Mettre à jour' : 'Enregistrer')}
               </button>
             </div>
           </div>

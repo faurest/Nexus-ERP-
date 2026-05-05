@@ -69,6 +69,7 @@ export default function ProjectModule() {
   const [isAddingProject, setIsAddingProject] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState<any>({});
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -76,23 +77,23 @@ export default function ProjectModule() {
     const queryWithCompany = (collectionName: string) => 
       query(collection(db, collectionName), where('companyId', '==', currentCompany.id));
 
-    const unsubProjects = onSnapshot(queryWithCompany('projects'), (snap) => {
+    const unsubProjects = onSnapshot(query(collection(db, 'projects'), where('companyid', '==', currentCompany.id)), (snap) => {
       setProjects(snap.docs.map(d => ({ id: d.id, ...d.data() } as Project)));
     }, err => handleFirestoreError(err, OperationType.LIST, 'projects'));
 
-    const unsubPartners = onSnapshot(queryWithCompany('partners'), (snap) => {
+    const unsubPartners = onSnapshot(query(collection(db, 'partners'), where('companyid', '==', currentCompany.id)), (snap) => {
       setPartners(snap.docs.map(d => ({ id: d.id, ...d.data() } as Partner)));
     }, err => handleFirestoreError(err, OperationType.LIST, 'partners'));
 
-    const unsubExpenses = onSnapshot(queryWithCompany('expenses'), (snap) => {
+    const unsubExpenses = onSnapshot(query(collection(db, 'expenses'), where('companyid', '==', currentCompany.id)), (snap) => {
       setExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() } as Expense)));
     }, err => handleFirestoreError(err, OperationType.LIST, 'expenses'));
 
-    const unsubInvoices = onSnapshot(queryWithCompany('invoices'), (snap) => {
+    const unsubInvoices = onSnapshot(query(collection(db, 'invoices'), where('companyid', '==', currentCompany.id)), (snap) => {
       setInvoices(snap.docs.map(d => ({ id: d.id, ...d.data() } as Invoice)));
     }, err => handleFirestoreError(err, OperationType.LIST, 'invoices'));
 
-    const unsubPayments = onSnapshot(queryWithCompany('payments'), (snap) => {
+    const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('companyid', '==', currentCompany.id)), (snap) => {
       setPayments(snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment)));
     }, err => handleFirestoreError(err, OperationType.LIST, 'payments'));
 
@@ -107,8 +108,9 @@ export default function ProjectModule() {
 
   const handleAddFinancial = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAddingFinancial || !currentCompany) return;
+    if (!isAddingFinancial || !currentCompany || submitting) return;
 
+    setSubmitting(true);
     try {
       const collectionName = isAddingFinancial === 'expense' ? 'expenses' : 
                             isAddingFinancial === 'invoice' ? 'invoices' : 'payments';
@@ -116,7 +118,7 @@ export default function ProjectModule() {
       await addDoc(collection(db, collectionName), {
         ...formData,
         amount: Number(formData.amount),
-        companyId: currentCompany.id,
+        companyid: currentCompany.id,
         createdAt: serverTimestamp(),
       });
 
@@ -124,13 +126,16 @@ export default function ProjectModule() {
       setFormData({});
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, isAddingFinancial);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleAddProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentCompany) return;
+    if (!currentCompany || submitting) return;
 
+    setSubmitting(true);
     try {
       const recipients = [...(currentCompany.employees || [])];
       if (!recipients.includes(currentCompany.ownerId)) recipients.push(currentCompany.ownerId);
@@ -154,7 +159,7 @@ export default function ProjectModule() {
         await addDoc(collection(db, 'projects'), {
           ...formData,
           budget: Number(formData.budget || 0),
-          companyId: currentCompany.id,
+          companyid: currentCompany.id,
           createdAt: serverTimestamp(),
           status: 'planned'
         });
@@ -171,6 +176,8 @@ export default function ProjectModule() {
       setFormData({});
     } catch(err) {
       handleFirestoreError(err, editingProject ? OperationType.UPDATE : OperationType.WRITE, 'projects');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -586,9 +593,10 @@ export default function ProjectModule() {
                 </button>
                 <button 
                   type="submit"
-                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono"
+                  disabled={submitting}
+                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
                 >
-                  {editingProject ? 'Enregistrer' : 'Créer'}
+                  {submitting ? 'Traitement...' : (editingProject ? 'Enregistrer' : 'Créer')}
                 </button>
               </div>
             </form>
@@ -704,9 +712,10 @@ export default function ProjectModule() {
                 </button>
                 <button 
                   type="submit"
-                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono"
+                  disabled={submitting}
+                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
                 >
-                  Enregistrer
+                  {submitting ? 'Enregistrement...' : 'Enregistrer'}
                 </button>
               </div>
             </form>

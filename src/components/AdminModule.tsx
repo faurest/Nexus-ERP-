@@ -54,6 +54,7 @@ export default function AdminModule() {
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [showUserAssignModal, setShowUserAssignModal] = useState<any | null>(null);
   const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchGlobalData = async () => {
     try {
@@ -101,6 +102,7 @@ export default function AdminModule() {
     e.preventDefault();
     if (!newCompany.name || !newCompany.ownerEmail) return;
 
+    setSubmitting(true);
     try {
       const joinCode = newCompany.joinCode || Math.random().toString(36).substring(2, 8).toUpperCase();
       const snap = await addDoc(collection(db, 'companies'), {
@@ -116,7 +118,9 @@ export default function AdminModule() {
       alert(`Entreprise ${newCompany.name} créée avec succès ! Code d'accès : ${joinCode}`);
     } catch (err) {
       console.error(err);
-      alert('Failed to create company');
+      alert('Erreur lors de la création de l\'entreprise');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -124,6 +128,7 @@ export default function AdminModule() {
     e.preventDefault();
     if (!editingCompany || !editingCompany.name) return;
 
+    setSubmitting(true);
     try {
       await updateDoc(doc(db, 'companies', editingCompany.id), {
         name: editingCompany.name,
@@ -136,6 +141,8 @@ export default function AdminModule() {
     } catch (err) {
       console.error(err);
       alert('Erreur lors de la mise à jour');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -227,6 +234,7 @@ export default function AdminModule() {
     e.preventDefault();
     if (!editingUser || !editingUser.email) return;
 
+    setSubmitting(true);
     try {
       await updateDoc(doc(db, 'users', editingUser.id), {
         displayName: editingUser.displayName,
@@ -238,6 +246,8 @@ export default function AdminModule() {
     } catch (err) {
       console.error(err);
       alert('Erreur lors de la mise à jour');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -779,9 +789,10 @@ export default function AdminModule() {
                 </button>
                 <button 
                   type="submit"
-                  className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all active:scale-95"
+                  disabled={submitting}
+                  className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait"
                 >
-                  Mettre à jour
+                  {submitting ? 'Traitement...' : 'Mettre à jour'}
                 </button>
               </div>
             </form>
@@ -902,9 +913,10 @@ export default function AdminModule() {
                 </button>
                 <button 
                   type="submit"
-                  className="flex-[2] py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-slate-800 transition-all active:scale-95"
+                  disabled={submitting}
+                  className="flex-[2] py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait"
                 >
-                  Sauvegarder
+                  {submitting ? 'Enregistrement...' : 'Sauvegarder'}
                 </button>
               </div>
             </form>
@@ -1095,9 +1107,10 @@ export default function AdminModule() {
                 </button>
                 <button 
                   type="submit"
-                  className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95"
+                  disabled={submitting}
+                  className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait"
                 >
-                  Créer et Envoyer l'Exclusivité
+                  {submitting ? 'Initialisation...' : "Créer et Envoyer l'Exclusivité"}
                 </button>
               </div>
             </form>

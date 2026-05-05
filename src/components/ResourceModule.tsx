@@ -30,10 +30,11 @@ export default function ResourceModule() {
   const [viewingResource, setViewingResource] = useState<Resource | null>(null);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [formData, setFormData] = useState<any>({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '', price: 0 });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!currentCompany) return;
-    const q = query(collection(db, 'resources'), where('companyId', '==', currentCompany.id));
+    const q = query(collection(db, 'resources'), where('companyid', '==', currentCompany.id));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Resource));
       setResources(data);
@@ -45,7 +46,8 @@ export default function ResourceModule() {
 
   const handleSaveResource = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentCompany || !formData.name) return;
+    if (!currentCompany || !formData.name || submitting) return;
+    setSubmitting(true);
     try {
       const newQuantity = Number(formData.quantity);
       if (editingResource) {
@@ -57,15 +59,12 @@ export default function ResourceModule() {
         await addDoc(collection(db, 'resources'), {
           ...formData,
           quantity: newQuantity,
-          companyId: currentCompany.id,
+          companyid: currentCompany.id,
           createdAt: serverTimestamp()
         });
       }
 
       if (newQuantity < 10) {
-        // Find owner or managers to notify. We'll simply notify the owner and anyone with dashboard access, 
-        // to simplify we notify all current employees, or just the current user testing it.
-        // Let's notify owner + employees.
         const recipients = [...(currentCompany.employees || [])];
         if (currentCompany.ownerId && !recipients.includes(currentCompany.ownerId)) recipients.push(currentCompany.ownerId);
 
@@ -83,6 +82,8 @@ export default function ResourceModule() {
       setFormData({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '', price: 0 });
     } catch(err) {
       handleFirestoreError(err, editingResource ? OperationType.UPDATE : OperationType.WRITE, 'resources');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -371,7 +372,9 @@ export default function ResourceModule() {
                </div>
                <div className="grid grid-cols-2 gap-4 mt-8">
                  <button type="button" onClick={() => { setIsAdding(false); setEditingResource(null); setFormData({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '', price: 0 }); }} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
-                 <button type="submit" className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono">{editingResource ? 'Mettre à jour' : 'Enregistrer'}</button>
+                 <button type="submit" disabled={submitting} className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50">
+                   {submitting ? 'Traitement...' : (editingResource ? 'Mettre à jour' : 'Enregistrer')}
+                 </button>
                </div>
              </form>
            </div>

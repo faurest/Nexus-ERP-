@@ -49,15 +49,16 @@ export default function SalesModule() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [formData, setFormData] = useState<any>({ type: 'product', quantity: 1, price: 0 });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!currentCompany) return;
 
-    const unsubSales = onSnapshot(query(collection(db, 'sales'), where('companyId', '==', currentCompany.id)), snap => {
+    const unsubSales = onSnapshot(query(collection(db, 'sales'), where('companyid', '==', currentCompany.id)), snap => {
       setSales(snap.docs.map(d => ({ id: d.id, ...d.data() } as Sale)));
     }, err => handleFirestoreError(err, OperationType.LIST, 'sales'));
 
-    const unsubInvoices = onSnapshot(query(collection(db, 'sales_invoices'), where('companyId', '==', currentCompany.id)), snap => {
+    const unsubInvoices = onSnapshot(query(collection(db, 'sales_invoices'), where('companyid', '==', currentCompany.id)), snap => {
       setInvoices(snap.docs.map(d => {
         const data = d.data();
         let items = data.items || [];
@@ -68,19 +69,19 @@ export default function SalesModule() {
       }));
     }, err => handleFirestoreError(err, OperationType.LIST, 'sales_invoices'));
 
-    const unsubExpenses = onSnapshot(query(collection(db, 'expenses'), where('companyId', '==', currentCompany.id)), snap => {
+    const unsubExpenses = onSnapshot(query(collection(db, 'expenses'), where('companyid', '==', currentCompany.id)), snap => {
       setExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => handleFirestoreError(err, OperationType.LIST, 'expenses'));
 
-    const unsubResources = onSnapshot(query(collection(db, 'resources'), where('companyId', '==', currentCompany.id)), snap => {
+    const unsubResources = onSnapshot(query(collection(db, 'resources'), where('companyid', '==', currentCompany.id)), snap => {
       setResources(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => handleFirestoreError(err, OperationType.LIST, 'resources'));
 
-    const unsubClients = onSnapshot(query(collection(db, 'clients'), where('companyId', '==', currentCompany.id)), snap => {
+    const unsubClients = onSnapshot(query(collection(db, 'clients'), where('companyid', '==', currentCompany.id)), snap => {
       setClients(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => handleFirestoreError(err, OperationType.LIST, 'clients'));
 
-    const unsubOpenOrders = onSnapshot(query(collection(db, 'open_orders'), where('companyId', '==', currentCompany.id)), snap => {
+    const unsubOpenOrders = onSnapshot(query(collection(db, 'open_orders'), where('companyid', '==', currentCompany.id)), snap => {
       // Need to ensure items is parsed correctly if it's coming from standard firebase mock or sqlite
       setOpenOrders(snap.docs.map(d => {
         const data = d.data();
@@ -97,8 +98,9 @@ export default function SalesModule() {
 
   const handleCreateSale = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentCompany) return;
+    if (!currentCompany || submitting) return;
     
+    setSubmitting(true);
     try {
       const total = Number(formData.quantity) * Number(formData.price);
       if (editingSale) {
@@ -115,19 +117,18 @@ export default function SalesModule() {
           quantity: Number(formData.quantity),
           price: Number(formData.price),
           total,
-          companyId: currentCompany.id,
+          companyid: currentCompany.id,
           status: 'pending_payment',
           date: serverTimestamp()
         });
 
-        // Automatically create an invoice for this sale
         const invoiceNumber = `FA-${Date.now().toString().slice(-6)}`;
         await addDoc(collection(db, 'sales_invoices'), {
           saleId: saleRef.id,
           invoiceNumber,
           amount: total,
           status: 'unpaid',
-          companyId: currentCompany.id,
+          companyid: currentCompany.id,
           date: serverTimestamp(),
           clientName: formData.clientName || '',
           items: JSON.stringify([{
@@ -138,7 +139,6 @@ export default function SalesModule() {
           }])
         });
 
-        // Inscription ou check du client
         if (formData.clientName) {
            const existingClient = clients.find(c => c.name.toLowerCase().trim() === formData.clientName.toLowerCase().trim());
            if (!existingClient) {
@@ -161,6 +161,8 @@ export default function SalesModule() {
       setFormData({ type: 'product', quantity: 1, price: 0 });
     } catch(err) {
       handleFirestoreError(err, editingSale ? OperationType.UPDATE : OperationType.WRITE, 'sales');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -197,10 +199,11 @@ export default function SalesModule() {
 
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentCompany || (!newOrderName && !newOrderTable)) return;
+    if (!currentCompany || (!newOrderName && !newOrderTable) || submitting) return;
+    setSubmitting(true);
     try {
       const res = await addDoc(collection(db, 'open_orders'), {
-        companyId: currentCompany.id,
+        companyid: currentCompany.id,
         clientName: newOrderName,
         tableNumber: newOrderTable,
         items: [],
@@ -209,7 +212,6 @@ export default function SalesModule() {
         updatedAt: serverTimestamp()
       });
       
-      // Inscription automatique du client
       if (newOrderName) {
          const existingClient = clients.find(c => c.name.toLowerCase().trim() === newOrderName.toLowerCase().trim());
          if (!existingClient) {
@@ -232,6 +234,8 @@ export default function SalesModule() {
       setNewOrderTable('');
     } catch(err) {
       handleFirestoreError(err, OperationType.WRITE, 'open_orders');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -665,7 +669,13 @@ export default function SalesModule() {
 
               <div className="grid grid-cols-2 gap-4 mt-8">
                 <button type="button" onClick={() => { setIsAdding(false); setEditingSale(null); setFormData({ type: 'product', quantity: 1, price: 0 }); }} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
-                <button type="submit" className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono">{editingSale ? 'Mettre à jour' : 'Facturer'}</button>
+                <button 
+                  type="submit" 
+                  disabled={submitting}
+                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
+                >
+                  {submitting ? 'Traitement...' : (editingSale ? 'Mettre à jour' : 'Facturer')}
+                </button>
               </div>
             </form>
           </div>
@@ -689,7 +699,13 @@ export default function SalesModule() {
 
               <div className="grid grid-cols-2 gap-4 mt-8">
                 <button type="button" onClick={() => setIsAddingOrder(false)} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
-                <button type="submit" className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono">Créer</button>
+                <button 
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
+                >
+                  {submitting ? 'Traitement...' : 'Créer'}
+                </button>
               </div>
             </form>
           </div>
