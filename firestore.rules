@@ -83,7 +83,8 @@ service cloud.firestore {
         return collectionName in [
           'personnel', 'clients', 'sales', 'projects', 'partners', 
           'expenses', 'resources', 'tasks', 'services', 
-          'interventions', 'notifications', 'open_orders'
+          'interventions', 'notifications', 'open_orders',
+          'invoices', 'payments', 'sales_invoices', 'users'
         ];
       }
 
@@ -94,14 +95,9 @@ service cloud.firestore {
       // Single document read: verify membership
       allow get: if isSignedIn() && isCompanyCollection() && (isAdmin() || isMemberOfCompany(resource.data.companyId));
       
-      // List: Forbidden for non-admins via rules UI/Query (Pillar 8 Violation Prevention)
-      // For non-admins, lists should be filtered by companyId on client and verified document-by-document.
-      // But to avoid O(n) get() calls, we only allow list if the user is an Admin or we use a more efficient check.
-      // For now, let's allow it but warn about performance, or use a slightly safer check.
+      // List: Admins can list all. Members must use query filtered by companyId.
       allow list: if isSignedIn() && isCompanyCollection() && (
         isAdmin() || 
-        // Relational check without get() is impossible here unless we duplicate user info on every task
-        // We'll allow it for now but it might hit limits if user has thousands of docs
         isMemberOfCompany(resource.data.companyId)
       );
 
@@ -119,9 +115,9 @@ service cloud.firestore {
                       (isAdmin() || isMemberOfCompany(existing().companyId));
     }
 
-    // 3. Test Connection
+    // 3. Special Collections / Test
     match /test/connection {
-      allow read: if true; // Publicly readable for connection testing
+      allow read: if isSignedIn();
     }
   }
 }

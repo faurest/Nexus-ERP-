@@ -181,7 +181,9 @@ export async function getDocs(query: any): Promise<any> {
           empty: result.empty
       };
     } catch (error) {
-      handleFirestoreError(error, OperationType.LIST, null);
+      // Try to extract path from collection or query
+      const path = query?.path || (query?.['converter'] ? 'complex-query' : 'unknown');
+      handleFirestoreError(error, OperationType.LIST, path);
       throw error;
     }
 }
