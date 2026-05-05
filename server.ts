@@ -372,50 +372,43 @@ async function startServer() {
       const { collection } = req.params;
       const { requestUserEmail, requestUserId, ownerId, ...otherQuerys } = req.query as any;
       
+      // Get table columns
+      const tableInfo = db.prepare(`PRAGMA table_info(${collection})`).all() as any[];
+      const validColumns = tableInfo.map(c => c.name);
+
       let query = `SELECT * FROM ${collection}`;
       const params: any[] = [];
       const conditions: string[] = [];
 
-      if (ownerId && collection === 'companies') {
-        if (ownerId === 'master_nexus_01' || requestUserEmail === 'hackeurfaurest@gmail.com' || requestUserEmail === 'dangafelicite@gmail.com') {
-          // If super admin, no additional condition, return all companies
-        } else {
+      if (collection === 'companies') {
+        if (requestUserEmail === 'hackeurfaurest@gmail.com' || requestUserEmail === 'dangafelicite@gmail.com') {
+          // All companies
+        } else if (ownerId) {
           conditions.push(`(ownerId = ? OR memberEmails LIKE ?)`);
           params.push(ownerId);
           params.push(`%${requestUserEmail}%`);
         }
-      } else if (ownerId && collection !== 'companies') {
-         // If ownerId is passed for other collections, it usually refers to company ownership or similar
-         // But our schema uses companyId. 
-         // For now, let's just ignore ownerId if it's not the companies table, 
-         // as filters should come via otherQuerys (e.g., companyId)
-      } else if (ownerId) {
+      } else if (ownerId && validColumns.includes('ownerId')) {
         conditions.push(`ownerId = ?`);
         params.push(ownerId);
       }
 
       Object.keys(otherQuerys).forEach(key => {
-        // Fix for companyid vs companyId mismatch
         let normalizedKey = key;
-        if (key.toLowerCase() === 'companyid') normalizedKey = 'companyId';
+        if (key.toLowerCase() === 'companyid' && validColumns.includes('companyId')) {
+          normalizedKey = 'companyId';
+        }
         
-        conditions.push(`${normalizedKey} = ?`);
-        // Handle case-insensitivity manually for 'email' to match existing user queries easily
-        if (normalizedKey === 'email' && typeof otherQuerys[key] === 'string') {
-           params.push((otherQuerys[key] as string).trim().toLowerCase());
-        } else {
-           params.push(otherQuerys[key]);
+        if (validColumns.includes(normalizedKey)) {
+          if (normalizedKey === 'email' && typeof otherQuerys[key] === 'string') {
+             conditions.push(`LOWER(TRIM(email)) = ?`);
+             params.push((otherQuerys[key] as string).trim().toLowerCase());
+          } else {
+             conditions.push(`${normalizedKey} = ?`);
+             params.push(otherQuerys[key]);
+          }
         }
       });
-      
-      // if column 'email' exists we want to be case-insensitive for sqlite equal matching
-      if (otherQuerys['email']) {
-         // replace the last condition
-         const emailIndex = conditions.findIndex(c => c.startsWith('email =') || c.startsWith('email='));
-         if (emailIndex !== -1) {
-            conditions[emailIndex] = `LOWER(TRIM(email)) = ?`;
-         }
-      }
 
       if (conditions.length > 0) {
         query += ` WHERE ` + conditions.join(' AND ');
