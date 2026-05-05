@@ -43,7 +43,8 @@ function notifyAuth() {
 
 export const loginWithEmail = async (email: string, pass: string) => {
   try {
-    const response = await fetch('/api/auth/login', {
+    const url = `${window.location.origin}/api/auth/login`;
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password: pass })
@@ -73,7 +74,8 @@ export const loginWithEmail = async (email: string, pass: string) => {
 
 export async function signupWithEmail(email: string, pass: string) {
   try {
-    const response = await fetch('/api/auth/register', {
+    const url = `${window.location.origin}/api/auth/register`;
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password: pass })
@@ -149,7 +151,8 @@ export function where(field: string, op: string, value: any) {
 }
 
 export async function addDoc(col: any, data: any) {
-  const response = await fetch(`/api/data/${col.path}`, {
+  const url = `${window.location.origin}/api/data/${col.path}`;
+  const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...data, createdAt: Date.now() })
@@ -169,7 +172,8 @@ export async function setDoc(docRef: any, data: any, options?: any) {
   const table = parts[0];
   const id = parts[1];
 
-  const response = await fetch(`/api/data/${table}/${id}`, {
+  const url = `${window.location.origin}/api/data/${table}/${id}`;
+  const response = await fetch(url, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...data, updatedAt: Date.now() })
@@ -183,7 +187,8 @@ export async function updateDoc(docRef: any, data: any) {
   const table = parts[0];
   const id = parts[1];
 
-  const response = await fetch(`/api/data/${table}/${id}`, {
+  const url = `${window.location.origin}/api/data/${table}/${id}`;
+  const response = await fetch(url, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
@@ -197,7 +202,8 @@ export async function deleteDoc(docRef: any) {
   const table = parts[0];
   const id = parts[1];
 
-  const response = await fetch(`/api/data/${table}/${id}`, {
+  const url = `${window.location.origin}/api/data/${table}/${id}`;
+  const response = await fetch(url, {
     method: 'DELETE'
   });
   if (!response.ok) throw new Error(await response.text());
@@ -219,7 +225,8 @@ async function triggerDbListener(l: any) {
     const id = parts[1];
 
     if (id) {
-      const response = await fetch(`/api/data/${table}/${id}`);
+      const url = `${window.location.origin}/api/data/${table}/${id}`;
+      const response = await fetch(url);
       if (!response.ok) throw new Error(await response.text());
       const data = await response.json();
       
@@ -248,11 +255,12 @@ async function triggerDbListener(l: any) {
 
       const queryString = params.toString();
       const finalPath = queryString ? `${path}?${queryString}` : path;
+      const url = `${window.location.origin}${finalPath}`;
 
-      const response = await fetch(finalPath);
+      const response = await fetch(url);
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`API Error (${finalPath}):`, errorText);
+        console.error(`API Error (${url}):`, errorText);
         throw new Error(errorText);
       }
       const data = await response.json();
@@ -290,11 +298,12 @@ export async function getDocs(query: any): Promise<any> {
 
     const queryString = params.toString();
     const finalPath = queryString ? `${path}?${queryString}` : path;
+    const url = `${window.location.origin}${finalPath}`;
 
-    const response = await fetch(finalPath);
+    const response = await fetch(url);
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`getDocs API Error (${finalPath}):`, errorText);
+      console.error(`getDocs API Error (${url}):`, errorText);
       throw new Error(errorText);
     }
     const data = await response.json();
