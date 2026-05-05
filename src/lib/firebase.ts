@@ -6,7 +6,9 @@ import {
   sendEmailVerification,
   signOut, 
   onAuthStateChanged as firebaseOnAuthStateChanged,
-  updateProfile
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -70,6 +72,17 @@ export const loginWithEmail = async (email: string, pass: string) => {
     return { user: result.user };
   } catch (error: any) {
     console.error("Login error:", error);
+    throw error;
+  }
+};
+
+export const loginWithGoogle = async () => {
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    return { user: result.user };
+  } catch (error: any) {
+    console.error("Google Login error:", error);
     throw error;
   }
 };
