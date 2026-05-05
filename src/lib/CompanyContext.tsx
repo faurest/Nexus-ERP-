@@ -64,7 +64,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         : query(
             collection(db, 'companies'), 
             or(
-              where('ownerId', '==', user.uid),
+              where('ownerEmail', '==', user.email),
               where('memberEmails', 'array-contains', user.email)
             )
           );

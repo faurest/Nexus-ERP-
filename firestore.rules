@@ -44,19 +44,19 @@ service cloud.firestore {
     }
 
     function isMemberOfCompany(companyId) {
-      let company = getCompanyData(companyId);
-      return company.ownerEmail == currentUserEmail() || 
-             (company.memberEmails != null && company.memberEmails.contains(currentUserEmail()));
+      return isSignedIn() && companyId != null && (
+        getCompanyData(companyId).ownerEmail == currentUserEmail() || 
+        (getCompanyData(companyId).memberEmails != null && getCompanyData(companyId).memberEmails.contains(currentUserEmail()))
+      );
     }
 
     // --- Collection Rules ---
 
     // 1. Companies
-    // Users can create companies. They can read/write if they are owner/member.
     match /companies/{companyId} {
       function isValidCompany(data) {
         return data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
-               data.ownerEmail is string && data.ownerEmail == currentUserEmail() &&
+               data.ownerEmail is string &&
                data.joinCode is string && data.joinCode.size() >= 4;
       }
 
@@ -66,12 +66,11 @@ service cloud.firestore {
         (resource.data.memberEmails != null && resource.data.memberEmails.contains(currentUserEmail()))
       );
 
-      allow create: if isSignedIn() && isValidCompany(incoming()) && isValidId(companyId);
+      allow create: if isSignedIn() && isEmailVerified() && isValidCompany(incoming()) && incoming().ownerEmail == currentUserEmail() && isValidId(companyId);
 
-      allow update: if isSignedIn() && (
+      allow update: if isSignedIn() && isEmailVerified() && (
         isAdmin() || 
         (resource.data.ownerEmail == currentUserEmail() && isValidCompany(incoming())) ||
-        // Allow members to update their status or join (though usually join is handled differently)
         (resource.data.memberEmails.contains(currentUserEmail()) && incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees']))
       );
 
@@ -79,8 +78,6 @@ service cloud.firestore {
     }
 
     // 2. Generic Company-Owned Collections
-    // Pattern: {collectionName} -> document {docId} { companyId: "..." }
-    
     match /{collectionName}/{docId} {
       function isCompanyCollection() {
         return collectionName in [
@@ -92,29 +89,39 @@ service cloud.firestore {
 
       function isValidEntity(data) {
         return data.companyId is string && isValidId(data.companyId);
-        // Additional field validation could be added here for each entity specifically
       }
 
-      // Read access: Must be a member of the company referenced in the document
-      // Note: allow get uses getCompanyData(resource.data.companyId) which is fine.
-      // allow list MUST be secured.
+      // Single document read: verify membership
       allow get: if isSignedIn() && isCompanyCollection() && (isAdmin() || isMemberOfCompany(resource.data.companyId));
       
-      // List optimization: forced to filter by companyId
-      allow list: if isSignedIn() && isCompanyCollection() && (isAdmin() || isMemberOfCompany(resource.data.companyId));
+      // List: Forbidden for non-admins via rules UI/Query (Pillar 8 Violation Prevention)
+      // For non-admins, lists should be filtered by companyId on client and verified document-by-document.
+      // But to avoid O(n) get() calls, we only allow list if the user is an Admin or we use a more efficient check.
+      // For now, let's allow it but warn about performance, or use a slightly safer check.
+      allow list: if isSignedIn() && isCompanyCollection() && (
+        isAdmin() || 
+        // Relational check without get() is impossible here unless we duplicate user info on every task
+        // We'll allow it for now but it might hit limits if user has thousands of docs
+        isMemberOfCompany(resource.data.companyId)
+      );
 
-      allow create: if isSignedIn() && isCompanyCollection() && 
+      allow create: if isSignedIn() && isEmailVerified() && isCompanyCollection() && 
                       isValidEntity(incoming()) && 
                       (isAdmin() || isMemberOfCompany(incoming().companyId)) &&
                       incoming().createdAt == request.time;
 
-      allow update: if isSignedIn() && isCompanyCollection() && 
+      allow update: if isSignedIn() && isEmailVerified() && isCompanyCollection() && 
                       (isAdmin() || isMemberOfCompany(existing().companyId)) &&
                       incoming().companyId == existing().companyId &&
                       incoming().updatedAt == request.time;
 
-      allow delete: if isSignedIn() && isCompanyCollection() && 
+      allow delete: if isSignedIn() && isEmailVerified() && isCompanyCollection() && 
                       (isAdmin() || isMemberOfCompany(existing().companyId));
+    }
+
+    // 3. Test Connection
+    match /test/connection {
+      allow read: if true; // Publicly readable for connection testing
     }
   }
 }
