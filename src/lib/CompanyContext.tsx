@@ -61,12 +61,18 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       // Si c'est un maître, on ne filtre pas par ownerId pour voir TOUTES les entreprises (La Pause 237, etc.)
       const q = isMaster 
         ? collection(db, 'companies') 
-        : query(collection(db, 'companies'), where('ownerId', '==', user.uid));
+        : query(
+            collection(db, 'companies'), 
+            or(
+              where('ownerId', '==', user.uid),
+              where('memberEmails', 'array-contains', user.email)
+            )
+          );
       
       const timer = setTimeout(() => {
         setLoading(currentLoading => {
           if (currentLoading) {
-            console.warn("Nexus : Chargement trop long. Vérifiez la connexion Supabase ou le RLS.");
+            console.warn("Nexus : Chargement trop long. Vérifiez la connexion Firebase ou les régles de sécurité.");
             return false;
           }
           return currentLoading;
@@ -98,7 +104,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
           setCurrentCompany(prev => prev?.id === 'comp_nexus_master' ? prev : null);
         }
         
-        // CRITICAL: Always stop loading once we have an answer from Supabase
+        // CRITICAL: Always stop loading once we have an answer from Firebase
         setLoading(false);
         clearTimeout(timer);
       }, (error) => {

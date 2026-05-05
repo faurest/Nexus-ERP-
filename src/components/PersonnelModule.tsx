@@ -3,7 +3,7 @@ import { collection, onSnapshot, query, where, addDoc, updateDoc, doc, arrayUnio
 import { db } from '../lib/firebase';
 import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save, Ban } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
-import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
+import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { cn } from '../lib/utils';
 import { useCompany } from '../lib/CompanyContext';
 import { DEFAULT_ROLES } from '../App';

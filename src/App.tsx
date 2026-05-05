@@ -43,7 +43,6 @@ import NotificationBell from './components/NotificationBell';
 
 import { bootstrapDemoData } from './lib/bootstrap';
 import { useCompany } from './lib/CompanyContext';
-import { isSupabaseConfigured, checkSupabaseConnection } from './lib/supabase';
 
 export const NexusLogo = ({ className = "" }: { className?: string }) => (
   <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" className={className}>
@@ -447,19 +446,6 @@ export default function App() {
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isBlocked, setIsBlocked] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [supabaseStatus, setSupabaseStatus] = useState<'connected' | 'disconnected' | 'unconfigured'>('unconfigured');
-
-  useEffect(() => {
-    const checkConn = async () => {
-      if (!isSupabaseConfigured) {
-        setSupabaseStatus('unconfigured');
-        return;
-      }
-      const connected = await checkSupabaseConnection();
-      setSupabaseStatus(connected ? 'connected' : 'disconnected');
-    };
-    checkConn();
-  }, []);
   const { currentCompany, companies, setCurrentCompany, loading: companyLoading } = useCompany();
 
   useEffect(() => {
@@ -797,20 +783,11 @@ export default function App() {
             <div className="flex items-center gap-4 border-r border-slate-100 pr-6 mr-1 hidden lg:flex">
               <div className="flex flex-col items-end">
                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Base de données</span>
-                <span className={cn(
-                  "text-[10px] font-bold tracking-tight text-right",
-                  supabaseStatus === 'connected' ? "text-emerald-600" :
-                  supabaseStatus === 'disconnected' ? "text-red-500" : "text-amber-500"
-                )}>
-                  {supabaseStatus === 'connected' ? "Connecté à Supabase" :
-                   supabaseStatus === 'disconnected' ? "Serveur Indisponible" : "Mode Démo Local"}
+                <span className="text-[10px] font-bold tracking-tight text-right text-emerald-600">
+                  Cloud Firebase (Live)
                 </span>
               </div>
-              <div className={cn(
-                "w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm border",
-                supabaseStatus === 'connected' ? "bg-emerald-50 text-emerald-500 border-emerald-100 animate-pulse" :
-                supabaseStatus === 'disconnected' ? "bg-red-50 text-red-500 border-red-100" : "bg-amber-50 text-amber-500 border-amber-100"
-              )}>
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm border bg-emerald-50 text-emerald-500 border-emerald-100 animate-pulse">
                 <Database size={18} />
               </div>
             </div>

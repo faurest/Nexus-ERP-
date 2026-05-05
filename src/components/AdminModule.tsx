@@ -307,7 +307,7 @@ export default function AdminModule() {
             }
           }
         }
-        alert('Import global réussi vers Supabase !');
+        alert('Import global réussi vers Firebase !');
         fetchGlobalData();
       } catch (err) {
         console.error(err);
@@ -805,7 +805,7 @@ export default function AdminModule() {
           <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-xl">
              <h3 className="text-xl font-black text-slate-900 tracking-tight mb-4 flex items-center gap-2">
                <Activity className="text-blue-600" />
-               Migration SQLite vers Supabase
+               Migration SQLite vers Firebase
              </h3>
              <div className="space-y-4 mb-8 text-sm text-slate-500 leading-relaxed">
                <p>
@@ -813,8 +813,8 @@ export default function AdminModule() {
                </p>
                <ol className="list-decimal pl-5 space-y-2">
                  <li>Assurez-vous que le serveur local est actif.</li>
-                 <li>Configurez vos clés Supabase dans les <strong>Paramètres</strong>.</li>
-                 <li>Utilisez l'option <strong>Nucléaire</strong> dans le guide SQL si vous avez des erreurs de colonnes.</li>
+                 <li>La migration se fera vers votre base de données Firebase Cloud.</li>
+                 <li>Utilisez l'option <strong>Nucléaire</strong> dans le guide si vous avez des erreurs de colonnes.</li>
                  <li>Cliquez sur le bouton ci-dessous pour transférer les données.</li>
                </ol>
              </div>
@@ -833,7 +833,7 @@ export default function AdminModule() {
                Sauvegarde Locale (JSON)
              </h3>
              <p className="text-sm text-slate-400 mb-8 leading-relaxed">
-               Exportez l'intégralité de la base de données actuelle (Supabase) dans un seul fichier JSON.
+               Exportez l'intégralité de la base de données actuelle (Firebase) dans un seul fichier JSON.
                Utile pour les sauvegardes de sécurité ou pour transférer vers un autre projet.
              </p>
              <div className="flex flex-col gap-3">

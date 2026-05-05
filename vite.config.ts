@@ -13,6 +13,9 @@ export default defineConfig(({mode}) => {
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['nexus-logo.svg'],
+        workbox: {
+          maximumFileSizeToCacheInBytes: 4 * 1024 * 1024 // Increase to 4MB
+        },
         manifest: {
           name: 'NEXUS ERP',
           short_name: 'NEXUS',

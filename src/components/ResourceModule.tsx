@@ -3,7 +3,7 @@ import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc
 import { db } from '../lib/firebase';
 import { Plus, Search, Package, ShieldCheck, AlertTriangle, ArrowRightLeft, Edit2, Trash2 } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
-import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
+import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { cn } from '../lib/utils';
 import { useCompany } from '../lib/CompanyContext';
 import { createNotification } from '../lib/notifications';

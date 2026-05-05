@@ -1,0 +1,238 @@
+{
+  "entities": {
+    "Company": {
+      "title": "Company",
+      "description": "Information about a company in the ERP",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "ownerEmail": { "type": "string" },
+        "joinCode": { "type": "string" },
+        "memberEmails": { "type": "string" },
+        "employees": { "type": "string" },
+        "roles": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["name", "ownerEmail", "joinCode"]
+    },
+    "Person": {
+      "title": "Person",
+      "description": "Personnel member or employee",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "phone": { "type": "string" },
+        "notes": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "department": { "type": "string" },
+        "status": { "type": "string" },
+        "tasksAssignedCount": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["companyId", "name", "email"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "CRM client information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "interactions": { "type": "string" },
+        "salesTotal": { "type": "number" },
+        "loyaltyPoints": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["companyId", "name"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "Sales transaction record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "itemName": { "type": "string" },
+        "type": { "type": "string" },
+        "quantity": { "type": "number" },
+        "price": { "type": "number" },
+        "total": { "type": "number" },
+        "amount": { "type": "number" },
+        "status": { "type": "string" },
+        "clientName": { "type": "string" },
+        "date": { "type": "number" }
+      },
+      "required": ["companyId", "itemName"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Project management record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "partnerId": { "type": "string" },
+        "budget": { "type": "number" },
+        "status": { "type": "string" },
+        "startDate": { "type": "number" },
+        "endDate": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["companyId", "name"]
+    },
+    "Partner": {
+      "title": "Partner",
+      "description": "Business partner or provider",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "contactEmail": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["companyId", "name"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Financial expense record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "number" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["companyId", "projectId", "amount"]
+    },
+    "Resource": {
+      "title": "Resource",
+      "description": "Resource or stock item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "quantity": { "type": "number" },
+        "location": { "type": "string" },
+        "status": { "type": "string" },
+        "condition": { "type": "string" },
+        "duration": { "type": "string" },
+        "warranty": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["companyId", "name"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Task record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "title": { "type": "string" },
+        "assignedTo": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["companyId", "title"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "Service offered by the company",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["companyId", "name"]
+    },
+    "Intervention": {
+      "title": "Intervention",
+      "description": "Intervention or maintenance record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "client": { "type": "string" },
+        "message": { "type": "string" },
+        "date": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["companyId", "client", "message"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "App notification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "isRead": { "type": "number" },
+        "date": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["companyId", "title", "message"]
+    },
+    "OpenOrder": {
+      "title": "Open Order",
+      "description": "Currently open order (e.g. for a restaurant)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "tableNumber": { "type": "string" },
+        "items": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["companyId"]
+    }
+  },
+  "firestore": {
+    "companies": { "schema": "Company", "description": "Global companies list" },
+    "personnel": { "schema": "Person", "description": "Personnel records" },
+    "clients": { "schema": "Client", "description": "Client records" },
+    "sales": { "schema": "Sale", "description": "Sales records" },
+    "projects": { "schema": "Project", "description": "Project records" },
+    "partners": { "schema": "Partner", "description": "Partner records" },
+    "expenses": { "schema": "Expense", "description": "Expense records" },
+    "resources": { "schema": "Resource", "description": "Resource records" },
+    "tasks": { "schema": "Task", "description": "Task records" },
+    "services": { "schema": "Service", "description": "Service records" },
+    "interventions": { "schema": "Intervention", "description": "Intervention records" },
+    "notifications": { "schema": "Notification", "description": "Notification records" },
+    "open_orders": { "schema": "OpenOrder", "description": "Open order records" }
+  }
+}
