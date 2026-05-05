@@ -91,6 +91,20 @@ export const logout = async () => {
   await signOut(auth);
 };
 
+export const reloadUser = async () => {
+  if (auth.currentUser) {
+    await auth.currentUser.reload();
+    return auth.currentUser;
+  }
+  return null;
+};
+
+export const resendVerification = async () => {
+  if (auth.currentUser) {
+    await sendEmailVerification(auth.currentUser);
+  }
+};
+
 export const createEmployeeAccount = async (email: string, pass: string) => {
   // In Firebase, we can't easily create another user from the client without signing out
   // Unless we use a secondary auth instance or Admin SDK (server-side)

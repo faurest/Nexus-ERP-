@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, loginWithEmail, signupWithEmail, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, doc, updateDoc, arrayUnion } from './lib/firebase';
+import { auth, loginWithEmail, signupWithEmail, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, doc, updateDoc, arrayUnion, reloadUser, resendVerification } from './lib/firebase';
 type User = any;
 import { 
   LayoutDashboard, 
@@ -581,6 +581,34 @@ export default function App() {
   }
 
   if (user && !user.emailVerified) {
+    const handleReload = async () => {
+      setLoading(true);
+      try {
+        const u = await reloadUser();
+        if (u) {
+          setUser({
+            uid: u.uid,
+            email: u.email,
+            displayName: u.displayName || u.email?.split('@')[0],
+            emailVerified: u.emailVerified
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const handleResend = async () => {
+      try {
+        await resendVerification();
+        alert('Email de vérification renvoyé !');
+      } catch (err: any) {
+        alert('Erreur: ' + (err.message || 'Impossible de renvoyer le mail.'));
+      }
+    };
+
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
         <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-6">
@@ -591,16 +619,24 @@ export default function App() {
           Votre compte ({user.email}) est connecté, mais vous devez vérifier votre adresse email avant d'accéder aux données de l'entreprise. 
           Vérifiez vos courriers indésirables (spams) si vous ne voyez pas le mail.
         </p>
-        <div className="flex gap-4">
+        <div className="flex flex-col gap-3 w-full max-w-xs">
           <button 
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-colors"
+            onClick={handleReload}
+            className="w-full px-6 py-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
           >
-            J'ai vérifié mon mail
+            <TrendingUp size={18} />
+            J'ai vérifié mon mail (Rafraîchir)
+          </button>
+          <button 
+            onClick={handleResend}
+            className="w-full px-6 py-4 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
+          >
+            <Bell size={18} />
+            Renvoyer l'email
           </button>
           <button 
             onClick={logout}
-            className="px-6 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors"
+            className="w-full px-6 py-4 bg-slate-100 text-slate-400 font-bold rounded-xl hover:bg-slate-200 transition-colors"
           >
             Déconnexion
           </button>
