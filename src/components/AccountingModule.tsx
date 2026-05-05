@@ -36,7 +36,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
-import { handleFirestoreError, OperationType } from '../lib/firebase';
+import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
 import { getFinancialSuggestions } from '../lib/gemini';
 import Markdown from 'react-markdown';
 

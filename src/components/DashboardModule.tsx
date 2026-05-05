@@ -23,7 +23,7 @@ import { useCompany } from '../lib/CompanyContext';
 import { exportCompanyDataAsJSON, importCompanyDataFromJSON } from '../lib/exportUtils';
 import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { handleFirestoreError, OperationType } from '../lib/firebase';
+import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
 import { createNotification } from '../lib/notifications';
 
 export default function DashboardModule({ user, companies = [] }: { user?: any, companies?: any[] }) {

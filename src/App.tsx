@@ -352,22 +352,35 @@ function LoginScreen() {
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
     setLoading(true);
     try {
-      await loginWithEmail(email, password);
+      if (isSignUp) {
+        await signupWithEmail(email, password);
+      } else {
+        await loginWithEmail(email, password);
+      }
     } catch (err: any) {
-      console.error(err);
+      console.error("Auth Error Detail:", err);
       let errorMessage = 'Erreur lors de l\'authentification.';
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
-        errorMessage = 'Email ou mot de passe incorrect.';
-      } else if (err.code === 'auth/weak-password') {
-        errorMessage = err.message || 'Mot de passe trop faible.';
-      } else if (err.code === 'auth/operation-not-allowed') {
-        errorMessage = 'L\'authentification par email n\'est pas activée. Contactez l\'administrateur.';
+      
+      const code = err.code || '';
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found' || code === 'auth/invalid-email') {
+        errorMessage = 'Identifiants incorrects ou utilisateur inexistant.';
+      } else if (code === 'auth/weak-password') {
+        errorMessage = 'Le mot de passe doit contenir au moins 6 caractères.';
+      } else if (code === 'auth/email-already-in-use') {
+        errorMessage = 'Cet email est déjà utilisé par un autre compte.';
+      } else if (code === 'auth/operation-not-allowed') {
+        errorMessage = 'La méthode de connexion Email/Mot de passe n\'est pas configurée dans Firebase.';
+      } else if (code === 'auth/too-many-requests') {
+        errorMessage = 'Accès temporairement bloqué suite à trop de tentatives. Réessayez plus tard.';
+      } else {
+        errorMessage = `Erreur (${code}): ${err.message || 'Problème technique'}`;
       }
       setAuthError(errorMessage);
     } finally {
@@ -386,17 +399,18 @@ function LoginScreen() {
           <NexusLogo className="w-20 h-20 drop-shadow-2xl" />
           <div className="text-center">
             <h1 className="text-3xl font-black tracking-tight bg-gradient-to-br from-blue-900 to-blue-600 bg-clip-text text-transparent">NexusERP</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-2">Enterprise Management</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-2">Accès Cloud Firebase</p>
           </div>
         </div>
 
         <form onSubmit={handleEmailAuth} className="space-y-4">
           {authError && (
             <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-100 flex items-center gap-2">
-              <AlertCircle size={16} />
+              <AlertCircle size={16} className="shrink-0" />
               <span className="flex-1 overflow-hidden text-ellipsis">{authError}</span>
             </div>
           )}
+          
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Email professionnel</label>
             <input 
@@ -408,6 +422,7 @@ function LoginScreen() {
               required
             />
           </div>
+          
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Mot de passe</label>
             <input 
@@ -419,19 +434,29 @@ function LoginScreen() {
               required
             />
           </div>
+
           <button 
             type="submit"
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3.5 px-6 rounded-xl font-bold text-sm tracking-wide hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
           >
-            {loading ? 'Connexion en cours...' : 'Se Connecter'}
+            {loading ? 'Traitement en cours...' : (isSignUp ? 'Créer mon compte' : 'Se Connecter')}
             {!loading && <ChevronRight size={16} />}
           </button>
         </form>
 
+        <div className="mt-6 flex flex-col items-center gap-2">
+          <button 
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors"
+          >
+            {isSignUp ? "Déjà un compte ? Connectez-vous" : "Pas encore de compte ? S'inscrire"}
+          </button>
+        </div>
+
         <div className="mt-8 text-center pt-6 border-t border-slate-50">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NexusERP Industrial System</p>
-          <p className="text-[9px] text-slate-300 mt-1 uppercase font-mono tracking-tighter">Accès restreint au personnel autorisé</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NexusERP Cloud Integration</p>
+          <p className="text-[9px] text-slate-300 mt-1 uppercase font-mono tracking-tighter italic">Vérifiez que l'authentification Email est activée dans Firebase</p>
         </div>
       </motion.div>
     </div>
@@ -553,6 +578,35 @@ export default function App() {
 
   if (!currentCompany) {
     return <WorkspaceSelector companies={companies} user={user} onSelect={setCurrentCompany} />;
+  }
+
+  if (user && !user.emailVerified) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+        <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-6">
+          <Bell size={32} />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">Vérification de l'email requise</h2>
+        <p className="text-slate-500 max-w-md mx-auto mb-8">
+          Votre compte ({user.email}) est connecté, mais vous devez vérifier votre adresse email avant d'accéder aux données de l'entreprise. 
+          Vérifiez vos courriers indésirables (spams) si vous ne voyez pas le mail.
+        </p>
+        <div className="flex gap-4">
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-colors"
+          >
+            J'ai vérifié mon mail
+          </button>
+          <button 
+            onClick={logout}
+            className="px-6 py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors"
+          >
+            Déconnexion
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (isBlocked) {
