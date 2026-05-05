@@ -12,17 +12,8 @@ export function onAuthStateChanged(auth: any, cb: (user: any) => void) {
     currentUser = JSON.parse(userStr);
   }
   
-  // Check session with Supabase
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    if (session) {
-      currentUser = {
-        uid: session.user.id,
-        email: session.user.email,
-        displayName: session.user.user_metadata?.displayName || session.user.email?.split('@')[0]
-      };
-      notifyAuth();
-    }
-  });
+  // Removed Supabase session check to avoid rate limits
+  // Authentication is now handled locally via /api/auth endpoints
 
   cb(currentUser);
   listeners.push(cb);
@@ -102,18 +93,30 @@ export async function signupWithEmail(email: string, pass: string) {
 }
 
 export const logout = async () => {
-  await supabase.auth.signOut();
+  // Removed supabase.auth.signOut() to avoid rate limits
+  // Local session is cleared via localStorage
   currentUser = null;
   notifyAuth();
 };
 
 export const createEmployeeAccount = async (email: string, pass: string) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password: pass,
-  });
-  if (error) throw error;
-  return { user: { email } };
+  try {
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Erreur lors de la création du compte employé');
+    }
+
+    return { user: { email } };
+  } catch (error: any) {
+    console.error("Create account error:", error);
+    throw error;
+  }
 };
 
 export const secondaryAuth = {
