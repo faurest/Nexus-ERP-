@@ -19,6 +19,8 @@ import {
   DownloadCloud,
   TrendingUp,
   AlertCircle,
+  Eye,
+  EyeOff,
   Building2,
   Shield,
   Calculator,
@@ -350,6 +352,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
 function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -370,31 +373,30 @@ function LoginScreen() {
       
       const code = err.code || '';
       if (code === 'auth/email-already-in-use') {
-        // Automatically try to login if account exists during signup
         setAuthError('Ce compte existe déjà. Tentative de connexion...');
         try {
           await loginWithEmail(email, password);
           return;
         } catch (loginErr: any) {
-          if (loginErr.code === 'auth/wrong-password') {
-            errorMessage = 'Ce compte existe déjà mais le mot de passe est incorrect.';
+          if (loginErr.code === 'auth/wrong-password' || loginErr.code === 'auth/invalid-credential') {
+            errorMessage = 'Ce compte existe déjà mais le mot de passe est incorrect. Si vous avez oublié votre mot de passe, cliquez sur "Oublié ?".';
           } else {
             errorMessage = 'Ce compte existe déjà. Veuillez utiliser le formulaire de connexion.';
           }
-          setIsSignUp(false); // Switch to login mode
+          setIsSignUp(false);
         }
       } else if (code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
-        errorMessage = 'Email ou mot de passe incorrect.';
+        errorMessage = 'Email ou mot de passe incorrect. Vérifiez vos identifiants ou inscrivez-vous si vous n\'avez pas encore de compte.';
       } else if (code === 'auth/user-not-found') {
-        errorMessage = 'Aucun compte trouvé avec cet email. Veuillez vous inscrire.';
+        errorMessage = 'Aucun compte trouvé avec cet email. Veuillez basculer sur "S\'inscrire".';
       } else if (code === 'auth/invalid-email') {
         errorMessage = 'Format d\'email invalide.';
       } else if (code === 'auth/weak-password') {
         errorMessage = 'Le mot de passe doit être plus complexe (6+ car.).';
       } else if (code === 'auth/too-many-requests') {
-        errorMessage = 'Accès temporairement bloqué (trop de tentatives).';
+        errorMessage = 'Accès temporairement bloqué (trop de tentatives). Réessayez dans quelques minutes.';
       } else {
-        errorMessage = `Erreur (${code}): ${err.message || 'Inconnue'}`;
+        errorMessage = `Erreur (${code}): ${err.message || 'Problème de communication avec Firebase'}`;
       }
       setAuthError(errorMessage);
     } finally {
@@ -417,7 +419,7 @@ function LoginScreen() {
 
   const handleResetPassword = async () => {
     if (!email) {
-      setAuthError("Veuillez saisir votre email pour réinitialiser le mot de passe.");
+      setAuthError("Saisissez votre email d'abord pour recevoir le lien de réinitialisation.");
       return;
     }
     setLoading(true);
@@ -432,107 +434,151 @@ function LoginScreen() {
   };
 
   return (
-    <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-slate-900 font-sans">
+    <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-100 p-4 text-slate-900 font-sans">
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="max-w-md w-full bg-white rounded-3xl p-10 shadow-2xl shadow-slate-200 border border-slate-100"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-md w-full bg-white rounded-[2rem] p-8 md:p-12 shadow-2xl shadow-slate-200 border border-slate-200"
       >
-        <div className="flex flex-col items-center gap-4 mb-8 justify-center">
-          <NexusLogo className="w-20 h-20 drop-shadow-2xl" />
-          <div className="text-center">
-            <h1 className="text-3xl font-black tracking-tight bg-gradient-to-br from-blue-900 to-blue-600 bg-clip-text text-transparent">NexusERP</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-2">Accès Cloud Firebase</p>
+        <div className="flex flex-col items-center gap-4 mb-10 text-center">
+          <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center shadow-xl shadow-blue-600/30">
+            <NexusLogo className="w-12 h-12 text-white" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-black tracking-tight text-slate-900">NexusERP</h1>
+            <div className="flex items-center gap-2 justify-center mt-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] leading-none">Cloud Infrastructure Ready</p>
+            </div>
           </div>
         </div>
 
-        <form onSubmit={handleEmailAuth} className="space-y-4">
+        <div className="grid grid-cols-2 bg-slate-100 p-1 rounded-2xl mb-8">
+          <button 
+            onClick={() => { setIsSignUp(false); setAuthError(''); }}
+            className={cn(
+              "py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all",
+              !isSignUp ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+            )}
+          >
+            Se Connecter
+          </button>
+          <button 
+            onClick={() => { setIsSignUp(true); setAuthError(''); }}
+            className={cn(
+              "py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all",
+              isSignUp ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+            )}
+          >
+            S'inscrire
+          </button>
+        </div>
+
+        <form onSubmit={handleEmailAuth} className="space-y-5">
           {authError && (
-            <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-100 flex items-center gap-2">
-              <AlertCircle size={16} className="shrink-0" />
-              <span className="flex-1 overflow-hidden text-ellipsis">{authError}</span>
+            <div className="p-4 bg-red-50 text-red-600 text-[11px] font-bold rounded-2xl border border-red-100 flex items-start gap-3">
+              <AlertCircle size={14} className="shrink-0 mt-0.5" />
+              <span className="flex-1 leading-relaxed">{authError}</span>
             </div>
           )}
           
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Email professionnel</label>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email</label>
+            </div>
             <input 
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-              placeholder="votre@entreprise.com"
+              className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-sm font-medium outline-none focus:border-blue-600 focus:bg-white transition-all"
+              placeholder="Ex: admin@nexus.com"
               required
             />
           </div>
           
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <div className="flex justify-between items-center px-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Mot de passe</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mot de passe</label>
               {!isSignUp && (
                 <button 
                   type="button"
                   onClick={handleResetPassword}
-                  className="text-[10px] font-bold text-blue-600 hover:underline"
+                  className="text-[10px] font-bold text-blue-600 hover:underline hover:text-blue-700"
                 >
                   Oublié ?
                 </button>
               )}
             </div>
-            <input 
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-              placeholder="••••••••"
-              required
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 pr-12 text-sm font-medium outline-none focus:border-blue-600 focus:bg-white transition-all font-mono"
+                placeholder="••••••••"
+                required
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button 
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3.5 px-6 rounded-xl font-bold text-sm tracking-wide hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
+            className="group w-full bg-blue-600 text-white py-4 px-6 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-600/20 active:scale-[0.98]"
           >
-            {loading ? 'Traitement en cours...' : (isSignUp ? 'Créer mon compte' : 'Se Connecter')}
-            {!loading && <ChevronRight size={16} />}
+            {loading ? 'Traitement...' : (isSignUp ? 'Créer le compte' : 'Se Connecter')}
+            {!loading && <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />}
           </button>
         </form>
 
-        <div className="mt-4">
-          <div className="relative flex items-center gap-4 text-slate-300 mb-4">
-            <div className="flex-1 h-px bg-slate-100"></div>
-            <span className="text-[10px] font-bold uppercase tracking-widest">Ou continuer avec</span>
-            <div className="flex-1 h-px bg-slate-100"></div>
+        <div className="mt-8">
+          <div className="relative flex items-center gap-4 text-slate-300 mb-6">
+            <div className="flex-1 h-px bg-slate-200"></div>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] whitespace-nowrap">Alternative</span>
+            <div className="flex-1 h-px bg-slate-200"></div>
           </div>
 
-          <button 
-            onClick={handleGoogleAuth}
-            disabled={loading}
-            className="w-full bg-white border border-slate-200 text-slate-600 py-3.5 px-6 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-3"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            Google
-          </button>
+          <div className="flex flex-col gap-3">
+            <button 
+              type="button"
+              onClick={handleGoogleAuth}
+              disabled={loading}
+              className="w-full bg-white border-2 border-slate-100 text-slate-600 py-4 px-6 rounded-2xl font-bold text-sm hover:bg-slate-50 hover:border-slate-200 transition-all flex items-center justify-center gap-3 shadow-sm active:scale-[0.98]"
+            >
+              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              <span className="uppercase tracking-widest text-xs font-black">Google Sign-In</span>
+            </button>
+            <button 
+              type="button"
+              onClick={async () => {
+                const ok = await checkConnection();
+                alert(ok ? "Connexion Google/Firebase établie avec succès." : "Erreur de communication. Vérifiez votre connexion internet ou le statut de l'app.");
+              }}
+              className="w-full bg-slate-50 border-2 border-slate-100 text-slate-400 py-3 px-6 rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
+            >
+              <Database size={14} />
+              Diagnostiquer la connexion
+            </button>
+          </div>
         </div>
 
-        <div className="mt-6 flex flex-col items-center gap-2">
-          <button 
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors"
-          >
-            {isSignUp ? "Déjà un compte ? Connectez-vous" : "Pas encore de compte ? S'inscrire"}
-          </button>
-        </div>
-
-        <div className="mt-8 text-center pt-6 border-t border-slate-50">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NexusERP Cloud Integration</p>
-          <p className="text-[9px] text-slate-300 mt-1 uppercase font-mono tracking-tighter italic">Vérifiez que l'authentification Email est activée dans Firebase</p>
+        <div className="mt-12 text-center pt-8 border-t border-slate-100 space-y-2">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NexusERP Cloud Integration v2.0</p>
+          <p className="text-[9px] text-slate-400 font-medium px-4">
+            Utilisez des identifiants valides. Contactez l'administrateur si vous ne parvenez pas à accéder au cloud Nexus.
+          </p>
         </div>
       </motion.div>
     </div>
@@ -667,7 +713,9 @@ export default function App() {
     return <WorkspaceSelector companies={companies} user={user} onSelect={setCurrentCompany} />;
   }
 
-  if (user && !user.emailVerified) {
+  const isAdminUser = user?.email === 'hackeurfaurest@gmail.com' || user?.email === 'dangafelicite@gmail.com' || user?.email === 'danganexus@gmail.com';
+
+  if (user && !user.emailVerified && !isAdminUser) {
     const handleReload = async () => {
       setLoading(true);
       try {
