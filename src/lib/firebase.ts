@@ -38,18 +38,18 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 
-// Test Connection
-async function testConnection() {
+export const checkConnection = async () => {
   try {
     const testDoc = firestoreDoc(db, 'test', 'connection');
     await getDocFromServer(testDoc);
-  } catch (error) {
-    if(error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration. The client is offline.");
-    }
+    return true;
+  } catch (error: any) {
+    console.error("Connection check failed:", error);
+    return false;
   }
-}
-testConnection();
+};
+
+// ... (rest of the code remains)
 
 // Auth implementation
 export function onAuthStateChanged(auth: any, cb: (user: any) => void) {

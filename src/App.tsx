@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, loginWithEmail, signupWithEmail, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, doc, updateDoc, arrayUnion, reloadUser, resendVerification, loginWithGoogle, resetPassword } from './lib/firebase';
+import { auth, loginWithEmail, signupWithEmail, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, doc, updateDoc, arrayUnion, reloadUser, resendVerification, loginWithGoogle, resetPassword, checkConnection } from './lib/firebase';
 type User = any;
 import { 
   LayoutDashboard, 
@@ -548,6 +548,17 @@ export default function App() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { currentCompany, companies, setCurrentCompany, loading: companyLoading } = useCompany();
+  const [dbStatus, setDbStatus] = useState<'connected' | 'reconnecting' | 'offline'>('connected');
+
+  useEffect(() => {
+    const check = async () => {
+      const ok = await checkConnection();
+      setDbStatus(ok ? 'connected' : 'offline');
+    };
+    check();
+    const interval = setInterval(check, 30000); // Check every 30s
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
@@ -897,6 +908,21 @@ export default function App() {
             <LogOut size={20} className="group-hover:translate-x-1 transition-transform" />
             {isSidebarOpen && <span className="text-xs font-bold uppercase tracking-wider text-inherit">Session Close</span>}
           </button>
+
+          <div className="mt-2 px-4 py-3 bg-slate-50 rounded-2xl flex items-center gap-3">
+            <div className={cn(
+              "w-2 h-2 rounded-full",
+              dbStatus === 'connected' ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" :
+              dbStatus === 'reconnecting' ? "bg-amber-500 animate-pulse" :
+              "bg-red-500 animate-ping"
+            )} />
+            {isSidebarOpen && (
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                {dbStatus === 'connected' ? 'Base Synchronisée' : 
+                 dbStatus === 'reconnecting' ? 'Reconnexion...' : 'Hors-Ligne'}
+              </span>
+            )}
+          </div>
         </div>
       </motion.aside>
 
