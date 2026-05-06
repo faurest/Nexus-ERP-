@@ -9,6 +9,8 @@ import {
 } from 'firebase/auth';
 import { 
   getFirestore, 
+  initializeFirestore,
+  persistentLocalCache,
   collection as firestoreCollection, 
   doc as firestoreDoc, 
   addDoc as firestoreAddDoc, 
@@ -30,7 +32,14 @@ import {
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
+// Improved Firestore initialization with resilience settings
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache(),
+  // experimentalForceLongPolling might help if traditional gRPC connection fails in some environments
+  experimentalForceLongPolling: true,
+}, firebaseConfig.firestoreDatabaseId);
+
 export const auth = getAuth(app);
 
 export enum OperationType {
@@ -107,23 +116,30 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 
 // Test Connection - made safer and more diagnostic
 export async function testFirestoreConnection() {
-  console.log("Testing Firestore connection with DB ID:", firebaseConfig.firestoreDatabaseId);
+  console.log("Nexus Firebase: Démarrage du test de diagnostic...");
+  console.log("Nexus Firebase: ID Base de données :", firebaseConfig.firestoreDatabaseId);
+  console.log("Nexus Firebase: Projet ID :", firebaseConfig.projectId);
+  
   try {
-    const testDoc = firestoreDoc(db, 'companies', 'test-connection-probe');
+    const testDoc = firestoreDoc(db, 'companies', 'test-connection-probe-' + Date.now());
     // Using getDocFromServer directly to bypass any cache and force network
-    await getDocFromServer(testDoc);
-    console.log("Firestore connection test: Success (Permission Denied is expected and okay)");
+    const snap = await getDocFromServer(testDoc);
+    console.log("Nexus Firebase: ✅ Firestore est ACCESSIBLE.");
+    return true;
   } catch (error: any) {
     if (error.message?.includes('the client is offline') || error.message?.includes('Could not reach')) {
-      console.error("CRITICAL: Firestore backend is unreachable. Status: OFFLINE.");
-      console.error("Diagnostic Info:", {
+      console.error("Nexus Firebase: ❌ CRICIAL - Firestore est INACCESSIBLE (Timeout/Offline).");
+      console.error("Nexus Firebase: Diagnostic pour support :", {
         projectId: firebaseConfig.projectId,
         databaseId: firebaseConfig.firestoreDatabaseId,
-        region: "europe-west2 (requested)"
+        region: "europe-west2 (confirmé par utilisateur)"
       });
+      alert("ERREUR DE CONNEXION : La plateforme Nexus n'arrive pas à joindre la base de données Firebase.\n\nCela peut être dû à :\n1. Une propagation DNS en cours (si base neuve).\n2. Un blocage réseau local.\n3. Une mauvaise configuration du Database ID.\n\nL'application va tenter de fonctionner en mode dégradé.");
     } else {
-      console.warn("Firestore connection test result (likely permission error, which is fine):", error.message);
+      console.log("Nexus Firebase: ⚠️ Test de connexion terminé avec un résultat attendu (ex: permission denied) :", error.message);
+      return true; // Si c'est juste un problème de permission, Firestore est quand même accessible
     }
+    return false;
   }
 }
 // Do not call immediately at module level to avoid blocking app start or triggering early timeouts
@@ -160,6 +176,17 @@ export const loginWithEmail = async (email: string, pass: string) => {
 export async function signupWithEmail(email: string, pass: string) {
   try {
     const result = await createUserWithEmailAndPassword(auth, email, pass);
+    // Create profile in Firestore
+    try {
+      await firestoreSetDoc(firestoreDoc(db, 'users', result.user.uid), {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.email?.split('@')[0],
+        createdAt: firestoreServerTimestamp()
+      });
+    } catch (e) {
+      console.warn("Failed to create user profile in Firestore (Permissions?)", e);
+    }
     return { user: result.user };
   } catch (error: any) {
     if (error.code === 'auth/operation-not-allowed') {

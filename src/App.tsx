@@ -103,6 +103,13 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
   const [joinCode, setJoinCode] = useState('');
   const [creatingLocally, setCreatingLocally] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
+
+  useEffect(() => {
+    import('./lib/firebase').then(({ testFirestoreConnection }) => {
+      testFirestoreConnection().then(ok => setConnStatus(ok ? 'ok' : 'fail'));
+    });
+  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,6 +212,24 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
           </div>
           <h2 className="text-2xl font-bold tracking-tight">Bonjour, {user.displayName || user.email?.split('@')[0]}</h2>
           <p className="text-sm text-slate-500 mt-2">Prêt à piloter vos écosystèmes ?</p>
+          
+          <div className="mt-4 flex justify-center">
+            {connStatus === 'testing' && (
+              <span className="px-3 py-1 bg-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full animate-pulse">Vérification Connexion...</span>
+            )}
+            {connStatus === 'ok' && (
+              <span className="px-3 py-1 bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 border border-green-100">
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                Firebase Connecté (europe-west2)
+              </span>
+            )}
+            {connStatus === 'fail' && (
+              <span className="px-3 py-1 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 border border-red-100">
+                <AlertCircle size={10} />
+                Mode Dégradé (Firebase Offline)
+              </span>
+            )}
+          </div>
           
           {isMaster && (
             <div className="mt-6 p-4 bg-slate-900 rounded-2xl border border-slate-800 shadow-xl">
@@ -352,6 +377,13 @@ function LoginScreen() {
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
+
+  useEffect(() => {
+    import('./lib/firebase').then(({ testFirestoreConnection }) => {
+      testFirestoreConnection().then(ok => setConnStatus(ok ? 'ok' : 'fail'));
+    });
+  }, []);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -387,6 +419,24 @@ function LoginScreen() {
           <div className="text-center">
             <h1 className="text-3xl font-black tracking-tight bg-gradient-to-br from-blue-900 to-blue-600 bg-clip-text text-transparent">NexusERP</h1>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-2">Enterprise Management</p>
+          </div>
+          
+          <div className="mt-2 flex justify-center">
+            {connStatus === 'testing' && (
+              <span className="px-3 py-1 bg-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full animate-pulse">Vérification...</span>
+            )}
+            {connStatus === 'ok' && (
+              <span className="px-3 py-1 bg-green-50 text-green-600 text-[9px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 border border-green-100">
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                Firebase Connecté
+              </span>
+            )}
+            {connStatus === 'fail' && (
+              <span className="px-3 py-1 bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 border border-red-100">
+                <AlertCircle size={10} />
+                Firestore Hors-ligne
+              </span>
+            )}
           </div>
         </div>
 

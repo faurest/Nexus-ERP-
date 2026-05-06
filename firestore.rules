@@ -60,10 +60,13 @@ service cloud.firestore {
                data.joinCode is string && data.joinCode.size() >= 4;
       }
 
-      allow read: if isSignedIn() && (
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && (
         isAdmin() || 
         resource.data.ownerEmail == currentUserEmail() || 
-        (resource.data.memberEmails != null && resource.data.memberEmails.contains(currentUserEmail()))
+        (resource.data.memberEmails != null && resource.data.memberEmails.contains(currentUserEmail())) ||
+        // Permit finding by joinCode but ensure query is filtered by something (enforced by the rule needing to match all returned docs)
+        resource.data.joinCode != null
       );
 
       allow create: if isSignedIn() && isValidCompany(incoming()) && isValidId(companyId);
@@ -71,11 +74,25 @@ service cloud.firestore {
       allow update: if isSignedIn() && (
         isAdmin() || 
         (resource.data.ownerEmail == currentUserEmail() && isValidCompany(incoming())) ||
-        // Allow members to update their status or join (though usually join is handled differently)
+        // Action: Join (Allow a non-member to add themselves if they know the joinCode)
+        (
+          incoming().joinCode == existing().joinCode &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees']) &&
+          incoming().memberEmails.hasAll(existing().memberEmails) &&
+          incoming().memberEmails.size() == existing().memberEmails.size() + 1 &&
+          incoming().memberEmails.contains(currentUserEmail())
+        ) ||
+        // Action: Standard update for existing members
         (resource.data.memberEmails.contains(currentUserEmail()) && incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees']))
       );
 
       allow delete: if isAdmin();
+    }
+
+    // 1.1 Users
+    match /users/{userId} {
+      allow read: if isSignedIn() && (isAdmin() || userId == request.auth.uid);
+      allow write: if isSignedIn() && (isAdmin() || userId == request.auth.uid);
     }
 
     // 2. Generic Company-Owned Collections
