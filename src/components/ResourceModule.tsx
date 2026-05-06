@@ -102,33 +102,47 @@ export default function ResourceModule() {
   );
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Ressources & Matériel</h2>
-          <p className="text-slate-500 text-xs sm:text-sm text-balance">Gestion des actifs, stocks et équipement de l'entreprise.</p>
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="relative overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 sm:p-12 text-white shadow-2xl group">
+        <div className="absolute inset-0 z-0 scale-110 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity">
+          <img 
+             src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=1600" 
+             className="w-full h-full object-cover" 
+             alt="logistics nexus"
+          />
         </div>
-        <div className="flex gap-3 w-full sm:w-auto">
-          <button onClick={() => alert("Action de mouvement de stock en cours de liaison")} className="flex-1 sm:flex-none justify-center bg-white border border-slate-200 px-5 py-2.5 rounded-lg text-xs font-bold text-slate-600 flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
-            <ArrowRightLeft size={16} /> Mouvement
-          </button>
-          <button 
-            onClick={() => setIsAdding(true)}
-            className="flex-1 sm:flex-none justify-center bg-blue-600 text-white px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-sm"
-          >
-            <Plus size={16} /> Nouvel Actif
-          </button>
+
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+          <div className="max-w-xl">
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
+              Nexus <span className="text-blue-500">Supply</span>
+            </h1>
+            <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
+              Orchestrez vos flux matériels, gérez vos stocks critiques et supervisez l'ensemble des actifs technologiques et humains de votre organisation.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-4 w-full md:w-auto shrink-0">
+            <button onClick={() => alert("Indexation des flux...")} className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2 backdrop-blur-md">
+              <ArrowRightLeft size={16} /> Mouvement
+            </button>
+            <button 
+              onClick={() => setIsAdding(true)}
+              className="px-6 py-4 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20 flex items-center gap-2"
+            >
+              <Plus size={16} /> Nouvel Actif
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide px-2">
         {['Tous les actifs', 'Stock Consommable', 'Matériel Bureautique', 'Logiciel', 'Ressource Humaine', 'Véhicules'].map((filter) => (
           <button 
             key={filter} 
             onClick={() => setActiveFilter(filter)}
             className={cn(
-              "shrink-0 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all",
-              activeFilter === filter ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300"
+              "shrink-0 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] transition-all whitespace-nowrap",
+              activeFilter === filter ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-white border border-slate-100 text-slate-400 hover:text-slate-900 shadow-sm"
             )}
           >
             {filter}
@@ -137,15 +151,15 @@ export default function ResourceModule() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className="lg:col-span-3">
-          <div className="bg-white border border-slate-200 rounded-xl p-1.5 flex items-center gap-3 shadow-sm focus-within:border-blue-400 transition-all mb-6">
-            <div className="pl-3">
-              <Search className="text-slate-400" size={18} />
+        <div className="lg:col-span-3 space-y-6">
+          <div className="bg-white border border-slate-100 rounded-[2rem] p-2 flex items-center gap-3 shadow-xl shadow-slate-200/50 focus-within:border-blue-400 transition-all">
+            <div className="pl-4">
+              <Search className="text-slate-300" size={20} />
             </div>
             <input 
               type="text" 
-              placeholder="Rechercher par nom, type ou emplacement..." 
-              className="flex-1 bg-transparent py-2.5 outline-none text-sm text-slate-900 placeholder:text-slate-400"
+              placeholder="Scanner l'inventaire Nexus (Nom, Catégorie, Zone)..." 
+              className="flex-1 bg-transparent py-4 outline-none text-xs font-bold text-slate-700 placeholder:text-slate-300"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />

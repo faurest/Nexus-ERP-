@@ -156,7 +156,7 @@ export default function CollaborationModule() {
     setLoading(true);
     const myEmail = auth.currentUser.email?.toLowerCase() || '';
     try {
-      await addDoc(collection(db, 'collaborations'), {
+      const collaborationRef = await addDoc(collection(db, 'collaborations'), {
         ...formData,
         recipientEmail: formData.recipientEmail.toLowerCase(),
         companyId: currentCompany.id,
@@ -168,6 +168,32 @@ export default function CollaborationModule() {
         createdAt: serverTimestamp(),
         readBy: []
       });
+
+      // Notification Logic
+      if (formData.recipientEmail !== 'all') {
+        const recipientEmail = formData.recipientEmail.toLowerCase();
+        // Look for the user UID associated with this email
+        const qUser = query(collection(db, 'users'), where('email', '==', recipientEmail));
+        const userSnap = await getDocs(qUser);
+        
+        if (!userSnap.empty) {
+          const recipientUid = userSnap.docs[0].id;
+          const senderName = auth.currentUser.displayName || myEmail.split('@')[0];
+          
+          await addDoc(collection(db, 'notifications'), {
+            companyId: currentCompany.id,
+            userId: recipientUid,
+            title: `Nouveau ${formData.type} reçu`,
+            message: `${senderName} vous a transféré : ${formData.title}`,
+            type: 'collab',
+            isRead: 0,
+            date: Date.now(),
+            referenceId: collaborationRef.id,
+            createdAt: serverTimestamp()
+          });
+        }
+      }
+
       setIsAdding(false);
       setFormData({ recipientEmail: 'all', type: 'Note', title: '', content: '', referenceId: '' });
       setAttachedFile(null);

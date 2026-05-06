@@ -1006,53 +1006,51 @@ export default function App() {
       <motion.aside 
         initial={false}
         animate={{ 
-          width: isSidebarOpen ? 280 : (windowWidth < 768 ? 0 : 88),
-          x: (windowWidth < 768 && !isSidebarOpen) ? -280 : 0
+          width: isSidebarOpen ? 300 : (windowWidth < 768 ? 0 : 96),
+          x: (windowWidth < 768 && !isSidebarOpen) ? -320 : 0
         }}
         className={cn(
-          "h-screen bg-white border-r border-slate-200 flex flex-col z-40 relative shrink-0 transition-all",
-          windowWidth < 768 && "fixed left-0 top-0 shadow-2xl"
+          "h-screen bg-slate-950 border-r border-white/5 flex flex-col z-40 relative shrink-0 transition-all shadow-2xl",
+          windowWidth < 768 && "fixed left-0 top-0"
         )}
       >
-        <div className="p-6 h-20 flex items-center justify-between border-b border-slate-100">
-          <div className="flex items-center gap-3 w-full">
-            <div className="shrink-0 flex items-center justify-center">
-              <NexusLogo className="w-10 h-10 drop-shadow-md" />
+        <div className="p-8 h-24 flex items-center justify-between border-b border-white/5 bg-gradient-to-br from-slate-900 to-slate-950">
+          <div className="flex items-center gap-4 w-full">
+            <div className="shrink-0 flex items-center justify-center p-2 bg-blue-600 rounded-2xl shadow-xl shadow-blue-600/20">
+              <NexusLogo className="w-8 h-8 filter brightness-200" />
             </div>
             
             <AnimatePresence>
               {isSidebarOpen && (
                 <motion.div 
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
                   className="overflow-hidden flex-1"
                 >
                   {activeTab === 'admin' ? (
-                    <div className="font-black text-blue-600 text-lg leading-none tracking-tighter">
-                      NEXUS MASTER
-                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Console Globale</div>
+                    <div className="font-black text-blue-400 text-xl tracking-tighter leading-none">
+                      NEXUS <span className="text-white">CORE</span>
                     </div>
                   ) : (
-                    <>
+                    <div className="space-y-0.5">
                       <select 
                         value={currentCompany.id}
                         onChange={(e) => {
                           const c = companies.find(c => c.id === e.target.value);
                           if (c) setCurrentCompany(c);
                         }}
-                        className="font-bold text-lg tracking-tight bg-transparent outline-none cursor-pointer truncate w-full text-slate-900"
+                        className="font-black text-lg tracking-tight bg-transparent text-white border-none p-0 focus:ring-0 cursor-pointer w-full leading-none appearance-none"
                       >
                         {companies.map(c => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
+                          <option key={c.id} value={c.id} className="bg-slate-900">{c.name}</option>
                         ))}
                       </select>
-                      {currentCompany.joinCode && (
-                        <div className="text-[10px] text-slate-400 font-medium tracking-wide">
-                          Code: <span className="font-mono font-bold text-slate-600">{currentCompany.joinCode}</span>
-                        </div>
-                      )}
-                    </>
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                        <span className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">{currentCompany.joinCode}</span>
+                      </div>
+                    </div>
                   )}
                 </motion.div>
               )}
@@ -1061,51 +1059,46 @@ export default function App() {
 
           <button 
             onClick={() => setSidebarOpen(!isSidebarOpen)} 
-            className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-all rounded-xl absolute right-4"
+            className="p-2.5 hover:bg-white/5 text-slate-500 hover:text-white transition-all rounded-xl ml-2"
           >
-            {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            {isSidebarOpen ? <ChevronLeft size={20} /> : <Menu size={20} />}
           </button>
         </div>
 
-        <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto scrollbar-hide">
+        <nav className="flex-1 py-10 px-4 space-y-2 overflow-y-auto scrollbar-hide">
           <AnimatePresence mode="wait">
-            <motion.div
-              key="nav-wrapper"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="space-y-1.5"
-            >
+            <motion.div className="space-y-2">
               {navItems.map((item, i) => (
                 <motion.button
                   key={item.id}
-                  initial={{ x: -10, opacity: 0 }}
+                  initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: i * 0.04 }}
+                  transition={{ delay: i * 0.05 }}
                   onClick={() => {
                     setActiveTab(item.id);
                     if (windowWidth < 1024) setSidebarOpen(false);
                   }}
                   className={cn(
-                    "w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative overflow-hidden",
+                    "w-full flex items-center gap-5 px-5 py-4 rounded-[1.25rem] transition-all group relative overflow-hidden",
                     activeTab === item.id 
-                      ? "bg-slate-900 text-white shadow-xl shadow-slate-900/10" 
-                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                      ? "bg-blue-600 text-white shadow-2xl shadow-blue-600/20" 
+                      : "text-slate-500 hover:bg-white/5 hover:text-slate-200"
                   )}
                 >
                   <div className={cn(
-                    "transition-transform duration-300 group-hover:scale-110",
-                    activeTab === item.id ? "text-blue-400" : "text-slate-400 group-hover:text-slate-900"
+                    "transition-all duration-500 group-hover:rotate-[360deg]",
+                    activeTab === item.id ? "text-white" : "text-slate-600 group-hover:text-blue-400"
                   )}>
-                    <item.icon size={20} />
+                    <item.icon size={22} strokeWidth={2.5} />
                   </div>
                   {isSidebarOpen && (
-                    <span className="text-[10px] font-black uppercase tracking-[0.15em] shrink-0">{item.label}</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] shrink-0">{item.label}</span>
                   )}
                   
-                  {!isSidebarOpen && activeTab === item.id && (
+                  {activeTab === item.id && (
                     <motion.div 
-                      layoutId="active-nav-indicator"
-                      className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-600 rounded-l-full shadow-[0_0_10px_rgba(37,99,235,0.5)]" 
+                      layoutId="sidebar-active-blob"
+                      className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-white rounded-l-full shadow-[0_0_15px_#fff]" 
                     />
                   )}
                 </motion.button>
@@ -1114,121 +1107,76 @@ export default function App() {
           </AnimatePresence>
         </nav>
 
-        <div className="p-4 border-t border-slate-100 flex flex-col gap-2">
-          <a
-            href="/brochure.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all group outline-none"
-          >
-            <FileText size={20} className="group-hover:scale-110 transition-transform" />
-            {isSidebarOpen && <span className="text-xs font-bold uppercase tracking-wider text-inherit">Brochure Commerciale</span>}
-          </a>
-
-          {deferredPrompt && (
-            <button 
-              onClick={handleInstallClick}
-              className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-green-50 text-green-600 hover:bg-green-100 transition-all group"
-            >
-              <DownloadCloud size={20} className="group-hover:scale-110 transition-transform" />
-              {isSidebarOpen && <span className="text-xs font-bold uppercase tracking-wider text-inherit">Installer l'App</span>}
-            </button>
-          )}
-
+        <div className="p-6 border-t border-white/5 flex flex-col gap-3">
           <button 
             onClick={() => setCurrentCompany(null)}
-            className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-all group"
+            className="w-full flex items-center gap-5 px-5 py-4 rounded-2xl bg-white/5 text-slate-400 hover:text-white transition-all group border border-transparent hover:border-white/10"
           >
-            <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-            {isSidebarOpen && <span className="text-xs font-bold uppercase tracking-wider text-inherit">Changer d'Espace</span>}
+            <Database size={20} className="group-hover:rotate-12 transition-transform" />
+            {isSidebarOpen && <span className="text-[9px] font-black uppercase tracking-widest">Changer d'Espace</span>}
           </button>
           
           <button 
             onClick={logout}
-            className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-red-50 text-slate-400 hover:text-red-600 transition-all group"
+            className="w-full flex items-center gap-5 px-5 py-4 rounded-2xl text-slate-500 hover:text-red-400 transition-all group"
           >
-            <LogOut size={20} className="group-hover:translate-x-1 transition-transform" />
-            {isSidebarOpen && <span className="text-xs font-bold uppercase tracking-wider text-inherit">Session Close</span>}
+            <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
+            {isSidebarOpen && <span className="text-[9px] font-black uppercase tracking-widest">Fin de Session</span>}
           </button>
         </div>
       </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col h-screen">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col h-screen bg-slate-50">
         {/* Top Header */}
-        <header className="h-20 px-4 sm:px-8 border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
-          <button 
-            onClick={() => setSidebarOpen(!isSidebarOpen)} 
-            className="md:hidden p-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-600/20"
-          >
-            <Menu size={20} />
-          </button>
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm font-black text-slate-900 uppercase tracking-widest hidden sm:block">
-              {activeTab === 'admin' ? "Console Maître Nexus" : navItems.find(n => n.id === activeTab)?.label}
-            </h1>
-            {activeTab === 'admin' && (
-              <span className="bg-slate-900 text-blue-400 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter">
-                Root Access
-              </span>
-            )}
+        <header className="h-24 px-6 sm:px-12 border-b border-slate-100 bg-white/80 backdrop-blur-xl sticky top-0 z-20 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <button 
+              onClick={() => setSidebarOpen(!isSidebarOpen)} 
+              className="md:hidden p-3 bg-slate-900 text-white rounded-2xl shadow-xl"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="flex flex-col">
+              <h2 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-1">Système Nexus Operational</h2>
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-none">
+                {activeTab === 'admin' ? "Console Maître" : navItems.find(n => n.id === activeTab)?.label}
+              </h1>
+            </div>
           </div>
           
-          <div className="flex items-center gap-6">
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter leading-none">
-                {user.displayName || user.email.split('@')[0]}
-              </span>
-              <span className={cn(
-                "text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 mt-1 rounded border",
-                user.role === 'owner' ? "bg-blue-50 text-blue-600 border-blue-100" :
-                user.role === 'Secrétaire' ? "bg-purple-50 text-purple-600 border-purple-100" :
-                user.role === 'Comptable' ? "bg-green-50 text-green-600 border-green-100" :
-                "bg-slate-50 text-slate-500 border-slate-100"
-              )}>
-                {user.role === 'owner' ? 'Direction Business' : user.role}
-              </span>
-            </div>
-
-            <div className="relative group hidden md:block">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+          <div className="flex items-center gap-8">
+            <div className="hidden xl:flex items-center px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner group transition-all focus-within:ring-2 focus-within:ring-blue-100">
+              <Search className="text-slate-300 group-hover:text-blue-500 transition-colors" size={18} />
               <input 
                 type="text" 
-                placeholder="Recherche globale..." 
-                className="pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-full outline-none text-xs font-medium w-64 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
+                placeholder="Scanner l'écosystème..." 
+                className="bg-transparent border-none outline-none text-[11px] font-bold text-slate-700 w-48 ml-3 placeholder:text-slate-300"
               />
             </div>
             
-            <div className="flex items-center gap-4 border-r border-slate-100 pr-6 mr-1 hidden lg:flex">
-              <div className="flex flex-col items-end">
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Base de données</span>
-                <span className="text-[10px] font-bold tracking-tight text-right text-emerald-600">
-                  Cloud Firebase (Live)
-                </span>
-              </div>
-              <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm border bg-emerald-50 text-emerald-500 border-emerald-100 animate-pulse">
-                <Database size={18} />
-              </div>
-            </div>
-
-            <NotificationBell user={user} />
-
-            <div className="flex items-center gap-4 pl-6 border-l border-slate-200">
-              <div className="text-right hidden sm:block">
-                <p className="text-xs font-black text-slate-900 leading-tight">{user.displayName}</p>
-                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">
-                  {user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' ? 'Accès Maître' : 'Accès Standard'}
-                </p>
-              </div>
-              <div className="relative">
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="User" className="w-10 h-10 rounded-2xl border-2 border-white shadow-md shadow-slate-200 object-cover" />
-                ) : (
-                  <div className="w-10 h-10 rounded-2xl border-2 border-white shadow-md shadow-slate-200 bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm">
-                    {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
-                  </div>
-                )}
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
+            <div className="flex items-center gap-4 border-l border-slate-100 pl-8">
+              <NotificationBell user={user} />
+              
+              <div className="flex items-center gap-4">
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">
+                    {user.displayName || user.email.split('@')[0]}
+                  </span>
+                  <span className="text-[8px] font-black text-blue-500 uppercase tracking-[0.1em] px-2 py-0.5 bg-blue-50 rounded-full border border-blue-100 mt-1">
+                    {user.role}
+                  </span>
+                </div>
+                <div className="relative group cursor-pointer">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="User" className="w-12 h-12 rounded-[1.25rem] border-2 border-white shadow-xl shadow-slate-200 object-cover" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-[1.25rem] border-2 border-white shadow-xl shadow-slate-200 bg-slate-100 flex items-center justify-center text-slate-500 font-black text-lg">
+                      {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
+                    </div>
+                  )}
+                  <div className="absolute -bottom-1 -right-1 w-4.5 h-4.5 bg-green-500 rounded-full border-4 border-white shadow-sm" />
+                </div>
               </div>
             </div>
           </div>

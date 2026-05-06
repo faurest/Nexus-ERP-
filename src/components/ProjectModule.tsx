@@ -191,66 +191,72 @@ export default function ProjectModule() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-800 uppercase tracking-wider">Gestion des Projets & Partenaires</h2>
-          <p className="text-xs text-slate-500 font-medium">Pilotage stratégique avec fournisseurs et collaborateurs externes.</p>
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <datalist id="projects-list">
+        {projects.map(p => <option key={p.id} value={p.name} />)}
+      </datalist>
+
+      <div className="relative overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 sm:p-12 text-white shadow-2xl group">
+        <div className="absolute inset-0 z-0 scale-110 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity">
+          <img 
+             src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1600" 
+             className="w-full h-full object-cover" 
+             alt="strategic operations"
+          />
         </div>
-        
-        <div className="flex flex-wrap p-1 bg-white border border-slate-200 rounded-lg shadow-sm w-full sm:w-auto">
-          <button 
-            onClick={() => setActiveView('projects')}
-            className={cn(
-              "flex-1 sm:flex-none px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest transition-all rounded-md",
-              activeView === 'projects' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:text-slate-900"
-            )}
-          >
-            Projets
-          </button>
-          <button 
-            onClick={() => setActiveView('partners')}
-            className={cn(
-              "flex-1 sm:flex-none px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest transition-all rounded-md",
-              activeView === 'partners' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:text-slate-900"
-            )}
-          >
-            Annuaires
-          </button>
-          <button 
-            onClick={() => setActiveView('financials')}
-            className={cn(
-              "flex-1 sm:flex-none px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-widest transition-all rounded-md",
-              activeView === 'financials' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:text-slate-900"
-            )}
-          >
-            Finances
-          </button>
+
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+          <div className="max-w-xl">
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
+              Nexus <span className="text-blue-500">Projects</span>
+            </h1>
+            <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
+              Ouvrez de nouveaux horizons : gérez vos projets complexes, collaborez avec vos partenaires et suivez vos engagements financiers.
+            </p>
+          </div>
+          <div className="flex flex-wrap bg-white/5 backdrop-blur-md p-1.5 rounded-[2rem] border border-white/10 shrink-0 gap-1 overflow-x-auto scrollbar-hide max-w-full">
+             {[
+               { id: 'projects', label: 'Projets' },
+               { id: 'partners', label: 'Annuaires' },
+               { id: 'financials', label: 'Flux Finaux' }
+             ].map(item => (
+               <button 
+                 key={item.id}
+                 onClick={() => setActiveView(item.id as any)}
+                 className={cn(
+                   "px-6 py-3.5 rounded-2xl text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap", 
+                   activeView === item.id ? "bg-white text-slate-900 shadow-xl shadow-white/10" : "text-white/60 hover:text-white"
+                 )}
+               >
+                 {item.label}
+               </button>
+             ))}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8 space-y-4">
-          <div className="flex gap-3">
-            <div className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 flex items-center gap-3 shadow-sm">
-              <Search className="opacity-30 text-slate-500" size={16} />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-8 space-y-6">
+          <div className="flex gap-4 p-2 bg-white rounded-[2rem] shadow-sm border border-slate-100">
+            <div className="flex-1 bg-slate-50/50 rounded-2xl px-4 py-3 flex items-center gap-3 border border-slate-100 transition-all focus-within:border-blue-400 focus-within:bg-white">
+              <Search className="text-slate-400" size={18} />
               <input 
                 type="text" 
-                placeholder="Rechercher..." 
-                className="flex-1 bg-transparent outline-none text-xs text-slate-600 font-medium"
+                placeholder="Scanner les projets ou partenaires..." 
+                className="flex-1 bg-transparent outline-none text-xs font-bold text-slate-600 placeholder:text-slate-300"
               />
             </div>
-            <button onClick={() => alert("Filtrage avancé bientôt disponible")} className="px-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all text-slate-400">
-              <Filter size={16} />
+            <button onClick={() => alert("Indexation avancée...")} className="w-12 h-12 flex items-center justify-center bg-white border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all text-slate-400 shadow-sm">
+              <Filter size={18} />
             </button>
             <button 
               onClick={() => {
                 if (activeView === 'financials') setIsAddingFinancial('expense');
                 if (activeView === 'projects') setIsAddingProject(true);
               }}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-blue-100 italic"
+              className="px-6 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-600 transition-all shadow-xl shadow-slate-200"
             >
-              <Plus size={14} /> NOUVEAU
+              <Plus size={16} /> DATA ENTRY
             </button>
           </div>
 

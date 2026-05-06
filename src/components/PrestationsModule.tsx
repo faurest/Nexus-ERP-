@@ -117,28 +117,46 @@ export default function PrestationsModule() {
   if (!currentCompany) return null;
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-black tracking-tight text-slate-900 border-l-4 border-purple-600 pl-4 mb-2">Centre de Prestations</h2>
-          <p className="text-slate-500 font-medium">Gestion du guichet, impressions, créations et formations.</p>
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="relative overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 sm:p-12 text-white shadow-2xl group">
+        <div className="absolute inset-0 z-0 scale-110 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity">
+          <img 
+             src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=1600" 
+             className="w-full h-full object-cover" 
+             alt="business performance"
+          />
         </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-        <button onClick={() => setActiveTab('pos')} className={cn("px-5 py-3 rounded-xl font-bold text-sm tracking-wide transition-all whitespace-nowrap flex items-center gap-2", activeTab === 'pos' ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200")}>
-          <Printer size={16} /> Guichet / Rapide
-        </button>
-        <button onClick={() => setActiveTab('tracking')} className={cn("px-5 py-3 rounded-xl font-bold text-sm tracking-wide transition-all whitespace-nowrap flex items-center gap-2", activeTab === 'tracking' ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200")}>
-          <PenTool size={16} /> Créations & Projets
-        </button>
-        <button onClick={() => setActiveTab('catalog')} className={cn("px-5 py-3 rounded-xl font-bold text-sm tracking-wide transition-all whitespace-nowrap flex items-center gap-2", activeTab === 'catalog' ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200")}>
-          <LayoutDashboard size={16} /> Catalogue de Services
-        </button>
-        <button onClick={() => setActiveTab('growth')} className={cn("px-5 py-3 rounded-xl font-bold text-sm tracking-wide transition-all whitespace-nowrap flex items-center gap-2 border border-amber-300", activeTab === 'growth' ? "bg-amber-100 text-amber-800 shadow-md" : "bg-gradient-to-br from-amber-50 to-orange-50 text-amber-700 hover:from-amber-100 uppercase text-xs")}>
-          <Activity size={16} /> Opportunités Rentables
-        </button>
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+          <div className="max-w-xl">
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
+              Nexus <span className="text-blue-500">Services</span>
+            </h1>
+            <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
+              Propulsez votre efficacité opérationnelle. Gérez vos guichets, créations graphiques et processus de formation avec une précision chirurgicale.
+            </p>
+          </div>
+          <div className="flex flex-wrap bg-white/5 backdrop-blur-md p-1.5 rounded-[2rem] border border-white/10 shrink-0 gap-1 overflow-x-auto scrollbar-hide max-w-full">
+             {[
+               { id: 'pos', label: 'Guichet', icon: Printer },
+               { id: 'tracking', label: 'Projets', icon: PenTool },
+               { id: 'catalog', label: 'Catalogue', icon: LayoutDashboard },
+               { id: 'growth', label: 'Analyse', icon: Activity }
+             ].map(item => (
+               <button 
+                 key={item.id}
+                 onClick={() => setActiveTab(item.id as any)}
+                 className={cn(
+                   "px-6 py-3.5 rounded-2xl text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap flex items-center gap-2", 
+                   activeTab === item.id ? "bg-white text-slate-900 shadow-xl shadow-white/10" : "text-white/60 hover:text-white"
+                 )}
+               >
+                 <item.icon size={14} />
+                 {item.label}
+               </button>
+             ))}
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

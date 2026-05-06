@@ -124,6 +124,7 @@ export default function NotificationBell({ user }: { user: any }) {
                     <div className="pl-2">
                        {notif.type === 'task' ? <CheckCircle size={16} className="text-blue-500 mt-0.5" /> :
                         notif.type === 'project' ? <FileText size={16} className="text-purple-500 mt-0.5" /> :
+                        notif.type === 'collab' ? <Box size={16} className="text-amber-500 mt-0.5" /> :
                         notif.type === 'alert' ? <Box size={16} className="text-red-500 mt-0.5" /> :
                         <Bell size={16} className="text-slate-400 mt-0.5" />}
                     </div>

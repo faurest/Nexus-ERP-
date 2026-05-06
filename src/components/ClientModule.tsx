@@ -86,34 +86,49 @@ export default function ClientModule() {
   );
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Gestion Clientèle</h2>
-          <p className="text-slate-500 text-xs sm:text-sm text-balance">Vente, suivi et fidélisation des comptes clients.</p>
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="relative overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 sm:p-12 text-white shadow-2xl group">
+        <div className="absolute inset-0 z-0 scale-110 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity">
+          <img 
+             src="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1600" 
+             className="w-full h-full object-cover" 
+             alt="clients nexus"
+          />
         </div>
-        <button 
-          onClick={() => setIsAdding(true)}
-          className="w-full sm:w-auto justify-center bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-sm"
-        >
-          <Plus size={16} /> Nouveau Client
-        </button>
+
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+          <div className="max-w-xl">
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
+              Nexus <span className="text-blue-500">Clients</span>
+            </h1>
+            <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
+              Cultivez vos relations stratégiques. Gérez votre portefeuille de partenaires, suivez la fidélisation et optimisez la valeur à vie de votre clientèle.
+            </p>
+          </div>
+          <button 
+            onClick={() => setIsAdding(true)}
+            className="px-8 py-5 bg-blue-600 text-white rounded-[1.5rem] font-black text-[12px] uppercase tracking-widest flex items-center gap-3 hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20 shrink-0"
+          >
+            <Plus size={18} />
+            Nouveau Partenaire
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-6">
-          <div className="bg-white border border-slate-200 rounded-xl p-1.5 flex items-center gap-3 shadow-sm focus-within:border-blue-400 transition-all">
-            <div className="pl-3">
-              <Search className="text-slate-400" size={18} />
+          <div className="bg-white border border-slate-100 rounded-[2rem] p-2 flex items-center gap-3 shadow-xl shadow-slate-200/50 focus-within:border-blue-400 transition-all">
+            <div className="pl-4">
+              <Search className="text-slate-300" size={20} />
             </div>
             <input 
               type="text" 
-              placeholder="Rechercher un client..." 
-              className="flex-1 bg-transparent py-2.5 outline-none text-sm text-slate-900 placeholder:text-slate-400"
+              placeholder="Scanner la base de données clients..." 
+              className="flex-1 bg-transparent py-4 outline-none text-xs font-bold text-slate-700 placeholder:text-slate-300"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <button onClick={() => alert("Fonction de filtrage en développement")} className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 transition-colors mr-1">
+            <button onClick={() => alert("Indexation granulée...")} className="w-12 h-12 flex items-center justify-center bg-white border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all text-slate-400 shadow-sm mr-1">
               <Filter size={18} />
             </button>
           </div>
