@@ -1030,7 +1030,7 @@ export default function App() {
           </button>
         </div>
 
-        <nav className="flex-1 py-8 px-4 space-y-2">
+        <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto scrollbar-hide">
           {navItems.map((item) => (
             <button
               key={item.id}
