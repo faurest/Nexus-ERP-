@@ -189,13 +189,71 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
   const ownedCompanies = companies.filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email);
   const joinedCompanies = companies.filter(c => c.ownerId !== user?.uid && c.ownerEmail !== user?.email);
   const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com';
+  const [isWhitelisted, setIsWhitelisted] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (isMaster && companies.length === 0 && mode === 'select') {
-      // Auto-suggest master console if nothing else exists
-      console.log("Master user detected with no companies, hinting at admin console");
-    }
-  }, [isMaster, companies.length, mode]);
+    const checkWhitelist = async () => {
+      if (isMaster || companies.length > 0) {
+        setIsWhitelisted(true);
+        return;
+      }
+
+      try {
+        // Search if the user's email exists in ANY personnel collection
+        const q = query(collection(db, 'personnel'), where('email', '==', user.email));
+        const snap = await getDocs(q);
+        // If they are in at least one personnel record, they are authorized
+        setIsWhitelisted(!snap.empty);
+      } catch (err) {
+        console.error("Whitelist check failed:", err);
+        setIsWhitelisted(false);
+      }
+    };
+    checkWhitelist();
+  }, [user.email, companies.length, isMaster]);
+
+  if (isWhitelisted === false && !isMaster) {
+    return (
+      <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md w-full bg-white rounded-3xl p-10 shadow-2xl border border-red-100"
+        >
+          <div className="w-20 h-20 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-6 mx-auto">
+            <Shield size={40} />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-4">Accès Restreint</h2>
+          <p className="text-slate-500 mb-8 leading-relaxed">
+            Votre adresse <span className="font-bold text-slate-700">{user.email}</span> n'est pas encore autorisée à accéder à l'écosystème Nexus.
+            <br /><br />
+            Veuillez contacter votre administrateur pour être ajouté au personnel de votre entreprise.
+          </p>
+          <div className="space-y-3">
+            <button 
+              onClick={() => logout()}
+              className="w-full py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
+            >
+              <LogOut size={18} />
+              Se déconnecter
+            </button>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Nexus Verification Service</p>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (isWhitelisted === null && !isMaster && companies.length === 0) {
+    return (
+      <div className="min-h-screen w-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-pulse flex flex-col items-center">
+          <Shield size={48} className="text-slate-200 mb-4" />
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vérification des autorisations...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-slate-900 font-sans relative overflow-hidden">
@@ -386,7 +444,9 @@ function LoginScreen() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [resetSent, setResetSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
 
@@ -399,34 +459,64 @@ function LoginScreen() {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
+    setResetSent(false);
     setLoading(true);
     try {
       if (mode === 'login') {
+        const { loginWithEmail } = await import('./lib/firebase');
         await loginWithEmail(email, password);
       } else {
+        const { signupWithEmail } = await import('./lib/firebase');
         await signupWithEmail(email, password);
       }
     } catch (err: any) {
-      console.error(err);
-      let errorMessage = 'Erreur lors de l\'authentification.';
+      console.error("Auth process error:", err);
+      let errorMessage = 'Une erreur est survenue.';
       const code = err.code || '';
       
-      if (code === 'auth/invalid-credential') {
-        errorMessage = mode === 'login' 
-          ? 'Email ou mot de passe incorrect. Si vous n\'avez pas encore de compte, cliquez sur "Créer un compte" ci-dessous.'
-          : 'Erreur lors de la création du compte. Vérifiez vos informations.';
-      } else if (code === 'auth/wrong-password') {
-        errorMessage = 'Le mot de passe que vous avez saisi est incorrect.';
-      } else if (code === 'auth/user-not-found') {
-        errorMessage = 'Aucun compte n\'a été trouvé avec cet e-mail. Veuillez créer un compte.';
-      } else if (code === 'auth/email-already-in-use') {
-        errorMessage = 'Cet e-mail est déjà utilisé par un autre compte. Essayez de vous connecter.';
-      } else if (code === 'auth/weak-password') {
-        errorMessage = 'Le mot de passe doit comporter au moins 6 caractères.';
-      } else if (code === 'auth/operation-not-allowed') {
-        errorMessage = 'L\'authentification par email n\'est pas activée. Contactez l\'administrateur ou utilisez Google.';
+      switch (code) {
+        case 'auth/invalid-credential':
+          errorMessage = mode === 'login' 
+            ? 'Identifiants incorrects. Vérifiez votre email et mot de passe. Si vous n\'avez pas de mot de passe Nexus, utilisez "S\'Inscrire" ou "Mot de passe oublié".'
+            : 'Échec de la création du compte. Les informations sont peut-être déjà utilisées.';
+          break;
+        case 'auth/user-not-found':
+          errorMessage = 'Aucun compte trouvé avec cet email. Veuillez d\'abord vous inscrire.';
+          break;
+        case 'auth/wrong-password':
+          errorMessage = 'Le mot de passe ne correspond pas à cet email.';
+          break;
+        case 'auth/email-already-in-use':
+          errorMessage = 'Cet email est déjà lié à un compte. Veuillez vous connecter.';
+          break;
+        case 'auth/weak-password':
+          errorMessage = 'Le mot de passe doit faire au moins 6 caractères.';
+          break;
+        case 'auth/operation-not-allowed':
+          errorMessage = 'La connexion par email est désactivée dans la console Firebase.';
+          break;
+        default:
+          errorMessage = err.message || 'Erreur d\'authentification.';
       }
       setAuthError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      setAuthError('Veuillez saisir votre email pour réinitialiser votre mot de passe.');
+      return;
+    }
+    setLoading(true);
+    setAuthError('');
+    try {
+      const { resetPassword } = await import('./lib/firebase');
+      await resetPassword(email);
+      setResetSent(true);
+    } catch (err: any) {
+      setAuthError('Impossible d\'envoyer l\'email de réinitialisation. Vérifiez l\'adresse.');
     } finally {
       setLoading(false);
     }
@@ -486,7 +576,7 @@ function LoginScreen() {
               mode === 'login' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
             )}
           >
-            Connexion
+            Se Connecter
           </button>
           <button 
             onClick={() => { setMode('signup'); setAuthError(''); }}
@@ -495,39 +585,73 @@ function LoginScreen() {
               mode === 'signup' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
             )}
           >
-            Créer un compte
+            S'Inscrire
           </button>
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">
           {authError && (
-            <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-100 flex items-center gap-2">
-              <AlertCircle size={16} />
-              <span className="flex-1 text-left">{authError}</span>
+            <div className="p-4 bg-red-50 text-red-700 text-[11px] font-bold rounded-2xl border border-red-100 flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={16} className="shrink-0" />
+                <span className="leading-tight">{authError}</span>
+              </div>
+              {mode === 'login' && authError.includes('Identifiants incorrects') && (
+                <div className="mt-1 pt-2 border-t border-red-100 text-[10px] opacity-80 uppercase tracking-wide">
+                  💡 Conseil : Si c'est votre première fois, cliquez sur "S'Inscrire"
+                </div>
+              )}
             </div>
           )}
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Email professionnel</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Email Nexus</label>
             <input 
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-              placeholder="votre@entreprise.com"
+              placeholder="votre@nexus.com"
               required
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Mot de passe</label>
-            <input 
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-              placeholder="••••••••"
-              required
-            />
+          <div className="space-y-1.5 relative">
+            <div className="flex items-center justify-between ml-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Mot de passe</label>
+              {mode === 'login' && (
+                <button 
+                  type="button" 
+                  onClick={handleResetPassword}
+                  className="text-[9px] font-bold text-blue-600 hover:underline uppercase tracking-wider"
+                >
+                  Mot de passe oublié ?
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+                placeholder="••••••••"
+                required={mode !== 'login' || !resetSent}
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
+                title={showPassword ? "Masquer" : "Afficher"}
+              >
+                {showPassword ? <X size={16} /> : <Search size={16} className="rotate-45" />}
+              </button>
+            </div>
           </div>
+          {resetSent && (
+            <div className="p-3 bg-green-50 text-green-700 text-[10px] font-bold rounded-xl border border-green-100 flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              Email de réinitialisation envoyé ! Vérifiez vos courriers indésirables.
+            </div>
+          )}
           <button 
             type="submit"
             disabled={loading}
@@ -543,7 +667,7 @@ function LoginScreen() {
         <div className="mt-6">
           <div className="relative flex items-center py-2 mb-6">
             <div className="flex-grow border-t border-slate-100"></div>
-            <span className="flex-shrink mx-4 text-[9px] font-black uppercase tracking-[0.2em] text-slate-300">Ou continuer avec</span>
+            <span className="flex-shrink mx-4 text-[9px] font-black uppercase tracking-[0.2em] text-slate-300">Méthode Alternative</span>
             <div className="flex-grow border-t border-slate-100"></div>
           </div>
 
@@ -558,8 +682,15 @@ function LoginScreen() {
               <path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            Google
+            Continuer avec Google
           </button>
+          
+          <div className="mt-4 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50">
+            <p className="text-[9px] text-blue-600 font-bold leading-tight">
+              ⚠️ NOTE SÉCURITÉ : La connexion Google et l'inscription par Email créent des comptes distincts. 
+              Si vous utilisez les deux, assurez-vous que votre email est autorisé dans votre entreprise.
+            </p>
+          </div>
         </div>
 
         <div className="mt-8 text-center pt-6 border-t border-slate-50">
@@ -657,8 +788,14 @@ export default function App() {
   }, [setCurrentCompany]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        // Whitelist check: only allow if user has a company OR is in a personnel list OR is master
+        // This prevents "Google login bypass" for unknowns.
+        setUser(u);
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
     

@@ -7,7 +7,8 @@ import {
   onAuthStateChanged as firebaseOnAuthStateChanged,
   updateProfile,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -131,12 +132,6 @@ export async function testFirestoreConnection() {
   } catch (error: any) {
     if (error.message?.includes('the client is offline') || error.message?.includes('Could not reach')) {
       console.error("Nexus Firebase: ❌ CRICIAL - Firestore est INACCESSIBLE (Timeout/Offline).");
-      console.error("Nexus Firebase: Diagnostic pour support :", {
-        projectId: firebaseConfig.projectId,
-        databaseId: firebaseConfig.firestoreDatabaseId,
-        region: "europe-west2 (confirmé par utilisateur)"
-      });
-      alert("ERREUR DE CONNEXION : La plateforme Nexus n'arrive pas à joindre la base de données Firebase.\n\nCela peut être dû à :\n1. Une propagation DNS en cours (si base neuve).\n2. Un blocage réseau local.\n3. Une mauvaise configuration du Database ID.\n\nL'application va tenter de fonctionner en mode dégradé.");
     } else {
       console.log("Nexus Firebase: ⚠️ Test de connexion terminé avec un résultat attendu (ex: permission denied) :", error.message);
       return true; // Si c'est juste un problème de permission, Firestore est quand même accessible
@@ -164,37 +159,44 @@ export function onAuthStateChanged(auth: any, cb: (user: any) => void) {
 
 export const loginWithEmail = async (email: string, pass: string) => {
   try {
+    console.log("Nexus Auth: Tentative de connexion pour", email);
     const result = await signInWithEmailAndPassword(auth, email, pass);
+    console.log("Nexus Auth: Connexion réussie pour", result.user.uid);
     return { user: result.user };
   } catch (error: any) {
+    console.error("Nexus Auth Error:", error.code, error.message);
     if (error.code === 'auth/operation-not-allowed') {
       alert("ERREUR : La méthode de connexion par Email/Mot de passe n'est pas activée dans votre console Firebase.\n\nAllez dans Authentication > Sign-in method et activez 'Email/Password'.");
+    } else if (error.code === 'auth/invalid-credential') {
+      console.warn("Nexus Auth: Identifiants invalides ou compte inexistant.");
     }
-    console.error("Login error:", error);
     throw error;
   }
 };
 
 export async function signupWithEmail(email: string, pass: string) {
   try {
+    console.log("Nexus Auth: Tentative de création de compte pour", email);
     const result = await createUserWithEmailAndPassword(auth, email, pass);
+    console.log("Nexus Auth: Compte créé pour", result.user.uid);
     // Create profile in Firestore
     try {
       await firestoreSetDoc(firestoreDoc(db, 'users', result.user.uid), {
         uid: result.user.uid,
         email: result.user.email,
         displayName: result.user.email?.split('@')[0],
-        createdAt: firestoreServerTimestamp()
+        createdAt: firestoreServerTimestamp(),
+        role: 'user' // Default role
       });
     } catch (e) {
-      console.warn("Failed to create user profile in Firestore (Permissions?)", e);
+      console.warn("Nexus Firebase: Impossible de créer le profil utilisateur dans Firestore (Permissions?)", e);
     }
     return { user: result.user };
   } catch (error: any) {
+    console.error("Nexus Auth Error (Signup):", error.code, error.message);
     if (error.code === 'auth/operation-not-allowed') {
       alert("ERREUR : La méthode de connexion par Email/Mot de passe n'est pas activée dans votre console Firebase.\n\nAllez dans Authentication > Sign-in method et activez 'Email/Password'.");
     }
-    console.error("Signup error:", error);
     throw error;
   }
 }
@@ -219,6 +221,16 @@ export const loginWithGoogle = async () => {
     return { user: result.user };
   } catch (error: any) {
     console.error("Google login error:", error);
+    throw error;
+  }
+};
+
+export const resetPassword = async (email: string) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return true;
+  } catch (error: any) {
+    console.error("Reset password error:", error);
     throw error;
   }
 };
