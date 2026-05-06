@@ -367,6 +367,16 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
             </div>
           </form>
         )}
+
+        <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+          <button 
+            onClick={() => logout()}
+            className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-red-500 transition-colors flex items-center justify-center gap-2 mx-auto group"
+          >
+            <LogOut size={12} className="group-hover:-translate-x-0.5 transition-transform" />
+            Se Déconnecter de Nexus
+          </button>
+        </div>
       </motion.div>
     </div>
   );
