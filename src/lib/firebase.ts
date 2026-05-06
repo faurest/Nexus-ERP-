@@ -105,18 +105,29 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
-// Test Connection
-async function testConnection() {
+// Test Connection - made safer and more diagnostic
+export async function testFirestoreConnection() {
+  console.log("Testing Firestore connection with DB ID:", firebaseConfig.firestoreDatabaseId);
   try {
-    const testDoc = firestoreDoc(db, 'test', 'connection');
+    const testDoc = firestoreDoc(db, 'companies', 'test-connection-probe');
+    // Using getDocFromServer directly to bypass any cache and force network
     await getDocFromServer(testDoc);
-  } catch (error) {
-    if(error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration. The client is offline.");
+    console.log("Firestore connection test: Success (Permission Denied is expected and okay)");
+  } catch (error: any) {
+    if (error.message?.includes('the client is offline') || error.message?.includes('Could not reach')) {
+      console.error("CRITICAL: Firestore backend is unreachable. Status: OFFLINE.");
+      console.error("Diagnostic Info:", {
+        projectId: firebaseConfig.projectId,
+        databaseId: firebaseConfig.firestoreDatabaseId,
+        region: "europe-west2 (requested)"
+      });
+    } else {
+      console.warn("Firestore connection test result (likely permission error, which is fine):", error.message);
     }
   }
 }
-testConnection();
+// Do not call immediately at module level to avoid blocking app start or triggering early timeouts
+// testConnection(); 
 
 // Auth implementation
 export function onAuthStateChanged(auth: any, cb: (user: any) => void) {

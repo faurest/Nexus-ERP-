@@ -524,6 +524,12 @@ export default function App() {
       setUser(u);
       setLoading(false);
     });
+    
+    // Test Firestore connection on load
+    import('./lib/firebase').then(({ testFirestoreConnection }) => {
+      testFirestoreConnection();
+    });
+
     return unsubscribe;
   }, []);
 
