@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from '../lib/firebase';
+import { db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from '../lib/firebase';
 import { 
   Building2, 
   Plus, 
@@ -21,7 +21,8 @@ import {
   UserPlus,
   X,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Database
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
@@ -357,6 +358,39 @@ export default function AdminModule() {
     c.ownerEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.joinCode?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const [diagEmail, setDiagEmail] = useState('');
+  const [diagResult, setDiagResult] = useState<any>(null);
+
+  const handleDiagnostic = async () => {
+    if (!diagEmail.trim()) return;
+    setLoading(true);
+    const email = diagEmail.trim().toLowerCase();
+    try {
+      const [uSnap, pSnap, cSnap] = await Promise.all([
+        getDocs(query(collection(db, 'users'), where('email', '==', email))),
+        getDocs(query(collection(db, 'personnel'), where('email', '==', email))),
+        getDocs(query(collection(db, 'companies'), where('ownerEmail', '==', email)))
+      ]);
+
+      setDiagResult({
+        email,
+        inUsers: !uSnap.empty,
+        personnelCount: pSnap.docs.length,
+        ownedCompanies: cSnap.docs.map(d => (d.data() as any).name),
+        personnelDetails: pSnap.docs.map(d => {
+          const data = d.data() as any;
+          const comp = companies.find(c => c.id === data.companyId);
+          return { company: comp?.name || 'Inconnue', status: data.status, role: data.role };
+        })
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Erreur de diagnostic");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="relative min-h-[80vh] space-y-8 p-1">
@@ -801,55 +835,129 @@ export default function AdminModule() {
       )}
 
       {activeAdminTab === 'tools' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-xl">
-             <h3 className="text-xl font-black text-slate-900 tracking-tight mb-4 flex items-center gap-2">
-               <Activity className="text-blue-600" />
-               Migration SQLite vers Firebase
-             </h3>
-             <div className="space-y-4 mb-8 text-sm text-slate-500 leading-relaxed">
-               <p>
-                 Pour récupérer vos données (ex: La Pause 237) :
-               </p>
-               <ol className="list-decimal pl-5 space-y-2">
-                 <li>Assurez-vous que le serveur local est actif.</li>
-                 <li>La migration se fera vers votre base de données Firebase Cloud.</li>
-                 <li>Utilisez l'option <strong>Nucléaire</strong> dans le guide si vous avez des erreurs de colonnes.</li>
-                 <li>Cliquez sur le bouton ci-dessous pour transférer les données.</li>
-               </ol>
-             </div>
-             <button 
-               onClick={handleMigrateFromSQLite}
-               className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-3"
-             >
-               <Upload size={18} />
-               Démarrer la Migration Globale
-             </button>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
+            <div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">Diagnostic d'Accès Utilisateur</h2>
+              <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest leading-loose">Vérifiez si un email est correctement configuré dans le système.</p>
+            </div>
+
+            <div className="flex gap-3">
+              <input 
+                type="email" 
+                placeholder="Email à diagnostiquer..." 
+                value={diagEmail}
+                onChange={e => setDiagEmail(e.target.value)}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all"
+              />
+              <button 
+                onClick={handleDiagnostic}
+                disabled={loading || !diagEmail}
+                className="px-6 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl active:scale-95 disabled:opacity-50"
+              >
+                Scanner
+              </button>
+            </div>
+
+            {diagResult && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-6 bg-slate-50 rounded-3xl border border-slate-200 space-y-4"
+              >
+                <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Résultats pour {diagResult.email}</span>
+                  <button onClick={() => setDiagResult(null)} className="text-slate-400 hover:text-slate-900"><X size={14} /></button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 text-[11px] font-bold">
+                  <div className="p-3 bg-white rounded-xl border border-slate-100 flex items-center justify-between">
+                    <span className="text-slate-400">Compte Firebase (Users)</span>
+                    {diagResult.inUsers ? <CheckCircle2 size={14} className="text-emerald-500" /> : <X size={14} className="text-red-500" />}
+                  </div>
+                  <div className="p-3 bg-white rounded-xl border border-slate-100 flex items-center justify-between">
+                    <span className="text-slate-400">Propriétaire Entreprise</span>
+                    <span className="text-blue-600">{diagResult.ownedCompanies.length > 0 ? "OUI" : "NON"}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Affiliations Personnel ({diagResult.personnelCount})</span>
+                  {diagResult.personnelDetails.length === 0 ? (
+                    <p className="text-[10px] text-red-500 italic px-1">Aucune affiliation trouvée. Cet utilisateur ne peut pas se connecter aux espaces de travail.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {diagResult.personnelDetails.map((pd: any, i: number) => (
+                        <div key={i} className="p-3 bg-white rounded-xl border border-slate-100 flex justify-between items-center">
+                          <span className="text-slate-700">{pd.company}</span>
+                          <div className="flex gap-2">
+                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[8px] uppercase">{pd.role}</span>
+                            <span className={cn("px-2 py-0.5 rounded text-[8px] uppercase", pd.status === 'blocked' ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600")}>
+                              {pd.status === 'blocked' ? 'Bloqué' : 'Actif'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
           </div>
 
-          <div className="bg-slate-900 p-10 rounded-[2.5rem] text-white">
-             <h3 className="text-xl font-black tracking-tight mb-4 flex items-center gap-2">
-               <Download className="text-blue-400" />
-               Sauvegarde Locale (JSON)
-             </h3>
-             <p className="text-sm text-slate-400 mb-8 leading-relaxed">
-               Exportez l'intégralité de la base de données actuelle (Firebase) dans un seul fichier JSON.
-               Utile pour les sauvegardes de sécurité ou pour transférer vers un autre projet.
-             </p>
-             <div className="flex flex-col gap-3">
-               <button 
-                 onClick={handleExportData}
-                 className="w-full py-4 bg-white/10 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/20 transition-all flex items-center justify-center gap-3"
-               >
-                 <Download size={18} />
-                 Télécharger le Backup
-               </button>
-               <label className="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center justify-center gap-3 cursor-pointer">
-                 <Upload size={18} />
-                 Restaurer depuis Backup
-                 <input type="file" accept=".json" onChange={handleImportData} className="hidden" />
-               </label>
-             </div>
+          <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
+            <div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">Maintenance Système</h2>
+              <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest leading-loose">Synchronisation et sauvegardes multi-cloud.</p>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-4">
+              <button 
+                onClick={handleExportData}
+                className="w-full flex items-center justify-between p-6 bg-slate-50 rounded-[2rem] border border-slate-100 hover:border-blue-200 hover:bg-white transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-all">
+                    <Download size={20} />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-black text-slate-900">Backup JSON Complet</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Télécharger toutes les tables</p>
+                  </div>
+                </div>
+                <ArrowUpRight size={18} className="text-slate-300 group-hover:text-blue-600 transition-all" />
+              </button>
+
+              <label className="w-full flex items-center justify-between p-6 bg-slate-50 rounded-[2rem] border border-slate-100 hover:border-purple-200 hover:bg-white transition-all group cursor-pointer">
+                <input type="file" className="hidden" accept=".json" onChange={handleImportData} />
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-purple-100 text-purple-600 rounded-2xl group-hover:bg-purple-600 group-hover:text-white transition-all">
+                    <Upload size={20} />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-black text-slate-900">Importer Sauvegarde</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Restaurer des données Firebase</p>
+                  </div>
+                </div>
+                <ArrowUpRight size={18} className="text-slate-300 group-hover:text-purple-600 transition-all" />
+              </label>
+
+              <button 
+                onClick={handleMigrateFromSQLite}
+                className="w-full flex items-center justify-between p-6 bg-slate-50 rounded-[2rem] border border-slate-100 hover:border-indigo-200 hover:bg-white transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                    <Database size={20} />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-black text-slate-900">Migration SQLite</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Récupérer les données locales</p>
+                  </div>
+                </div>
+                <ArrowUpRight size={18} className="text-slate-300 group-hover:text-indigo-600 transition-all" />
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -200,7 +200,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
 
       try {
         // Search if the user's email exists in ANY personnel collection
-        const q = query(collection(db, 'personnel'), where('email', '==', user.email));
+        const q = query(collection(db, 'personnel'), where('email', '==', user.email?.toLowerCase()));
         const snap = await getDocs(q);
         // If they are in at least one personnel record, they are authorized
         setIsWhitelisted(!snap.empty);
@@ -487,8 +487,8 @@ function LoginScreen() {
       switch (code) {
         case 'auth/invalid-credential':
           errorMessage = mode === 'login' 
-            ? 'Identifiants incorrects. Vérifiez votre email et mot de passe. Si vous n\'avez pas de compte, utilisez l\'onglet "S\'Inscrire".'
-            : 'Échec de la création du compte. Les informations sont peut-être déjà utilisées ou mal formées.';
+            ? 'Identifiants incorrects. Verifiez votre email et mot de passe. IMPORTANT : Si vous avez l\'habitude de vous connecter avec Google, vous n\'avez peut-être pas de mot de passe Nexus. Utilisez alors le bouton Google ci-dessous ou "Mot de passe oublié".'
+            : 'Échec de la création du compte. Cet email est peut-être déjà utilisé ou mal formé.';
           break;
         case 'auth/user-not-found':
           errorMessage = 'Aucun compte trouvé avec cet email. Veuillez d\'abord vous inscrire.';
