@@ -118,7 +118,7 @@ export default function PersonnelModule() {
           firstName: newStaff.firstName,
           lastName: newStaff.lastName,
           name: fullName,
-          email: newStaff.email,
+          email: newStaff.email.trim().toLowerCase(),
           phone: newStaff.phone,
           notes: newStaff.notes,
           role: newStaff.role,

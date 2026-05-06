@@ -193,24 +193,48 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
 
   useEffect(() => {
     const checkWhitelist = async () => {
-      if (isMaster || companies.length > 0) {
+      if (!user?.email) return;
+      
+      const cleanEmail = user.email.trim().toLowerCase();
+
+      // 1. Check if Master
+      if (isMaster) {
+        setIsWhitelisted(true);
+        return;
+      }
+
+      // 2. Already in companies (owner or joined)
+      if (companies.length > 0) {
         setIsWhitelisted(true);
         return;
       }
 
       try {
-        // Search if the user's email exists in ANY personnel collection
-        const q = query(collection(db, 'personnel'), where('email', '==', user.email?.toLowerCase()));
+        console.log("Nexus Security: Vérification des accès pour", cleanEmail);
+        
+        // 3. Check if they ARE an owner of a company not yet loaded
+        const companyQ = query(collection(db, 'companies'), where('ownerEmail', '==', cleanEmail));
+        const companySnap = await getDocs(companyQ);
+        if (!companySnap.empty) {
+          console.log("Nexus Security: Accès autorisé (Propriétaire détecté)");
+          setIsWhitelisted(true);
+          return;
+        }
+
+        // 4. Search if the user's email exists in ANY personnel collection
+        const q = query(collection(db, 'personnel'), where('email', '==', cleanEmail));
         const snap = await getDocs(q);
-        // If they are in at least one personnel record, they are authorized
-        setIsWhitelisted(!snap.empty);
+        
+        const authorized = !snap.empty;
+        console.log("Nexus Security: Résultat personnel =", authorized);
+        setIsWhitelisted(authorized);
       } catch (err) {
         console.error("Whitelist check failed:", err);
         setIsWhitelisted(false);
       }
     };
     checkWhitelist();
-  }, [user.email, companies.length, isMaster]);
+  }, [user?.email, companies.length, isMaster]);
 
   if (isWhitelisted === false && !isMaster) {
     return (
@@ -227,7 +251,11 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
           <p className="text-slate-500 mb-8 leading-relaxed">
             Votre adresse <span className="font-bold text-slate-700">{user.email}</span> n'est pas encore autorisée à accéder à l'écosystème Nexus.
             <br /><br />
-            Veuillez contacter votre administrateur pour être ajouté au personnel de votre entreprise.
+            <span className="text-[10px] bg-amber-50 text-amber-700 p-2 rounded-lg border border-amber-100 inline-block">
+              💡 CONSEIL : Si vous devriez avoir accès, demandez à votre administrateur de vérifier l'orthographe de votre email dans la liste du personnel (attention aux majuscules/minuscules).
+            </span>
+            <br /><br />
+            Contactez votre administrateur pour être ajouté au personnel de votre entreprise.
           </p>
           <div className="space-y-3">
             <button 
