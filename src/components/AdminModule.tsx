@@ -368,26 +368,68 @@ export default function AdminModule() {
     setLoading(true);
     const email = diagEmail.trim().toLowerCase();
     try {
+      // Find case-insensitive results for diagnosis
       const [uSnap, pSnap, cSnap] = await Promise.all([
-        getDocs(query(collection(db, 'users'), where('email', '==', email))),
-        getDocs(query(collection(db, 'personnel'), where('email', '==', email))),
-        getDocs(query(collection(db, 'companies'), where('ownerEmail', '==', email)))
+        getDocs(collection(db, 'users')),
+        getDocs(collection(db, 'personnel')),
+        getDocs(collection(db, 'companies'))
       ]);
+
+      const inUsers = uSnap.docs.find(d => (d.data() as any).email?.toLowerCase() === email);
+      const personnelMatches = pSnap.docs.filter(d => (d.data() as any).email?.toLowerCase() === email);
+      const ownedCompanies = cSnap.docs.filter(d => (d.data() as any).ownerEmail?.toLowerCase() === email);
 
       setDiagResult({
         email,
-        inUsers: !uSnap.empty,
-        personnelCount: pSnap.docs.length,
-        ownedCompanies: cSnap.docs.map(d => (d.data() as any).name),
-        personnelDetails: pSnap.docs.map(d => {
+        inUsers: !!inUsers,
+        actualUserEmail: inUsers ? (inUsers.data() as any).email : null,
+        personnelCount: personnelMatches.length,
+        ownedCompanies: ownedCompanies.map(d => (d.data() as any).name),
+        personnelDetails: personnelMatches.map(d => {
           const data = d.data() as any;
           const comp = companies.find(c => c.id === data.companyId);
-          return { company: comp?.name || 'Inconnue', id: data.companyId, status: data.status, role: data.role };
+          return { company: comp?.name || 'Inconnue', id: data.companyId, status: data.status, role: data.role, actualEmail: data.email };
         })
       });
     } catch (err) {
       console.error(err);
       alert("Erreur de diagnostic");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNormalizeEmails = async () => {
+    if (!window.confirm("Cette action va convertir TOUTES les adresses emails en minuscules pour assurer la compatibilité case-insensitive. Continuer ?")) return;
+    setLoading(true);
+    try {
+      const collections = ['companies', 'personnel', 'users'];
+      let count = 0;
+      for (const coll of collections) {
+        const snap = await getDocs(collection(db, coll));
+        for (const docSnap of snap.docs) {
+          const data = docSnap.data();
+          const updates: any = {};
+          if (coll === 'companies') {
+            if (data.ownerEmail && data.ownerEmail !== data.ownerEmail.toLowerCase()) {
+              updates.ownerEmail = data.ownerEmail.toLowerCase();
+            }
+          } else {
+            if (data.email && data.email !== data.email.toLowerCase()) {
+              updates.email = data.email.toLowerCase();
+            }
+          }
+          if (Object.keys(updates).length > 0) {
+            await updateDoc(doc(db, coll, docSnap.id), updates);
+            count++;
+          }
+        }
+      }
+      alert(`${count} emails ont été normalisés en minuscules.`);
+      fetchGlobalData();
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la normalisation");
     } finally {
       setLoading(false);
     }
@@ -871,10 +913,15 @@ export default function AdminModule() {
                   <button onClick={() => setDiagResult(null)} className="text-slate-400 hover:text-slate-900"><X size={14} /></button>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4 text-[11px] font-bold">
-                  <div className="p-3 bg-white rounded-xl border border-slate-100 flex items-center justify-between">
-                    <span className="text-slate-400">Compte Firebase (Users)</span>
-                    {diagResult.inUsers ? <CheckCircle2 size={14} className="text-emerald-500" /> : <X size={14} className="text-red-500" />}
+                  <div className="grid grid-cols-2 gap-4 text-[11px] font-bold">
+                  <div className="p-3 bg-white rounded-xl border border-slate-100 flex flex-col gap-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Compte Firebase</span>
+                      {diagResult.inUsers ? <CheckCircle2 size={14} className="text-emerald-500" /> : <X size={14} className="text-red-500" />}
+                    </div>
+                    {diagResult.inUsers && diagResult.actualUserEmail !== diagResult.email && (
+                      <span className="text-[8px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded leading-none">⚠️ Case mismatch: {diagResult.actualUserEmail}</span>
+                    )}
                   </div>
                   <div className="p-3 bg-white rounded-xl border border-slate-100 flex items-center justify-between">
                     <span className="text-slate-400">Propriétaire Entreprise</span>
@@ -915,6 +962,9 @@ export default function AdminModule() {
                           <div className="flex flex-col">
                             <span className="text-slate-700">{pd.company}</span>
                             <span className="text-[8px] text-slate-400 font-mono tracking-tight">{pd.id}</span>
+                            {pd.actualEmail !== diagResult.email && (
+                              <span className="text-[8px] text-amber-600 bg-amber-50 px-1 py-0.5 rounded w-fit mt-1">⚠️ {pd.actualEmail}</span>
+                            )}
                           </div>
                           <div className="flex gap-2 items-center">
                             <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[8px] uppercase">{pd.role}</span>
@@ -1005,6 +1055,22 @@ export default function AdminModule() {
                   </div>
                 </div>
                 <ArrowUpRight size={18} className="text-slate-300 group-hover:text-indigo-600 transition-all" />
+              </button>
+
+              <button 
+                onClick={handleNormalizeEmails}
+                className="w-full flex items-center justify-between p-6 bg-amber-50/50 rounded-[2rem] border border-amber-100 hover:border-amber-200 hover:bg-white transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-amber-100 text-amber-600 rounded-2xl group-hover:bg-amber-600 group-hover:text-white transition-all">
+                    <Shield size={20} />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-black text-slate-900">Nettoyage Emails</p>
+                    <p className="text-[10px] font-bold text-amber-600/60 uppercase tracking-widest">Forcer minuscules (Whitelist)</p>
+                  </div>
+                </div>
+                <Activity size={18} className="text-amber-300 group-hover:text-amber-600 transition-all" />
               </button>
             </div>
           </div>
