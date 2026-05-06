@@ -461,13 +461,23 @@ function LoginScreen() {
     setAuthError('');
     setResetSent(false);
     setLoading(true);
+    
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    if (!cleanEmail || !cleanPassword) {
+      setAuthError('Veuillez remplir tous les champs.');
+      setLoading(false);
+      return;
+    }
+
     try {
       if (mode === 'login') {
         const { loginWithEmail } = await import('./lib/firebase');
-        await loginWithEmail(email, password);
+        await loginWithEmail(cleanEmail, cleanPassword);
       } else {
         const { signupWithEmail } = await import('./lib/firebase');
-        await signupWithEmail(email, password);
+        await signupWithEmail(cleanEmail, cleanPassword);
       }
     } catch (err: any) {
       console.error("Auth process error:", err);
@@ -477,8 +487,8 @@ function LoginScreen() {
       switch (code) {
         case 'auth/invalid-credential':
           errorMessage = mode === 'login' 
-            ? 'Identifiants incorrects. Vérifiez votre email et mot de passe. Si vous n\'avez pas de mot de passe Nexus, utilisez "S\'Inscrire" ou "Mot de passe oublié".'
-            : 'Échec de la création du compte. Les informations sont peut-être déjà utilisées.';
+            ? 'Identifiants incorrects. Vérifiez votre email et mot de passe. Si vous n\'avez pas de compte, utilisez l\'onglet "S\'Inscrire".'
+            : 'Échec de la création du compte. Les informations sont peut-être déjà utilisées ou mal formées.';
           break;
         case 'auth/user-not-found':
           errorMessage = 'Aucun compte trouvé avec cet email. Veuillez d\'abord vous inscrire.';
@@ -487,10 +497,13 @@ function LoginScreen() {
           errorMessage = 'Le mot de passe ne correspond pas à cet email.';
           break;
         case 'auth/email-already-in-use':
-          errorMessage = 'Cet email est déjà lié à un compte. Veuillez vous connecter.';
+          errorMessage = 'Cet email est déjà lié à un compte Nexus. Connectez-vous ou utilisez "Mot de passe oublié".';
           break;
         case 'auth/weak-password':
           errorMessage = 'Le mot de passe doit faire au moins 6 caractères.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Format d\'email invalide.';
           break;
         case 'auth/operation-not-allowed':
           errorMessage = 'La connexion par email est désactivée dans la console Firebase.';
@@ -596,9 +609,10 @@ function LoginScreen() {
                 <AlertCircle size={16} className="shrink-0" />
                 <span className="leading-tight">{authError}</span>
               </div>
-              {mode === 'login' && authError.includes('Identifiants incorrects') && (
-                <div className="mt-1 pt-2 border-t border-red-100 text-[10px] opacity-80 uppercase tracking-wide">
-                  💡 Conseil : Si c'est votre première fois, cliquez sur "S'Inscrire"
+              {mode === 'login' && (
+                <div className="mt-1 pt-2 border-t border-red-100 text-[10px] opacity-80 uppercase tracking-wide flex flex-col gap-1">
+                  <span>💡 Note : Si c'est votre première connexion, utilisez l'onglet "S'Inscrire".</span>
+                  <span>🔒 Sécurité : Un compte Google est distinct d'un compte Email/Pass.</span>
                 </div>
               )}
             </div>

@@ -159,8 +159,10 @@ export function onAuthStateChanged(auth: any, cb: (user: any) => void) {
 
 export const loginWithEmail = async (email: string, pass: string) => {
   try {
-    console.log("Nexus Auth: Tentative de connexion pour", email);
-    const result = await signInWithEmailAndPassword(auth, email, pass);
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPass = pass.trim();
+    console.log("Nexus Auth: Tentative de connexion pour", cleanEmail);
+    const result = await signInWithEmailAndPassword(auth, cleanEmail, cleanPass);
     console.log("Nexus Auth: Connexion réussie pour", result.user.uid);
     return { user: result.user };
   } catch (error: any) {
@@ -168,7 +170,7 @@ export const loginWithEmail = async (email: string, pass: string) => {
     if (error.code === 'auth/operation-not-allowed') {
       alert("ERREUR : La méthode de connexion par Email/Mot de passe n'est pas activée dans votre console Firebase.\n\nAllez dans Authentication > Sign-in method et activez 'Email/Password'.");
     } else if (error.code === 'auth/invalid-credential') {
-      console.warn("Nexus Auth: Identifiants invalides ou compte inexistant.");
+      console.warn("Nexus Auth: Identifiants incorrects pour l'accès.");
     }
     throw error;
   }
@@ -176,8 +178,10 @@ export const loginWithEmail = async (email: string, pass: string) => {
 
 export async function signupWithEmail(email: string, pass: string) {
   try {
-    console.log("Nexus Auth: Tentative de création de compte pour", email);
-    const result = await createUserWithEmailAndPassword(auth, email, pass);
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPass = pass.trim();
+    console.log("Nexus Auth: Tentative de création de compte pour", cleanEmail);
+    const result = await createUserWithEmailAndPassword(auth, cleanEmail, cleanPass);
     console.log("Nexus Auth: Compte créé pour", result.user.uid);
     // Create profile in Firestore
     try {
