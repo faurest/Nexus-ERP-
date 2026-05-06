@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, loginWithEmail, signupWithEmail, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, doc, updateDoc, arrayUnion, reloadUser, resendVerification } from './lib/firebase';
+import { auth, loginWithEmail, signupWithEmail, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, doc, updateDoc, arrayUnion, reloadUser, resendVerification, loginWithGoogle, resetPassword } from './lib/firebase';
 type User = any;
 import { 
   LayoutDashboard, 
@@ -405,6 +405,22 @@ function LoginScreen() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!email) {
+      setAuthError("Veuillez saisir votre email pour réinitialiser le mot de passe.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await resetPassword(email);
+      alert("Un email de réinitialisation a été envoyé à : " + email);
+    } catch (err: any) {
+      setAuthError("Erreur: " + (err.message || "Impossible d'envoyer le mail."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-slate-900 font-sans">
       <motion.div 
@@ -441,7 +457,18 @@ function LoginScreen() {
           </div>
           
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Mot de passe</label>
+            <div className="flex justify-between items-center px-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Mot de passe</label>
+              {!isSignUp && (
+                <button 
+                  type="button"
+                  onClick={handleResetPassword}
+                  className="text-[10px] font-bold text-blue-600 hover:underline"
+                >
+                  Oublié ?
+                </button>
+              )}
+            </div>
             <input 
               type="password"
               value={password}

@@ -4,6 +4,7 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   sendEmailVerification,
+  sendPasswordResetEmail,
   signOut, 
   onAuthStateChanged as firebaseOnAuthStateChanged,
   updateProfile,
@@ -115,6 +116,15 @@ export const reloadUser = async () => {
 export const resendVerification = async () => {
   if (auth.currentUser) {
     await sendEmailVerification(auth.currentUser);
+  }
+};
+
+export const resetPassword = async (email: string) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (error: any) {
+    console.error("Password reset error:", error);
+    throw error;
   }
 };
 
