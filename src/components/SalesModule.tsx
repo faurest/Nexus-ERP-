@@ -54,6 +54,7 @@ export default function SalesModule() {
   const [isAddingPayment, setIsAddingPayment] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [paymentForm, setPaymentForm] = useState({ amount: 0, method: 'Espèces', reference: '' });
+  const [selectedClientName, setSelectedClientName] = useState<string | null>(null);
   const [catalogType, setCatalogType] = useState<'product' | 'service'>('product');
   const [isAddingCatalogItem, setIsAddingCatalogItem] = useState(false);
   const [catalogFormData, setCatalogFormData] = useState<any>({ name: '', price: 0, quantity: 0, type: 'Stock' });
@@ -474,8 +475,16 @@ export default function SalesModule() {
             {sales.map(sale => (
               <TableRow key={sale.id}>
                 <span className="text-[10px] font-bold text-slate-400">{sale.date ? new Date((sale.date.seconds || sale.date / 1000) * 1000).toLocaleDateString() : 'Auj'}</span>
+                <div className="flex flex-col">
+                  <button 
+                    onClick={() => setSelectedClientName(sale.clientName || null)}
+                    className="font-bold text-slate-800 text-left hover:text-blue-600 hover:underline outline-none"
+                  >
+                    {sale.itemName}
+                  </button>
+                  {sale.clientName && <span className="text-[8px] text-slate-400 font-bold uppercase">{sale.clientName}</span>}
+                </div>
                 <span className={cn("px-2 py-0.5 rounded text-[10px] uppercase font-bold", sale.type === 'product' ? "bg-amber-100 text-amber-700" : "bg-purple-100 text-purple-700")}>{sale.type === 'product' ? 'Produit' : 'Service'}</span>
-                <span className="font-bold text-slate-800">{sale.itemName}</span>
                 <span className="text-slate-600 font-mono">{sale.quantity}</span>
                 <span className="text-slate-600 font-mono">{sale.price.toLocaleString()} FCFA</span>
                 <span className="font-black text-slate-900 font-mono">{sale.total.toLocaleString()} FCFA</span>
@@ -735,7 +744,12 @@ export default function SalesModule() {
                 <TableRow key={inv.id}>
                   <span className="font-mono font-bold text-blue-600">{inv.invoiceNumber}</span>
                   <div className="flex flex-col">
-                     <span className="font-bold text-slate-800 text-xs">{inv.clientName || 'Générique'}</span>
+                     <button 
+                       onClick={() => setSelectedClientName(inv.clientName || null)}
+                       className="font-bold text-slate-800 text-xs hover:text-blue-600 hover:underline text-left outline-none"
+                     >
+                       {inv.clientName || 'Générique'}
+                     </button>
                      {inv.tableNumber && <span className="text-[10px] text-slate-500 font-bold uppercase">Table: {inv.tableNumber}</span>}
                   </div>
                   <div className="text-[10px] text-slate-600 max-w-[200px] truncate" title={inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ')}>
@@ -768,8 +782,13 @@ export default function SalesModule() {
           <Table headers={['Référence', 'Facture', 'Méthode', 'Date', 'Montant']}>
             {payments.map(pay => (
               <TableRow key={pay.id}>
-                <span className="text-[10px] font-bold text-slate-400">{pay.reference || 'Aucune réf.'}</span>
-                <span className="font-mono font-bold text-blue-600">{invoices.find(i => i.id === pay.invoiceId)?.invoiceNumber || 'Facture indisp.'}</span>
+                  <span className="font-mono font-bold text-blue-600">{pay.reference || 'Aucune réf.'}</span>
+                <button 
+                  onClick={() => setSelectedClientName(invoices.find(i => i.id === pay.invoiceId)?.clientName || null)}
+                  className="font-mono font-bold text-blue-600 hover:underline text-left"
+                >
+                  {invoices.find(i => i.id === pay.invoiceId)?.invoiceNumber || 'Facture indisp.'}
+                </button>
                 <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] uppercase font-black">{pay.method}</span>
                 <span className="text-[10px] font-bold text-slate-500">
                   {pay.date ? new Date(pay.date.seconds * 1000).toLocaleString() : 'Auj'}
@@ -858,6 +877,120 @@ export default function SalesModule() {
           </div>
         )}
       </div>
+
+      {selectedClientName && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-2xl w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center font-black text-2xl border border-blue-100">
+                  {selectedClientName.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 leading-none">{selectedClientName}</h3>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Historique des transactions & Paiements</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedClientName(null)}
+                className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 transition-all"
+              >
+                <Plus className="rotate-45" size={24} />
+              </button>
+            </div>
+
+            {(() => {
+              const clientInvoices = invoices.filter(inv => inv.clientName?.toLowerCase().trim() === selectedClientName.toLowerCase().trim());
+              const totalInvoiced = clientInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+              const clientPayments = payments.filter(p => clientInvoices.some(inv => inv.id === p.invoiceId));
+              const totalPaid = clientPayments.reduce((sum, p) => sum + p.amount, 0);
+              const balance = totalInvoiced - totalPaid;
+
+              return (
+                <div className="space-y-8">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Facturé</p>
+                      <p className="text-lg font-black text-slate-900">{totalInvoiced.toLocaleString()} F</p>
+                    </div>
+                    <div className="bg-emerald-50 p-5 rounded-3xl border border-emerald-100">
+                      <p className="text-[9px] font-black text-emerald-600/60 uppercase tracking-widest mb-1">Total Encaissé</p>
+                      <p className="text-lg font-black text-emerald-900">{totalPaid.toLocaleString()} F</p>
+                    </div>
+                    <div className={cn("p-5 rounded-3xl border", balance > 0 ? "bg-red-50 border-red-100" : "bg-blue-50 border-blue-100")}>
+                      <p className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-60">Solde Dû</p>
+                      <p className="text-lg font-black text-slate-900">{balance.toLocaleString()} F</p>
+                    </div>
+                  </div>
+
+                  {/* Combined Timeline */}
+                  <div className="space-y-6">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Chronologie des évènements</h4>
+                    <div className="space-y-4">
+                      {[...clientInvoices.map(i => ({...i, type: 'invoice'})), ...clientPayments.map(p => ({...p, type: 'payment'}))]
+                        .sort((a, b) => {
+                          const dateA = a.date?.seconds || (a.date instanceof Date ? (a.date as any).getTime() / 1000 : 0);
+                          const dateB = b.date?.seconds || (b.date instanceof Date ? (b.date as any).getTime() / 1000 : 0);
+                          return dateB - dateA;
+                        })
+                        .map((item: any, idx) => (
+                          <div key={idx} className="flex gap-4 items-start relative pb-4 last:pb-0">
+                            <div className={cn(
+                              "w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10",
+                              item.type === 'invoice' ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-emerald-600 text-white shadow-lg shadow-emerald-200"
+                            )}>
+                              {item.type === 'invoice' ? <Receipt size={14} /> : <CreditCard size={14} />}
+                            </div>
+                            <div className="flex-1 bg-white border border-slate-100 p-4 rounded-3xl shadow-sm">
+                              <div className="flex justify-between items-start mb-1">
+                                <span className={cn("text-[10px] font-black uppercase tracking-widest", item.type === 'invoice' ? "text-blue-600" : "text-emerald-600")}>
+                                  {item.type === 'invoice' ? 'Nouvelle Facture' : 'Règlement Reçu'}
+                                </span>
+                                <span className="text-[9px] font-bold text-slate-400 underline decoration-slate-200 underline-offset-2">
+                                  {item.date ? new Date(item.date.seconds * 1000).toLocaleString() : 'Date indisp.'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-end">
+                                <div>
+                                  <p className="text-sm font-bold text-slate-800">
+                                    {item.type === 'invoice' ? `Facture ${item.invoiceNumber}` : `Paiement ${item.method}`}
+                                  </p>
+                                  {item.reference && <p className="text-[10px] text-slate-400 italic">Réf: {item.reference}</p>}
+                                  {item.items && (
+                                    <p className="text-[9px] text-slate-500 mt-1 truncate max-w-[300px]">
+                                      {typeof item.items === 'string' ? JSON.parse(item.items).map((i: any) => `${i.quantity}x ${i.name}`).join(', ') : item.items.map((i: any) => `${i.quantity}x ${i.name}`).join(', ')}
+                                    </p>
+                                  )}
+                                </div>
+                                <p className={cn("font-black text-sm font-mono", item.type === 'invoice' ? "text-slate-900" : "text-emerald-600")}>
+                                  {item.type === 'invoice' ? '-' : '+'}{item.amount.toLocaleString()} F
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      }
+                      {clientInvoices.length === 0 && (
+                        <div className="text-center py-10">
+                          <p className="text-sm text-slate-400 italic">Aucune transaction trouvée pour ce client.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            <button 
+              onClick={() => setSelectedClientName(null)}
+              className="w-full mt-10 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-200"
+            >
+              Fermer l'historique
+            </button>
+          </div>
+        </div>
+      )}
 
       {isAddingCatalogItem && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
