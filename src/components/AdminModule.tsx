@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from '../lib/firebase';
+import { db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, arrayUnion } from '../lib/firebase';
 import { 
   Building2, 
   Plus, 
@@ -360,8 +360,79 @@ export default function AdminModule() {
     c.joinCode?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const [cloneSource, setCloneSource] = useState('');
+  const [cloneTarget, setCloneTarget] = useState('');
   const [diagEmail, setDiagEmail] = useState('');
   const [diagResult, setDiagResult] = useState<any>(null);
+
+  const handleCloneAccess = async () => {
+    if (!cloneSource.trim() || !cloneTarget.trim()) {
+      alert("Veuillez saisir les deux adresses email.");
+      return;
+    }
+    if (!window.confirm(`Voulez-vous copier TOUS les accès de ${cloneSource} vers ${cloneTarget} ?`)) return;
+    
+    setLoading(true);
+    const src = cloneSource.trim().toLowerCase();
+    const tgt = cloneTarget.trim().toLowerCase();
+
+    try {
+      // 1. Get source personnel records
+      const pSnap = await getDocs(query(collection(db, 'personnel'), where('email', '==', src)));
+      const ownedSnap = await getDocs(query(collection(db, 'companies'), where('ownerEmail', '==', src)));
+
+      let created = 0;
+      let updated = 0;
+
+      // 2. Clone Personnel entries
+      for (const d of pSnap.docs) {
+        const data = d.data();
+        // Check if target already exists in this company
+        const existsSnap = await getDocs(query(
+          collection(db, 'personnel'), 
+          where('email', '==', tgt),
+          where('companyId', '==', data.companyId)
+        ));
+
+        if (existsSnap.empty) {
+          await addDoc(collection(db, 'personnel'), {
+            ...data,
+            email: tgt,
+            name: `(Clone) ${data.name || ''}`.trim(),
+            status: 'active',
+            createdAt: new Date()
+          });
+          created++;
+        }
+
+        // Add to company memberEmails list
+        const { arrayUnion } = await import('../lib/firebase');
+        await updateDoc(doc(db, 'companies', data.companyId), {
+          memberEmails: arrayUnion(tgt)
+        });
+        updated++;
+      }
+
+      // 3. Clone Company Memberships for owned companies
+      for (const d of ownedSnap.docs) {
+        const { arrayUnion } = await import('../lib/firebase');
+        await updateDoc(doc(db, 'companies', d.id), {
+          memberEmails: arrayUnion(tgt)
+        });
+        updated++;
+      }
+
+      alert(`Clonage terminé !\n- ${created} nouvelles fiches personnel créées\n- ${updated} listes de membres mises à jour.`);
+      setCloneSource('');
+      setCloneTarget('');
+      fetchGlobalData();
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors du clonage des accès.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDiagnostic = async () => {
     if (!diagEmail.trim()) return;
@@ -1002,6 +1073,43 @@ export default function AdminModule() {
                 </div>
               </motion.div>
             )}
+          </div>
+
+          <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
+            <div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">Clonage d'Accès Utilisateur</h2>
+              <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest leading-loose">Transférez les permissions d'un email vers un autre.</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Source (Celui qui a l'accès)</label>
+                <input 
+                  type="email" 
+                  placeholder="Ex: dangafelicite@gmail.com" 
+                  value={cloneSource}
+                  onChange={e => setCloneSource(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Cible (Celui qui doit recevoir)</label>
+                <input 
+                  type="email" 
+                  placeholder="Ex: hackeurfaurest@gmail.com" 
+                  value={cloneTarget}
+                  onChange={e => setCloneTarget(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-emerald-600 font-bold text-sm"
+                />
+              </div>
+              <button 
+                onClick={handleCloneAccess}
+                disabled={loading || !cloneSource || !cloneTarget}
+                className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-blue-200 active:scale-[0.98] disabled:opacity-50"
+              >
+                Démarrer le Clonage d'Accès
+              </button>
+            </div>
           </div>
 
           <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
