@@ -5,7 +5,9 @@ import {
   createUserWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged as firebaseOnAuthStateChanged,
-  updateProfile
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -196,6 +198,30 @@ export async function signupWithEmail(email: string, pass: string) {
     throw error;
   }
 }
+
+export const loginWithGoogle = async () => {
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    
+    // Check/Create profile
+    try {
+      await firestoreSetDoc(firestoreDoc(db, 'users', result.user.uid), {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName || result.user.email?.split('@')[0],
+        updatedAt: firestoreServerTimestamp()
+      }, { merge: true });
+    } catch (e) {
+       // Ignore if just permission error on first hit
+    }
+    
+    return { user: result.user };
+  } catch (error: any) {
+    console.error("Google login error:", error);
+    throw error;
+  }
+};
 
 export const logout = async () => {
   await signOut(auth);
