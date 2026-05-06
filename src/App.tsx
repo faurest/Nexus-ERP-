@@ -383,6 +383,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
 }
 
 function LoginScreen() {
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
@@ -395,21 +396,35 @@ function LoginScreen() {
     });
   }, []);
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
     setLoading(true);
     try {
-      await loginWithEmail(email, password);
+      if (mode === 'login') {
+        await loginWithEmail(email, password);
+      } else {
+        await signupWithEmail(email, password);
+      }
     } catch (err: any) {
       console.error(err);
       let errorMessage = 'Erreur lors de l\'authentification.';
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
-        errorMessage = 'Email ou mot de passe incorrect.';
-      } else if (err.code === 'auth/weak-password') {
-        errorMessage = err.message || 'Mot de passe trop faible.';
-      } else if (err.code === 'auth/operation-not-allowed') {
-        errorMessage = 'L\'authentification par email n\'est pas activée. Contactez l\'administrateur.';
+      const code = err.code || '';
+      
+      if (code === 'auth/invalid-credential') {
+        errorMessage = mode === 'login' 
+          ? 'Email ou mot de passe incorrect. Si vous n\'avez pas encore de compte, cliquez sur "Créer un compte" ci-dessous.'
+          : 'Erreur lors de la création du compte. Vérifiez vos informations.';
+      } else if (code === 'auth/wrong-password') {
+        errorMessage = 'Le mot de passe que vous avez saisi est incorrect.';
+      } else if (code === 'auth/user-not-found') {
+        errorMessage = 'Aucun compte n\'a été trouvé avec cet e-mail. Veuillez créer un compte.';
+      } else if (code === 'auth/email-already-in-use') {
+        errorMessage = 'Cet e-mail est déjà utilisé par un autre compte. Essayez de vous connecter.';
+      } else if (code === 'auth/weak-password') {
+        errorMessage = 'Le mot de passe doit comporter au moins 6 caractères.';
+      } else if (code === 'auth/operation-not-allowed') {
+        errorMessage = 'L\'authentification par email n\'est pas activée dans Firebase.';
       }
       setAuthError(errorMessage);
     } finally {
@@ -450,11 +465,32 @@ function LoginScreen() {
           </div>
         </div>
 
-        <form onSubmit={handleEmailAuth} className="space-y-4">
+        <div className="flex bg-slate-50 p-1 rounded-2xl mb-8">
+          <button 
+            onClick={() => { setMode('login'); setAuthError(''); }}
+            className={cn(
+              "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+              mode === 'login' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+            )}
+          >
+            Connexion
+          </button>
+          <button 
+            onClick={() => { setMode('signup'); setAuthError(''); }}
+            className={cn(
+              "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+              mode === 'signup' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+            )}
+          >
+            Créer un compte
+          </button>
+        </div>
+
+        <form onSubmit={handleAuth} className="space-y-4">
           {authError && (
             <div className="p-3 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-100 flex items-center gap-2">
               <AlertCircle size={16} />
-              <span className="flex-1 overflow-hidden text-ellipsis">{authError}</span>
+              <span className="flex-1 text-left">{authError}</span>
             </div>
           )}
           <div className="space-y-1.5">
@@ -484,14 +520,20 @@ function LoginScreen() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3.5 px-6 rounded-xl font-bold text-sm tracking-wide hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
           >
-            {loading ? 'Connexion en cours...' : 'Se Connecter'}
+            {loading 
+              ? (mode === 'login' ? 'Connexion...' : 'Création...') 
+              : (mode === 'login' ? 'Se Connecter' : 'Commencer')}
             {!loading && <ChevronRight size={16} />}
           </button>
         </form>
 
         <div className="mt-8 text-center pt-6 border-t border-slate-50">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NexusERP Industrial System</p>
-          <p className="text-[9px] text-slate-300 mt-1 uppercase font-mono tracking-tighter">Accès restreint au personnel autorisé</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            {mode === 'login' ? 'NexusERP Industrial System' : 'Nexus Ecosystem Registration'}
+          </p>
+          <p className="text-[9px] text-slate-300 mt-1 uppercase font-mono tracking-tighter">
+            {mode === 'login' ? 'Accès restreint au personnel autorisé' : 'Créez votre profil pour rejoindre une entreprise'}
+          </p>
         </div>
       </motion.div>
     </div>
