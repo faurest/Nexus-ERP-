@@ -187,25 +187,36 @@ export default function CollaborationModule() {
   });
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-            <Share2 className="text-blue-600" />
-            Collaboration & Transfert
-          </h2>
-          <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-widest">Partagez des données et documents en temps réel.</p>
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="relative overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 sm:p-12 text-white shadow-2xl group">
+        <div className="absolute inset-0 z-0 scale-110 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity">
+          <img 
+             src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=1600" 
+             className="w-full h-full object-cover" 
+             alt="collaboration"
+          />
         </div>
-        <button 
-          onClick={() => setIsAdding(true)}
-          className="px-6 py-4 bg-slate-900 text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest flex items-center gap-3 hover:bg-blue-600 transition-all shadow-xl shadow-slate-200"
-        >
-          <Send size={16} />
-          Transférer une donnée
-        </button>
+
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+          <div className="max-w-xl">
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
+              Nexus <span className="text-blue-500">Sync</span>
+            </h1>
+            <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
+              Transférez des données, partagez des documents stratégiques et coordonnez vos équipes à travers tout l'écosystème Nexus.
+            </p>
+          </div>
+          <button 
+            onClick={() => setIsAdding(true)}
+            className="px-8 py-5 bg-blue-600 text-white rounded-[1.5rem] font-black text-[12px] uppercase tracking-widest flex items-center gap-3 hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20 shrink-0"
+          >
+            <Send size={18} />
+            Lancer un Transfert
+          </button>
+        </div>
       </div>
 
-      <div className="flex gap-2 border-b border-slate-100 pb-2 overflow-x-auto">
+      <div className="flex gap-2 border-b border-slate-100 pb-2 overflow-x-auto scrollbar-hide">
         {[
           { id: 'received', label: 'Reçus & Publics', icon: Bell },
           { id: 'sent', label: 'Mes Envois', icon: Send },

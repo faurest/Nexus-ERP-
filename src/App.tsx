@@ -317,36 +317,44 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
   }
 
   return (
-    <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-slate-900 font-sans relative overflow-hidden">
+    <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-[#F9FAFB] p-6 text-slate-900 font-sans relative overflow-hidden">
       {/* Background Decor */}
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.05),transparent),radial-gradient(circle_at_bottom_left,rgba(147,51,234,0.05),transparent)]" />
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-100/30 rounded-full blur-[120px] -mr-64 -mt-64" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-100/30 rounded-full blur-[120px] -ml-64 -mb-64" />
+      </div>
+
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl shadow-slate-200 border border-slate-100"
+        initial={{ opacity: 0, y: 30, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="max-w-md w-full bg-white/80 backdrop-blur-xl rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-white relative"
       >
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-blue-600/30 text-white">
-            <Building2 size={32} />
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight">Bonjour, {user.displayName || user.email?.split('@')[0]}</h2>
-          <p className="text-sm text-slate-500 mt-2">Prêt à piloter vos écosystèmes ?</p>
+        <div className="text-center mb-10">
+          <motion.div 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}
+            className="w-20 h-20 bg-blue-600 rounded-3xl mx-auto flex items-center justify-center mb-6 shadow-2xl shadow-blue-600/30 text-white"
+          >
+            <Building2 size={40} />
+          </motion.div>
+          <h2 className="text-3xl font-black tracking-tight text-slate-900 mb-2">Choisir un Espace</h2>
+          <p className="text-slate-500 text-sm font-medium">Sélectionnez ou créez votre environnement de travail Nexux.</p>
           
-          <div className="mt-4 flex justify-center">
+          <div className="mt-6 flex justify-center">
             {connStatus === 'testing' && (
-              <span className="px-3 py-1 bg-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full animate-pulse">Vérification Connexion...</span>
+              <span className="px-3 py-1 bg-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full animate-pulse">Vérification de Flux...</span>
             )}
             {connStatus === 'ok' && (
-              <span className="px-3 py-1 bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 border border-green-100">
-                <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                Firebase Connecté (europe-west2)
-              </span>
-            )}
-            {connStatus === 'fail' && (
-              <span className="px-3 py-1 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 border border-red-100">
-                <AlertCircle size={10} />
-                Mode Dégradé (Firebase Offline)
-              </span>
+              <motion.span 
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="px-3 py-1 bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 border border-green-100 shadow-sm shadow-green-100/50"
+              >
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                Network Online (Cluster ERP)
+              </motion.span>
             )}
           </div>
           
@@ -378,26 +386,37 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
           <>
             <div className="space-y-6 mb-6">
               {ownedCompanies.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-2">Entreprises Créées (Vos propriétés)</h3>
-                  {ownedCompanies.map(c => (
-                    <button
+                <div className="space-y-4">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-2 flex items-center gap-2">
+                    <span className="w-4 h-[1px] bg-slate-200" />
+                    Propriétés Directes
+                  </h3>
+                  {ownedCompanies.map((c, i) => (
+                    <motion.button
                       key={c.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 + i * 0.1 }}
                       onClick={() => onSelect(c)}
-                      className="w-full flex items-center justify-between p-4 rounded-2xl border border-blue-200 bg-blue-50/30 hover:border-blue-400 hover:bg-blue-50 transition-all group relative overflow-hidden"
+                      className="w-full flex items-center justify-between p-5 rounded-[1.5rem] border border-blue-50 bg-white hover:border-blue-600 hover:bg-blue-50/20 transition-all group relative shadow-sm hover:shadow-xl hover:shadow-blue-600/5 overflow-hidden"
                     >
-                      <div className="absolute top-0 right-0 w-16 h-16 bg-blue-100 rounded-bl-full -mr-8 -mt-8 opacity-50 group-hover:opacity-100 transition-opacity" />
-                      <div className="flex items-center gap-3 relative z-10">
-                        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center font-bold text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-blue-600/5 rounded-bl-full -mr-8 -mt-8 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center font-black text-slate-900 text-lg group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-inner">
                           {c.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="text-left">
-                          <span className="block font-bold text-slate-700 group-hover:text-blue-900">{c.name}</span>
-                          <span className="text-[10px] uppercase font-bold text-slate-400">Code: {c.joinCode} • {c.employees?.length || 1} Mbrs</span>
+                          <span className="block font-black text-slate-800 text-base group-hover:text-blue-900 tracking-tight">{c.name}</span>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 uppercase tracking-widest">{c.joinCode}</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Enterprise Mode • {c.employees?.length || 1} Mbrs</span>
+                          </div>
                         </div>
                       </div>
-                      <ChevronRight size={18} className="text-slate-300 group-hover:text-blue-500 transition-colors relative z-10" />
-                    </button>
+                      <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all transform group-hover:translate-x-1">
+                        <ChevronRight size={16} />
+                      </div>
+                    </motion.button>
                   ))}
                 </div>
               )}
@@ -610,53 +629,71 @@ function LoginScreen() {
   };
 
   return (
-    <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-slate-900 font-sans">
+    <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-[#F8FAFC] p-6 text-slate-900 font-sans relative overflow-hidden">
+      {/* Immersive Background */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-100/20 rounded-full blur-[150px]" />
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-purple-100/10 rounded-full blur-[100px]" />
+      </div>
+
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="max-w-md w-full bg-white rounded-3xl p-10 shadow-2xl shadow-slate-200 border border-slate-100"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="max-w-md w-full bg-white/70 backdrop-blur-2xl rounded-[3rem] p-12 shadow-[0_32px_128px_rgba(37,99,235,0.08)] border border-white relative overflow-hidden"
       >
-        <div className="flex flex-col items-center gap-4 mb-8 justify-center">
-          <NexusLogo className="w-20 h-20 drop-shadow-2xl" />
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 opacity-50" />
+        
+        <div className="flex flex-col items-center gap-6 mb-12 justify-center">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <NexusLogo className="w-24 h-24 drop-shadow-[0_10px_30px_rgba(37,99,235,0.2)]" />
+          </motion.div>
+          
           <div className="text-center">
-            <h1 className="text-3xl font-black tracking-tight bg-gradient-to-br from-blue-900 to-blue-600 bg-clip-text text-transparent">NexusERP</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-2">Enterprise Management</p>
+            <h1 className="text-4xl font-black tracking-tight text-slate-900">Nexus<span className="text-blue-600">ERP</span></h1>
+            <div className="flex items-center gap-3 mt-3 justify-center">
+               <span className="h-[1px] w-4 bg-slate-200" />
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Intelligence Industrielle</p>
+               <span className="h-[1px] w-4 bg-slate-200" />
+            </div>
           </div>
           
-          <div className="mt-2 flex justify-center">
+          <div className="mt-2">
             {connStatus === 'testing' && (
-              <span className="px-3 py-1 bg-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full animate-pulse">Vérification...</span>
+              <span className="px-3 py-1 bg-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full animate-pulse">Sync In Progress...</span>
             )}
             {connStatus === 'ok' && (
-              <span className="px-3 py-1 bg-green-50 text-green-600 text-[9px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 border border-green-100">
-                <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                Firebase Connecté
-              </span>
-            )}
-            {connStatus === 'fail' && (
-              <span className="px-3 py-1 bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 border border-red-100">
-                <AlertCircle size={10} />
-                Firestore Hors-ligne
-              </span>
+              <motion.span 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="px-3 py-1 bg-blue-50 text-blue-600 text-[9px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 border border-blue-100 shadow-sm"
+              >
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                Nexus Cloud Secured
+              </motion.span>
             )}
           </div>
         </div>
 
-        <div className="flex bg-slate-50 p-1 rounded-2xl mb-8">
+        <div className="flex bg-slate-100/50 p-1.5 rounded-2xl mb-10 border border-slate-200/50">
           <button 
             onClick={() => { setMode('login'); setAuthError(''); }}
             className={cn(
-              "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
-              mode === 'login' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+              "flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all",
+              mode === 'login' ? "bg-white text-slate-900 shadow-xl shadow-slate-200/50" : "text-slate-400 hover:text-slate-600"
             )}
           >
-            Se Connecter
+            Connexion
           </button>
           <button 
             onClick={() => { setMode('signup'); setAuthError(''); }}
             className={cn(
-              "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
-              mode === 'signup' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+              "flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all",
+              mode === 'signup' ? "bg-white text-slate-900 shadow-xl shadow-slate-200/50" : "text-slate-400 hover:text-slate-600"
             )}
           >
             S'Inscrire
@@ -1031,24 +1068,50 @@ export default function App() {
         </div>
 
         <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto scrollbar-hide">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={cn(
-                "w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative",
-                activeTab === item.id 
-                  ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
-                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-              )}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key="nav-wrapper"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="space-y-1.5"
             >
-              <item.icon size={20} className={activeTab === item.id ? "text-blue-400" : "group-hover:text-slate-900"} />
-              {isSidebarOpen && <span className="text-xs font-bold uppercase tracking-wider">{item.label}</span>}
-              {!isSidebarOpen && activeTab === item.id && (
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-600 rounded-l-full" />
-              )}
-            </button>
-          ))}
+              {navItems.map((item, i) => (
+                <motion.button
+                  key={item.id}
+                  initial={{ x: -10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: i * 0.04 }}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    if (windowWidth < 1024) setSidebarOpen(false);
+                  }}
+                  className={cn(
+                    "w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative overflow-hidden",
+                    activeTab === item.id 
+                      ? "bg-slate-900 text-white shadow-xl shadow-slate-900/10" 
+                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                  )}
+                >
+                  <div className={cn(
+                    "transition-transform duration-300 group-hover:scale-110",
+                    activeTab === item.id ? "text-blue-400" : "text-slate-400 group-hover:text-slate-900"
+                  )}>
+                    <item.icon size={20} />
+                  </div>
+                  {isSidebarOpen && (
+                    <span className="text-[10px] font-black uppercase tracking-[0.15em] shrink-0">{item.label}</span>
+                  )}
+                  
+                  {!isSidebarOpen && activeTab === item.id && (
+                    <motion.div 
+                      layoutId="active-nav-indicator"
+                      className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-600 rounded-l-full shadow-[0_0_10px_rgba(37,99,235,0.5)]" 
+                    />
+                  )}
+                </motion.button>
+              ))}
+            </motion.div>
+          </AnimatePresence>
         </nav>
 
         <div className="p-4 border-t border-slate-100 flex flex-col gap-2">

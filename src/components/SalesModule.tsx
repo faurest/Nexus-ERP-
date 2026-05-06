@@ -346,57 +346,54 @@ export default function SalesModule() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <datalist id="clients-list">
         {clients.slice().sort((a,b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.name} />)}
       </datalist>
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-800 uppercase tracking-wider">Ventes & Facturation</h2>
-          <p className="text-xs text-slate-500 font-medium">Gérez la vente de vos produits, services et factures associées.</p>
+      <div className="relative overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 sm:p-12 text-white shadow-2xl group">
+        <div className="absolute inset-0 z-0 scale-110 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity">
+          <img 
+             src="https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&q=80&w=1600" 
+             className="w-full h-full object-cover" 
+             alt="commerce"
+          />
         </div>
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-           <button 
-              onClick={() => setActiveTab('pos')}
-              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all", activeTab === 'pos' ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50")}
-           >
-              POS
-           </button>
-           <button 
-              onClick={() => setActiveTab('orders')}
-              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all", activeTab === 'orders' ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50")}
-           >
-              Commandes
-           </button>
-           <button 
-              onClick={() => setActiveTab('invoices')}
-              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all", activeTab === 'invoices' ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50")}
-           >
-              Facturation
-           </button>
-           <button 
-              onClick={() => setActiveTab('payments')}
-              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all", activeTab === 'payments' ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50")}
-           >
-              Paiements
-           </button>
-           <button 
-              onClick={() => setActiveTab('catalog')}
-              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all", activeTab === 'catalog' ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50")}
-           >
-              Catalogue
-           </button>
-           <button 
-              onClick={() => setActiveTab('reports')}
-              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all", activeTab === 'reports' ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50")}
-           >
-              Bilan
-           </button>
+
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+          <div className="max-w-xl">
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
+              Nexus <span className="text-blue-500">Growth</span>
+            </h1>
+            <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
+              Supervisez vos cycles de vente, gérez les factures et analysez vos performances commerciales en temps réel.
+            </p>
+          </div>
+          <div className="flex flex-wrap bg-white/5 backdrop-blur-md p-1.5 rounded-[2rem] border border-white/10 shrink-0 gap-1 overflow-x-auto scrollbar-hide max-w-full">
+             {[
+               { id: 'pos', label: 'POS' },
+               { id: 'orders', label: 'Commandes' },
+               { id: 'invoices', label: 'Facturation' },
+               { id: 'payments', label: 'Paiements' },
+               { id: 'catalog', label: 'Catalogue' },
+               { id: 'reports', label: 'Bilan' }
+             ].map(item => (
+               <button 
+                 key={item.id}
+                 onClick={() => setActiveTab(item.id as any)}
+                 className={cn(
+                   "px-5 py-3 rounded-2xl text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap", 
+                   activeTab === item.id ? "bg-white text-slate-900 shadow-xl shadow-white/10" : "text-white/60 hover:text-white"
+                 )}
+               >
+                 {item.label}
+               </button>
+             ))}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
            <div className="flex justify-between items-center mb-2"><div className="p-2 bg-green-50 text-green-600 rounded-lg"><DollarSign size={18}/></div></div>
            <p className="text-xs font-bold text-slate-400 uppercase">Chiffre d'Affaires Encaissé</p>
