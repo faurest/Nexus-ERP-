@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { Search, Plus, TrendingUp, Filter, ShoppingCart, Receipt, CreditCard, DollarSign, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
+import { Search, Plus, TrendingUp, Filter, ShoppingCart, Receipt, CreditCard, DollarSign, Edit2, Trash2, CheckCircle2, ArrowRight } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
@@ -45,10 +45,18 @@ export default function SalesModule() {
   const [isAddingOrder, setIsAddingOrder] = useState(false);
   const [newOrderName, setNewOrderName] = useState('');
   const [newOrderTable, setNewOrderTable] = useState('');
-  const [activeTab, setActiveTab] = useState<'sales' | 'invoices' | 'reports' | 'pos'>('sales');
+  const [activeTab, setActiveTab] = useState<'sales' | 'invoices' | 'reports' | 'pos' | 'orders' | 'payments' | 'catalog'>('pos');
+  const [payments, setPayments] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [formData, setFormData] = useState<any>({ type: 'product', quantity: 1, price: 0 });
+  const [isAddingPayment, setIsAddingPayment] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [paymentForm, setPaymentForm] = useState({ amount: 0, method: 'Espèces', reference: '' });
+  const [catalogType, setCatalogType] = useState<'product' | 'service'>('product');
+  const [isAddingCatalogItem, setIsAddingCatalogItem] = useState(false);
+  const [catalogFormData, setCatalogFormData] = useState<any>({ name: '', price: 0, quantity: 0, type: 'Stock' });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -81,6 +89,14 @@ export default function SalesModule() {
       setClients(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => handleFirestoreError(err, OperationType.LIST, 'clients'));
 
+    const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('companyId', '==', currentCompany.id)), snap => {
+      setPayments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'payments'));
+
+    const unsubServices = onSnapshot(query(collection(db, 'services'), where('companyId', '==', currentCompany.id)), snap => {
+      setServices(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'services'));
+
     const unsubOpenOrders = onSnapshot(query(collection(db, 'open_orders'), where('companyId', '==', currentCompany.id)), snap => {
       // Need to ensure items is parsed correctly if it's coming from standard firebase mock or sqlite
       setOpenOrders(snap.docs.map(d => {
@@ -93,8 +109,86 @@ export default function SalesModule() {
       }));
     }, err => handleFirestoreError(err, OperationType.LIST, 'open_orders'));
 
-    return () => { unsubSales(); unsubInvoices(); unsubExpenses(); unsubResources(); unsubClients(); unsubOpenOrders(); };
+    return () => { unsubSales(); unsubInvoices(); unsubExpenses(); unsubResources(); unsubClients(); unsubOpenOrders(); unsubPayments(); unsubServices(); };
   }, [currentCompany]);
+
+  const handleCreatePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany || !selectedInvoice || submitting) return;
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, 'payments'), {
+        companyId: currentCompany.id,
+        invoiceId: selectedInvoice.id,
+        amount: Number(paymentForm.amount),
+        method: paymentForm.method,
+        reference: paymentForm.reference,
+        date: serverTimestamp()
+      });
+
+      // Update invoice status if fully paid (simple check for now)
+      const totalPaid = payments.filter(p => p.invoiceId === selectedInvoice.id).reduce((sum, p) => sum + p.amount, 0) + Number(paymentForm.amount);
+      if (totalPaid >= selectedInvoice.amount) {
+        await updateDoc(doc(db, 'sales_invoices', selectedInvoice.id), { status: 'paid' });
+      }
+
+      setIsAddingPayment(false);
+      setSelectedInvoice(null);
+      setPaymentForm({ amount: 0, method: 'Espèces', reference: '' });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'payments');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdateCatalogItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany || submitting) return;
+    setSubmitting(true);
+    try {
+      if (catalogType === 'product') {
+        if (catalogFormData.id) {
+          await updateDoc(doc(db, 'resources', catalogFormData.id), {
+             ...catalogFormData,
+             price: Number(catalogFormData.price),
+             quantity: Number(catalogFormData.quantity),
+             updatedAt: serverTimestamp()
+          });
+        } else {
+          await addDoc(collection(db, 'resources'), {
+            ...catalogFormData,
+            companyId: currentCompany.id,
+            price: Number(catalogFormData.price),
+            quantity: Number(catalogFormData.quantity),
+            type: 'Stock',
+            createdAt: serverTimestamp()
+          });
+        }
+      } else {
+        if (catalogFormData.id) {
+          await updateDoc(doc(db, 'services', catalogFormData.id), {
+            ...catalogFormData,
+            price: Number(catalogFormData.price),
+            updatedAt: serverTimestamp()
+          });
+        } else {
+          await addDoc(collection(db, 'services'), {
+            ...catalogFormData,
+            companyId: currentCompany.id,
+            price: Number(catalogFormData.price),
+            createdAt: serverTimestamp()
+          });
+        }
+      }
+      setIsAddingCatalogItem(false);
+      setCatalogFormData({ name: '', price: 0, quantity: 0, type: 'Stock' });
+    } catch (err) {
+       console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleCreateSale = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -261,28 +355,40 @@ export default function SalesModule() {
           <h2 className="text-xl font-bold text-slate-800 uppercase tracking-wider">Ventes & Facturation</h2>
           <p className="text-xs text-slate-500 font-medium">Gérez la vente de vos produits, services et factures associées.</p>
         </div>
-                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
            <button 
               onClick={() => setActiveTab('pos')}
-              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all", activeTab === 'pos' ? "bg-slate-900 text-white" : "bg-white text-slate-600 border border-slate-200")}
+              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all", activeTab === 'pos' ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50")}
            >
-              Caisse (POS)
+              POS
            </button>
            <button 
-              onClick={() => setActiveTab('sales')}
-              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all", activeTab === 'sales' ? "bg-slate-900 text-white" : "bg-white text-slate-600 border border-slate-200")}
+              onClick={() => setActiveTab('orders')}
+              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all", activeTab === 'orders' ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50")}
            >
-              Ventes
+              Commandes
            </button>
            <button 
               onClick={() => setActiveTab('invoices')}
-              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all", activeTab === 'invoices' ? "bg-slate-900 text-white" : "bg-white text-slate-600 border border-slate-200")}
+              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all", activeTab === 'invoices' ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50")}
            >
-              Factures
+              Facturation
+           </button>
+           <button 
+              onClick={() => setActiveTab('payments')}
+              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all", activeTab === 'payments' ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50")}
+           >
+              Paiements
+           </button>
+           <button 
+              onClick={() => setActiveTab('catalog')}
+              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all", activeTab === 'catalog' ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50")}
+           >
+              Catalogue
            </button>
            <button 
               onClick={() => setActiveTab('reports')}
-              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all", activeTab === 'reports' ? "bg-slate-900 text-white" : "bg-white text-slate-600 border border-slate-200")}
+              className={cn("flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all", activeTab === 'reports' ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50")}
            >
               Bilan
            </button>
@@ -314,6 +420,54 @@ export default function SalesModule() {
              <Plus size={14} /> Nouvelle Vente
           </button>
         </div>
+
+        {activeTab === 'orders' && (
+          <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-slate-50">
+            {openOrders.map(order => (
+              <div key={order.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h4 className="font-black text-slate-900 text-sm">{order.clientName || 'Client Inconnu'}</h4>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{order.tableNumber ? `Table ${order.tableNumber}` : 'Sans table'}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-amber-50 text-amber-600 rounded-lg text-[8px] font-black uppercase tracking-tighter">En cours</span>
+                    <button onClick={(e) => handleDeleteOrder(order.id, e)} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 mb-6">
+                  {order.items?.map((item: any, i: number) => (
+                    <div key={i} className="flex justify-between items-center text-[11px]">
+                      <span className="text-slate-600 font-medium">{item.quantity}x {item.name}</span>
+                      <span className="text-slate-900 font-bold">{((item.price || 0) * item.quantity).toLocaleString()} F</span>
+                    </div>
+                  ))}
+                  {(!order.items || order.items.length === 0) && <p className="text-[10px] text-slate-400 italic">Aucun article dans cette commande.</p>}
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</div>
+                  <div className="text-lg font-black text-slate-900">{order.items?.reduce((sum: number, i: any) => sum + (i.price * i.quantity), 0).toLocaleString()} FCFA</div>
+                </div>
+
+                <button 
+                  onClick={() => { setActiveOrderId(order.id); setActiveTab('pos'); }}
+                  className="w-full mt-4 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-slate-200"
+                >
+                  Ouvrir dans POS
+                </button>
+              </div>
+            ))}
+            <button 
+              onClick={() => setIsAddingOrder(true)}
+              className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-all group"
+            >
+              <div className="p-3 bg-white rounded-full shadow-sm group-hover:scale-110 transition-transform"><Plus size={24} /></div>
+              <span className="text-[10px] font-black uppercase tracking-widest">Nouvelle Commande</span>
+            </button>
+          </div>
+        )}
 
         {activeTab === 'sales' && (
           <Table headers={['Date', 'Type', 'Article/Service', 'Qté', 'Prix U.', 'Total', 'Statut', 'Actions']}>
@@ -572,27 +726,108 @@ export default function SalesModule() {
         )}
 
         {activeTab === 'invoices' && (
-          <Table headers={['N° Facture', 'Client / Table', 'Détails des Produits', 'Date & Heure', 'Montant', 'Statut']}>
-            {invoices.map(inv => (
-              <TableRow key={inv.id}>
-                <span className="font-mono font-bold text-blue-600">{inv.invoiceNumber}</span>
-                <div className="flex flex-col">
-                   <span className="font-bold text-slate-800 text-xs">{inv.clientName || 'Générique'}</span>
-                   {inv.tableNumber && <span className="text-[10px] text-slate-500">Table: {inv.tableNumber}</span>}
-                </div>
-                <div className="text-[10px] text-slate-600 max-w-[200px] truncate" title={inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ')}>
-                   {inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ') || sales.find(s => s.id === inv.saleId)?.itemName || 'Inconnu'}
-                </div>
+          <Table headers={['N° Facture', 'Client / Table', 'Articles', 'Date', 'Montant', 'Statut', 'Actions']}>
+            {invoices.map(inv => {
+              const paidAmount = payments.filter(p => p.invoiceId === inv.id).reduce((sum, p) => sum + p.amount, 0);
+              const remaining = inv.amount - paidAmount;
+              
+              return (
+                <TableRow key={inv.id}>
+                  <span className="font-mono font-bold text-blue-600">{inv.invoiceNumber}</span>
+                  <div className="flex flex-col">
+                     <span className="font-bold text-slate-800 text-xs">{inv.clientName || 'Générique'}</span>
+                     {inv.tableNumber && <span className="text-[10px] text-slate-500 font-bold uppercase">Table: {inv.tableNumber}</span>}
+                  </div>
+                  <div className="text-[10px] text-slate-600 max-w-[200px] truncate" title={inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ')}>
+                     {inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ') || 'Détails non dispo'}
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500">
+                    {inv.date ? new Date(inv.date.seconds * 1000).toLocaleString() : 'Auj'}
+                  </span>
+                  <span className="font-black text-slate-900 font-mono">{inv.amount.toLocaleString()} F</span>
+                  <span className={cn("px-2 py-0.5 rounded text-[9px] uppercase font-black border", inv.status === 'paid' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-red-50 text-red-700 border-red-200")}>
+                    {inv.status === 'paid' ? 'Payée' : `À payer (${remaining.toLocaleString()} F)`}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {inv.status !== 'paid' && (
+                      <button 
+                        onClick={() => { setSelectedInvoice(inv); setPaymentForm({...paymentForm, amount: remaining}); setIsAddingPayment(true); }}
+                        className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100"
+                      >
+                        Encaisser
+                      </button>
+                    )}
+                  </div>
+                </TableRow>
+              );
+            })}
+          </Table>
+        )}
+
+        {activeTab === 'payments' && (
+          <Table headers={['Référence', 'Facture', 'Méthode', 'Date', 'Montant']}>
+            {payments.map(pay => (
+              <TableRow key={pay.id}>
+                <span className="text-[10px] font-bold text-slate-400">{pay.reference || 'Aucune réf.'}</span>
+                <span className="font-mono font-bold text-blue-600">{invoices.find(i => i.id === pay.invoiceId)?.invoiceNumber || 'Facture indisp.'}</span>
+                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] uppercase font-black">{pay.method}</span>
                 <span className="text-[10px] font-bold text-slate-500">
-                  {inv.date ? new Date(inv.date.seconds * 1000).toLocaleString() : 'Auj'}
+                  {pay.date ? new Date(pay.date.seconds * 1000).toLocaleString() : 'Auj'}
                 </span>
-                <span className="font-black text-slate-900 font-mono">{inv.amount.toLocaleString()} FCFA</span>
-                <span className={cn("px-2 py-0.5 rounded text-[10px] uppercase font-bold border", inv.status === 'paid' ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200")}>
-                  {inv.status === 'paid' ? 'RÉGLÉE' : 'IMPAYÉE'}
-                </span>
+                <span className="font-black text-emerald-600 font-mono">+{pay.amount.toLocaleString()} FCFA</span>
               </TableRow>
             ))}
           </Table>
+        )}
+
+        {activeTab === 'catalog' && (
+          <div className="p-6 space-y-8 bg-slate-50">
+            <div className="flex gap-4 border-b border-slate-200">
+              <button 
+                onClick={() => setCatalogType('product')}
+                className={cn("pb-4 text-xs font-black uppercase tracking-widest transition-all", catalogType === 'product' ? "text-slate-900 border-b-2 border-slate-900" : "text-slate-400")}
+              >
+                Stock (Produits)
+              </button>
+              <button 
+                onClick={() => setCatalogType('service')}
+                className={cn("pb-4 text-xs font-black uppercase tracking-widest transition-all", catalogType === 'service' ? "text-slate-900 border-b-2 border-slate-900" : "text-slate-400")}
+              >
+                Services (Prestations)
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <button 
+                onClick={() => { setCatalogFormData({ name: '', price: 0, quantity: 0, type: 'Stock' }); setIsAddingCatalogItem(true); }}
+                className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-6 flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-blue-600 hover:border-blue-300 transition-all"
+              >
+                <Plus size={24} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Nouveau {catalogType === 'product' ? 'Produit' : 'Service'}</span>
+              </button>
+
+              {(catalogType === 'product' ? resources : services).map((item: any) => (
+                <div key={item.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-all flex gap-1">
+                    <button onClick={() => { setCatalogFormData(item); setIsAddingCatalogItem(true); }} className="p-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-900 hover:text-white transition-all"><Edit2 size={12} /></button>
+                  </div>
+                  <h4 className="font-bold text-slate-800 text-sm mb-2">{item.name}</h4>
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Prix</p>
+                      <p className="text-sm font-black text-slate-900">{item.price ? `${item.price.toLocaleString()} F` : '0 F'}</p>
+                    </div>
+                    {catalogType === 'product' && (
+                      <div className="text-right">
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Quantité</p>
+                        <p className={cn("text-sm font-black", (item.quantity < 5) ? "text-red-500" : "text-slate-900")}>{item.quantity}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         {activeTab === 'reports' && (
@@ -623,6 +858,132 @@ export default function SalesModule() {
           </div>
         )}
       </div>
+
+      {isAddingCatalogItem && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl border border-slate-100">
+            <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
+              <Plus className="text-blue-600" />
+              {catalogFormData.id ? 'Modifier' : 'Ajouter'} {catalogType === 'product' ? 'un produit' : 'un service'}
+            </h3>
+            <form onSubmit={handleUpdateCatalogItem} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Désignation</label>
+                <input 
+                  type="text" 
+                  value={catalogFormData.name} 
+                  onChange={e => setCatalogFormData({...catalogFormData, name: e.target.value})} 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm" 
+                  required 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Prix Unitaire (F)</label>
+                  <input 
+                    type="number" 
+                    value={catalogFormData.price} 
+                    onChange={e => setCatalogFormData({...catalogFormData, price: e.target.value})} 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm" 
+                    required 
+                  />
+                </div>
+                {catalogType === 'product' && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Quantité en Stock</label>
+                    <input 
+                      type="number" 
+                      value={catalogFormData.quantity} 
+                      onChange={e => setCatalogFormData({...catalogFormData, quantity: e.target.value})} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm" 
+                      required 
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-10">
+                <button type="button" onClick={() => setIsAddingCatalogItem(false)} className="py-4 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all">Annuler</button>
+                <button type="submit" disabled={submitting} className="py-4 bg-slate-900 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-200 disabled:opacity-50">
+                  {submitting ? 'Traitement...' : 'Enregistrer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isAddingPayment && selectedInvoice && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl border border-slate-100">
+            <h3 className="text-xl font-black text-slate-900 mb-2 flex items-center gap-3">
+              <CreditCard className="text-emerald-600" />
+              Règlement Client
+            </h3>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">Paiement pour la facture {selectedInvoice.invoiceNumber}</p>
+            
+            <form onSubmit={handleCreatePayment} className="space-y-6">
+              <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100 flex justify-between items-center mb-6">
+                <div>
+                   <p className="text-[9px] font-black text-emerald-700/60 uppercase tracking-widest mb-1">Total Facturé</p>
+                   <p className="text-lg font-black text-emerald-900">{selectedInvoice.amount.toLocaleString()} F</p>
+                </div>
+                <ArrowRight className="text-emerald-300" />
+                <div className="text-right">
+                   <p className="text-[9px] font-black text-emerald-700/60 uppercase tracking-widest mb-1">Reste à payer</p>
+                   <p className="text-lg font-black text-emerald-900">{(selectedInvoice.amount - payments.filter(p => p.invoiceId === selectedInvoice.id).reduce((sum, p) => sum + p.amount, 0)).toLocaleString()} F</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mode de Paiement</label>
+                  <select 
+                    value={paymentForm.method} 
+                    onChange={e => setPaymentForm({...paymentForm, method: e.target.value})} 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-emerald-600 font-bold text-sm"
+                  >
+                    <option value="Espèces">Espèces</option>
+                    <option value="Orange Money">Orange Money</option>
+                    <option value="Mobile Money">Mtn Money</option>
+                    <option value="Virement">Virement</option>
+                    <option value="Chèque">Chèque</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Montant perçu (F)</label>
+                  <input 
+                    type="number" 
+                    value={paymentForm.amount} 
+                    onChange={e => setPaymentForm({...paymentForm, amount: Number(e.target.value)})} 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-emerald-600 font-bold text-sm" 
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Référence / Notes</label>
+                <input 
+                  type="text" 
+                  placeholder="Ex: Ref Orange Money #12345" 
+                  value={paymentForm.reference} 
+                  onChange={e => setPaymentForm({...paymentForm, reference: e.target.value})} 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-emerald-600 font-bold text-sm" 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-10">
+                <button type="button" onClick={() => { setIsAddingPayment(false); setSelectedInvoice(null); }} className="py-4 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all">Annuler</button>
+                <button type="submit" disabled={submitting} className="py-4 bg-emerald-600 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 disabled:opacity-50">
+                  {submitting ? 'Traitement...' : 'Enregistrer Paiement'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {isAdding && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">

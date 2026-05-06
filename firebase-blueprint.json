@@ -228,12 +228,13 @@
       "properties": {
         "id": { "type": "string" },
         "companyId": { "type": "string" },
+        "invoiceId": { "type": "string" },
         "amount": { "type": "number" },
         "method": { "type": "string" },
         "date": { "type": "number" },
         "reference": { "type": "string" }
       },
-      "required": ["companyId", "amount"]
+      "required": ["companyId", "amount", "invoiceId"]
     },
     "OpenOrder": {
       "title": "Open Order",
