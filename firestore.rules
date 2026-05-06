@@ -108,7 +108,7 @@ service cloud.firestore {
           'personnel', 'clients', 'sales', 'projects', 'partners', 
           'expenses', 'resources', 'tasks', 'services', 
           'interventions', 'notifications', 'open_orders',
-          'sales_invoices', 'invoices', 'payments'
+          'sales_invoices', 'invoices', 'payments', 'collaborations'
         ];
       }
 
@@ -122,29 +122,48 @@ service cloud.firestore {
       // allow list MUST be secured.
       allow get: if isSignedIn() && isCompanyCollection() && (
         isAdmin() || 
-        isMemberOfCompany(resource.data.companyId) ||
+        (isMemberOfCompany(resource.data.companyId) && (
+          collectionName != 'collaborations' || 
+          resource.data.recipientEmail == 'all' || 
+          resource.data.recipientEmail.lower() == currentUserEmail() || 
+          resource.data.senderEmail.lower() == currentUserEmail()
+        )) ||
         (resource.data.email != null && resource.data.email.lower() == currentUserEmail())
       );
       
       // List optimization: forced to filter by companyId OR their own email
       allow list: if isSignedIn() && isCompanyCollection() && (
         isAdmin() || 
-        isMemberOfCompany(resource.data.companyId) ||
+        (isMemberOfCompany(resource.data.companyId) && (
+          collectionName != 'collaborations' || 
+          resource.data.recipientEmail == 'all' || 
+          resource.data.recipientEmail.lower() == currentUserEmail() || 
+          resource.data.senderEmail.lower() == currentUserEmail()
+        )) ||
         (resource.data.email != null && resource.data.email.lower() == currentUserEmail())
       );
 
       allow create: if isSignedIn() && isCompanyCollection() && 
                       isValidEntity(incoming()) && 
-                      (isAdmin() || isMemberOfCompany(incoming().companyId)) &&
+                      (isAdmin() || (
+                        isMemberOfCompany(incoming().companyId) &&
+                        (collectionName != 'collaborations' || incoming().senderEmail.lower() == currentUserEmail())
+                      )) &&
                       incoming().createdAt == request.time;
 
       allow update: if isSignedIn() && isCompanyCollection() && 
-                      (isAdmin() || isMemberOfCompany(existing().companyId)) &&
+                      (isAdmin() || (
+                        isMemberOfCompany(existing().companyId) &&
+                        (collectionName != 'collaborations' || existing().senderEmail.lower() == currentUserEmail())
+                      )) &&
                       incoming().companyId == existing().companyId &&
                       incoming().updatedAt == request.time;
 
       allow delete: if isSignedIn() && isCompanyCollection() && 
-                      (isAdmin() || isMemberOfCompany(existing().companyId));
+                      (isAdmin() || (
+                        isMemberOfCompany(existing().companyId) &&
+                        (collectionName != 'collaborations' || existing().senderEmail.lower() == currentUserEmail())
+                      ));
     }
   }
 }

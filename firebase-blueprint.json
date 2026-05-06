@@ -251,6 +251,24 @@
         "updatedAt": { "type": "number" }
       },
       "required": ["companyId"]
+    },
+    "Collaboration": {
+      "title": "Collaboration",
+      "description": "Record of data transfer or collaboration between users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "senderEmail": { "type": "string" },
+        "recipientEmail": { "type": "string" },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "referenceId": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "readBy": { "type": "string" }
+      },
+      "required": ["companyId", "senderEmail", "recipientEmail", "title", "content"]
     }
   },
   "firestore": {
@@ -269,6 +287,7 @@
     "sales_invoices": { "schema": "Invoice", "description": "Sales invoice records" },
     "invoices": { "schema": "Invoice", "description": "General invoice records" },
     "payments": { "schema": "Payment", "description": "Payment records" },
-    "open_orders": { "schema": "OpenOrder", "description": "Open order records" }
+    "open_orders": { "schema": "OpenOrder", "description": "Open order records" },
+    "collaborations": { "schema": "Collaboration", "description": "Collaboration and data transfer records" }
   }
 }

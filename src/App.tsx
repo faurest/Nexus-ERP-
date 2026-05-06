@@ -39,6 +39,7 @@ import SalesModule from './components/SalesModule';
 import AdminModule from './components/AdminModule';
 import AccountingModule from './components/AccountingModule';
 import PrestationsModule from './components/PrestationsModule';
+import CollaborationModule from './components/CollaborationModule';
 import NotificationBell from './components/NotificationBell';
 
 import { bootstrapDemoData } from './lib/bootstrap';
@@ -85,15 +86,15 @@ export const NexusLogo = ({ className = "" }: { className?: string }) => (
 );
 
 export const DEFAULT_ROLES: Record<string, string[]> = {
-  'owner': ['dashboard', 'sales', 'clients', 'personnel', 'resources', 'projects', 'accounting'],
-  'Directeur': ['dashboard', 'sales', 'clients', 'personnel', 'resources', 'projects', 'accounting'],
-  'Secrétaire': ['dashboard', 'clients', 'personnel', 'resources', 'projects'],
-  'Comptable': ['dashboard', 'sales', 'projects', 'accounting'],
-  'Agent Commercial': ['dashboard', 'sales', 'clients', 'projects'],
-  'Vendeur de bière': ['dashboard', 'sales', 'resources'],
-  'Vendeur de nourriture': ['dashboard', 'sales', 'resources'],
-  'Collaborateur': ['dashboard', 'projects', 'resources', 'clients', 'sales'],
-  'Personnel': ['dashboard', 'projects', 'resources', 'clients'],
+  'owner': ['dashboard', 'sales', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration'],
+  'Directeur': ['dashboard', 'sales', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration'],
+  'Secrétaire': ['dashboard', 'clients', 'personnel', 'resources', 'projects', 'collaboration'],
+  'Comptable': ['dashboard', 'sales', 'projects', 'accounting', 'collaboration'],
+  'Agent Commercial': ['dashboard', 'sales', 'clients', 'projects', 'collaboration'],
+  'Vendeur de bière': ['dashboard', 'sales', 'resources', 'collaboration'],
+  'Vendeur de nourriture': ['dashboard', 'sales', 'resources', 'collaboration'],
+  'Collaborateur': ['dashboard', 'projects', 'resources', 'clients', 'sales', 'collaboration'],
+  'Personnel': ['dashboard', 'projects', 'resources', 'clients', 'collaboration'],
 };
 
 function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], user: User, onSelect: any }) {
@@ -940,6 +941,7 @@ export default function App() {
     { id: 'personnel', label: 'Ressources Humaines', icon: Briefcase },
     { id: 'resources', label: 'Stocks & Logistique', icon: Package },
     { id: 'projects', label: 'Projets & Tâches', icon: FolderKanban },
+    { id: 'collaboration', label: 'Collaboration', icon: Handshake },
     { id: 'accounting', label: 'Rapport Comptable', icon: Calculator },
     ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
   ].filter(item => {
@@ -1188,6 +1190,7 @@ export default function App() {
               {activeTab === 'resources' && <ResourceModule />}
               {activeTab === 'projects' && <ProjectModule />}
               {activeTab === 'accounting' && <AccountingModule />}
+              {activeTab === 'collaboration' && <CollaborationModule />}
               {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com') && <AdminModule />}
             </motion.div>
           </AnimatePresence>
