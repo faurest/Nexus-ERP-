@@ -3,13 +3,9 @@ import {
   getAuth, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
-  sendEmailVerification,
-  sendPasswordResetEmail,
   signOut, 
   onAuthStateChanged as firebaseOnAuthStateChanged,
-  updateProfile,
-  GoogleAuthProvider,
-  signInWithPopup
+  updateProfile
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -32,24 +28,95 @@ import {
   and as firestoreAnd
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
-import { handleFirestoreError, OperationType } from './errorHandlers';
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 
-export const checkConnection = async () => {
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  let errorMessage = '';
+  if (error instanceof Error) {
+    errorMessage = error.message;
+  } else if (typeof error === 'object' && error !== null) {
+    try {
+      errorMessage = JSON.stringify(error);
+    } catch {
+      errorMessage = String(error);
+    }
+  } else {
+    errorMessage = String(error);
+  }
+
+  const errInfo: FirestoreErrorInfo = {
+    error: errorMessage,
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  
+  // Alert the user with a friendly message
+  if (typeof window !== 'undefined') {
+    let friendlyMessage = "Une erreur est survenue lors de l'opération.";
+    if (errorMessage.includes('not found') || errorMessage.includes('relation') || errorMessage.includes('does not exist')) {
+      friendlyMessage = `Erreur : La collection ou le champ pour '${path}' semble manquant ou mal configuré dans Firebase.`;
+    } else if (errorMessage.includes('permission') || errorMessage.includes('denied')) {
+      friendlyMessage = "Erreur : Vous n'avez pas les permissions nécessaires pour effectuer cette action.";
+    }
+    alert(friendlyMessage + "\n\nDétails : " + errorMessage);
+  }
+
+  throw new Error(JSON.stringify(errInfo));
+}
+
+// Test Connection
+async function testConnection() {
   try {
     const testDoc = firestoreDoc(db, 'test', 'connection');
     await getDocFromServer(testDoc);
-    return true;
-  } catch (error: any) {
-    console.error("Connection check failed:", error);
-    return false;
+  } catch (error) {
+    if(error instanceof Error && error.message.includes('the client is offline')) {
+      console.error("Please check your Firebase configuration. The client is offline.");
+    }
   }
-};
-
-// ... (rest of the code remains)
+}
+testConnection();
 
 // Auth implementation
 export function onAuthStateChanged(auth: any, cb: (user: any) => void) {
@@ -58,8 +125,7 @@ export function onAuthStateChanged(auth: any, cb: (user: any) => void) {
       cb({
         uid: user.uid,
         email: user.email,
-        displayName: user.displayName || user.email?.split('@')[0],
-        emailVerified: user.emailVerified
+        displayName: user.displayName || user.email?.split('@')[0]
       });
     } else {
       cb(null);
@@ -72,18 +138,10 @@ export const loginWithEmail = async (email: string, pass: string) => {
     const result = await signInWithEmailAndPassword(auth, email, pass);
     return { user: result.user };
   } catch (error: any) {
+    if (error.code === 'auth/operation-not-allowed') {
+      alert("ERREUR : La méthode de connexion par Email/Mot de passe n'est pas activée dans votre console Firebase.\n\nAllez dans Authentication > Sign-in method et activez 'Email/Password'.");
+    }
     console.error("Login error:", error);
-    throw error;
-  }
-};
-
-export const loginWithGoogle = async () => {
-  const provider = new GoogleAuthProvider();
-  try {
-    const result = await signInWithPopup(auth, provider);
-    return { user: result.user };
-  } catch (error: any) {
-    console.error("Google Login error:", error);
     throw error;
   }
 };
@@ -91,11 +149,11 @@ export const loginWithGoogle = async () => {
 export async function signupWithEmail(email: string, pass: string) {
   try {
     const result = await createUserWithEmailAndPassword(auth, email, pass);
-    if (result.user) {
-      await sendEmailVerification(result.user);
-    }
     return { user: result.user };
   } catch (error: any) {
+    if (error.code === 'auth/operation-not-allowed') {
+      alert("ERREUR : La méthode de connexion par Email/Mot de passe n'est pas activée dans votre console Firebase.\n\nAllez dans Authentication > Sign-in method et activez 'Email/Password'.");
+    }
     console.error("Signup error:", error);
     throw error;
   }
@@ -103,29 +161,6 @@ export async function signupWithEmail(email: string, pass: string) {
 
 export const logout = async () => {
   await signOut(auth);
-};
-
-export const reloadUser = async () => {
-  if (auth.currentUser) {
-    await auth.currentUser.reload();
-    return auth.currentUser;
-  }
-  return null;
-};
-
-export const resendVerification = async () => {
-  if (auth.currentUser) {
-    await sendEmailVerification(auth.currentUser);
-  }
-};
-
-export const resetPassword = async (email: string) => {
-  try {
-    await sendPasswordResetEmail(auth, email);
-  } catch (error: any) {
-    console.error("Password reset error:", error);
-    throw error;
-  }
 };
 
 export const createEmployeeAccount = async (email: string, pass: string) => {
@@ -218,9 +253,7 @@ export async function getDocs(query: any): Promise<any> {
           empty: result.empty
       };
     } catch (error) {
-      // Try to extract path from collection or query
-      const path = query?.path || (query?.['converter'] ? 'complex-query' : 'unknown');
-      handleFirestoreError(error, OperationType.LIST, path);
+      handleFirestoreError(error, OperationType.LIST, null);
       throw error;
     }
 }
