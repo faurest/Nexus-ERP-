@@ -377,24 +377,29 @@ export default function AdminModule() {
     const tgt = cloneTarget.trim().toLowerCase();
 
     try {
-      // 1. Get source personnel records
-      const pSnap = await getDocs(query(collection(db, 'personnel'), where('email', '==', src)));
-      const ownedSnap = await getDocs(query(collection(db, 'companies'), where('ownerEmail', '==', src)));
+      // 1. Get all documents to be case-insensitive (better for cleanup phase)
+      const [pSnap, cSnap] = await Promise.all([
+        getDocs(collection(db, 'personnel')),
+        getDocs(collection(db, 'companies'))
+      ]);
+
+      const personnelToClone = pSnap.docs.filter(d => (d.data() as any).email?.toLowerCase() === src);
+      const companiesOwned = cSnap.docs.filter(d => (d.data() as any).ownerEmail?.toLowerCase() === src);
+      const companiesMember = cSnap.docs.filter(d => (d.data() as any).memberEmails?.some((e: string) => e.toLowerCase() === src));
 
       let created = 0;
       let updated = 0;
 
       // 2. Clone Personnel entries
-      for (const d of pSnap.docs) {
+      for (const d of personnelToClone) {
         const data = d.data();
-        // Check if target already exists in this company
-        const existsSnap = await getDocs(query(
-          collection(db, 'personnel'), 
-          where('email', '==', tgt),
-          where('companyId', '==', data.companyId)
-        ));
+        // Check if target already exists in this company (case-insensitive)
+        const alreadyExists = pSnap.docs.some(pd => 
+          (pd.data() as any).email?.toLowerCase() === tgt && 
+          (pd.data() as any).companyId === data.companyId
+        );
 
-        if (existsSnap.empty) {
+        if (!alreadyExists) {
           await addDoc(collection(db, 'personnel'), {
             ...data,
             email: tgt,
@@ -406,16 +411,15 @@ export default function AdminModule() {
         }
 
         // Add to company memberEmails list
-        const { arrayUnion } = await import('../lib/firebase');
         await updateDoc(doc(db, 'companies', data.companyId), {
           memberEmails: arrayUnion(tgt)
         });
         updated++;
       }
 
-      // 3. Clone Company Memberships for owned companies
-      for (const d of ownedSnap.docs) {
-        const { arrayUnion } = await import('../lib/firebase');
+      // 3. Clone Company Memberships (Owner or Member)
+      const allCompanyDocs = [...new Set([...companiesOwned, ...companiesMember])];
+      for (const d of allCompanyDocs) {
         await updateDoc(doc(db, 'companies', d.id), {
           memberEmails: arrayUnion(tgt)
         });
@@ -471,7 +475,7 @@ export default function AdminModule() {
   };
 
   const handleNormalizeEmails = async () => {
-    if (!window.confirm("Cette action va convertir TOUTES les adresses emails en minuscules pour assurer la compatibilité case-insensitive. Continuer ?")) return;
+    if (!window.confirm("Cette action va convertir TOUTES les adresses emails en minuscules (y compris les listes de membres) pour assurer la compatibilité case-insensitive. Continuer ?")) return;
     setLoading(true);
     try {
       const collections = ['companies', 'personnel', 'users'];
@@ -481,22 +485,34 @@ export default function AdminModule() {
         for (const docSnap of snap.docs) {
           const data = docSnap.data();
           const updates: any = {};
+          
           if (coll === 'companies') {
+            // Normalize ownerEmail
             if (data.ownerEmail && data.ownerEmail !== data.ownerEmail.toLowerCase()) {
               updates.ownerEmail = data.ownerEmail.toLowerCase();
             }
+            // Normalize memberEmails array
+            if (data.memberEmails && Array.isArray(data.memberEmails)) {
+              const lowerEmails = data.memberEmails.map((e: string) => e?.toLowerCase());
+              const hasChange = data.memberEmails.some((e: string, i: number) => e !== lowerEmails[i]);
+              if (hasChange) {
+                updates.memberEmails = lowerEmails;
+              }
+            }
           } else {
+            // Normalize standard email field
             if (data.email && data.email !== data.email.toLowerCase()) {
               updates.email = data.email.toLowerCase();
             }
           }
+
           if (Object.keys(updates).length > 0) {
             await updateDoc(doc(db, coll, docSnap.id), updates);
             count++;
           }
         }
       }
-      alert(`${count} emails ont été normalisés en minuscules.`);
+      alert(`${count} documents ont été normalisés en minuscules.`);
       fetchGlobalData();
     } catch (err) {
       console.error(err);
