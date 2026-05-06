@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { db, collection, onSnapshot, query, where, addDoc, serverTimestamp, getDocs, updateDoc, doc } from '../lib/firebase';
+import React, { useState, useEffect, useRef } from 'react';
+import { db, collection, onSnapshot, query, where, addDoc, serverTimestamp, getDocs, updateDoc, doc, or, and } from '../lib/firebase';
 import { 
   Send, 
   Users, 
@@ -15,7 +15,11 @@ import {
   ChevronRight,
   Info,
   Trash2,
-  FileText
+  FileText,
+  Upload,
+  Download,
+  File,
+  X
 } from 'lucide-react';
 import { useCompany } from '../lib/CompanyContext';
 import { auth, handleFirestoreError, OperationType } from '../lib/firebase';
@@ -30,6 +34,9 @@ interface Collaboration {
   title: string;
   content: string;
   referenceId?: string;
+  fileName?: string;
+  fileType?: string;
+  fileData?: string;
   metadata?: any;
   createdAt: any;
   readBy?: string[];
@@ -42,21 +49,72 @@ export default function CollaborationModule() {
   const [isAdding, setIsAdding] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'received' | 'sent' | 'all' | 'public'>('received');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     recipientEmail: 'all',
-    type: 'Note' as const,
+    type: 'Note' as 'Note' | 'Document' | 'Contact' | 'Rapport' | 'Alerte',
     title: '',
     content: '',
     referenceId: ''
   });
 
+  const [attachedFile, setAttachedFile] = useState<{ name: string, type: string, data: string } | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 800000) { // Limit to 800KB for Base64 (Firestore doc is 1MB)
+      alert("Le fichier est trop lourd. Limite: 800KB pour assurer le transfert via la base de données.");
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const data = event.target?.result as string;
+      setAttachedFile({
+        name: file.name,
+        type: file.type,
+        data: data
+      });
+      // Automatically switch to 'Document' type if a file is attached
+      setFormData(prev => ({ ...prev, type: 'Document' }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeAttachedFile = () => {
+    setAttachedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleDownload = (col: Collaboration) => {
+    if (!col.fileData || !col.fileName) return;
+    const link = document.createElement('a');
+    link.href = col.fileData;
+    link.download = col.fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   useEffect(() => {
     if (!currentCompany || !auth.currentUser) return;
 
+    const myEmail = auth.currentUser.email?.toLowerCase() || '';
+
     const qCollaborations = query(
       collection(db, 'collaborations'),
-      where('companyId', '==', currentCompany.id)
+      and(
+        where('companyId', '==', currentCompany.id),
+        or(
+          where('recipientEmail', '==', 'all'),
+          where('recipientEmail', '==', myEmail),
+          where('senderEmail', '==', myEmail)
+        )
+      )
     );
 
     const unsub = onSnapshot(qCollaborations, (snap) => {
@@ -96,17 +154,23 @@ export default function CollaborationModule() {
     if (!currentCompany || !auth.currentUser || loading) return;
 
     setLoading(true);
+    const myEmail = auth.currentUser.email?.toLowerCase() || '';
     try {
       await addDoc(collection(db, 'collaborations'), {
         ...formData,
+        recipientEmail: formData.recipientEmail.toLowerCase(),
         companyId: currentCompany.id,
-        senderEmail: auth.currentUser.email,
-        senderName: auth.currentUser.displayName || auth.currentUser.email?.split('@')[0],
+        senderEmail: myEmail,
+        senderName: auth.currentUser.displayName || myEmail.split('@')[0],
+        fileName: attachedFile?.name || null,
+        fileType: attachedFile?.type || null,
+        fileData: attachedFile?.data || null,
         createdAt: serverTimestamp(),
         readBy: []
       });
       setIsAdding(false);
       setFormData({ recipientEmail: 'all', type: 'Note', title: '', content: '', referenceId: '' });
+      setAttachedFile(null);
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'collaborations');
     } finally {
@@ -199,6 +263,26 @@ export default function CollaborationModule() {
             <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6 line-clamp-3">
               {item.content}
             </p>
+
+            {item.fileName && (
+              <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between group/file">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm border border-slate-100 shrink-0">
+                    <File size={20} />
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-[10px] font-black text-slate-900 truncate uppercase mt-0.5" title={item.fileName}>{item.fileName}</p>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{item.fileType?.split('/')[1] || 'Fichier'}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => handleDownload(item)}
+                  className="p-2 bg-blue-600 text-white rounded-lg hover:bg-black transition-all shadow-lg shadow-blue-100 group-hover/file:scale-110"
+                >
+                  <Download size={14} />
+                </button>
+              </div>
+            )}
 
             <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -306,6 +390,51 @@ export default function CollaborationModule() {
                   placeholder="Décrivez les données à transférer..."
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Fichier Attachment (Optionnel)</label>
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className={cn(
+                    "w-full border-2 border-dashed rounded-3xl p-8 transition-all cursor-pointer flex flex-col items-center justify-center gap-3",
+                    attachedFile ? "border-blue-200 bg-blue-50/50" : "border-slate-100 hover:border-blue-200 hover:bg-slate-50"
+                  )}
+                >
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept=".pdf,.docx,.doc,.xls,.xlsx"
+                  />
+                  {attachedFile ? (
+                    <div className="flex items-center gap-4 w-full">
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-blue-100 shrink-0">
+                        <File size={24} />
+                      </div>
+                      <div className="flex-1 overflow-hidden">
+                        <p className="text-sm font-black text-slate-900 truncate">{attachedFile.name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Prêt pour le transfert</p>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); removeAttachedFile(); }}
+                        className="p-2 bg-white text-red-500 rounded-xl hover:bg-red-50 transition-all border border-slate-100"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400">
+                        <Upload size={24} />
+                      </div>
+                      <p className="text-xs font-bold text-slate-500">Cliquez pour ajouter un PDF, Word ou Excel</p>
+                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none mt-1">Limite: 800KB</p>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-10">

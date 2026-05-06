@@ -265,6 +265,9 @@
         "title": { "type": "string" },
         "content": { "type": "string" },
         "referenceId": { "type": "string" },
+        "fileName": { "type": "string" },
+        "fileType": { "type": "string" },
+        "fileData": { "type": "string" },
         "createdAt": { "type": "number" },
         "readBy": { "type": "string" }
       },

@@ -284,6 +284,10 @@ export function or(...args: any[]) {
   return firestoreOr(...args);
 }
 
+export function and(...args: any[]) {
+  return firestoreAnd(...args);
+}
+
 export async function addDoc(col: any, data: any) {
   try {
     const result = await firestoreAddDoc(col, { ...data, createdAt: firestoreServerTimestamp() });
