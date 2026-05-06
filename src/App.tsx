@@ -152,7 +152,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
            const data = doc.data();
            return data.email && data.email.trim().toLowerCase() === user.email?.trim().toLowerCase();
         });
-        const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com';
+        const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'danganexus@gmail.com';
         if (!isRegistered && user.uid !== company.ownerId && user.email !== company.ownerEmail && !isMaster) {
            setErrorMsg('Accès refusé. Vous devez être enregistré dans le personnel de cette entreprise.');
            setCreatingLocally(false);
@@ -181,7 +181,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
 
   const ownedCompanies = companies.filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email);
   const joinedCompanies = companies.filter(c => c.ownerId !== user?.uid && c.ownerEmail !== user?.email);
-  const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com';
+  const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'danganexus@gmail.com';
 
   useEffect(() => {
     if (isMaster && companies.length === 0 && mode === 'select') {
@@ -366,25 +366,35 @@ function LoginScreen() {
       }
     } catch (err: any) {
       console.error("Auth Error Detail:", err);
-      let errorMessage = 'Erreur lors de l\'authentification.';
+      let errorMessage = '';
       
       const code = err.code || '';
-      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
+      if (code === 'auth/email-already-in-use') {
+        // Automatically try to login if account exists during signup
+        setAuthError('Ce compte existe déjà. Tentative de connexion...');
+        try {
+          await loginWithEmail(email, password);
+          return;
+        } catch (loginErr: any) {
+          if (loginErr.code === 'auth/wrong-password') {
+            errorMessage = 'Ce compte existe déjà mais le mot de passe est incorrect.';
+          } else {
+            errorMessage = 'Ce compte existe déjà. Veuillez utiliser le formulaire de connexion.';
+          }
+          setIsSignUp(false); // Switch to login mode
+        }
+      } else if (code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
         errorMessage = 'Email ou mot de passe incorrect.';
       } else if (code === 'auth/user-not-found') {
         errorMessage = 'Aucun compte trouvé avec cet email. Veuillez vous inscrire.';
       } else if (code === 'auth/invalid-email') {
         errorMessage = 'Format d\'email invalide.';
       } else if (code === 'auth/weak-password') {
-        errorMessage = 'Le mot de passe doit contenir au moins 6 caractères.';
-      } else if (code === 'auth/email-already-in-use') {
-        errorMessage = 'Un compte existe déjà avec cet email. Essayez de vous connecter.';
-      } else if (code === 'auth/operation-not-allowed') {
-        errorMessage = 'La méthode de connexion choisie n\'est pas activée dans la console Firebase.';
+        errorMessage = 'Le mot de passe doit être plus complexe (6+ car.).';
       } else if (code === 'auth/too-many-requests') {
-        errorMessage = 'Compte temporairement bloqué (trop de tentatives). Réessayez plus tard.';
+        errorMessage = 'Accès temporairement bloqué (trop de tentatives).';
       } else {
-        errorMessage = `Détail: ${err.message || code}`;
+        errorMessage = `Erreur (${code}): ${err.message || 'Inconnue'}`;
       }
       setAuthError(errorMessage);
     } finally {
@@ -565,7 +575,7 @@ export default function App() {
 
   useEffect(() => {
     if (user && currentCompany && !user.role) {
-      if (currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid || user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com') {
+      if (currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid || user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'danganexus@gmail.com') {
         setUser(prev => prev ? { ...prev, role: 'owner' } : null);
         setIsBlocked(false);
       } else {
@@ -743,7 +753,7 @@ export default function App() {
     { id: 'resources', label: 'Stocks & Logistique', icon: Package },
     { id: 'projects', label: 'Projets & Tâches', icon: FolderKanban },
     { id: 'accounting', label: 'Rapport Comptable', icon: Calculator },
-    ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
+    ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'danganexus@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
   ].filter(item => {
     if (item.id === 'admin') return true;
     const allowed = (currentCompany.roles || DEFAULT_ROLES)[user.role] || ['dashboard'];

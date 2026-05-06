@@ -13,17 +13,21 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isEmailVerified() {
-      // Mandating email verification for better security
-      return request.auth.token.email_verified == true;
-    }
-
     function currentUserEmail() {
       return request.auth.token.email;
     }
 
     function isAdmin() {
-      return isSignedIn() && (currentUserEmail() == 'hackeurfaurest@gmail.com' || currentUserEmail() == 'dangafelicite@gmail.com');
+      return isSignedIn() && (
+        currentUserEmail() == 'hackeurfaurest@gmail.com' || 
+        currentUserEmail() == 'dangafelicite@gmail.com' ||
+        currentUserEmail() == 'danganexus@gmail.com'
+      );
+    }
+
+    function isEmailVerified() {
+      // Allow admins to bypass verification for easier setup/recovery
+      return isAdmin() || request.auth.token.email_verified == true;
     }
 
     function isValidId(id) {
@@ -38,15 +42,10 @@ service cloud.firestore {
       return resource.data;
     }
 
-    // Relational sync helper
-    function getCompanyData(companyId) {
-      return get(/databases/$(database)/documents/companies/$(companyId)).data;
-    }
-
     function isMemberOfCompany(companyId) {
       return isSignedIn() && companyId != null && (
-        getCompanyData(companyId).ownerEmail == currentUserEmail() || 
-        (getCompanyData(companyId).memberEmails != null && getCompanyData(companyId).memberEmails.contains(currentUserEmail()))
+        get(/databases/$(database)/documents/companies/$(companyId)).data.ownerEmail == currentUserEmail() || 
+        get(/databases/$(database)/documents/companies/$(companyId)).data.get('memberEmails', []).contains(currentUserEmail())
       );
     }
 
@@ -63,7 +62,7 @@ service cloud.firestore {
       allow read: if isSignedIn() && (
         isAdmin() || 
         resource.data.ownerEmail == currentUserEmail() || 
-        (resource.data.memberEmails != null && resource.data.memberEmails.contains(currentUserEmail()))
+        (resource.data.get('memberEmails', []).contains(currentUserEmail()))
       );
 
       allow create: if isSignedIn() && isEmailVerified() && isValidCompany(incoming()) && incoming().ownerEmail == currentUserEmail() && isValidId(companyId);
@@ -71,7 +70,7 @@ service cloud.firestore {
       allow update: if isSignedIn() && isEmailVerified() && (
         isAdmin() || 
         (resource.data.ownerEmail == currentUserEmail() && isValidCompany(incoming())) ||
-        (resource.data.memberEmails.contains(currentUserEmail()) && incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees']))
+        (resource.data.get('memberEmails', []).contains(currentUserEmail()) && incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees']))
       );
 
       allow delete: if isAdmin();
@@ -92,27 +91,27 @@ service cloud.firestore {
         return data.companyId is string && isValidId(data.companyId);
       }
 
+      // GLOBAL ADMIN BYPASS
+      allow read, write: if isAdmin();
+
       // Single document read: verify membership
-      allow get: if isSignedIn() && isCompanyCollection() && (isAdmin() || isMemberOfCompany(resource.data.companyId));
+      allow get: if isSignedIn() && isCompanyCollection() && isMemberOfCompany(resource.data.companyId);
       
-      // List: Admins can list all. Members must use query filtered by companyId.
-      allow list: if isSignedIn() && isCompanyCollection() && (
-        isAdmin() || 
-        isMemberOfCompany(resource.data.companyId)
-      );
+      // List: Members must use query filtered by companyId.
+      allow list: if isSignedIn() && isCompanyCollection() && isMemberOfCompany(resource.data.companyId);
 
       allow create: if isSignedIn() && isEmailVerified() && isCompanyCollection() && 
                       isValidEntity(incoming()) && 
-                      (isAdmin() || isMemberOfCompany(incoming().companyId)) &&
+                      isMemberOfCompany(incoming().companyId) &&
                       incoming().createdAt == request.time;
 
       allow update: if isSignedIn() && isEmailVerified() && isCompanyCollection() && 
-                      (isAdmin() || isMemberOfCompany(existing().companyId)) &&
+                      isMemberOfCompany(existing().companyId) &&
                       incoming().companyId == existing().companyId &&
                       incoming().updatedAt == request.time;
 
       allow delete: if isSignedIn() && isEmailVerified() && isCompanyCollection() && 
-                      (isAdmin() || isMemberOfCompany(existing().companyId));
+                      isMemberOfCompany(existing().companyId);
     }
 
     // 3. Special Collections / Test

@@ -56,7 +56,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
       setLoading(true);
       
-      const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com';
+      const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'danganexus@gmail.com';
       
       // Si c'est un maître, on ne filtre pas par ownerId pour voir TOUTES les entreprises (La Pause 237, etc.)
       const q = isMaster 
