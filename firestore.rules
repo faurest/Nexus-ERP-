@@ -103,7 +103,8 @@ service cloud.firestore {
         return collectionName in [
           'personnel', 'clients', 'sales', 'projects', 'partners', 
           'expenses', 'resources', 'tasks', 'services', 
-          'interventions', 'notifications', 'open_orders'
+          'interventions', 'notifications', 'open_orders',
+          'sales_invoices', 'invoices', 'payments'
         ];
       }
 

@@ -203,6 +203,38 @@
       },
       "required": ["companyId", "title", "message"]
     },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Sales invoice record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "clientName": { "type": "string" },
+        "items": { "type": "string" },
+        "subtotal": { "type": "number" },
+        "tax": { "type": "number" },
+        "total": { "type": "number" },
+        "status": { "type": "string" },
+        "date": { "type": "number" }
+      },
+      "required": ["companyId", "invoiceNumber"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Payment transaction record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "amount": { "type": "number" },
+        "method": { "type": "string" },
+        "date": { "type": "number" },
+        "reference": { "type": "string" }
+      },
+      "required": ["companyId", "amount"]
+    },
     "OpenOrder": {
       "title": "Open Order",
       "description": "Currently open order (e.g. for a restaurant)",
@@ -233,6 +265,9 @@
     "services": { "schema": "Service", "description": "Service records" },
     "interventions": { "schema": "Intervention", "description": "Intervention records" },
     "notifications": { "schema": "Notification", "description": "Notification records" },
+    "sales_invoices": { "schema": "Invoice", "description": "Sales invoice records" },
+    "invoices": { "schema": "Invoice", "description": "General invoice records" },
+    "payments": { "schema": "Payment", "description": "Payment records" },
     "open_orders": { "schema": "OpenOrder", "description": "Open order records" }
   }
 }
