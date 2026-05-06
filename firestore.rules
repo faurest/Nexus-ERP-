@@ -44,9 +44,12 @@ service cloud.firestore {
     }
 
     function isMemberOfCompany(companyId) {
-      let company = getCompanyData(companyId);
-      return company.ownerEmail == currentUserEmail() || 
-             (company.memberEmails != null && company.memberEmails.contains(currentUserEmail()));
+      let path = /databases/$(database)/documents/companies/$(companyId);
+      return exists(path) && (
+        get(path).data.ownerEmail == currentUserEmail() || 
+        get(path).data.ownerId == request.auth.uid ||
+        (get(path).data.memberEmails != null && get(path).data.memberEmails.contains(currentUserEmail()))
+      );
     }
 
     // --- Collection Rules ---
@@ -56,7 +59,7 @@ service cloud.firestore {
     match /companies/{companyId} {
       function isValidCompany(data) {
         return data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
-               data.ownerEmail is string && data.ownerEmail == currentUserEmail() &&
+               (data.ownerEmail == currentUserEmail() || data.ownerId == request.auth.uid) &&
                data.joinCode is string && data.joinCode.size() >= 4;
       }
 
@@ -64,8 +67,9 @@ service cloud.firestore {
       allow list: if isSignedIn() && (
         isAdmin() || 
         resource.data.ownerEmail == currentUserEmail() || 
+        resource.data.ownerId == request.auth.uid ||
         (resource.data.memberEmails != null && resource.data.memberEmails.contains(currentUserEmail())) ||
-        // Permit finding by joinCode but ensure query is filtered by something (enforced by the rule needing to match all returned docs)
+        // Permit finding by joinCode
         resource.data.joinCode != null
       );
 
@@ -116,10 +120,18 @@ service cloud.firestore {
       // Read access: Must be a member of the company referenced in the document
       // Note: allow get uses getCompanyData(resource.data.companyId) which is fine.
       // allow list MUST be secured.
-      allow get: if isSignedIn() && isCompanyCollection() && (isAdmin() || isMemberOfCompany(resource.data.companyId));
+      allow get: if isSignedIn() && isCompanyCollection() && (
+        isAdmin() || 
+        isMemberOfCompany(resource.data.companyId) ||
+        (resource.data.email != null && resource.data.email == currentUserEmail())
+      );
       
-      // List optimization: forced to filter by companyId
-      allow list: if isSignedIn() && isCompanyCollection() && (isAdmin() || isMemberOfCompany(resource.data.companyId));
+      // List optimization: forced to filter by companyId OR their own email
+      allow list: if isSignedIn() && isCompanyCollection() && (
+        isAdmin() || 
+        isMemberOfCompany(resource.data.companyId) ||
+        (resource.data.email != null && resource.data.email == currentUserEmail())
+      );
 
       allow create: if isSignedIn() && isCompanyCollection() && 
                       isValidEntity(incoming()) && 

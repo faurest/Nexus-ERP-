@@ -217,6 +217,19 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         const companySnap = await getDocs(companyQ);
         if (!companySnap.empty) {
           console.log("Nexus Security: Accès autorisé (Propriétaire détecté)");
+          
+          // Auto-sync owner UID if missing
+          for (const docSnap of companySnap.docs) {
+            const data = docSnap.data();
+            if (data.ownerId !== user.uid) {
+              await updateDoc(doc(db, 'companies', docSnap.id), {
+                ownerId: user.uid,
+                employees: arrayUnion(user.uid),
+                memberEmails: arrayUnion(cleanEmail)
+              });
+            }
+          }
+          
           setIsWhitelisted(true);
           return;
         }
@@ -225,9 +238,28 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         const q = query(collection(db, 'personnel'), where('email', '==', cleanEmail));
         const snap = await getDocs(q);
         
-        const authorized = !snap.empty;
-        console.log("Nexus Security: Résultat personnel =", authorized);
-        setIsWhitelisted(authorized);
+        if (!snap.empty) {
+          console.log("Nexus Security: Accès autorisé via Personnel list. Auto-synchronisation des membres...");
+          
+          // Auto-enroll user into the companies they belong to in the personnel records
+          for (const docSnap of snap.docs) {
+            const personnelData = docSnap.data();
+            const companyId = personnelData.companyId;
+            if (companyId) {
+              // Add them to the company's member list if not already there
+              await updateDoc(doc(db, 'companies', companyId), {
+                memberEmails: arrayUnion(cleanEmail),
+                employees: arrayUnion(user.uid)
+              }).catch(e => console.error("Auto-enroll failed for company", companyId, e));
+            }
+          }
+          
+          setIsWhitelisted(true);
+          return;
+        }
+
+        console.log("Nexus Security: Résultat personnel = Aucun accès trouvé.");
+        setIsWhitelisted(false);
       } catch (err) {
         console.error("Whitelist check failed:", err);
         setIsWhitelisted(false);

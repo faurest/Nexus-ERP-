@@ -22,7 +22,8 @@ import {
   X,
   CheckCircle2,
   AlertCircle,
-  Database
+  Database,
+  Shield
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
@@ -381,7 +382,7 @@ export default function AdminModule() {
         personnelDetails: pSnap.docs.map(d => {
           const data = d.data() as any;
           const comp = companies.find(c => c.id === data.companyId);
-          return { company: comp?.name || 'Inconnue', status: data.status, role: data.role };
+          return { company: comp?.name || 'Inconnue', id: data.companyId, status: data.status, role: data.role };
         })
       });
     } catch (err) {
@@ -882,19 +883,67 @@ export default function AdminModule() {
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Affiliations Personnel ({diagResult.personnelCount})</span>
+                  <div className="flex justify-between items-center ml-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Affiliations Personnel ({diagResult.personnelCount})</span>
+                    {!diagResult.inUsers && diagResult.personnelCount > 0 && (
+                      <button 
+                        onClick={async () => {
+                          setLoading(true);
+                          try {
+                            const { addDoc, collection, db } = await import('../lib/firebase');
+                            await addDoc(collection(db, 'users'), {
+                              email: diagResult.email,
+                              createdAt: new Date()
+                            });
+                            alert("Compte fantôme créé pour synchronisation.");
+                            handleDiagnostic();
+                          } catch (e) { alert("Erreur link"); }
+                          setLoading(false);
+                        }}
+                        className="text-[8px] font-black text-blue-600 uppercase tracking-wider bg-blue-50 px-2 py-1 rounded-lg"
+                      >
+                        Scanner & Réparer Profil
+                      </button>
+                    )}
+                  </div>
                   {diagResult.personnelDetails.length === 0 ? (
                     <p className="text-[10px] text-red-500 italic px-1">Aucune affiliation trouvée. Cet utilisateur ne peut pas se connecter aux espaces de travail.</p>
                   ) : (
                     <div className="space-y-2">
                       {diagResult.personnelDetails.map((pd: any, i: number) => (
                         <div key={i} className="p-3 bg-white rounded-xl border border-slate-100 flex justify-between items-center">
-                          <span className="text-slate-700">{pd.company}</span>
-                          <div className="flex gap-2">
+                          <div className="flex flex-col">
+                            <span className="text-slate-700">{pd.company}</span>
+                            <span className="text-[8px] text-slate-400 font-mono tracking-tight">{pd.id}</span>
+                          </div>
+                          <div className="flex gap-2 items-center">
                             <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[8px] uppercase">{pd.role}</span>
                             <span className={cn("px-2 py-0.5 rounded text-[8px] uppercase", pd.status === 'blocked' ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600")}>
                               {pd.status === 'blocked' ? 'Bloqué' : 'Actif'}
                             </span>
+                            <button 
+                              onClick={async () => {
+                                if (!confirm("Voulez-vous forcer l'ajout de cet email aux membres de l'entreprise ?")) return;
+                                setLoading(true);
+                                try {
+                                  const { arrayUnion, doc, updateDoc, db } = await import('../lib/firebase');
+                                  const compRef = doc(db, 'companies', pd.id);
+                                  await updateDoc(compRef, {
+                                    memberEmails: arrayUnion(diagResult.email)
+                                  });
+                                  alert("Lien d'adhésion forcé pour " + pd.company);
+                                  handleDiagnostic();
+                                } catch (e) { 
+                                  console.error(e);
+                                  alert("Erreur de permission ou réseau."); 
+                                }
+                                setLoading(false);
+                              }}
+                              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-all border border-transparent hover:border-slate-200"
+                              title="Forcer Adhésion"
+                            >
+                              <Shield size={14} />
+                            </button>
                           </div>
                         </div>
                       ))}
