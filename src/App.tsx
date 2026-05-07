@@ -871,19 +871,29 @@ export default function App() {
       <motion.aside 
         initial={false}
         animate={{ 
-          width: isSidebarOpen ? (windowWidth < 640 ? windowWidth : 300) : (windowWidth < 1024 ? 0 : 96),
+          width: isSidebarOpen ? (windowWidth < 640 ? windowWidth : 320) : (windowWidth < 1024 ? 0 : 100),
           x: (windowWidth < 1024 && !isSidebarOpen) ? -320 : 0
         }}
         className={cn(
-          "h-screen bg-slate-950 border-r border-white/5 flex flex-col z-40 relative shrink-0 transition-all shadow-2xl",
-          windowWidth < 1024 && "fixed left-0 top-0"
+          "h-screen bg-slate-950 border-r border-white/5 flex flex-col z-40 relative shrink-0 transition-all shadow-[20px_0_50px_rgba(0,0,0,0.3)]",
+          windowWidth < 1024 && "fixed left-0 top-0",
+          isSidebarOpen && "rounded-r-[2rem] lg:rounded-none"
         )}
       >
-        <div className="p-8 h-24 flex items-center justify-between border-b border-white/5 bg-gradient-to-br from-slate-900 to-slate-950">
+        {/* Abstract Background Elements for Sidebar */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-blue-600/30 rounded-full blur-[80px]" />
+          <div className="absolute bottom-48 -right-12 w-40 h-40 bg-purple-600/20 rounded-full blur-[60px]" />
+        </div>
+
+        <div className="p-8 h-28 flex items-center justify-between border-b border-white/5 bg-slate-950/50 backdrop-blur-md relative z-10">
           <div className="flex items-center gap-4 w-full">
-            <div className="shrink-0 flex items-center justify-center p-2 bg-blue-600 rounded-2xl shadow-xl shadow-blue-600/20">
+            <motion.div 
+              whileHover={{ rotate: 5, scale: 1.05 }}
+              className="shrink-0 flex items-center justify-center p-2.5 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl shadow-xl shadow-blue-900/40 border border-white/10"
+            >
               <NexusLogo className="w-8 h-8 filter brightness-200" />
-            </div>
+            </motion.div>
             
             <AnimatePresence>
               {isSidebarOpen && (
@@ -894,26 +904,29 @@ export default function App() {
                   className="overflow-hidden flex-1"
                 >
                   {activeTab === 'admin' ? (
-                    <div className="font-black text-blue-400 text-xl tracking-tighter leading-none">
-                      NEXUS <span className="text-white">CORE</span>
+                    <div className="font-black text-blue-400 text-xl tracking-tighter leading-none italic">
+                      NEXUS <span className="text-white not-italic">CORE</span>
                     </div>
                   ) : (
-                    <div className="space-y-0.5">
-                      <select 
-                        value={currentCompany.id}
-                        onChange={(e) => {
-                          const c = companies.find(c => c.id === e.target.value);
-                          if (c) setCurrentCompany(c);
-                        }}
-                        className="font-black text-lg tracking-tight bg-transparent text-white border-none p-0 focus:ring-0 cursor-pointer w-full leading-none appearance-none"
-                      >
-                        {companies.map(c => (
-                          <option key={c.id} value={c.id} className="bg-slate-900">{c.name}</option>
-                        ))}
-                      </select>
+                    <div className="space-y-1">
+                      <div className="relative group/select">
+                        <select 
+                          value={currentCompany.id}
+                          onChange={(e) => {
+                            const c = companies.find(c => c.id === e.target.value);
+                            if (c) setCurrentCompany(c);
+                          }}
+                          className="font-black text-lg tracking-tight bg-transparent text-white border-none p-0 focus:ring-0 cursor-pointer w-full leading-none appearance-none pr-6 truncate"
+                        >
+                          {companies.map(c => (
+                            <option key={c.id} value={c.id} className="bg-slate-900 text-white font-sans">{c.name}</option>
+                          ))}
+                        </select>
+                        <ChevronRight size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-500 group-hover/select:text-white transition-colors rotate-90" />
+                      </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                        <span className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">{currentCompany.joinCode}</span>
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse" />
+                        <span className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">{currentCompany.joinCode}</span>
                       </div>
                     </div>
                   )}
@@ -924,69 +937,79 @@ export default function App() {
 
           <button 
             onClick={() => setSidebarOpen(!isSidebarOpen)} 
-            className="p-2.5 hover:bg-white/5 text-slate-500 hover:text-white transition-all rounded-xl ml-2"
+            className="p-2.5 hover:bg-white/10 text-slate-500 hover:text-white transition-all rounded-xl ml-2 border border-transparent hover:border-white/5 active:scale-95"
           >
             {isSidebarOpen ? <ChevronLeft size={20} /> : <Menu size={20} />}
           </button>
         </div>
 
-        <nav className="flex-1 py-10 px-4 space-y-2 overflow-y-auto scrollbar-hide">
+        <nav className="flex-1 py-8 px-4 space-y-1.5 overflow-y-auto scrollbar-hide relative z-10">
           <AnimatePresence mode="wait">
-            <motion.div className="space-y-2">
+            <motion.div className="space-y-1.5">
               {navItems.map((item, i) => (
                 <motion.button
                   key={item.id}
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: i * 0.05 }}
+                  transition={{ delay: i * 0.04 }}
                   onClick={() => {
                     setActiveTab(item.id);
                     if (windowWidth < 1024) setSidebarOpen(false);
                   }}
                   className={cn(
-                    "w-full flex items-center gap-5 px-5 py-4 rounded-[1.25rem] transition-all group relative overflow-hidden",
+                    "w-full flex items-center gap-5 px-5 py-4 rounded-2xl transition-all group relative overflow-hidden",
                     activeTab === item.id 
-                      ? "bg-blue-600 text-white shadow-2xl shadow-blue-600/20" 
-                      : "text-slate-500 hover:bg-white/5 hover:text-slate-200"
+                      ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-[0_10px_30px_rgba(37,99,235,0.3)] border border-blue-500/50" 
+                      : "text-slate-500 hover:bg-white/5 hover:text-slate-100 hover:translate-x-1"
                   )}
                 >
                   <div className={cn(
-                    "transition-all duration-500 group-hover:rotate-[360deg]",
-                    activeTab === item.id ? "text-white" : "text-slate-600 group-hover:text-blue-400"
+                    "transition-all duration-500",
+                    activeTab === item.id ? "text-white scale-110" : "text-slate-600 group-hover:text-blue-400"
                   )}>
-                    <item.icon size={22} strokeWidth={2.5} />
+                    <item.icon size={22} strokeWidth={activeTab === item.id ? 2.5 : 2} />
                   </div>
                   {isSidebarOpen && (
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] shrink-0">{item.label}</span>
+                    <span className={cn(
+                      "text-[10px] font-black uppercase tracking-[0.2em] shrink-0 transition-colors",
+                      activeTab === item.id ? "text-white" : "text-slate-500 group-hover:text-slate-200"
+                    )}>{item.label}</span>
                   )}
                   
                   {activeTab === item.id && (
                     <motion.div 
-                      layoutId="sidebar-active-blob"
+                      layoutId="sidebar-active-pill"
                       className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-white rounded-l-full shadow-[0_0_15px_#fff]" 
                     />
                   )}
+
+                  {/* Hover Highlight Overlay */}
+                  <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 </motion.button>
               ))}
             </motion.div>
           </AnimatePresence>
         </nav>
 
-        <div className="p-6 border-t border-white/5 flex flex-col gap-3">
+        <div className="p-6 border-t border-white/5 flex flex-col gap-3 bg-slate-950/40 backdrop-blur-xl relative z-10">
           <button 
             onClick={() => setCurrentCompany(null)}
-            className="w-full flex items-center gap-5 px-5 py-4 rounded-2xl bg-white/5 text-slate-400 hover:text-white transition-all group border border-transparent hover:border-white/10"
+            className="w-full flex items-center gap-5 px-5 py-4 rounded-2xl bg-white/5 text-slate-400 hover:text-white transition-all group border border-white/5 hover:border-white/20 hover:bg-white/10 active:scale-95"
           >
-            <Database size={20} className="group-hover:rotate-12 transition-transform" />
-            {isSidebarOpen && <span className="text-[9px] font-black uppercase tracking-widest">Changer d'Espace</span>}
+            <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-900 border border-white/5 group-hover:border-blue-500/50 group-hover:text-blue-400 transition-all">
+              <Database size={16} className="group-hover:rotate-12 transition-transform" />
+            </div>
+            {isSidebarOpen && <span className="text-[10px] font-black uppercase tracking-[0.2em]">Changer d'Espace</span>}
           </button>
           
           <button 
             onClick={logout}
-            className="w-full flex items-center gap-5 px-5 py-4 rounded-2xl text-slate-500 hover:text-red-400 transition-all group"
+            className="w-full flex items-center gap-5 px-5 py-4 rounded-2xl text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-all group border border-transparent hover:border-red-500/20 active:scale-95"
           >
-            <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
-            {isSidebarOpen && <span className="text-[9px] font-black uppercase tracking-widest">Fin de Session</span>}
+            <div className="w-8 h-8 flex items-center justify-center rounded-lg group-hover:bg-red-500/10 transition-all">
+              <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
+            </div>
+            {isSidebarOpen && <span className="text-[10px] font-black uppercase tracking-[0.2em]">Fin de Session</span>}
           </button>
         </div>
       </motion.aside>
@@ -998,7 +1021,7 @@ export default function App() {
           <div className="flex items-center gap-6">
             <button 
               onClick={() => setSidebarOpen(!isSidebarOpen)} 
-              className="lg:hidden p-3 bg-slate-900 text-white rounded-2xl shadow-xl flex items-center justify-center shrink-0"
+              className="lg:hidden p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-600/20 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
             >
               <Menu size={20} />
             </button>
