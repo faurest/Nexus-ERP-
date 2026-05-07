@@ -226,13 +226,37 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
     { label: 'Ruptures Stock', value: '3', icon: Package, trend: 'Critique', color: 'text-orange-600' },
   ];
 
-  const moduleCards = [
-    { id: 'projects', label: 'Projets', img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=600', desc: 'Gestion des flux', size: 'large' },
-    { id: 'personnel', label: 'Ressources Humaines', img: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600', desc: 'Équipes et talents', size: 'small' },
-    { id: 'sales', label: 'Ventes & CRM', img: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1600', desc: 'Performance', size: 'small' },
-    { id: 'finances', label: 'Finance', img: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80&w=600', desc: 'Flux financiers', size: 'medium' },
-    { id: 'stock', label: 'Logistique', img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=600', desc: 'Stocks', size: 'medium' },
-    { id: 'clients', label: 'Clients', img: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=80&w=600', desc: 'Portefeuille', size: 'medium' },
+  const advantages = [
+    { 
+      title: 'Vision Globale', 
+      desc: 'Connectez tous vos services en un seul point de contrôle.', 
+      img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800' 
+    },
+    { 
+      title: 'Performance Temps Réel', 
+      desc: 'Prenez des décisions basées sur des données instantanées.', 
+      img: 'https://images.unsplash.com/photo-1551288049-bbda38656ad1?auto=format&fit=crop&q=80&w=800' 
+    },
+    { 
+      title: 'Collaboration Intuitive', 
+      desc: 'Fluidifiez les échanges entre vos équipes sur le terrain.', 
+      img: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800' 
+    },
+    { 
+      title: 'Automatisation Intelligente', 
+      desc: 'Réduisez vos erreurs et gagnez un temps précieux.', 
+      img: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800' 
+    },
+    { 
+      title: 'Sécurité de Pointe', 
+      desc: 'Vos données critiques protégées par un cryptage robuste.', 
+      img: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800' 
+    },
+    { 
+      title: 'Accessibilité Mobile', 
+      desc: 'Gérez votre entreprise depuis n\'importe quel terminal.', 
+      img: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&q=80&w=800' 
+    },
   ];
 
   return (
@@ -421,135 +445,46 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
           </div>
         </div>
 
-        {/* Modules Navigation - Bento Style Cards */}
-        <div className="col-span-12 grid grid-cols-12 gap-8 mt-4">
-           {moduleCards.map((card, idx) => (
-             <motion.div
-               key={card.id}
-               initial={{ opacity: 0, scale: 0.95 }}
-               animate={{ opacity: 1, scale: 1 }}
-               transition={{ delay: 0.2 + idx * 0.1 }}
-               className={cn(
-                 "relative group cursor-pointer overflow-hidden rounded-3xl lg:rounded-[2.5rem] bg-slate-100 border border-white shadow-md hover:shadow-2xl transition-all duration-700",
-                 card.size === 'large' ? "col-span-12 lg:col-span-6 h-[250px] lg:h-[420px]" : 
-                 card.size === 'medium' ? "col-span-12 md:col-span-6 lg:col-span-4 h-[220px] lg:h-[300px]" : 
-                 "col-span-12 md:col-span-6 lg:col-span-3 h-[220px] lg:h-[300px]"
-               )}
-             >
-               <img src={card.img} className="absolute inset-0 w-full h-full object-cover grayscale-[0.2] brightness-75 group-hover:scale-110 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-1000" alt={card.label} />
-               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent opacity-80 group-hover:opacity-40 transition-opacity duration-700" />
-               
-               <div className="absolute top-0 right-0 p-6 lg:p-8 z-20">
-                 <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white opacity-100 lg:opacity-0 group-hover:opacity-100 translate-x-0 lg:translate-x-4 group-hover:translate-x-0 transition-all duration-500">
-                    <Plus size={18} />
-                 </div>
-               </div>
+      </div>
 
-               <div className="absolute bottom-0 left-0 p-6 lg:p-10 text-white z-20 w-full">
-                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 mb-2 block translate-y-0 lg:translate-y-4 opacity-100 lg:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-100">{card.desc}</span>
-                 <h3 className="text-2xl lg:text-3xl font-black tracking-tight leading-none group-hover:tracking-wider transition-all duration-500">{card.label}</h3>
-                 <div className="mt-6 w-12 h-1.5 bg-blue-600 rounded-full scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-700 delay-200" />
-               </div>
-             </motion.div>
-           ))}
+      {/* Infinite Scrolling Gallery with ERP Advantages */}
+      <div className="relative -mx-4 sm:-mx-8 overflow-hidden py-12 bg-slate-50 border-y border-slate-100">
+        <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-slate-50 via-slate-50/80 to-transparent z-10" />
+        <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-slate-50 via-slate-50/80 to-transparent z-10" />
+        
+        <div className="text-center mb-12 relative z-10">
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Pourquoi choisir NEXUS ERP ?</h2>
+          <div className="w-20 h-1.5 bg-blue-600 rounded-full mx-auto mt-4" />
         </div>
 
-        {/* Operational Pulsation (Lower Section) */}
-        <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mt-4">
-           {/* Interventions / Messages */}
-           <section className="bg-slate-950 text-white rounded-[2rem] lg:rounded-[2.5rem] p-7 lg:p-9 border border-white/5 shadow-2xl relative group overflow-hidden">
-             <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 group-hover:scale-[1.7] group-hover:rotate-6 transition-all duration-1000">
-                <MessageSquare size={140} />
-             </div>
-             <div className="flex items-center justify-between mb-10 relative z-10">
-               <div>
-                 <h3 className="text-xl font-black uppercase tracking-tight">Flux Interventions</h3>
-                 <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Activité temps réel & RDV</p>
-               </div>
-               <button onClick={() => setIsAddingIntervention(true)} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-all">
-                 <Plus size={18} />
-               </button>
-             </div>
-
-             <div className="space-y-4 relative z-10">
-               {interventions.slice(0, 4).map((item, i) => (
-                 <div key={item.id} className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all flex items-center gap-4 group/item">
-                    <div className={cn(
-                      "w-1.5 h-8 rounded-full",
-                      item.status === 'Terminé' ? 'bg-green-500' : 'bg-blue-500'
-                    )} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-[10px] font-black text-slate-400 uppercase truncate">{item.client}</span>
-                        <span className="text-[8px] font-black text-slate-500 uppercase">{item.date}</span>
-                      </div>
-                      <p className="text-xs font-semibold truncate text-slate-200">{item.message}</p>
-                    </div>
-                 </div>
-               ))}
-               {interventions.length === 0 && <p className="text-center text-slate-600 text-xs font-bold py-8 uppercase tracking-widest">Aucun flux détecté</p>}
-             </div>
-           </section>
-
-           {/* Service Center */}
-           <section className="bg-white rounded-[2rem] lg:rounded-[2.5rem] p-7 lg:p-9 border border-slate-100 shadow-sm relative group overflow-hidden">
-              <div className="flex items-center justify-between mb-10 relative z-10">
-                <div>
-                  <h3 className="text-xl font-black uppercase tracking-tight text-slate-900">Catalogue Services</h3>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Gérer l'offre commerciale</p>
-                </div>
-                <button onClick={() => setIsAddingService(true)} className="w-10 h-10 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 flex items-center justify-center transition-all">
-                  <Plus size={18} className="text-slate-900" />
-                </button>
+        <motion.div 
+          animate={{ x: ["0%", "-50%"] }}
+          transition={{ 
+            duration: 60, 
+            repeat: Infinity, 
+            ease: "linear" 
+          }}
+          className="flex gap-8 w-fit px-8"
+        >
+          {[...advantages, ...advantages].map((adv, i) => (
+            <div 
+              key={i} 
+              className="w-[350px] sm:w-[450px] rounded-[2.5rem] overflow-hidden shrink-0 shadow-xl bg-white border border-slate-100 relative group flex flex-col"
+            >
+              <div className="h-[200px] sm:h-[260px] overflow-hidden">
+                <img src={adv.img} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt={adv.title} />
               </div>
-
-              <div className="space-y-4 relative z-10">
-                {services.slice(0, 4).map(s => (
-                  <div key={s.id} className="p-4 rounded-2xl border border-slate-50 bg-slate-50/50 hover:border-blue-200 hover:bg-white transition-all flex items-center justify-between group/s">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-blue-600 border border-slate-100 group-hover/s:bg-blue-600 group-hover/s:text-white transition-all">
-                        <Briefcase size={16} />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-black text-slate-900">{s.name}</h4>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{s.price ? `${s.price} FCFA` : 'Sur devis'}</span>
-                      </div>
-                    </div>
-                    <ArrowLeft size={14} className="text-slate-200 rotate-180 opacity-0 group-hover/s:opacity-100 translate-x-2 group-hover/s:translate-x-0 transition-all" />
-                  </div>
-                ))}
+              <div className="p-8 pb-10">
+                <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3 block">Avantage #0{ (i % advantages.length) + 1 }</span>
+                <h3 className="text-xl font-black text-slate-900 mb-3">{adv.title}</h3>
+                <p className="text-sm font-medium text-slate-500 leading-relaxed">{adv.desc}</p>
               </div>
-           </section>
-
-           {/* Task Orchestrator */}
-           <section className="bg-white rounded-[2rem] lg:rounded-[2.5rem] p-7 lg:p-9 border border-slate-100 shadow-sm relative group overflow-hidden">
-              <div className="flex items-center justify-between mb-10 relative z-10">
-                <div>
-                  <h3 className="text-xl font-black uppercase tracking-tight text-slate-900">Project Engine</h3>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Ordonnancement des tâches</p>
-                </div>
-                <button onClick={() => setIsAddingTask(true)} className="w-10 h-10 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 flex items-center justify-center transition-all">
-                  <Plus size={18} className="text-slate-900" />
-                </button>
+              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100">
+                <TrendingUp size={20} className="text-blue-600" />
               </div>
-
-              <div className="space-y-4 relative z-10">
-                {tasks.slice(0, 4).map(t => (
-                  <div key={t.id} className="p-4 rounded-2xl border border-slate-50 bg-slate-50 hover:border-indigo-200 hover:bg-white transition-all">
-                    <div className="flex justify-between items-start mb-2">
-                       <h4 className="text-[11px] font-black text-slate-900 uppercase truncate pr-4">{t.title}</h4>
-                       <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase tracking-widest group-hover:bg-indigo-600 group-hover:text-white transition-all">New</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                       <Clock size={10} className="text-slate-400" />
-                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Assigné à: {personnel.find(p => p.id === t.assignedTo)?.name || 'Nexus Admin'}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-           </section>
-        </div>
-
+            </div>
+          ))}
+        </motion.div>
       </div>
 
       {/* Cross-tenant Global Overview */}

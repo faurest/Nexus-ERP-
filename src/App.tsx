@@ -875,7 +875,7 @@ export default function App() {
           x: (windowWidth < 1024 && !isSidebarOpen) ? -320 : 0
         }}
         className={cn(
-          "bg-slate-950 border border-white/5 flex flex-col z-40 shrink-0 transition-all shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden",
+          "bg-[#020617] border border-white/5 flex flex-col z-40 shrink-0 transition-all shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden",
           windowWidth < 1024 
             ? "fixed left-0 top-0 h-screen" 
             : "h-[calc(100vh-2rem)] my-4 ml-4 rounded-[2.5rem] sticky top-4",
@@ -884,15 +884,15 @@ export default function App() {
       >
         {/* Abstract Background Elements for Sidebar */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
-          <div className="absolute -top-24 -left-24 w-64 h-64 bg-blue-600/30 rounded-full blur-[80px]" />
-          <div className="absolute bottom-48 -right-12 w-40 h-40 bg-purple-600/20 rounded-full blur-[60px]" />
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-indigo-600/30 rounded-full blur-[80px]" />
+          <div className="absolute bottom-48 -right-12 w-40 h-40 bg-blue-600/20 rounded-full blur-[60px]" />
         </div>
 
-        <div className="p-8 h-28 flex items-center justify-between border-b border-white/5 bg-slate-950/50 backdrop-blur-md relative z-10">
+        <div className="p-8 h-28 flex items-center justify-between border-b border-white/5 bg-slate-950/20 backdrop-blur-md relative z-10">
           <div className="flex items-center gap-4 w-full">
             <motion.div 
               whileHover={{ rotate: 5, scale: 1.05 }}
-              className="shrink-0 flex items-center justify-center p-2.5 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl shadow-xl shadow-blue-900/40 border border-white/10"
+              className="shrink-0 flex items-center justify-center p-2.5 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl shadow-xl shadow-indigo-900/40 border border-white/10"
             >
               <NexusLogo className="w-8 h-8 filter brightness-200" />
             </motion.div>
@@ -906,7 +906,7 @@ export default function App() {
                   className="overflow-hidden flex-1"
                 >
                   {activeTab === 'admin' ? (
-                    <div className="font-black text-blue-400 text-xl tracking-tighter leading-none italic">
+                    <div className="font-black text-indigo-400 text-xl tracking-tighter leading-none italic">
                       NEXUS <span className="text-white not-italic">CORE</span>
                     </div>
                   ) : (
@@ -921,13 +921,13 @@ export default function App() {
                           className="font-black text-lg tracking-tight bg-transparent text-white border-none p-0 focus:ring-0 cursor-pointer w-full leading-none appearance-none pr-6 truncate"
                         >
                           {companies.map(c => (
-                            <option key={c.id} value={c.id} className="bg-slate-900 text-white font-sans">{c.name}</option>
+                            <option key={c.id} value={c.id} className="bg-slate-950 text-white font-sans">{c.name}</option>
                           ))}
                         </select>
                         <ChevronRight size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-500 group-hover/select:text-white transition-colors rotate-90" />
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse" />
+                        <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.6)] animate-pulse" />
                         <span className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">{currentCompany.joinCode}</span>
                       </div>
                     </div>
@@ -961,20 +961,20 @@ export default function App() {
                   className={cn(
                     "w-full flex items-center gap-5 px-5 py-4 rounded-2xl transition-all group relative overflow-hidden",
                     activeTab === item.id 
-                      ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-[0_10px_30px_rgba(37,99,235,0.3)] border border-blue-500/50" 
-                      : "text-slate-500 hover:bg-white/5 hover:text-slate-100 hover:translate-x-1"
+                      ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-[0_10px_30px_rgba(79,70,229,0.3)] border border-indigo-500/50" 
+                      : "text-slate-400 hover:bg-white/5 hover:text-slate-100 hover:translate-x-1"
                   )}
                 >
                   <div className={cn(
                     "transition-all duration-500",
-                    activeTab === item.id ? "text-white scale-110" : "text-slate-600 group-hover:text-blue-400"
+                    activeTab === item.id ? "text-white scale-110" : "text-slate-500 group-hover:text-indigo-400"
                   )}>
                     <item.icon size={22} strokeWidth={activeTab === item.id ? 2.5 : 2} />
                   </div>
                   {isSidebarOpen && (
                     <span className={cn(
                       "text-[10px] font-black uppercase tracking-[0.2em] shrink-0 transition-colors",
-                      activeTab === item.id ? "text-white" : "text-slate-500 group-hover:text-slate-200"
+                      activeTab === item.id ? "text-white" : "text-slate-400 group-hover:text-slate-100"
                     )}>{item.label}</span>
                   )}
                   
@@ -993,12 +993,12 @@ export default function App() {
           </AnimatePresence>
         </nav>
 
-        <div className="p-6 border-t border-white/5 flex flex-col gap-3 bg-slate-950/40 backdrop-blur-xl relative z-10">
+        <div className="p-6 border-t border-white/5 flex flex-col gap-3 bg-slate-950/20 backdrop-blur-xl relative z-10">
           <button 
             onClick={() => setCurrentCompany(null)}
             className="w-full flex items-center gap-5 px-5 py-4 rounded-2xl bg-white/5 text-slate-400 hover:text-white transition-all group border border-white/5 hover:border-white/20 hover:bg-white/10 active:scale-95"
           >
-            <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-900 border border-white/5 group-hover:border-blue-500/50 group-hover:text-blue-400 transition-all">
+            <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-900 border border-white/5 group-hover:border-indigo-500/50 group-hover:text-indigo-400 transition-all">
               <Database size={16} className="group-hover:rotate-12 transition-transform" />
             </div>
             {isSidebarOpen && <span className="text-[10px] font-black uppercase tracking-[0.2em]">Changer d'Espace</span>}
