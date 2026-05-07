@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, loginWithEmail, signupWithEmail, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, doc, updateDoc, arrayUnion } from './lib/firebase';
+import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, doc, updateDoc, arrayUnion, setDoc, serverTimestamp } from './lib/firebase';
 type User = any;
 import { 
   LayoutDashboard, 
@@ -24,7 +24,8 @@ import {
   Calculator,
   Layers,
   FileText,
-  Database
+  Database,
+  MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -40,7 +41,9 @@ import AdminModule from './components/AdminModule';
 import AccountingModule from './components/AccountingModule';
 import PrestationsModule from './components/PrestationsModule';
 import CollaborationModule from './components/CollaborationModule';
+import CommunicationModule from './components/CommunicationModule';
 import NotificationBell from './components/NotificationBell';
+import CriticalNotificationOverlay from './components/CriticalNotificationOverlay';
 
 import { bootstrapDemoData } from './lib/bootstrap';
 import { useCompany } from './lib/CompanyContext';
@@ -86,15 +89,15 @@ export const NexusLogo = ({ className = "" }: { className?: string }) => (
 );
 
 export const DEFAULT_ROLES: Record<string, string[]> = {
-  'owner': ['dashboard', 'sales', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration'],
-  'Directeur': ['dashboard', 'sales', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration'],
-  'Secrétaire': ['dashboard', 'clients', 'personnel', 'resources', 'projects', 'collaboration'],
-  'Comptable': ['dashboard', 'sales', 'projects', 'accounting', 'collaboration'],
-  'Agent Commercial': ['dashboard', 'sales', 'clients', 'projects', 'collaboration'],
-  'Vendeur de bière': ['dashboard', 'sales', 'resources', 'collaboration'],
-  'Vendeur de nourriture': ['dashboard', 'sales', 'resources', 'collaboration'],
-  'Collaborateur': ['dashboard', 'projects', 'resources', 'clients', 'sales', 'collaboration'],
-  'Personnel': ['dashboard', 'projects', 'resources', 'clients', 'collaboration'],
+  'owner': ['dashboard', 'sales', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
+  'Directeur': ['dashboard', 'sales', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
+  'Secrétaire': ['dashboard', 'clients', 'personnel', 'resources', 'projects', 'collaboration', 'communication'],
+  'Comptable': ['dashboard', 'sales', 'projects', 'accounting', 'collaboration', 'communication'],
+  'Agent Commercial': ['dashboard', 'sales', 'clients', 'projects', 'collaboration', 'communication'],
+  'Vendeur de bière': ['dashboard', 'sales', 'resources', 'collaboration', 'communication'],
+  'Vendeur de nourriture': ['dashboard', 'sales', 'resources', 'collaboration', 'communication'],
+  'Collaborateur': ['dashboard', 'projects', 'resources', 'clients', 'sales', 'collaboration', 'communication'],
+  'Personnel': ['dashboard', 'projects', 'resources', 'clients', 'collaboration', 'communication'],
 };
 
 function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], user: User, onSelect: any }) {
@@ -252,6 +255,12 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
                 memberEmails: arrayUnion(cleanEmail),
                 employees: arrayUnion(user.uid)
               }).catch(e => console.error("Auto-enroll failed for company", companyId, e));
+
+              // ALSO update the personnel record with the UID if it's missing
+              if (personnelData.uid !== user.uid) {
+                await updateDoc(docSnap.ref, { uid: user.uid })
+                  .catch(e => console.error("Personnel UID sync failed", e));
+              }
             }
           }
           
@@ -521,12 +530,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
 }
 
 function LoginScreen() {
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
-  const [resetSent, setResetSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
 
@@ -535,85 +539,6 @@ function LoginScreen() {
       testFirestoreConnection().then(ok => setConnStatus(ok ? 'ok' : 'fail'));
     });
   }, []);
-
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    setResetSent(false);
-    setLoading(true);
-    
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanPassword = password.trim();
-
-    if (!cleanEmail || !cleanPassword) {
-      setAuthError('Veuillez remplir tous les champs.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      if (mode === 'login') {
-        const { loginWithEmail } = await import('./lib/firebase');
-        await loginWithEmail(cleanEmail, cleanPassword);
-      } else {
-        const { signupWithEmail } = await import('./lib/firebase');
-        await signupWithEmail(cleanEmail, cleanPassword);
-      }
-    } catch (err: any) {
-      console.error("Auth process error:", err);
-      let errorMessage = 'Une erreur est survenue.';
-      const code = err.code || '';
-      
-      switch (code) {
-        case 'auth/invalid-credential':
-          errorMessage = mode === 'login' 
-            ? 'Identifiants incorrects. Verifiez votre email et mot de passe. IMPORTANT : Si vous avez l\'habitude de vous connecter avec Google, vous n\'avez peut-être pas de mot de passe Nexus. Utilisez alors le bouton Google ci-dessous ou "Mot de passe oublié".'
-            : 'Échec de la création du compte. Cet email est peut-être déjà utilisé ou mal formé.';
-          break;
-        case 'auth/user-not-found':
-          errorMessage = 'Aucun compte trouvé avec cet email. Veuillez d\'abord vous inscrire.';
-          break;
-        case 'auth/wrong-password':
-          errorMessage = 'Le mot de passe ne correspond pas à cet email.';
-          break;
-        case 'auth/email-already-in-use':
-          errorMessage = 'Cet email est déjà lié à un compte Nexus. Connectez-vous ou utilisez "Mot de passe oublié".';
-          break;
-        case 'auth/weak-password':
-          errorMessage = 'Le mot de passe doit faire au moins 6 caractères.';
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'Format d\'email invalide.';
-          break;
-        case 'auth/operation-not-allowed':
-          errorMessage = 'La connexion par email est désactivée dans la console Firebase.';
-          break;
-        default:
-          errorMessage = err.message || 'Erreur d\'authentification.';
-      }
-      setAuthError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!email) {
-      setAuthError('Veuillez saisir votre email pour réinitialiser votre mot de passe.');
-      return;
-    }
-    setLoading(true);
-    setAuthError('');
-    try {
-      const { resetPassword } = await import('./lib/firebase');
-      await resetPassword(email);
-      setResetSent(true);
-    } catch (err: any) {
-      setAuthError('Impossible d\'envoyer l\'email de réinitialisation. Vérifiez l\'adresse.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleGoogleLogin = async () => {
     setAuthError('');
@@ -679,138 +604,54 @@ function LoginScreen() {
           </div>
         </div>
 
-        <div className="flex bg-slate-100/50 p-1.5 rounded-2xl mb-10 border border-slate-200/50">
-          <button 
-            onClick={() => { setMode('login'); setAuthError(''); }}
-            className={cn(
-              "flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all",
-              mode === 'login' ? "bg-white text-slate-900 shadow-xl shadow-slate-200/50" : "text-slate-400 hover:text-slate-600"
-            )}
-          >
-            Connexion
-          </button>
-          <button 
-            onClick={() => { setMode('signup'); setAuthError(''); }}
-            className={cn(
-              "flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all",
-              mode === 'signup' ? "bg-white text-slate-900 shadow-xl shadow-slate-200/50" : "text-slate-400 hover:text-slate-600"
-            )}
-          >
-            S'Inscrire
-          </button>
-        </div>
-
-        <form onSubmit={handleAuth} className="space-y-4">
+        <div className="space-y-6">
           {authError && (
             <div className="p-4 bg-red-50 text-red-700 text-[11px] font-bold rounded-2xl border border-red-100 flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <AlertCircle size={16} className="shrink-0" />
                 <span className="leading-tight">{authError}</span>
               </div>
-              {mode === 'login' && (
-                <div className="mt-1 pt-2 border-t border-red-100 text-[10px] opacity-80 uppercase tracking-wide flex flex-col gap-1">
-                  <span>💡 Note : Si c'est votre première connexion, utilisez l'onglet "S'Inscrire".</span>
-                  <span>🔒 Sécurité : Un compte Google est distinct d'un compte Email/Pass.</span>
-                </div>
-              )}
             </div>
           )}
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Email Nexus</label>
-            <input 
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-              placeholder="votre@nexus.com"
-              required
-            />
-          </div>
-          <div className="space-y-1.5 relative">
-            <div className="flex items-center justify-between ml-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Mot de passe</label>
-              {mode === 'login' && (
-                <button 
-                  type="button" 
-                  onClick={handleResetPassword}
-                  className="text-[9px] font-bold text-blue-600 hover:underline uppercase tracking-wider"
-                >
-                  Mot de passe oublié ?
-                </button>
-              )}
-            </div>
-            <div className="relative">
-              <input 
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
-                placeholder="••••••••"
-                required={mode !== 'login' || !resetSent}
-              />
-              <button 
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
-                title={showPassword ? "Masquer" : "Afficher"}
-              >
-                {showPassword ? <X size={16} /> : <Search size={16} className="rotate-45" />}
-              </button>
-            </div>
-          </div>
-          {resetSent && (
-            <div className="p-3 bg-green-50 text-green-700 text-[10px] font-bold rounded-xl border border-green-100 flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              Email de réinitialisation envoyé ! Vérifiez vos courriers indésirables.
-            </div>
-          )}
-          <button 
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-3.5 px-6 rounded-xl font-bold text-sm tracking-wide hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
-          >
-            {loading 
-              ? (mode === 'login' ? 'Connexion...' : 'Création...') 
-              : (mode === 'login' ? 'Se Connecter' : 'Commencer')}
-            {!loading && <ChevronRight size={16} />}
-          </button>
-        </form>
 
-        <div className="mt-6">
-          <div className="relative flex items-center py-2 mb-6">
-            <div className="flex-grow border-t border-slate-100"></div>
-            <span className="flex-shrink mx-4 text-[9px] font-black uppercase tracking-[0.2em] text-slate-300">Méthode Alternative</span>
-            <div className="flex-grow border-t border-slate-100"></div>
+          <div className="text-center mb-4">
+            <p className="text-slate-500 text-sm font-medium">L'accès à l'écosystème Nexus est strictement sécurisé par authentification Google.</p>
           </div>
 
           <button 
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full bg-white border border-slate-200 text-slate-600 py-3 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-3 shadow-sm disabled:opacity-50"
+            className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center justify-center gap-4 shadow-xl shadow-blue-600/20 disabled:opacity-50 group"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-            Continuer avec Google
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                <svg className="w-6 h-6" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor" opacity="0.9"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor" opacity="0.7"/>
+                  <path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z" fill="currentColor" opacity="0.8"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor" opacity="1"/>
+                </svg>
+                <span>Accès Nexus via Google</span>
+              </>
+            )}
           </button>
+          
+          <div className="flex items-center gap-4 py-4">
+             <div className="flex-1 h-px bg-slate-100" />
+             <div className="w-2 h-2 bg-slate-200 rounded-full" />
+             <div className="flex-1 h-px bg-slate-100" />
+          </div>
           
           <div className="mt-4 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50">
             <p className="text-[9px] text-blue-600 font-bold leading-tight">
-              ⚠️ NOTE SÉCURITÉ : La connexion Google et l'inscription par Email créent des comptes distincts. 
-              Si vous utilisez les deux, assurez-vous que votre email est autorisé dans votre entreprise.
+              💡 Note : L'authentification Google permet une synchronisation automatique avec votre profil entreprise et vos privilèges Nexus Cloud.
             </p>
           </div>
-        </div>
-
-        <div className="mt-8 text-center pt-6 border-t border-slate-50">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            {mode === 'login' ? 'NexusERP Industrial System' : 'Nexus Ecosystem Registration'}
-          </p>
-          <p className="text-[9px] text-slate-300 mt-1 uppercase font-mono tracking-tighter">
-            {mode === 'login' ? 'Accès restreint au personnel autorisé' : 'Créez votre profil pour rejoindre une entreprise'}
+          
+          <p className="text-[9px] font-black text-slate-300 uppercase text-center tracking-[0.2em] px-8 leading-relaxed">
+            Seuls les comptes autorisés par l'administration Nexus peuvent franchir la passerelle de sécurité.
           </p>
         </div>
       </motion.div>
@@ -902,9 +743,20 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
-        // Whitelist check: only allow if user has a company OR is in a personnel list OR is master
-        // This prevents "Google login bypass" for unknowns.
         setUser(u);
+        // Sync user profile to Firestore for notification lookups
+        try {
+          const userRef = doc(db, 'users', u.uid);
+          await setDoc(userRef, {
+            uid: u.uid,
+            email: u.email?.toLowerCase() || null,
+            displayName: u.displayName || null,
+            photoURL: u.photoURL || null,
+            lastLogin: serverTimestamp()
+          }, { merge: true });
+        } catch (err) {
+          console.error("Nexus Sync: User profile sync failed", err);
+        }
       } else {
         setUser(null);
       }
@@ -978,7 +830,7 @@ export default function App() {
     { id: 'personnel', label: 'Ressources Humaines', icon: Briefcase },
     { id: 'resources', label: 'Stocks & Logistique', icon: Package },
     { id: 'projects', label: 'Projets & Tâches', icon: FolderKanban },
-    { id: 'collaboration', label: 'Collaboration', icon: Handshake },
+    { id: 'collaboration', label: 'Collaboration & Comm', icon: Handshake },
     { id: 'accounting', label: 'Rapport Comptable', icon: Calculator },
     ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
   ].filter(item => {
@@ -1003,15 +855,28 @@ export default function App() {
       </AnimatePresence>
 
       {/* Sidebar */}
+      {/* Sidebar Overlay for Mobile */}
+      <AnimatePresence>
+        {windowWidth < 1024 && isSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-30"
+          />
+        )}
+      </AnimatePresence>
+
       <motion.aside 
         initial={false}
         animate={{ 
-          width: isSidebarOpen ? 300 : (windowWidth < 768 ? 0 : 96),
-          x: (windowWidth < 768 && !isSidebarOpen) ? -320 : 0
+          width: isSidebarOpen ? (windowWidth < 640 ? windowWidth : 300) : (windowWidth < 1024 ? 0 : 96),
+          x: (windowWidth < 1024 && !isSidebarOpen) ? -320 : 0
         }}
         className={cn(
           "h-screen bg-slate-950 border-r border-white/5 flex flex-col z-40 relative shrink-0 transition-all shadow-2xl",
-          windowWidth < 768 && "fixed left-0 top-0"
+          windowWidth < 1024 && "fixed left-0 top-0"
         )}
       >
         <div className="p-8 h-24 flex items-center justify-between border-b border-white/5 bg-gradient-to-br from-slate-900 to-slate-950">
@@ -1133,7 +998,7 @@ export default function App() {
           <div className="flex items-center gap-6">
             <button 
               onClick={() => setSidebarOpen(!isSidebarOpen)} 
-              className="md:hidden p-3 bg-slate-900 text-white rounded-2xl shadow-xl"
+              className="lg:hidden p-3 bg-slate-900 text-white rounded-2xl shadow-xl flex items-center justify-center shrink-0"
             >
               <Menu size={20} />
             </button>
@@ -1146,7 +1011,7 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-8">
-            <div className="hidden xl:flex items-center px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner group transition-all focus-within:ring-2 focus-within:ring-blue-100">
+            <div className="hidden lg:flex items-center px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner group transition-all focus-within:ring-2 focus-within:ring-blue-100">
               <Search className="text-slate-300 group-hover:text-blue-500 transition-colors" size={18} />
               <input 
                 type="text" 
@@ -1155,27 +1020,27 @@ export default function App() {
               />
             </div>
             
-            <div className="flex items-center gap-4 border-l border-slate-100 pl-8">
+            <div className="flex items-center gap-2 sm:gap-4 lg:border-l border-slate-100 lg:pl-8">
               <NotificationBell user={user} />
               
-              <div className="flex items-center gap-4">
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="hidden xs:flex flex-col items-end">
+                  <span className="text-[9px] sm:text-[10px] font-black text-slate-900 uppercase tracking-tighter truncate max-w-[80px] sm:max-w-none">
                     {user.displayName || user.email.split('@')[0]}
                   </span>
-                  <span className="text-[8px] font-black text-blue-500 uppercase tracking-[0.1em] px-2 py-0.5 bg-blue-50 rounded-full border border-blue-100 mt-1">
+                  <span className="text-[7px] sm:text-[8px] font-black text-blue-500 uppercase tracking-[0.1em] px-1.5 sm:px-2 py-0.5 bg-blue-50 rounded-full border border-blue-100 mt-0.5">
                     {user.role}
                   </span>
                 </div>
                 <div className="relative group cursor-pointer">
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt="User" className="w-12 h-12 rounded-[1.25rem] border-2 border-white shadow-xl shadow-slate-200 object-cover" />
+                    <img src={user.photoURL} alt="User" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white shadow-lg sm:shadow-xl shadow-slate-200 object-cover" />
                   ) : (
-                    <div className="w-12 h-12 rounded-[1.25rem] border-2 border-white shadow-xl shadow-slate-200 bg-slate-100 flex items-center justify-center text-slate-500 font-black text-lg">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white shadow-lg sm:shadow-xl shadow-slate-200 bg-slate-100 flex items-center justify-center text-slate-500 font-black text-base sm:text-lg">
                       {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
                     </div>
                   )}
-                  <div className="absolute -bottom-1 -right-1 w-4.5 h-4.5 bg-green-500 rounded-full border-4 border-white shadow-sm" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-[3px] border-white shadow-sm" />
                 </div>
               </div>
             </div>
@@ -1183,6 +1048,7 @@ export default function App() {
         </header>
 
         {/* Dynamic View */}
+        {user && currentCompany && <CriticalNotificationOverlay user={user} />}
         <div className="flex-1 p-4 sm:p-8 pb-32">
           <AnimatePresence mode="wait">
             <motion.div

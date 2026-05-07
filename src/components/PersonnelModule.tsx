@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, addDoc, updateDoc, doc, arrayUnion, deleteDoc, createEmployeeAccount, secondaryAuth } from '../lib/firebase';
+import { collection, onSnapshot, query, where, addDoc, updateDoc, doc, arrayUnion, deleteDoc, getDocs } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save, Ban } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
@@ -7,6 +7,8 @@ import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { cn } from '../lib/utils';
 import { useCompany } from '../lib/CompanyContext';
 import { DEFAULT_ROLES } from '../App';
+
+import { createNotification } from '../lib/notifications';
 
 interface Staff {
   id: string;
@@ -42,7 +44,7 @@ export default function PersonnelModule() {
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', assignedTo: '', startDate: '', endDate: '' });
-  const [newStaff, setNewStaff] = useState({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général', password: 'Password123' });
+  const [newStaff, setNewStaff] = useState({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général' });
   const [creationMessage, setCreationMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   
@@ -93,11 +95,34 @@ export default function PersonnelModule() {
     if (!currentCompany || !newTask.title || !newTask.assignedTo || submitting) return;
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'tasks'), {
+      const taskDoc = await addDoc(collection(db, 'tasks'), {
         ...newTask,
         companyId: currentCompany.id,
         status: 'todo'
       });
+
+      // Trigger notification for the assigned staff MEMBER
+      const assignedStaff = staffList.find(s => s.id === newTask.assignedTo);
+      if (assignedStaff) {
+        // Need to find the UID of the user with this email
+        // For simplicity and matching current patterns, we might not have UID here 
+        // unless we join with a users collection. 
+        // However, the createNotification expects userIds.
+        // Let's assume there is a mapping or we can query users collection.
+        const qUser = query(collection(db, 'users'), where('email', '==', assignedStaff.email.toLowerCase()));
+        const userSnap = await getDocs(qUser);
+        if (!userSnap.empty) {
+          const recipientUid = userSnap.docs[0].id;
+          await createNotification(
+            currentCompany.id,
+            [recipientUid],
+            'Nouvelle tâche assignée',
+            `Vous avez été assigné à la tâche : ${newTask.title}`,
+            'task'
+          );
+        }
+      }
+
       setNewTask({ title: '', assignedTo: '', startDate: '', endDate: '' });
       setIsAddingTask(false);
     } catch (err) {
@@ -131,17 +156,6 @@ export default function PersonnelModule() {
           setCreationMessage('');
         }, 1500);
       } else {
-        if (!newStaff.password) return;
-        try {
-          await createEmployeeAccount(newStaff.email.trim(), newStaff.password);
-          await secondaryAuth.signOut(); // Log out in the secondary instance
-        } catch (authErr: any) {
-          if (authErr.code !== 'auth/email-already-in-use') {
-            throw authErr;
-          }
-          // If already in use, we just proceed to link them to the company
-        }
-
         await addDoc(collection(db, 'personnel'), {
           firstName: newStaff.firstName,
           lastName: newStaff.lastName,
@@ -158,16 +172,12 @@ export default function PersonnelModule() {
         await updateDoc(doc(db, 'companies', currentCompany.id), {
           memberEmails: arrayUnion(newStaff.email.trim().toLowerCase())
         });
-        setCreationMessage(`Employé créé avec succès ! Identifiant: ${newStaff.email} | Mot de passe: ${newStaff.password}`);
-        setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général', password: 'Password123' });
+        setCreationMessage(`Employé ajouté avec succès ! Il peut désormais se connecter avec Google via l'adresse : ${newStaff.email}`);
+        setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général' });
       }
     } catch (err: any) {
       console.error(err);
-      if (err.code === 'auth/email-already-in-use') {
-          setCreationMessage('Erreur : Cette adresse email est déjà liée à un compte.');
-      } else {
-          setCreationMessage('Erreur lors de l\'opération.');
-      }
+      setCreationMessage('Erreur lors de l\'opération.');
     } finally {
       setSubmitting(false);
     }
@@ -308,8 +318,7 @@ export default function PersonnelModule() {
                         notes: staff.notes || '',
                         email: staff.email, 
                         role: staff.role, 
-                        department: staff.department, 
-                        password: '' 
+                        department: staff.department
                       });
                       setIsAdding(true);
                     }}
@@ -618,19 +627,8 @@ export default function PersonnelModule() {
                   />
                 </div>
               </div>
-              {!editingStaff && (
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Mot de Passe par défaut</label>
-                  <input 
-                    type="text"
-                    value={newStaff.password} 
-                    onChange={e => setNewStaff({...newStaff, password: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" 
-                  />
-                </div>
               </div>
-              )}
               {creationMessage && (
                 <div className={cn("p-3 rounded-lg border mt-4", creationMessage.includes('Erreur') ? "bg-red-50 text-red-700 border-red-100" : "bg-green-50 text-green-700 border-green-100")}>
                   <p className="text-xs font-medium">
@@ -645,7 +643,7 @@ export default function PersonnelModule() {
                 onClick={() => { 
                   setIsAdding(false); 
                   setEditingStaff(null);
-                  setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général', password: 'Password123' });
+                  setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général' });
                   setCreationMessage(''); 
                 }} 
                 className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"

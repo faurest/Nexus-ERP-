@@ -147,12 +147,14 @@ export default function ProjectModule() {
           updatedAt: serverTimestamp(),
         });
         if (editingProject.status !== formData.status) {
+          // If the status is completed or on_hold, we consider it an alert (critical)
+          const isAlert = ['completed', 'on_hold', 'active'].includes(formData.status);
           await createNotification(
             currentCompany.id,
             recipients,
             'Mise à jour du Projet',
             `Le statut du projet "${formData.name}" est passé à "${formData.status}".`,
-            'project'
+            isAlert ? 'alert' : 'project'
           );
         }
       } else {

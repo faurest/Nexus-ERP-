@@ -1,14 +1,10 @@
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged as firebaseOnAuthStateChanged,
-  updateProfile,
   GoogleAuthProvider,
-  signInWithPopup,
-  sendPasswordResetEmail
+  signInWithPopup
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -159,54 +155,6 @@ export function onAuthStateChanged(auth: any, cb: (user: any) => void) {
   });
 }
 
-export const loginWithEmail = async (email: string, pass: string) => {
-  try {
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanPass = pass.trim();
-    console.log("Nexus Auth: Tentative de connexion pour", cleanEmail);
-    const result = await signInWithEmailAndPassword(auth, cleanEmail, cleanPass);
-    console.log("Nexus Auth: Connexion réussie pour", result.user.uid);
-    return { user: result.user };
-  } catch (error: any) {
-    console.error("Nexus Auth Error:", error.code, error.message);
-    if (error.code === 'auth/operation-not-allowed') {
-      alert("ERREUR : La méthode de connexion par Email/Mot de passe n'est pas activée dans votre console Firebase.\n\nAllez dans Authentication > Sign-in method et activez 'Email/Password'.");
-    } else if (error.code === 'auth/invalid-credential') {
-      console.warn("Nexus Auth: Identifiants incorrects pour l'accès.");
-    }
-    throw error;
-  }
-};
-
-export async function signupWithEmail(email: string, pass: string) {
-  try {
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanPass = pass.trim();
-    console.log("Nexus Auth: Tentative de création de compte pour", cleanEmail);
-    const result = await createUserWithEmailAndPassword(auth, cleanEmail, cleanPass);
-    console.log("Nexus Auth: Compte créé pour", result.user.uid);
-    // Create profile in Firestore
-    try {
-      await firestoreSetDoc(firestoreDoc(db, 'users', result.user.uid), {
-        uid: result.user.uid,
-        email: result.user.email,
-        displayName: result.user.email?.split('@')[0],
-        createdAt: firestoreServerTimestamp(),
-        role: 'user' // Default role
-      });
-    } catch (e) {
-      console.warn("Nexus Firebase: Impossible de créer le profil utilisateur dans Firestore (Permissions?)", e);
-    }
-    return { user: result.user };
-  } catch (error: any) {
-    console.error("Nexus Auth Error (Signup):", error.code, error.message);
-    if (error.code === 'auth/operation-not-allowed') {
-      alert("ERREUR : La méthode de connexion par Email/Mot de passe n'est pas activée dans votre console Firebase.\n\nAllez dans Authentication > Sign-in method et activez 'Email/Password'.");
-    }
-    throw error;
-  }
-}
-
 export const loginWithGoogle = async () => {
   try {
     const provider = new GoogleAuthProvider();
@@ -231,32 +179,8 @@ export const loginWithGoogle = async () => {
   }
 };
 
-export const resetPassword = async (email: string) => {
-  try {
-    await sendPasswordResetEmail(auth, email);
-    return true;
-  } catch (error: any) {
-    console.error("Reset password error:", error);
-    throw error;
-  }
-};
-
 export const logout = async () => {
   await signOut(auth);
-};
-
-export const createEmployeeAccount = async (email: string, pass: string) => {
-  // In Firebase, we can't easily create another user from the client without signing out
-  // Unless we use a secondary auth instance or Admin SDK (server-side)
-  // For now, let's just use the main signup for demo if it's meant to be a registration flow
-  // Or just return a standard signup call (which will sign in the new user).
-  return signupWithEmail(email, pass);
-};
-
-export const secondaryAuth = {
-  signOut: async () => {
-    await signOut(auth);
-  }
 };
 
 // Firestore helper patterns matching existing code
@@ -288,6 +212,10 @@ export function or(...args: any[]) {
 
 export function and(...args: any[]) {
   return firestoreAnd(...args);
+}
+
+export function orderBy(field: string, direction: 'asc' | 'desc' = 'asc') {
+  return firestoreOrderBy(field, direction);
 }
 
 export async function addDoc(col: any, data: any) {

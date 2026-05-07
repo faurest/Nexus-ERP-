@@ -14,7 +14,8 @@ import {
   Trash2,
   Edit2,
   Save,
-  MessageSquare
+  MessageSquare,
+  ArrowLeft
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
@@ -226,386 +227,329 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
   ];
 
   const moduleCards = [
-    { id: 'projects', label: 'Projets', img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=600', desc: 'Gestion des flux' },
-    { id: 'personnel', label: 'Ressources Humaines', img: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600', desc: 'Équipes et talents' },
-    { id: 'sales', label: 'Ventes & CRM', img: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1600', desc: 'Performance' },
-    { id: 'finances', label: 'Finance', img: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80&w=600', desc: 'Flux financiers' },
-    { id: 'stock', label: 'Stocks & Logistique', img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=600', desc: 'Actifs matériels' },
-    { id: 'clients', label: 'Relations Clients', img: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=80&w=600', desc: 'Portefeuille' },
+    { id: 'projects', label: 'Projets', img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=600', desc: 'Gestion des flux', size: 'large' },
+    { id: 'personnel', label: 'Ressources Humaines', img: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600', desc: 'Équipes et talents', size: 'small' },
+    { id: 'sales', label: 'Ventes & CRM', img: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1600', desc: 'Performance', size: 'small' },
+    { id: 'finances', label: 'Finance', img: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80&w=600', desc: 'Flux financiers', size: 'medium' },
+    { id: 'stock', label: 'Logistique', img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=600', desc: 'Stocks', size: 'medium' },
+    { id: 'clients', label: 'Clients', img: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=80&w=600', desc: 'Portefeuille', size: 'medium' },
   ];
 
   return (
-    <div className="space-y-12 pb-20">
-      {/* Immersive Hero Header */}
-      <div className="relative overflow-hidden bg-slate-900 rounded-[3rem] p-10 sm:p-16 text-white shadow-[0_32px_64px_-16px_rgba(15,23,42,0.3)] group">
-        <div className="absolute inset-0 z-0 scale-110 blur-xl opacity-30 group-hover:opacity-40 transition-opacity duration-1000">
+    <div className="space-y-10 pb-20">
+      {/* Immersive Command Header */}
+      <div className="relative overflow-hidden bg-slate-950 rounded-[2rem] lg:rounded-[2.5rem] p-6 lg:p-12 text-white shadow-2xl group border border-white/5">
+        <div className="absolute inset-0 z-0 scale-105 blur-2xl opacity-20 pointer-events-none">
           <img 
              src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1600" 
              className="w-full h-full object-cover" 
              alt="abstract"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-transparent to-purple-900/40 z-0" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-indigo-600/20 z-0 opacity-50" />
 
-        <div className="relative z-10 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-10">
-          <div className="max-w-2xl">
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-12">
+          <div className="max-w-xl">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full mb-6 backdrop-blur-md">
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-300">Nexus Intelligence v3.0</span>
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full mb-6">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                <span className="text-[9px] font-black uppercase tracking-[0.25em] text-blue-400">Nexus OS • Operational Command</span>
               </div>
-              <h1 className="text-4xl sm:text-6xl font-black tracking-tight mb-6 leading-[1.1]">
-                Commandez votre <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Écosystème</span>
+              <h1 className="text-3xl lg:text-5xl font-black tracking-tight mb-4 leading-tight">
+                Bonjour, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">{user?.displayName || 'Commandant'}</span>
               </h1>
-              <p className="text-slate-300 text-sm sm:text-lg font-medium leading-relaxed max-w-lg">
+              <p className="text-slate-400 text-xs lg:text-sm font-medium leading-relaxed max-w-md opacity-80">
                 {welcomeMessages[role] || "Accédez à une vision 360° optimisée de vos actifs, flux financiers et capital humain."}
               </p>
             </motion.div>
           </div>
           
-          <div className="flex flex-wrap gap-4 shrink-0">
+          <div className="flex flex-wrap gap-4 shrink-0 lg:bg-white/5 lg:backdrop-blur-md lg:p-2 lg:rounded-3xl lg:border lg:border-white/10">
              {(!isNewEnterprise || role === 'owner') && (
-              <div className="flex flex-wrap gap-4">
-                <input 
-                  type="file" 
-                  accept=".json" 
-                  id="import-json" 
-                  hidden 
-                  onChange={handleImport}
-                  disabled={isImporting || isExporting}
-                />
+              <>
                 <button 
                   onClick={() => document.getElementById('import-json')?.click()}
                   disabled={isImporting || isExporting}
-                  className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-[0.15em] hover:bg-white/10 transition-all flex items-center gap-3 backdrop-blur-xl group/btn"
+                  className="px-6 py-4 rounded-2xl bg-white/5 lg:bg-transparent border border-white/10 lg:border-none text-white text-[9px] font-black uppercase tracking-[0.15em] hover:bg-white/10 transition-all flex items-center gap-3 group/btn"
                 >
-                  <Upload size={16} className="group-hover:rotate-12 transition-transform" />
-                  {isImporting ? 'Ingestion...' : 'Importer Flux'}
+                  <Upload size={14} className="group-hover:-translate-y-1 transition-transform" />
+                  {isImporting ? 'Sync...' : 'Import Data'}
                 </button>
+                <input type="file" accept=".json" id="import-json" hidden onChange={handleImport} />
                 
                 <button 
                   onClick={handleExport}
                   disabled={isExporting || isImporting}
-                  className="px-8 py-4 rounded-2xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.15em] hover:bg-blue-500 transition-all shadow-[0_15px_30px_rgba(37,99,235,0.3)] flex items-center gap-3"
+                  className="px-6 py-4 rounded-2xl bg-blue-600 text-white text-[9px] font-black uppercase tracking-[0.15em] hover:bg-blue-500 transition-all shadow-[0_15px_30px_rgba(37,99,235,0.2)] flex items-center gap-3"
                 >
-                  <Download size={16} />
+                  <Download size={14} />
                   {isExporting ? 'Process...' : 'Extraction'}
                 </button>
-              </div>
+              </>
             )}
           </div>
         </div>
       </div>
 
-      {/* Interactive Bento Navigation */}
-      <section className="space-y-8">
-        <div className="flex items-center justify-between px-2">
-           <div>
-             <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Écosystèmes Nexus</h2>
-             <p className="text-[10px] text-slate-300 font-bold uppercase mt-1">Accès rapide aux flux de travail</p>
-           </div>
-           <div className="h-[1px] flex-1 mx-8 bg-slate-100" />
-        </div>
+      {/* Main Bento Grid */}
+      <div className="grid grid-cols-12 gap-8">
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-          {moduleCards.map((card, idx) => (
-            <motion.div
-              key={card.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 + idx * 0.05 }}
-              className="group cursor-pointer relative h-72 overflow-hidden rounded-[2.5rem] bg-slate-100 border border-white shadow-xl hover:shadow-2xl transition-all duration-500"
-            >
-              <img 
-                src={card.img} 
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[0.3] group-hover:grayscale-0" 
-                alt={card.label}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-80" />
-              <div className="absolute inset-0 border-2 border-white/0 group-hover:border-white/20 transition-all rounded-[2.5rem] z-10" />
-              
-              <div className="absolute bottom-0 left-0 p-8 text-white w-full z-20">
-                <span className="text-[9px] font-black uppercase tracking-[0.3em] text-blue-400 mb-2 block opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">{card.desc}</span>
-                <h3 className="text-xl font-black leading-tight tracking-tight group-hover:text-blue-50 transition-colors">{card.label}</h3>
-                <div className="mt-4 w-8 h-1 bg-blue-500 rounded-full scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500" />
+        {/* KPI Row - Top 4 cards */}
+        {stats.map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 * i }}
+            className="col-span-12 md:col-span-6 lg:col-span-3 bg-white p-5 lg:p-7 rounded-3xl lg:rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 group"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className={cn(
+                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110",
+                stat.color.includes('green') ? 'bg-green-50 text-green-600 group-hover:bg-green-600 group-hover:text-white' : 
+                stat.color.includes('blue') ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white' : 
+                stat.color.includes('red') ? 'bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white' : 
+                'bg-orange-50 text-orange-600 group-hover:bg-orange-600 group-hover:text-white'
+              )}>
+                <stat.icon size={20} />
               </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Stats Dashboard */}
-      <section className="space-y-6">
-        <div className="flex items-center gap-3 px-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Flux Live : Nexus Transfer Registry secured</span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 + i * 0.1 }}
-              className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-xl transition-all group"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className={cn("p-4 rounded-2xl transition-all duration-300 group-hover:bg-slate-900 group-hover:text-white", 
-                   stat.color.includes('green') ? 'bg-green-50 text-green-600' : 
-                   stat.color.includes('blue') ? 'bg-blue-50 text-blue-600' : 
-                   stat.color.includes('red') ? 'bg-red-50 text-red-600' : 
-                   'bg-orange-50 text-orange-600'
-                )}>
-                  <stat.icon size={22} />
-                </div>
-                <span className={cn("text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full",
-                  stat.trend.includes('+') ? 'bg-green-50 text-green-600' : 
-                  stat.trend === 'Critique' ? 'bg-red-50 text-red-600 animate-pulse' :
-                  'bg-blue-50 text-blue-600'
-                )}>
-                  {stat.trend}
-                </span>
+              <div className={cn(
+                "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
+                stat.trend.includes('+') ? 'bg-green-100 text-green-700' : 
+                stat.trend === 'Critique' ? 'bg-red-100 text-red-700 animate-pulse' :
+                'bg-blue-100 text-blue-700'
+              )}>
+                {stat.trend}
               </div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{stat.label}</p>
-              <h3 className="text-3xl font-black text-slate-900 tracking-tighter">{stat.value}</h3>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Analytics & Performance Hub */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <section className="xl:col-span-2 bg-white rounded-[3rem] p-10 border border-slate-100 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.03)] group overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-50 group-hover:bg-blue-50 transition-colors" />
-          
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-12 relative z-10">
-            <div>
-              <h3 className="text-2xl font-black text-slate-900 tracking-tight">Intelligence Opérationnelle</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Index de performance et projections financières</p>
             </div>
-            <div className="flex bg-slate-50 p-1 rounded-2xl border border-slate-100">
-               {['Réel', 'Projection', 'Cible'].map(label => (
-                 <button key={label} className="px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all">
-                   {label}
-                 </button>
-               ))}
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{stat.label}</p>
+            <h3 className="text-2xl font-black text-slate-900 leading-none">{stat.value}</h3>
+          </motion.div>
+        ))}
+
+        {/* Intelligence Hub (Chart) - Spans 8 cols */}
+        <div className="col-span-12 xl:col-span-8 bg-white rounded-3xl lg:rounded-[2.5rem] p-6 lg:p-10 border border-slate-100 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl opacity-30 -mr-32 -mt-32 scale-0 group-hover:scale-100 transition-transform duration-1000" />
+          
+          <div className="flex justify-between items-center mb-10 relative z-10">
+            <div>
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Intelligence Flux</h3>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Performance opérationnelle en temps réel</p>
+            </div>
+            <div className="flex gap-2">
+              {['24h', '7j', '30j'].map((t, i) => (
+                <button key={t} className={cn(
+                  "px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                  i === 2 ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:bg-slate-50"
+                )}>
+                  {t}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="h-[300px] flex items-end gap-3 px-4 relative z-10">
-            {[65, 45, 78, 52, 88, 62, 95, 72, 82, 58, 70, 85].map((val, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-4 group/bar">
+          <div className="h-[280px] flex items-end gap-3.5 relative z-10">
+            {[45, 62, 55, 78, 68, 92, 85, 76, 88, 95, 82, 98].map((v, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-3 group/bar">
                 <motion.div 
                   initial={{ height: 0 }}
-                  animate={{ height: `${val}%` }}
-                  transition={{ delay: 0.8 + i * 0.05, duration: 1, ease: "easeOut" }}
+                  animate={{ height: `${v}%` }}
+                  transition={{ delay: 0.5 + i * 0.05, duration: 0.8 }}
                   className={cn(
-                    "w-full rounded-t-2xl transition-all duration-500 relative",
-                    i === 6 ? "bg-blue-600 shadow-[0_10px_30px_rgba(37,99,235,0.3)]" : "bg-slate-100 group-hover/bar:bg-blue-100"
+                    "w-full rounded-t-xl transition-all duration-500 relative",
+                    i === 11 ? "bg-blue-600 shadow-[0_8px_20px_rgba(37,99,235,0.25)]" : "bg-slate-100 group-hover/bar:bg-blue-100"
                   )}
                 >
-                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-black px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap">
-                    {val}k
+                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] font-black px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity">
+                    {v}k
                   </div>
                 </motion.div>
-                <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">{i + 1}</span>
+                <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">{i + 1}</span>
               </div>
             ))}
           </div>
-        </section>
+        </div>
 
-        <section className="bg-slate-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-transparent z-0" />
+        {/* Global Status - Spans 4 cols */}
+        <div className="col-span-12 xl:col-span-4 bg-slate-900 rounded-3xl lg:rounded-[2.5rem] p-7 lg:p-9 text-white shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/40 via-transparent to-transparent z-0 pointer-events-none" />
           <div className="relative z-10">
-            <h3 className="text-xl font-black mb-1">Status Global</h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-10 text-blue-400">Santé du système : 98%</p>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                <Activity size={16} />
+              </div>
+              <div>
+                <h3 className="text-md font-black uppercase tracking-wider">Passerelle Nexus</h3>
+                <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Connecté • 98.4% Health</p>
+              </div>
+            </div>
             
-            <div className="space-y-8">
+            <div className="space-y-6">
               {[
-                { label: 'Uptime Serveur', val: '99.9%', color: 'bg-green-400' },
-                { label: 'Stock Critique', val: '12 items', color: 'bg-orange-400' },
-                { label: 'Tâches Sync', val: '100%', color: 'bg-blue-400' },
-                { label: 'Latence Cloud', val: '24ms', color: 'bg-emerald-400' },
-              ].map(stat => (
-                <div key={stat.label}>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">{stat.label}</span>
-                    <span className="text-xs font-black">{stat.val}</span>
+                { label: 'Uptime Système', val: '99.9%', w: '99%' },
+                { label: 'Flux Trésorerie', val: 'Stable', w: '85%' },
+                { label: 'Stock Critique', val: '2 items', w: '20%' },
+              ].map(s => (
+                <div key={s.label}>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em]">{s.label}</span>
+                    <span className="text-[10px] font-black text-white">{s.val}</span>
                   </div>
-                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-1 bg-white/5 rounded-full overflow-hidden">
                     <motion.div 
                       initial={{ width: 0 }}
-                      animate={{ width: '85%' }}
-                      transition={{ duration: 1.5 }}
-                      className={cn("h-full rounded-full", stat.color)} 
+                      animate={{ width: s.w }}
+                      transition={{ duration: 1.2, delay: 0.8 }}
+                      className={cn("h-full rounded-full transition-all", s.w === '20%' ? 'bg-orange-500' : 'bg-blue-500')}
                     />
                   </div>
                 </div>
               ))}
             </div>
-            
-            <div className="mt-12 p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md">
-              <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-2">Nexus Advisor</p>
-              <p className="text-xs font-medium text-slate-300 leading-relaxed italic">"Optimisez vos flux de trésorerie en consolidant les factures du mois précédent."</p>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Coordination Flux / Interventions */}
-        <section className="bg-slate-900 text-white rounded-3xl p-6 shadow-xl lg:col-span-1 overflow-hidden relative group">
-          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
-             <MessageSquare size={120} />
-          </div>
-          <div className="flex items-center justify-between mb-8 relative z-10">
-            <div>
-              <h2 className="text-lg font-bold tracking-tight">Messages d'Intervention / Rendez-vous</h2>
-              <p className="text-slate-400 text-xs mt-1">Gérer les interventions et communications de rendez-vous.</p>
-            </div>
-            <button 
-              onClick={() => {
-                setEditingIntervention(null);
-                setNewIntervention({ client: '', message: '', date: '', status: 'Planifié' });
-                setIsAddingIntervention(true);
-              }}
-              className="bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all"
-            >
-              <Plus size={20} />
-            </button>
           </div>
 
-          <div className="space-y-4 relative z-10 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-            {interventions.length === 0 ? (
-              <p className="text-center text-slate-500 text-sm py-4">Aucun message d'intervention enregistré.</p>
-            ) : interventions.map((item, i) => (
-              <motion.div 
-                key={item.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="flex flex-col items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
-              >
-                <div className="flex justify-between items-start w-full">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                      Client: {item.client}
-                    </span>
-                    <span className={cn(
-                      "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
-                      item.status === 'Terminé' ? "bg-green-500/20 text-green-400" :
-                      item.status === 'Annulé' ? "bg-red-500/20 text-red-400" :
-                      "bg-blue-500/20 text-blue-400"
-                    )}>
-                      {item.status}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => { setEditingIntervention(item); setNewIntervention(item); setIsAddingIntervention(true); }} className="text-slate-400 hover:text-blue-400"><Edit2 size={12} /></button>
-                    <button onClick={() => handleDeleteIntervention(item.id)} className="text-slate-400 hover:text-red-400"><Trash2 size={12} /></button>
-                  </div>
-                </div>
-                <div className="w-full">
-                  <span className="text-[9px] font-medium text-slate-500 block mb-1">Date: {item.date || 'Non spécifiée'}</span>
-                  <p className="text-sm font-medium mt-1">{item.message}</p>
-                </div>
-              </motion.div>
-            ))}
+          <div className="mt-10 p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md relative z-10 transition-transform hover:scale-[1.02] cursor-default">
+             <div className="flex items-center gap-2 mb-2">
+               <AlertCircle size={14} className="text-blue-400" />
+               <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Recommandation AI</span>
+             </div>
+             <p className="text-[11px] font-medium text-slate-300 leading-relaxed italic">"Optimisez vos flux de trésorerie en consolidant les règlements fournisseurs demain."</p>
           </div>
-        </section>
+        </div>
 
-        {/* Services */}
-        <section className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6 lg:col-span-1 overflow-hidden relative group">
-          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
-             <Briefcase size={120} />
-          </div>
-          <div className="flex items-center justify-between mb-8 relative z-10">
-            <div>
-              <h2 className="text-lg font-bold tracking-tight text-slate-900">Services Disponibles</h2>
-              <p className="text-slate-500 text-xs mt-1">Découvrez et gérez les services proposés.</p>
-            </div>
-            <button 
-              onClick={() => {
-                setEditingService(null);
-                setNewService({ name: '', description: '', price: '' });
-                setIsAddingService(true);
-              }}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl transition-all"
-            >
-              <Plus size={20} />
-            </button>
-          </div>
+        {/* Modules Navigation - Bento Style Cards */}
+        <div className="col-span-12 grid grid-cols-12 gap-8 mt-4">
+           {moduleCards.map((card, idx) => (
+             <motion.div
+               key={card.id}
+               initial={{ opacity: 0, scale: 0.95 }}
+               animate={{ opacity: 1, scale: 1 }}
+               transition={{ delay: 0.2 + idx * 0.1 }}
+               className={cn(
+                 "relative group cursor-pointer overflow-hidden rounded-3xl lg:rounded-[2.5rem] bg-slate-100 border border-white shadow-md hover:shadow-2xl transition-all duration-700",
+                 card.size === 'large' ? "col-span-12 lg:col-span-6 h-[250px] lg:h-[420px]" : 
+                 card.size === 'medium' ? "col-span-12 md:col-span-6 lg:col-span-4 h-[220px] lg:h-[300px]" : 
+                 "col-span-12 md:col-span-6 lg:col-span-3 h-[220px] lg:h-[300px]"
+               )}
+             >
+               <img src={card.img} className="absolute inset-0 w-full h-full object-cover grayscale-[0.2] brightness-75 group-hover:scale-110 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-1000" alt={card.label} />
+               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent opacity-80 group-hover:opacity-40 transition-opacity duration-700" />
+               
+               <div className="absolute top-0 right-0 p-6 lg:p-8 z-20">
+                 <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white opacity-100 lg:opacity-0 group-hover:opacity-100 translate-x-0 lg:translate-x-4 group-hover:translate-x-0 transition-all duration-500">
+                    <Plus size={18} />
+                 </div>
+               </div>
 
-          <div className="space-y-4 relative z-10 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-            {services.length === 0 ? (
-              <p className="text-center text-slate-400 text-sm py-4">Aucun service défini.</p>
-            ) : services.map((s, i) => (
-              <div key={s.id} className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex flex-col items-start gap-4 hover:border-blue-200 transition-all shadow-sm">
-                <div className="flex justify-between items-start w-full">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white rounded flex items-center justify-center shrink-0 border border-slate-200 shadow-sm">
-                      <Briefcase size={18} className="text-blue-500" />
+               <div className="absolute bottom-0 left-0 p-6 lg:p-10 text-white z-20 w-full">
+                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 mb-2 block translate-y-0 lg:translate-y-4 opacity-100 lg:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-100">{card.desc}</span>
+                 <h3 className="text-2xl lg:text-3xl font-black tracking-tight leading-none group-hover:tracking-wider transition-all duration-500">{card.label}</h3>
+                 <div className="mt-6 w-12 h-1.5 bg-blue-600 rounded-full scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-700 delay-200" />
+               </div>
+             </motion.div>
+           ))}
+        </div>
+
+        {/* Operational Pulsation (Lower Section) */}
+        <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mt-4">
+           {/* Interventions / Messages */}
+           <section className="bg-slate-950 text-white rounded-[2rem] lg:rounded-[2.5rem] p-7 lg:p-9 border border-white/5 shadow-2xl relative group overflow-hidden">
+             <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 group-hover:scale-[1.7] group-hover:rotate-6 transition-all duration-1000">
+                <MessageSquare size={140} />
+             </div>
+             <div className="flex items-center justify-between mb-10 relative z-10">
+               <div>
+                 <h3 className="text-xl font-black uppercase tracking-tight">Flux Interventions</h3>
+                 <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Activité temps réel & RDV</p>
+               </div>
+               <button onClick={() => setIsAddingIntervention(true)} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-all">
+                 <Plus size={18} />
+               </button>
+             </div>
+
+             <div className="space-y-4 relative z-10">
+               {interventions.slice(0, 4).map((item, i) => (
+                 <div key={item.id} className="p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all flex items-center gap-4 group/item">
+                    <div className={cn(
+                      "w-1.5 h-8 rounded-full",
+                      item.status === 'Terminé' ? 'bg-green-500' : 'bg-blue-500'
+                    )} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-black text-slate-400 uppercase truncate">{item.client}</span>
+                        <span className="text-[8px] font-black text-slate-500 uppercase">{item.date}</span>
+                      </div>
+                      <p className="text-xs font-semibold truncate text-slate-200">{item.message}</p>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 truncate">{s.name}</h4>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">{s.price ? `${s.price} FCFA` : 'Sur devis'}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => { setEditingService(s); setNewService(s); setIsAddingService(true); }} className="p-1 text-slate-400 hover:text-blue-600"><Edit2 size={14}/></button>
-                    <button onClick={() => handleDeleteService(s.id)} className="p-1 text-slate-400 hover:text-red-600"><Trash2 size={14}/></button>
-                  </div>
+                 </div>
+               ))}
+               {interventions.length === 0 && <p className="text-center text-slate-600 text-xs font-bold py-8 uppercase tracking-widest">Aucun flux détecté</p>}
+             </div>
+           </section>
+
+           {/* Service Center */}
+           <section className="bg-white rounded-[2rem] lg:rounded-[2.5rem] p-7 lg:p-9 border border-slate-100 shadow-sm relative group overflow-hidden">
+              <div className="flex items-center justify-between mb-10 relative z-10">
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tight text-slate-900">Catalogue Services</h3>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Gérer l'offre commerciale</p>
                 </div>
-                {s.description && (
-                  <p className="text-xs text-slate-600">{s.description}</p>
-                )}
+                <button onClick={() => setIsAddingService(true)} className="w-10 h-10 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 flex items-center justify-center transition-all">
+                  <Plus size={18} className="text-slate-900" />
+                </button>
               </div>
-            ))}
-          </div>
-        </section>
 
-        {/* Tasks Hub */}
-        <section className="bg-white border text-slate-800 border-slate-200 shadow-sm rounded-3xl p-6 lg:col-span-1 overflow-hidden relative group">
-          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
-             <CheckCircle2 size={120} />
-          </div>
-          <div className="flex items-center justify-between mb-8 relative z-10">
-            <div>
-              <h2 className="text-lg font-bold tracking-tight text-slate-900">Tâches & Assignations</h2>
-              <p className="text-slate-500 text-xs mt-1">Gérer les tâches en cours.</p>
-            </div>
-            <button 
-              onClick={() => setIsAddingTask(true)}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl transition-all"
-            >
-              <Plus size={20} />
-            </button>
-          </div>
-
-          <div className="space-y-4 relative z-10 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-            {tasks.length === 0 ? (
-              <p className="text-center text-slate-400 text-sm py-4">Aucune tâche active.</p>
-            ) : tasks.map((t) => (
-              <div key={t.id} className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex flex-col items-start gap-4 hover:border-blue-200 transition-all shadow-sm">
-                <div className="flex justify-between items-start w-full">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white rounded flex items-center justify-center shrink-0 border border-slate-200 shadow-sm">
-                      <Clock size={18} className={t.status === 'completed' ? 'text-green-500' : 'text-amber-500'} />
+              <div className="space-y-4 relative z-10">
+                {services.slice(0, 4).map(s => (
+                  <div key={s.id} className="p-4 rounded-2xl border border-slate-50 bg-slate-50/50 hover:border-blue-200 hover:bg-white transition-all flex items-center justify-between group/s">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-blue-600 border border-slate-100 group-hover/s:bg-blue-600 group-hover/s:text-white transition-all">
+                        <Briefcase size={16} />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black text-slate-900">{s.name}</h4>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{s.price ? `${s.price} FCFA` : 'Sur devis'}</span>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 truncate">{t.title}</h4>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">{personnel.find(p => p.id === t.assignedTo)?.name || 'Non Assigné'}</span>
+                    <ArrowLeft size={14} className="text-slate-200 rotate-180 opacity-0 group-hover/s:opacity-100 translate-x-2 group-hover/s:translate-x-0 transition-all" />
+                  </div>
+                ))}
+              </div>
+           </section>
+
+           {/* Task Orchestrator */}
+           <section className="bg-white rounded-[2rem] lg:rounded-[2.5rem] p-7 lg:p-9 border border-slate-100 shadow-sm relative group overflow-hidden">
+              <div className="flex items-center justify-between mb-10 relative z-10">
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tight text-slate-900">Project Engine</h3>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Ordonnancement des tâches</p>
+                </div>
+                <button onClick={() => setIsAddingTask(true)} className="w-10 h-10 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 flex items-center justify-center transition-all">
+                  <Plus size={18} className="text-slate-900" />
+                </button>
+              </div>
+
+              <div className="space-y-4 relative z-10">
+                {tasks.slice(0, 4).map(t => (
+                  <div key={t.id} className="p-4 rounded-2xl border border-slate-50 bg-slate-50 hover:border-indigo-200 hover:bg-white transition-all">
+                    <div className="flex justify-between items-start mb-2">
+                       <h4 className="text-[11px] font-black text-slate-900 uppercase truncate pr-4">{t.title}</h4>
+                       <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase tracking-widest group-hover:bg-indigo-600 group-hover:text-white transition-all">New</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <Clock size={10} className="text-slate-400" />
+                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Assigné à: {personnel.find(p => p.id === t.assignedTo)?.name || 'Nexus Admin'}</span>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
+           </section>
+        </div>
+
       </div>
 
       {/* Cross-tenant Global Overview */}

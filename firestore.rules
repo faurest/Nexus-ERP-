@@ -108,7 +108,8 @@ service cloud.firestore {
           'personnel', 'clients', 'sales', 'projects', 'partners', 
           'expenses', 'resources', 'tasks', 'services', 
           'interventions', 'notifications', 'open_orders',
-          'sales_invoices', 'invoices', 'payments', 'collaborations'
+          'sales_invoices', 'invoices', 'payments', 'collaborations',
+          'messages', 'project_discussions'
         ];
       }
 
@@ -123,10 +124,9 @@ service cloud.firestore {
       allow get: if isSignedIn() && isCompanyCollection() && (
         isAdmin() || 
         (isMemberOfCompany(resource.data.companyId) && (
-          collectionName != 'collaborations' || 
-          resource.data.recipientEmail == 'all' || 
-          resource.data.recipientEmail.lower() == currentUserEmail() || 
-          resource.data.senderEmail.lower() == currentUserEmail()
+          (collectionName != 'collaborations' && collectionName != 'messages') || 
+          (collectionName == 'collaborations' && (resource.data.recipientEmail == 'all' || resource.data.recipientEmail.lower() == currentUserEmail() || resource.data.senderEmail.lower() == currentUserEmail())) ||
+          (collectionName == 'messages' && (resource.data.senderId == request.auth.uid || resource.data.recipientId == request.auth.uid))
         )) ||
         (resource.data.email != null && resource.data.email.lower() == currentUserEmail())
       );
@@ -135,10 +135,9 @@ service cloud.firestore {
       allow list: if isSignedIn() && isCompanyCollection() && (
         isAdmin() || 
         (isMemberOfCompany(resource.data.companyId) && (
-          collectionName != 'collaborations' || 
-          resource.data.recipientEmail == 'all' || 
-          resource.data.recipientEmail.lower() == currentUserEmail() || 
-          resource.data.senderEmail.lower() == currentUserEmail()
+          (collectionName != 'collaborations' && collectionName != 'messages') || 
+          (collectionName == 'collaborations' && (resource.data.recipientEmail == 'all' || resource.data.recipientEmail.lower() == currentUserEmail() || resource.data.senderEmail.lower() == currentUserEmail())) ||
+          (collectionName == 'messages' && (resource.data.senderId == request.auth.uid || resource.data.recipientId == request.auth.uid))
         )) ||
         (resource.data.email != null && resource.data.email.lower() == currentUserEmail())
       );
@@ -147,22 +146,26 @@ service cloud.firestore {
                       isValidEntity(incoming()) && 
                       (isAdmin() || (
                         isMemberOfCompany(incoming().companyId) &&
-                        (collectionName != 'collaborations' || incoming().senderEmail.lower() == currentUserEmail())
+                        (collectionName != 'collaborations' || incoming().senderEmail.lower() == currentUserEmail()) &&
+                        (collectionName != 'messages' || incoming().senderId == request.auth.uid) &&
+                        (collectionName != 'project_discussions' || incoming().senderId == request.auth.uid)
                       )) &&
-                      incoming().createdAt == request.time;
+                      (incoming().createdAt == request.time || collectionName == 'messages' || collectionName == 'project_discussions');
 
       allow update: if isSignedIn() && isCompanyCollection() && 
                       (isAdmin() || (
                         isMemberOfCompany(existing().companyId) &&
-                        (collectionName != 'collaborations' || existing().senderEmail.lower() == currentUserEmail())
+                        (collectionName != 'collaborations' || existing().senderEmail.lower() == currentUserEmail()) &&
+                        (collectionName != 'messages' || existing().senderId == request.auth.uid)
                       )) &&
                       incoming().companyId == existing().companyId &&
-                      incoming().updatedAt == request.time;
+                      (incoming().updatedAt == request.time || collectionName == 'messages' || collectionName == 'project_discussions');
 
       allow delete: if isSignedIn() && isCompanyCollection() && 
                       (isAdmin() || (
                         isMemberOfCompany(existing().companyId) &&
-                        (collectionName != 'collaborations' || existing().senderEmail.lower() == currentUserEmail())
+                        (collectionName != 'collaborations' || existing().senderEmail.lower() == currentUserEmail()) &&
+                        (collectionName != 'messages' || existing().senderId == request.auth.uid)
                       ));
     }
   }

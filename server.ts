@@ -141,8 +141,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     uid TEXT PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
-    displayName TEXT,
-    password TEXT NOT NULL
+    displayName TEXT
   );
 
   CREATE TABLE IF NOT EXISTS tasks (
@@ -269,11 +268,8 @@ try {
   // Create user if not exists
   const userExists = db.prepare('SELECT * FROM users WHERE email = ?').get(masterEmail);
   if (!userExists) {
-    db.prepare('INSERT INTO users (uid, email, displayName, password) VALUES (?, ?, ?, ?)')
-      .run(masterUid, masterEmail, 'Nexus Master', masterPassword);
-  } else {
-    // Update password if it changed in seed
-    db.prepare('UPDATE users SET password = ? WHERE email = ?').run(masterPassword, masterEmail);
+    db.prepare('INSERT INTO users (uid, email, displayName) VALUES (?, ?, ?)')
+      .run(masterUid, masterEmail, 'Nexus Master');
   }
 
   // Create Master Company if not exists
@@ -313,56 +309,6 @@ async function startServer() {
   app.use(express.json());
 
   // --- API ROUTES ---
-
-  // Auth (Simplified for demo, but server-side)
-  app.post('/api/auth/register', (req, res) => {
-    let { email, password } = req.body;
-    email = email?.trim().toLowerCase();
-    password = password?.trim();
-    
-    if (!password || password.length < 6) {
-      return res.status(400).json({ error: 'weak-password', message: 'Le mot de passe doit contenir au moins 6 caractères.' });
-    }
-
-    const existingUser = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
-    if (existingUser) {
-      db.prepare('UPDATE users SET password = ? WHERE email = ?').run(password, email);
-      return res.status(400).json({ error: 'email-already-in-use', message: 'Cet utilisateur existe déjà. Le mot de passe a été mis à jour.' });
-    }
-
-    const uid = 'user_' + Math.random().toString(36).substring(2, 10);
-    db.prepare('INSERT INTO users (uid, email, displayName, password) VALUES (?, ?, ?, ?)')
-      .run(uid, email, email.split('@')[0], password);
-    return res.json({ uid, email, displayName: email.split('@')[0] });
-  });
-
-  app.post('/api/auth/login', (req, res) => {
-    let { email, password } = req.body;
-    email = email?.trim().toLowerCase();
-    password = password?.trim();
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
-    
-    if (user) {
-      if (user.password?.trim() === password || email === 'dangafelicite@gmail.com' || email === 'hackeurfaurest@gmail.com') {
-        const { password: _, ...safeUser } = user;
-        return res.json(safeUser);
-      }
-    }
-    
-    // Auto-signup logic if user doesn't exist (as per previous mock logic)
-    if (!user) {
-      if (!password || password.length < 6) {
-        return res.status(400).json({ error: 'weak-password', message: 'Le mot de passe doit contenir au moins 6 caractères.' });
-      }
-
-      const uid = 'user_' + Math.random().toString(36).substring(2, 10);
-      db.prepare('INSERT INTO users (uid, email, displayName, password) VALUES (?, ?, ?, ?)')
-        .run(uid, email, email.split('@')[0], password);
-      return res.json({ uid, email, displayName: email.split('@')[0] });
-    }
-
-    res.status(401).json({ error: 'invalid-credential', message: 'Email ou mot de passe incorrect.' });
-  });
 
   // Generic CRUD Proxy
   const getPK = (collection: string) => collection === 'users' ? 'uid' : 'id';

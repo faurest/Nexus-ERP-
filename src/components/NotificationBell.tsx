@@ -1,14 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Check, Trash2, Box, FileText, CheckCircle } from 'lucide-react';
+import { Bell, Check, Trash2, Box, FileText, CheckCircle, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, collection, query, where, onSnapshot, doc, updateDoc, setDoc } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
+import { requestNotificationPermission, showSystemNotification } from '../lib/notifications';
 
 export default function NotificationBell({ user }: { user: any }) {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const lastNotifId = useRef<string | null>(null);
   const { currentCompany } = useCompany();
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Request permission on mount
+    requestNotificationPermission();
+  }, []);
 
   useEffect(() => {
     if (!currentCompany || !user) return;
@@ -27,6 +34,20 @@ export default function NotificationBell({ user }: { user: any }) {
       }));
       // Sort by date descending
       notifs.sort((a, b) => (b.date || 0) - (a.date || 0));
+      
+      // Check for new unread notifications to trigger system alert
+      const latest = notifs[0];
+      if (latest && !latest.isRead && latest.id !== lastNotifId.current) {
+        // Avoid double trigger if it's just a state refresh
+        if (lastNotifId.current !== null) {
+          showSystemNotification(latest.title, latest.message);
+        }
+        lastNotifId.current = latest.id;
+      } else if (latest && lastNotifId.current === null) {
+        // First load, don't notify but set the ref
+        lastNotifId.current = latest.id;
+      }
+      
       setNotifications(notifs);
     });
 
@@ -73,11 +94,11 @@ export default function NotificationBell({ user }: { user: any }) {
     <div className="relative" ref={dropdownRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2.5 text-slate-400 hover:text-slate-900 bg-slate-50 rounded-full relative transition-all group"
+        className="p-2.5 text-slate-500 hover:text-white bg-white hover:bg-blue-600 rounded-2xl relative transition-all group shadow-sm hover:shadow-blue-200 border border-slate-100 hover:border-blue-500"
       >
-        <Bell size={18} />
+        <Bell size={20} className="transition-transform group-hover:rotate-12" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white font-bold animate-pulse">
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 rounded-full border-2 border-white flex items-center justify-center text-[9px] text-white font-black shadow-lg animate-bounce lg:animate-pulse">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -125,6 +146,7 @@ export default function NotificationBell({ user }: { user: any }) {
                        {notif.type === 'task' ? <CheckCircle size={16} className="text-blue-500 mt-0.5" /> :
                         notif.type === 'project' ? <FileText size={16} className="text-purple-500 mt-0.5" /> :
                         notif.type === 'collab' ? <Box size={16} className="text-amber-500 mt-0.5" /> :
+                        notif.type === 'general' ? <MessageSquare size={16} className="text-emerald-500 mt-0.5" /> :
                         notif.type === 'alert' ? <Box size={16} className="text-red-500 mt-0.5" /> :
                         <Bell size={16} className="text-slate-400 mt-0.5" />}
                     </div>

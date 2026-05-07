@@ -272,6 +272,37 @@
         "readBy": { "type": "string" }
       },
       "required": ["companyId", "senderEmail", "recipientEmail", "title", "content"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Direct message between two users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "recipientId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "number" },
+        "isRead": { "type": "boolean" }
+      },
+      "required": ["companyId", "senderId", "recipientId", "content"]
+    },
+    "ProjectDiscussion": {
+      "title": "Project Discussion",
+      "description": "Threaded message related to a project",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["companyId", "projectId", "senderId", "content"]
     }
   },
   "firestore": {
@@ -291,6 +322,8 @@
     "invoices": { "schema": "Invoice", "description": "General invoice records" },
     "payments": { "schema": "Payment", "description": "Payment records" },
     "open_orders": { "schema": "OpenOrder", "description": "Open order records" },
-    "collaborations": { "schema": "Collaboration", "description": "Collaboration and data transfer records" }
+    "collaborations": { "schema": "Collaboration", "description": "Collaboration and data transfer records" },
+    "messages": { "schema": "Message", "description": "Direct user messages" },
+    "project_discussions": { "schema": "ProjectDiscussion", "description": "Project-based discussions" }
   }
 }
