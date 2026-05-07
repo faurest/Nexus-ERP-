@@ -875,9 +875,11 @@ export default function App() {
           x: (windowWidth < 1024 && !isSidebarOpen) ? -320 : 0
         }}
         className={cn(
-          "h-screen bg-slate-950 border-r border-white/5 flex flex-col z-40 relative shrink-0 transition-all shadow-[20px_0_50px_rgba(0,0,0,0.3)]",
-          windowWidth < 1024 && "fixed left-0 top-0",
-          isSidebarOpen && "rounded-r-[2rem] lg:rounded-none"
+          "bg-slate-950 border border-white/5 flex flex-col z-40 shrink-0 transition-all shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden",
+          windowWidth < 1024 
+            ? "fixed left-0 top-0 h-screen" 
+            : "h-[calc(100vh-2rem)] my-4 ml-4 rounded-[2.5rem] sticky top-4",
+          isSidebarOpen && windowWidth < 1024 && "rounded-r-[2rem]"
         )}
       >
         {/* Abstract Background Elements for Sidebar */}
