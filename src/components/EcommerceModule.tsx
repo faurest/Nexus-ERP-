@@ -458,13 +458,13 @@ export default function EcommerceModule({ user }: { user: any }) {
                   onChange={e => setSearchTerm(e.target.value)}
                 />
               </div>
-              <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100">
+              <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 overflow-x-auto scrollbar-hide max-w-full">
                 {categories.map(cat => (
                   <button
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
                     className={cn(
-                      "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                      "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
                       activeCategory === cat ? "bg-slate-900 text-white shadow-xl shadow-slate-900/20" : "text-slate-400 hover:text-slate-600"
                     )}
                   >
