@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, addDoc, serverTimestamp, where, doc, updateDoc, deleteDoc } from '../lib/firebase';
+import { collection, onSnapshot, query, addDoc, serverTimestamp, where, doc, updateDoc, deleteDoc, arrayUnion } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { Plus, Search, Filter, Phone, Mail, Award, TrendingUp, UserPlus, Edit2, Trash2 } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
@@ -62,6 +62,11 @@ export default function ClientModule() {
           loyaltyPoints: 0,
           createdAt: serverTimestamp(),
         });
+        
+        // Also enroll client in company member emails to satisfy security rules
+        await updateDoc(doc(db, 'companies', currentCompany.id), {
+          memberEmails: arrayUnion(normalizedClient.email)
+        }).catch(e => console.error("Could not enroll client in company members:", e));
       }
       setNewClient({ name: '', email: '', phone: '', address: '', interactions: '' });
       setIsAdding(false);

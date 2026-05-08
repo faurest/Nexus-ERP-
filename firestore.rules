@@ -50,7 +50,7 @@ service cloud.firestore {
         isAdmin() ||
         get(/databases/$(database)/documents/companies/$(companyId)).data.ownerEmail.lower() == currentUserEmail() || 
         get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid ||
-        (get(/databases/$(database)/documents/companies/$(companyId)).data.memberEmails != null && get(/databases/$(database)/documents/companies/$(companyId)).data.memberEmails.contains(currentUserEmail()))
+        (get(/databases/$(database)/documents/companies/$(companyId)).data.memberEmails != null && currentUserEmail() in get(/databases/$(database)/documents/companies/$(companyId)).data.memberEmails)
       );
     }
 
@@ -70,7 +70,7 @@ service cloud.firestore {
         isAdmin() || 
         resource.data.ownerEmail.lower() == currentUserEmail() || 
         resource.data.ownerId == request.auth.uid ||
-        (resource.data.memberEmails != null && resource.data.memberEmails.contains(currentUserEmail())) ||
+        (resource.data.memberEmails != null && currentUserEmail() in resource.data.memberEmails) ||
         // Permit finding by joinCode
         resource.data.joinCode != null
       );
@@ -86,10 +86,10 @@ service cloud.firestore {
           incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees']) &&
           incoming().memberEmails.hasAll(existing().memberEmails) &&
           incoming().memberEmails.size() == existing().memberEmails.size() + 1 &&
-          incoming().memberEmails.contains(currentUserEmail())
+          currentUserEmail() in incoming().memberEmails
         ) ||
         // Action: Standard update for existing members
-        (resource.data.memberEmails.contains(currentUserEmail()) && incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees']))
+        (currentUserEmail() in resource.data.memberEmails && incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees']))
       );
 
       allow delete: if isAdmin();

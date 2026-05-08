@@ -274,7 +274,18 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         const clientQ = query(collection(db, 'clients'), where('email', '==', cleanEmail));
         const clientSnap = await getDocs(clientQ);
         if (!clientSnap.empty) {
-          console.log("Nexus Security: Accès autorisé via Client list.");
+          console.log("Nexus Security: Accès autorisé via Client list. Auto-synchronisation des membres...");
+          
+          for (const docSnap of clientSnap.docs) {
+             const clientData = docSnap.data();
+             if (clientData.companyId) {
+                await updateDoc(doc(db, 'companies', clientData.companyId), {
+                  memberEmails: arrayUnion(cleanEmail),
+                  employees: arrayUnion(user.uid)
+                }).catch(e => console.error("Auto-enroll client failed", e));
+             }
+          }
+          
           setIsWhitelisted(true);
           return;
         }
@@ -663,12 +674,22 @@ export default function App() {
                if (!clientSnap.empty) {
                   // Important: Sync the UID if not present to ensure security rules work better
                   const clientRef = clientSnap.docs[0].ref;
-                  if (clientSnap.docs[0].data().uid !== user.uid) {
+                  const clientData = clientSnap.docs[0].data();
+                  if (clientData.uid !== user.uid) {
                     await updateDoc(clientRef, { 
                       uid: user.uid,
                       updatedAt: serverTimestamp()
                     });
                   }
+                  
+                  // Double check membership in the company document
+                  if (currentCompany.memberEmails && !currentCompany.memberEmails.includes(cleanEmail)) {
+                    await updateDoc(doc(db, 'companies', currentCompany.id), {
+                      memberEmails: arrayUnion(cleanEmail),
+                      employees: arrayUnion(user.uid)
+                    }).catch(e => console.error("Client auto-enroll sync failed", e));
+                  }
+                  
                   setUser(prev => prev ? { ...prev, role: 'Client' } : null);
                } else {
                  setIsBlocked(true); // Treat as unauthorized
