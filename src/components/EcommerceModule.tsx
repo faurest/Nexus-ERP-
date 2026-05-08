@@ -23,7 +23,8 @@ import {
   Bell,
   Star,
   Send,
-  Edit2
+  Edit2,
+  LayoutDashboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';

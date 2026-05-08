@@ -636,7 +636,7 @@ export default function App() {
           try {
             const cleanEmail = user.email?.trim().toLowerCase();
             if (!cleanEmail) {
-              setAccessDenied(true);
+              setIsBlocked(true);
               return;
             }
             const q = query(
