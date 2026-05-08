@@ -208,7 +208,7 @@ export default function ProjectModule() {
               Gérez vos projets complexes, collaborez avec vos partenaires et suivez vos engagements financiers.
             </p>
           </div>
-          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-white/10 shrink-0 gap-1 overflow-x-auto scrollbar-hide max-w-full">
+          <div className="flex bg-slate-950/40 p-1.5 rounded-2xl border border-white/10 shrink-0 gap-1 overflow-x-auto scrollbar-hide max-w-full">
              {[
                { id: 'projects', label: 'Projets' },
                { id: 'partners', label: 'Annuaires' },
@@ -218,8 +218,10 @@ export default function ProjectModule() {
                  key={item.id}
                  onClick={() => setActiveView(item.id as any)}
                  className={cn(
-                   "px-6 py-2.5 rounded-lg text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap", 
-                   activeView === item.id ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
+                   "px-6 py-2.5 rounded-xl text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap", 
+                   activeView === item.id 
+                    ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
+                    : "text-slate-300 hover:text-white hover:bg-white/5"
                  )}
                >
                  {item.label}

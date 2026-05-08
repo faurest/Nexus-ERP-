@@ -218,6 +218,10 @@ export function orderBy(field: string, direction: 'asc' | 'desc' = 'asc') {
   return firestoreOrderBy(field, direction);
 }
 
+export function limit(v: number) {
+  return firestoreLimit(v);
+}
+
 export async function addDoc(col: any, data: any) {
   try {
     const result = await firestoreAddDoc(col, { ...data, createdAt: firestoreServerTimestamp() });

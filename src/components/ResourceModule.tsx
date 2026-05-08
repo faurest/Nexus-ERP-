@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from '../lib/firebase';
+import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, auth, orderBy, limit } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { Plus, Search, Package, ShieldCheck, AlertTriangle, ArrowRightLeft, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Search, Package, ShieldCheck, AlertTriangle, ArrowRightLeft, Edit2, Trash2, RefreshCw, TrendingUp, Activity } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { cn } from '../lib/utils';
@@ -11,13 +11,13 @@ import { createNotification } from '../lib/notifications';
 interface Resource {
   id: string;
   name: string;
-  type: 'Stock' | 'Material' | 'Software' | 'Human';
+  type: string;
   quantity: number;
   status: 'Available' | 'Low' | 'Out' | 'Assigned' | 'Maintenance';
   location: string;
-  condition?: string;     // état
-  duration?: string;      // durée
-  warranty?: string;      // garantie
+  condition?: string;
+  duration?: string;
+  warranty?: string;
   price?: number;
 }
 
@@ -25,12 +25,16 @@ export default function ResourceModule() {
   const { currentCompany } = useCompany();
   const [resources, setResources] = useState<Resource[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'movements' | 'analytics'>('inventory');
   const [activeFilter, setActiveFilter] = useState('Tous les actifs');
   const [isAdding, setIsAdding] = useState(false);
   const [viewingResource, setViewingResource] = useState<Resource | null>(null);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [formData, setFormData] = useState<any>({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '', price: 0 });
+  const [isRestocking, setIsRestocking] = useState(false);
+  const [restockData, setRestockData] = useState({ resourceId: '', quantity: 0, supplier: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [movementLogs, setMovementLogs] = useState<any[]>([]);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -43,6 +47,22 @@ export default function ResourceModule() {
     });
     return unsubscribe;
   }, [currentCompany]);
+
+  useEffect(() => {
+    if (!currentCompany || activeTab !== 'movements') return;
+    const q = query(
+      collection(db, 'resource_movements'), 
+      where('companyId', '==', currentCompany.id),
+      orderBy('date', 'desc'),
+      limit(50)
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setMovementLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'resource_movements');
+    });
+    return unsubscribe;
+  }, [currentCompany, activeTab]);
 
   const handleSaveResource = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,8 +107,47 @@ export default function ResourceModule() {
     }
   };
 
+  const handleRestock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany || !restockData.resourceId || restockData.quantity <= 0 || submitting) return;
+    setSubmitting(true);
+
+    try {
+      const resourceRef = doc(db, 'resources', restockData.resourceId);
+      const resource = resources.find(r => r.id === restockData.resourceId);
+      
+      if (resource) {
+        const newQuantity = resource.quantity + Number(restockData.quantity);
+        await updateDoc(resourceRef, {
+          quantity: newQuantity,
+          status: newQuantity > 10 ? 'Available' : (newQuantity > 0 ? 'Low' : 'Out')
+        });
+
+        // Log movement
+        await addDoc(collection(db, 'resource_movements'), {
+          companyId: currentCompany.id,
+          resourceId: restockData.resourceId,
+          resourceName: resource.name,
+          type: 'IN',
+          quantity: restockData.quantity,
+          supplier: restockData.supplier,
+          notes: restockData.notes,
+          performedBy: auth.currentUser?.email || 'Système',
+          date: serverTimestamp()
+        });
+      }
+
+      setIsRestocking(false);
+      setRestockData({ resourceId: '', quantity: 0, supplier: '', notes: '' });
+    } catch(err) {
+      handleFirestoreError(err, OperationType.WRITE, 'resource_movements');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleDeleteResource = async (id: string) => {
-    if (!confirm('Voulez-vous supprimer cet actif ?')) return;
+    if (!window.confirm('Confirmer la suppression de cet actif ?')) return;
     try {
       await deleteDoc(doc(db, 'resources', id));
     } catch(err) {
@@ -96,10 +155,22 @@ export default function ResourceModule() {
     }
   };
 
-  const filteredResources = resources.filter(res => 
-    (res.name && res.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (res.location && res.location.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredResources = resources.filter(res => {
+    const matchesSearch = (res.name && res.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (res.location && res.location.toLowerCase().includes(searchTerm.toLowerCase()));
+    if (activeFilter === 'Tous les actifs') return matchesSearch;
+    return matchesSearch && res.type === activeFilter;
+  });
+
+  const stats = {
+    total: resources.length,
+    available: resources.filter(r => r.status === 'Available').length,
+    outOfStock: resources.filter(r => r.status === 'Out' || r.quantity === 0).length,
+    lowStock: resources.filter(r => r.status === 'Low' || (r.quantity > 0 && r.quantity < 10)).length
+  };
+
+  const availabilityRate = stats.total > 0 ? Math.round((stats.available / stats.total) * 100) : 0;
+  const stockoutRate = stats.total > 0 ? Math.round((stats.outOfStock / stats.total) * 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -107,28 +178,37 @@ export default function ResourceModule() {
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
-              Nexus <span className="text-blue-500">Supply</span>
+              Nexus <span className="text-blue-500">Resources</span>
             </h1>
             <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
-              Orchestrez vos flux matériels, gérez vos stocks et supervisez vos actifs.
+              Propulsez votre logistique vers l'avenir. Gestion de stock en temps réel et orchestration des flux critiques.
             </p>
           </div>
-          <div className="flex flex-wrap gap-4 w-full md:w-auto shrink-0">
-            <button onClick={() => alert("Indexation des flux...")} className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2">
-              <ArrowRightLeft size={16} /> Mouvement
-            </button>
-            <button 
-              onClick={() => setIsAdding(true)}
-              className="px-6 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md shadow-blue-600/10 flex items-center gap-2"
-            >
-              <Plus size={16} /> Nouvel Actif
-            </button>
+          <div className="flex bg-slate-950/40 p-1.5 rounded-2xl border border-white/10 shrink-0 overflow-x-auto scrollbar-hide max-w-full">
+            {[
+              { id: 'inventory', label: 'Inventaire', icon: Package },
+              { id: 'movements', label: 'Historique', icon: RefreshCw },
+              { id: 'analytics', label: 'Analytique', icon: TrendingUp }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={cn(
+                  "px-6 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap", 
+                  activeTab === tab.id 
+                    ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
+                    : "text-slate-300 hover:text-white hover:bg-white/5"
+                )}
+              >
+                <tab.icon size={14} /> {tab.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {['Tous les actifs', 'Stock Consommable', 'Matériel Bureautique', 'Logiciel', 'Ressource Humaine', 'Véhicules'].map((filter) => (
+        {['Tous les actifs', 'Stock', 'Matériel', 'Logiciel', 'Véhicule'].map((filter) => (
           <button 
             key={filter} 
             onClick={() => setActiveFilter(filter)}
@@ -142,251 +222,361 @@ export default function ResourceModule() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className="lg:col-span-3 space-y-6">
-          <div className="bg-white border border-slate-100 rounded-[2rem] p-2 flex items-center gap-3 shadow-xl shadow-slate-200/50 focus-within:border-blue-400 transition-all">
-            <div className="pl-4">
-              <Search className="text-slate-300" size={20} />
+      {activeTab === 'inventory' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-8 space-y-6">
+            <div className="flex gap-4 p-2 bg-white rounded-[2rem] shadow-sm border border-slate-100">
+              <div className="flex-1 bg-slate-50/50 rounded-2xl px-4 py-3 flex items-center gap-3 border border-slate-100 transition-all focus-within:border-blue-400 focus-within:bg-white">
+                <Search className="text-slate-400" size={18} />
+                <input 
+                  type="text" 
+                  placeholder="Rechercher un actif..." 
+                  className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-slate-600 placeholder:text-slate-300"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <button 
+                onClick={() => {
+                  setEditingResource(null);
+                  setFormData({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '', price: 0 });
+                  setIsAdding(true);
+                }}
+                className="px-6 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-600 transition-all shadow-xl shadow-slate-200"
+              >
+                <Plus size={16} /> AJOUTER
+              </button>
             </div>
-            <input 
-              type="text" 
-              placeholder="Scanner l'inventaire Nexus (Nom, Catégorie, Zone)..." 
-              className="flex-1 bg-transparent py-4 outline-none text-xs font-bold text-slate-700 placeholder:text-slate-300"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+
+            <Table headers={['Identifiant', 'Article', 'Catégorie', 'Stock', 'Zone', 'Status', 'Actions']}>
+              {filteredResources.map((res) => (
+                <TableRow key={res.id}>
+                  <span className="font-mono text-[10px] text-slate-400">#RES-{res.id.slice(0, 4).toUpperCase()}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-slate-50 border border-slate-100 rounded flex items-center justify-center">
+                      <Package size={14} className="text-slate-400" />
+                    </div>
+                    <span className="font-bold text-slate-800">{res.name}</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide bg-slate-100 px-2.5 py-1 rounded">
+                    {res.type}
+                  </span>
+                  <span className={cn(
+                    "font-bold font-mono",
+                    res.quantity < 10 ? "text-red-500" : "text-slate-900"
+                  )}>
+                    {res.quantity}
+                  </span>
+                  <span className="text-slate-500 font-medium">{res.location}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "w-2 h-2 rounded-full",
+                      res.status === 'Available' ? "bg-green-500" : 
+                      res.status === 'Low' ? "bg-amber-500" : "bg-red-500"
+                    )} />
+                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">{res.status}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => {
+                        setEditingResource(res);
+                        setFormData(res);
+                        setIsAdding(true);
+                      }}
+                      className="p-1 px-2 border rounded-md hover:bg-slate-50 text-slate-400 hover:text-blue-600 transition-all font-bold text-[9px] flex items-center gap-1 uppercase"
+                    >
+                      <Edit2 size={10} />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteResource(res.id)} 
+                      className="p-1 border border-red-50 rounded-md hover:bg-red-50 text-slate-300 hover:text-red-600 transition-all"
+                    >
+                      <Trash2 size={10} />
+                    </button>
+                  </div>
+                </TableRow>
+              ))}
+            </Table>
           </div>
 
-          <Table headers={['Identifiant Actif', 'Type / Catégorie', 'Qté / Stock', 'Emplacement', 'État', 'Actions']}>
-            {filteredResources.map((res) => (
-              <TableRow key={res.id}>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-slate-50 border border-slate-100 rounded flex items-center justify-center">
-                    <Package size={14} className="text-slate-400" />
+          <div className="lg:col-span-4 space-y-6">
+            <section className="bg-white border border-slate-200 p-6 rounded-[2rem] shadow-sm">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Nexus Supply Metrics</h3>
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-1">Disponibilité</p>
+                    <p className="text-xl font-bold text-slate-900">{availabilityRate}%</p>
                   </div>
-                  <span className="font-bold text-slate-900">{res.name}</span>
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-1">Ruptures</p>
+                    <p className="text-xl font-bold text-red-600">{stockoutRate}%</p>
+                  </div>
                 </div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide bg-slate-100 px-2.5 py-1 rounded">
-                  {res.type}
+                
+                <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl flex items-start gap-3">
+                   <AlertTriangle className="text-amber-600 shrink-0" size={18} />
+                   <div>
+                     <p className="text-[10px] font-black text-amber-800 uppercase mb-1">Alertes Critiques</p>
+                     <p className="text-[10px] text-amber-700 font-medium">{stats.lowStock} articles nécessitent une attention immédiate.</p>
+                   </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="bg-blue-600 text-white p-8 rounded-[2rem] shadow-xl shadow-blue-600/20 relative overflow-hidden group transition-all">
+              <div className="relative z-10">
+                <h3 className="text-[10px] font-black text-blue-200 uppercase tracking-[0.2em] mb-4 text-center">Gestion des Flux</h3>
+                <p className="text-sm font-bold text-center leading-relaxed mb-6">
+                  Injectez de nouvelles ressources dans votre écosystème Nexus.
+                </p>
+                <button
+                  onClick={() => setIsRestocking(true)}
+                  className="w-full bg-white text-blue-600 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-lg"
+                >
+                  <ArrowRightLeft size={16} /> RÉAPPROVISIONNER
+                </button>
+              </div>
+              <Package className="absolute -bottom-8 -right-8 text-white/10 group-hover:rotate-12 transition-all duration-700" size={160} />
+            </section>
+
+            <section className="bg-slate-900 text-white p-8 rounded-[2rem] shadow-xl relative overflow-hidden">
+               <ShieldCheck className="absolute top-4 right-4 text-blue-500 opacity-20" size={48} />
+               <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Audit Nexus</h3>
+               <p className="text-xs font-medium text-slate-400 leading-relaxed mb-6">
+                 Tous vos mouvements de stock sont tracés et auditables.
+               </p>
+               <button 
+                 onClick={() => setActiveTab('movements')}
+                 className="text-[10px] font-black text-blue-400 uppercase tracking-widest hover:text-white transition-colors"
+               >
+                 VOIR HISTORIQUE →
+               </button>
+            </section>
+          </div>
+        </div>
+      ) : activeTab === 'movements' ? (
+        <div className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-sm">
+          <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 leading-none mb-1 text-left">Journal Stratégique des Mouvements</h3>
+              <p className="text-xs font-medium text-slate-400 text-left">Audit complet de tous les flux entrants et sortants.</p>
+            </div>
+            <RefreshCw size={24} className="text-blue-200" />
+          </div>
+          <Table headers={['Date', 'Type', 'Article', 'Quantité', 'Source', 'Opérateur']}>
+            {movementLogs.map((log) => (
+              <TableRow key={log.id}>
+                <span className="font-mono text-[10px] text-slate-400">
+                  {log.date ? new Date(log.date.seconds * 1000).toLocaleString() : 'PENDING'}
                 </span>
                 <span className={cn(
-                  "font-bold",
-                  res.quantity < 10 ? "text-red-500" : "text-slate-900"
+                  "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest",
+                  log.type === 'IN' ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                 )}>
-                  {res.quantity}
+                  {log.type === 'IN' ? 'Entrée' : 'Sortie'}
                 </span>
-                <span className="text-slate-500 font-medium">{res.location}</span>
+                <span className="font-bold text-slate-800">{log.resourceName}</span>
+                <span className="font-black text-slate-900 font-mono">{log.quantity}</span>
+                <span className="text-slate-500 font-medium italic">{log.supplier || 'Interne'}</span>
                 <div className="flex items-center gap-2">
-                  <span className={cn(
-                    "w-2 h-2 rounded-full ring-4 ring-opacity-20",
-                    res.status === 'Available' ? "bg-green-500 ring-green-500" :
-                    res.status === 'Low' ? "bg-amber-500 ring-amber-500" :
-                    res.status === 'Assigned' ? "bg-blue-500 ring-blue-500" :
-                    res.status === 'Maintenance' ? "bg-purple-500 ring-purple-500" :
-                    "bg-red-500 ring-red-500"
-                  )} />
-                  <span className="text-[10px] uppercase font-bold text-slate-700 tracking-tight">
-                    {res.status === 'Available' ? 'Dispo.' : 
-                     res.status === 'Low' ? 'Stock Bas' : 
-                     res.status === 'Assigned' ? 'Assigné' :
-                     res.status === 'Maintenance' ? 'Maintenance' :
-                     'Rupture'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setViewingResource(res)} className="p-1 text-slate-400 hover:text-green-600"><Search size={14}/></button>
-                  <button onClick={() => { setEditingResource(res); setFormData(res); setIsAdding(true); }} className="p-1 text-slate-400 hover:text-blue-600"><Edit2 size={14}/></button>
-                  <button onClick={() => handleDeleteResource(res.id)} className="p-1 text-slate-400 hover:text-red-600"><Trash2 size={14}/></button>
+                  <div className="w-5 h-5 bg-slate-100 rounded-full flex items-center justify-center text-[8px] font-black">
+                    {log.performedBy?.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-bold truncate max-w-[80px]">{log.performedBy}</span>
                 </div>
               </TableRow>
             ))}
+            {movementLogs.length === 0 && (
+              <div className="p-20 text-center text-slate-300 italic text-sm">
+                Aucun mouvement critique enregistré.
+              </div>
+            )}
           </Table>
         </div>
-
-        <div className="space-y-6">
-          <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-xl shadow-slate-900/10">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <ShieldCheck size={18} className="text-green-400" />
-              État Global
-            </h3>
-            <div className="space-y-5">
-              <div>
-                <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-                  <span>Disponibilité</span>
-                  <span className="text-white">92%</span>
-                </div>
-                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-green-500 w-[92%]" />
+      ) : (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { label: 'Indice de Rotation', value: '84%', trend: '+12%', color: 'blue' },
+              { label: 'Précision Inventaire', value: '99.2%', trend: '+0.5%', color: 'green' },
+              { label: 'Risque de Rupture', value: 'BAS', trend: '-5%', color: 'emerald' }
+            ].map((stat, i) => (
+              <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">{stat.label}</p>
+                <div className="flex items-end gap-3">
+                  <span className="text-3xl font-black text-slate-900">{stat.value}</span>
+                  <span className={`text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg mb-1`}>{stat.trend}</span>
                 </div>
               </div>
-              <div>
-                <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-                  <span>Taux de Rupture</span>
-                  <span className="text-white">4%</span>
-                </div>
-                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-red-500 w-[4%]" />
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
 
-          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-6 space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 text-amber-800">
-              <AlertTriangle size={18} />
-              Alertes Stock
-            </h3>
-            <div className="space-y-2.5">
-              <div className="p-3 bg-white border border-amber-200/50 rounded-lg flex justify-between items-center shadow-sm">
-                <span className="text-xs font-bold text-slate-700">Papier A4 Premium</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-red-100 text-red-600 rounded">2 UNITÉS</span>
+          <div className="bg-slate-900 rounded-[3rem] p-12 text-center border border-white/5 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(37,99,235,0.1),transparent)]" />
+            <div className="relative z-10 max-w-xl mx-auto space-y-6">
+              <div className="w-20 h-20 bg-blue-600/20 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-blue-500/30">
+                <Activity size={40} className="text-blue-500 animate-pulse" />
               </div>
-              <div className="p-3 bg-white border border-amber-200/50 rounded-lg flex justify-between items-center shadow-sm">
-                <span className="text-xs font-bold text-slate-700">Toner HP Noir</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-600 rounded">5 UNITÉS</span>
+              <h3 className="text-3xl font-black text-white italic">Nexus <span className="text-blue-500 underline decoration-4 underline-offset-8">Insight</span> Analytics</h3>
+              <p className="text-slate-400 text-lg leading-relaxed font-medium">
+                Nos modèles prédictifs SI-CORE sont actuellement en phase de calibration finale sur vos flux de données. 
+                L'IA analysera bientôt vos cycles de consommation pour optimiser vos points de commande automatiquement.
+              </p>
+              <div className="pt-8 flex justify-center gap-4">
+                <div className="flex -space-x-2">
+                  {[1,2,3,4].map(i => <div key={i} className="w-8 h-8 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-[10px] font-black text-slate-500">{i}</div>)}
+                </div>
+                <span className="text-xs font-bold text-slate-500 self-center">Calibration en cours (87%)</span>
               </div>
-            </div>
-            <button onClick={() => alert("Alerte de réapprovisionnement envoyée au gestionnaire.")} className="w-full text-[10px] font-bold uppercase tracking-widest text-amber-800 hover:text-amber-900 transition-colors">Réapprovisionner</button>
-          </div>
-        </div>
-      </div>
-      {viewingResource && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center font-bold text-xl border border-indigo-100">
-                  <Package size={24} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900 leading-none">{viewingResource.name}</h3>
-                  <p className="text-sm font-medium text-slate-500 mt-1">{viewingResource.type}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Emplacement</span>
-                  <span className="text-sm font-bold text-slate-900">{viewingResource.location}</span>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Disponibilité</span>
-                  <span className="text-sm font-bold text-slate-900">{viewingResource.status}</span>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Quantité / Heures</span>
-                  <span className="text-sm font-bold text-slate-900">{viewingResource.quantity}</span>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">État</span>
-                  <span className="text-sm font-bold text-slate-900">{viewingResource.condition || 'Non renseigné'}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Durée Prévue</span>
-                  <span className="text-sm font-bold text-slate-900">{viewingResource.duration || 'Non renseignée'}</span>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Garantie</span>
-                  <span className="text-sm font-bold text-slate-900">{viewingResource.warranty || 'Non renseignée'}</span>
-                </div>
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 col-span-2">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Prix Unitaire</span>
-                  <span className="text-sm font-bold text-slate-900">{viewingResource.price ? `${viewingResource.price} FCFA` : 'Non renseigné'}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8">
-              <button 
-                onClick={() => setViewingResource(null)} 
-                className="w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-slate-200 transition-colors"
-              >
-                Fermer
-              </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Modals for Adding/Restocking */}
       {isAdding && (
-         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-           <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
-             <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-               <Package size={24} className="text-blue-600" />
-               {editingResource ? 'Modifier l\'actif' : 'Nouvel Actif'}
-             </h3>
-             <form onSubmit={handleSaveResource} className="space-y-4">
-               <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nom de l'actif</label>
-                  <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.name || ''} onChange={e => setFormData({...formData, name: e.target.value})} required/>
-               </div>
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Catégorie</label>
-                    <select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
-                      <option value="Stock">Stock Consommable</option>
-                      <option value="Material">Matériel / Équipement</option>
-                      <option value="Software">Abonnement / Logiciel</option>
-                      <option value="Human">Ressource Humaine / Externe</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Emplacement / Affectation</label>
-                    <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.location || ''} onChange={e => setFormData({...formData, location: e.target.value})} required/>
-                  </div>
-               </div>
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Quantité / Heures</label>
-                    <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.quantity || 0} onChange={e => setFormData({...formData, quantity: e.target.value})} required/>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Statut / Disponibilité</label>
-                    <select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
-                      <option value="Available">Disponible</option>
-                      <option value="Assigned">Assigné</option>
-                      <option value="Maintenance">En Maintenance</option>
-                      <option value="Low">Bas (Quantité faible)</option>
-                      <option value="Out">Rupture / Indisponible</option>
-                    </select>
-                  </div>
-               </div>
-               <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">État</label>
-                    <input type="text" placeholder="Neuf, Usagé..." className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.condition || ''} onChange={e => setFormData({...formData, condition: e.target.value})} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Durée (Mois/Jours)</label>
-                    <input type="text" placeholder="Ex: 24 mois" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.duration || ''} onChange={e => setFormData({...formData, duration: e.target.value})} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Garantie</label>
-                    <input type="text" placeholder="Ex: 1 an" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.warranty || ''} onChange={e => setFormData({...formData, warranty: e.target.value})} />
-                  </div>
-               </div>
-               <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Prix Unitaire (FCFA)</label>
-                    <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm" value={formData.price || 0} onChange={e => setFormData({...formData, price: Number(e.target.value)})} />
-                  </div>
-               </div>
-               <div className="grid grid-cols-2 gap-4 mt-8">
-                 <button type="button" onClick={() => { setIsAdding(false); setEditingResource(null); setFormData({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '', price: 0 }); }} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
-                 <button type="submit" disabled={submitting} className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50">
-                   {submitting ? 'Traitement...' : (editingResource ? 'Mettre à jour' : 'Enregistrer')}
-                 </button>
-               </div>
-             </form>
-           </div>
-         </div>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <div className="bg-white rounded-[2rem] p-8 max-w-2xl w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
+            <h2 className="text-2xl font-black text-slate-900 mb-6 uppercase tracking-tight">
+              {editingResource ? 'MODIFIER L\'ACTIF' : 'NOUVEL ACTIF NEXUS'}
+            </h2>
+            <form onSubmit={handleSaveResource} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nom de l'Actif</label>
+                  <input 
+                    type="text" 
+                    required
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                    value={formData.name || ''} 
+                    onChange={e => setFormData({...formData, name: e.target.value})} 
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Catégorie Nexus</label>
+                  <select 
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    value={formData.type} 
+                    onChange={e => setFormData({...formData, type: e.target.value})}
+                  >
+                    <option value="Stock">Stock Consommable</option>
+                    <option value="Matériel">Matériel Tech / Bureau</option>
+                    <option value="Logiciel">Licences Logiciels</option>
+                    <option value="Véhicule">Logistique / Véhicules</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Quantité Initialisé</label>
+                  <input 
+                    type="number" 
+                    required
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    value={formData.quantity} 
+                    onChange={e => setFormData({...formData, quantity: e.target.value})} 
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Emplacement / Zone</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ex: Entrepôt A, Bureau 102"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    value={formData.location || ''} 
+                    onChange={e => setFormData({...formData, location: e.target.value})} 
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-6">
+                <button 
+                  type="button" 
+                  onClick={() => setIsAdding(false)} 
+                  className="px-6 py-4 rounded-xl border border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"
+                >
+                  ANNULER
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={submitting} 
+                  className="px-6 py-4 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all disabled:opacity-50"
+                >
+                  {submitting ? 'TRAITEMENT...' : 'SAUVEGARDER L\'ACTIF'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isRestocking && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <div className="bg-white rounded-[2rem] p-8 max-w-xl w-full shadow-2xl border border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <h2 className="text-2xl font-black text-slate-900 mb-6 uppercase tracking-tight text-left">Approvisionnement Nexus</h2>
+            <form onSubmit={handleRestock} className="space-y-6">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Sélectionner l'Actif</label>
+                <select 
+                  required
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                  value={restockData.resourceId} 
+                  onChange={e => setRestockData({...restockData, resourceId: e.target.value})}
+                >
+                  <option value="">Choisir un article...</option>
+                  {resources.map(r => (
+                    <option key={r.id} value={r.id}>{r.name} (Actuel: {r.quantity})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Quantité Entrante</label>
+                  <input 
+                    type="number" 
+                    required
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    value={restockData.quantity} 
+                    onChange={e => setRestockData({...restockData, quantity: Number(e.target.value)})} 
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Source / Fournisseur</label>
+                  <input 
+                    type="text" 
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    value={restockData.supplier} 
+                    onChange={e => setRestockData({...restockData, supplier: e.target.value})} 
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Notes de Mouvement</label>
+                <textarea 
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none h-24" 
+                  value={restockData.notes} 
+                  onChange={e => setRestockData({...restockData, notes: e.target.value})}
+                  placeholder="Justificatif, numéro de bon, etc."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-6">
+                <button 
+                  type="button" 
+                  onClick={() => setIsRestocking(false)} 
+                  className="px-6 py-4 rounded-xl border border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"
+                >
+                  ANNULER
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={submitting} 
+                  className="px-6 py-4 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
+                >
+                  {submitting ? 'VALIDATION...' : 'VALIDER L\'ENTRÉE'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
 }
-

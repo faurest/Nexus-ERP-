@@ -25,7 +25,8 @@ import {
   Layers,
   FileText,
   Database,
-  MessageSquare
+  MessageSquare,
+  ShoppingBag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -40,6 +41,7 @@ import SalesModule from './components/SalesModule';
 import AdminModule from './components/AdminModule';
 import AccountingModule from './components/AccountingModule';
 import PrestationsModule from './components/PrestationsModule';
+import EcommerceModule from './components/EcommerceModule';
 import CollaborationModule from './components/CollaborationModule';
 import CommunicationModule from './components/CommunicationModule';
 import NotificationBell from './components/NotificationBell';
@@ -89,15 +91,15 @@ export const NexusLogo = ({ className = "" }: { className?: string }) => (
 );
 
 export const DEFAULT_ROLES: Record<string, string[]> = {
-  'owner': ['dashboard', 'services', 'sales', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
-  'Directeur': ['dashboard', 'services', 'sales', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
-  'Secrétaire': ['dashboard', 'services', 'clients', 'personnel', 'resources', 'projects', 'collaboration', 'communication'],
-  'Comptable': ['dashboard', 'services', 'sales', 'projects', 'accounting', 'collaboration', 'communication'],
-  'Agent Commercial': ['dashboard', 'services', 'sales', 'clients', 'projects', 'collaboration', 'communication'],
-  'Vendeur de bière': ['dashboard', 'sales', 'resources', 'collaboration', 'communication'],
-  'Vendeur de nourriture': ['dashboard', 'sales', 'resources', 'collaboration', 'communication'],
-  'Collaborateur': ['dashboard', 'services', 'projects', 'resources', 'clients', 'sales', 'collaboration', 'communication'],
-  'Personnel': ['dashboard', 'services', 'projects', 'resources', 'clients', 'collaboration', 'communication'],
+  'owner': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
+  'Directeur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
+  'Administrateur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
+  'Secrétaire': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
+  'Comptable': ['dashboard', 'services', 'sales', 'ecommerce', 'projects', 'accounting', 'collaboration', 'communication'],
+  'Agent Commercial': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'projects', 'collaboration', 'communication'],
+  'Collaborateur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
+  'Personnel': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
+  'Client': ['ecommerce'],
 };
 
 function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], user: User, onSelect: any }) {
@@ -268,7 +270,25 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
           return;
         }
 
-        console.log("Nexus Security: Résultat personnel = Aucun accès trouvé.");
+        // 5. Search if the user's email exists in ANY clients collection
+        const clientQ = query(collection(db, 'clients'), where('email', '==', cleanEmail));
+        const clientSnap = await getDocs(clientQ);
+        if (!clientSnap.empty) {
+          console.log("Nexus Security: Accès autorisé via Client list. Auto-synchronisation...");
+          for (const docSnap of clientSnap.docs) {
+             const clientData = docSnap.data();
+             if (clientData.companyId) {
+                await updateDoc(doc(db, 'companies', clientData.companyId), {
+                  memberEmails: arrayUnion(cleanEmail),
+                  employees: arrayUnion(user.uid)
+                }).catch(e => console.error("Auto-enroll client failed", e));
+             }
+          }
+          setIsWhitelisted(true);
+          return;
+        }
+
+        console.log("Nexus Security: Résultat personnel/client = Aucun accès trouvé.");
         setIsWhitelisted(false);
       } catch (err) {
         console.error("Whitelist check failed:", err);
@@ -636,6 +656,17 @@ export default function App() {
               } else {
                 setUser(prev => prev ? { ...prev, role: memberData.role || 'Personnel' } : null);
               }
+            } else {
+               // Try to find if user is a Client
+               const clientQ = query(
+                 collection(db, 'clients'),
+                 where('companyId', '==', currentCompany.id),
+                 where('email', '==', user.email)
+               );
+               const clientSnap = await getDocs(clientQ);
+               if (!clientSnap.empty) {
+                  setUser(prev => prev ? { ...prev, role: 'Client' } : null);
+               }
             }
           } catch (err) {
             console.error("Role lookup failed:", err);
@@ -747,12 +778,13 @@ export default function App() {
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
     { id: 'services', label: 'Services & Prestations', icon: Layers },
     { id: 'sales', label: 'Ventes & Facturation', icon: TrendingUp },
-    { id: 'clients', label: 'Partenaires Clients', icon: Users },
+    { id: 'ecommerce', label: 'E-commerce', icon: ShoppingBag },
+    { id: 'clients', label: 'CRM / Clients', icon: Users },
     { id: 'personnel', label: 'Ressources Humaines', icon: Briefcase },
     { id: 'resources', label: 'Stocks & Logistique', icon: Package },
     { id: 'projects', label: 'Projets & Tâches', icon: FolderKanban },
     { id: 'collaboration', label: 'Collaboration & Comm', icon: Handshake },
-    { id: 'accounting', label: 'Rapport Comptable', icon: Calculator },
+    { id: 'accounting', label: 'Comptabilité & Finance', icon: Calculator },
     ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
   ].filter(item => {
     if (item.id === 'admin') return true;
@@ -979,8 +1011,9 @@ export default function App() {
             {activeTab === 'dashboard' && <DashboardModule user={user} companies={companies} />}
             {activeTab === 'services' && <PrestationsModule />}
             {activeTab === 'sales' && <SalesModule />}
+            {activeTab === 'ecommerce' && <EcommerceModule user={user} />}
             {activeTab === 'clients' && <ClientModule />}
-            {activeTab === 'personnel' && <PersonnelModule />}
+            {activeTab === 'personnel' && <PersonnelModule user={user} />}
             {activeTab === 'resources' && <ResourceModule />}
             {activeTab === 'projects' && <ProjectModule />}
             {activeTab === 'accounting' && <AccountingModule />}

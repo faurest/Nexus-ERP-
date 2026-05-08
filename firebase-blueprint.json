@@ -350,6 +350,58 @@
         "deductionMonth": { "type": "string", "description": "Format YYYY-MM" }
       },
       "required": ["companyId", "staffId", "amount", "requestDate", "status"]
+    },
+    "EcommerceOrder": {
+      "title": "Ecommerce Order",
+      "description": "An order placed through the ecommerce shop",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "SHIPPED", "DELIVERED"] },
+        "date": { "type": "object" },
+        "customerEmail": { "type": "string" }
+      },
+      "required": ["companyId", "items", "total", "status"]
+    },
+    "ResourceMovement": {
+      "title": "Resource Movement",
+      "description": "Log of stock movements (IN/OUT)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "resourceId": { "type": "string" },
+        "resourceName": { "type": "string" },
+        "type": { "type": "string", "enum": ["IN", "OUT"] },
+        "quantity": { "type": "number" },
+        "supplier": { "type": "string" },
+        "notes": { "type": "string" },
+        "date": { "type": "object" },
+        "performedBy": { "type": "string" }
+      },
+      "required": ["companyId", "resourceId", "type", "quantity"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A product for sale in the ecommerce shop",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "image": { "type": "string" },
+        "stock": { "type": "number" },
+        "points": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["companyId", "name", "price"]
     }
   },
   "firestore": {
@@ -374,6 +426,9 @@
     "project_discussions": { "schema": "ProjectDiscussion", "description": "Project-based discussions" },
     "leave_requests": { "schema": "LeaveRequest", "description": "Employee leave requests" },
     "time_entries": { "schema": "TimeEntry", "description": "Employee time entries" },
-    "salary_advances": { "schema": "SalaryAdvance", "description": "Salary advance and down payment requests" }
+    "salary_advances": { "schema": "SalaryAdvance", "description": "Salary advance and down payment requests" },
+    "ecommerce_orders": { "schema": "EcommerceOrder", "description": "Ecommerce order records" },
+    "resource_movements": { "schema": "ResourceMovement", "description": "Resource movement logs" },
+    "products": { "schema": "Product", "description": "Product catalog" }
   }
 }

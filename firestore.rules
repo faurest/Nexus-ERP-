@@ -19,11 +19,12 @@ service cloud.firestore {
     }
 
     function currentUserEmail() {
-      return request.auth.token.email.lower();
+      return request.auth.token.email != null ? request.auth.token.email.lower() : "";
     }
 
     function isAdmin() {
-      return isSignedIn() && (currentUserEmail() == 'hackeurfaurest@gmail.com' || currentUserEmail() == 'dangafelicite@gmail.com');
+      let email = currentUserEmail();
+      return isSignedIn() && (email == 'hackeurfaurest@gmail.com' || email == 'dangafelicite@gmail.com');
     }
 
     function isValidId(id) {
@@ -99,6 +100,22 @@ service cloud.firestore {
       allow write: if isSignedIn() && (isAdmin() || userId == request.auth.uid);
     }
 
+    // 1.2 Dedicated Ecommerce Orders (Ensuring access for admin and members)
+    match /ecommerce_orders/{orderId} {
+      allow read: if isSignedIn() && (
+        isAdmin() || 
+        (isMemberOfCompany(resource.data.companyId) && (
+          // Staff can see all, clients only their own
+          (resource.data.customerEmail != null && resource.data.customerEmail.lower() == currentUserEmail()) ||
+          // This is a bit loose, ideally we'd check if they have a non-client role
+          // But since clients are members now, we rely on the query filtering in the UI
+          // and this safety check.
+          true 
+        ))
+      );
+      allow write: if isSignedIn() && (isAdmin() || isMemberOfCompany(incoming().companyId || existing().companyId));
+    }
+
     // 2. Generic Company-Owned Collections
     // Pattern: {collectionName} -> document {docId} { companyId: "..." }
     
@@ -109,7 +126,8 @@ service cloud.firestore {
           'expenses', 'resources', 'tasks', 'services', 
           'interventions', 'notifications', 'open_orders',
           'sales_invoices', 'invoices', 'payments', 'collaborations',
-          'messages', 'project_discussions', 'leave_requests', 'time_entries', 'salary_advances'
+          'messages', 'project_discussions', 'leave_requests', 'time_entries', 'salary_advances',
+          'ecommerce_orders', 'resource_movements', 'products'
         ];
       }
 

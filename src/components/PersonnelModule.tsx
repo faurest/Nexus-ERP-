@@ -62,7 +62,7 @@ interface SalaryAdvance {
   deductionMonth: string;
 }
 
-export default function PersonnelModule() {
+export default function PersonnelModule({ user }: { user?: any }) {
   const { currentCompany } = useCompany();
   const [activeTab, setActiveTab] = useState<'employees' | 'roles' | 'time' | 'advances'>('employees');
   const [staffList, setStaffList] = useState<Staff[]>([]);
@@ -371,43 +371,26 @@ export default function PersonnelModule() {
               Gérez votre capital humain et orchestrez les talents de votre organisation.
             </p>
           </div>
-          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-white/10 overflow-x-auto scrollbar-hide max-w-full">
-            <button
-              onClick={() => setActiveTab('employees')}
-              className={cn(
-                "px-6 py-2.5 rounded-lg text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap", 
-                activeTab === 'employees' ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
-              )}
-            >
-              <User size={14} /> Employés
-            </button>
-            <button
-              onClick={() => setActiveTab('time')}
-              className={cn(
-                "px-6 py-2.5 rounded-lg text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap", 
-                activeTab === 'time' ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
-              )}
-            >
-              <Clock size={14} /> Temps
-            </button>
-            <button
-              onClick={() => setActiveTab('advances')}
-              className={cn(
-                "px-6 py-2.5 rounded-lg text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap", 
-                activeTab === 'advances' ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
-              )}
-            >
-              <FileText size={14} /> Avances
-            </button>
-            <button
-              onClick={() => setActiveTab('roles')}
-              className={cn(
-                "px-6 py-2.5 rounded-lg text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap", 
-                activeTab === 'roles' ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
-              )}
-            >
-              <Shield size={14} /> Rôles
-            </button>
+          <div className="flex bg-slate-950/40 p-1.5 rounded-2xl border border-white/10 overflow-x-auto scrollbar-hide max-w-full">
+            {[
+              { id: 'employees', label: 'Employés', icon: User },
+              { id: 'time', label: 'Temps & Congés', icon: Clock },
+              { id: 'advances', label: 'Avances', icon: FileText },
+              { id: 'roles', label: 'Rôles & Perms', icon: Shield }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={cn(
+                  "px-6 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap", 
+                  activeTab === tab.id 
+                    ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
+                    : "text-slate-300 hover:text-white hover:bg-white/5"
+                )}
+              >
+                <tab.icon size={14} /> {tab.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -437,7 +420,11 @@ export default function PersonnelModule() {
             </div>
 
           <Table headers={['Employé', 'Service', 'Poste', 'Activité', 'Status', 'Actions']}>
-            {filteredStaff.map((staff) => (
+            {filteredStaff.length === 0 ? (
+              <div className="p-12 text-center bg-slate-50 border-t border-slate-100 italic text-slate-400 text-sm">
+                Aucun collaborateur référencé pour le moment.
+              </div>
+            ) : filteredStaff.map((staff) => (
               <TableRow key={staff.id}>
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold border border-blue-100">
@@ -607,7 +594,11 @@ export default function PersonnelModule() {
           {activeTimeSubTab === 'leave' ? (
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden text-black">
                <Table headers={['Collaborateur', 'Période', 'Type', 'Motif', 'Statut', 'Actions']}>
-                 {leaveRequests.map(req => {
+                 {leaveRequests.length === 0 ? (
+                    <div className="p-12 text-center bg-slate-50 border-t border-slate-100 italic text-slate-400 text-sm">
+                      Aucune demande de congé enregistrée.
+                    </div>
+                 ) : leaveRequests.map(req => {
                    const staff = staffList.find(s => s.id === req.staffId);
                    return (
                      <TableRow key={req.id}>
