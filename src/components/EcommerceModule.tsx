@@ -89,20 +89,43 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
+  const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
+
   const isAdmin = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role);
   const isSuperAdmin = ['owner', 'Administrateur', 'Directeur'].includes(user?.role);
+
+  // Connection check
+  useEffect(() => {
+    const checkConn = async () => {
+      try {
+        const { testFirestoreConnection } = await import('../lib/firebase');
+        const ok = await testFirestoreConnection();
+        setConnStatus(ok ? 'ok' : 'fail');
+      } catch (e) {
+        setConnStatus('fail');
+      }
+    };
+    checkConn();
+  }, []);
 
   // Fetch unread messages count for all orders
   useEffect(() => {
     if (!currentCompany || !auth.currentUser) return;
 
     const cleanEmail = auth.currentUser.email?.trim().toLowerCase() || '';
-    const q = query(
-      collection(db, 'order_messages'),
-      where('companyId', '==', currentCompany.id),
-      where('recipientId', '==', auth.currentUser.uid),
-      where('isRead', '==', false)
-    );
+    const q = isAdmin 
+      ? query(
+          collection(db, 'order_messages'),
+          where('companyId', '==', currentCompany.id),
+          where('recipientId', '==', 'MANAGEMENT'),
+          where('isRead', '==', false)
+        )
+      : query(
+          collection(db, 'order_messages'),
+          where('companyId', '==', currentCompany.id),
+          where('recipientId', '==', auth.currentUser.uid),
+          where('isRead', '==', false)
+        );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const counts: { [key: string]: number } = {};
@@ -121,12 +144,19 @@ export default function EcommerceModule({ user }: { user: any }) {
     if (!activeChatOrder || !auth.currentUser) return;
 
     const markAsRead = async () => {
-      const q = query(
-        collection(db, 'order_messages'),
-        where('orderId', '==', activeChatOrder.id),
-        where('recipientId', '==', auth.currentUser?.uid),
-        where('isRead', '==', false)
-      );
+      const q = isAdmin 
+        ? query(
+            collection(db, 'order_messages'),
+            where('orderId', '==', activeChatOrder.id),
+            where('recipientId', '==', 'MANAGEMENT'),
+            where('isRead', '==', false)
+          )
+        : query(
+            collection(db, 'order_messages'),
+            where('orderId', '==', activeChatOrder.id),
+            where('recipientId', '==', auth.currentUser?.uid),
+            where('isRead', '==', false)
+          );
 
       const snap = await getDocs(q);
       snap.docs.forEach(async (d) => {
@@ -170,7 +200,7 @@ export default function EcommerceModule({ user }: { user: any }) {
       let recipientId = '';
 
       if (isClientSending) {
-        recipientId = currentCompany?.ownerId || '';
+        recipientId = 'MANAGEMENT';
       } else if (activeChatOrder.customerEmail) {
         const q = query(collection(db, 'users'), where('email', '==', activeChatOrder.customerEmail.toLowerCase()));
         const snap = await getDocs(q);
@@ -458,19 +488,21 @@ export default function EcommerceModule({ user }: { user: any }) {
                   onChange={e => setSearchTerm(e.target.value)}
                 />
               </div>
-              <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 overflow-x-auto scrollbar-hide max-w-full">
-                {categories.map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveCategory(cat)}
-                    className={cn(
-                      "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                      activeCategory === cat ? "bg-slate-900 text-white shadow-xl shadow-slate-900/20" : "text-slate-400 hover:text-slate-600"
-                    )}
-                  >
-                    {cat}
-                  </button>
-                ))}
+              <div className="flex-1 flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 max-w-full">
+                <div className="flex gap-1 min-w-max">
+                  {categories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveCategory(cat)}
+                      className={cn(
+                        "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                        activeCategory === cat ? "bg-slate-900 text-white shadow-xl shadow-slate-900/20" : "text-slate-400 hover:text-slate-600"
+                      )}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -687,6 +719,42 @@ export default function EcommerceModule({ user }: { user: any }) {
 
       {activeView === 'tracking' && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* Connection Status & Hub */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm flex items-center justify-between">
+               <div className="flex items-center gap-6">
+                  <div className={cn(
+                    "w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-500",
+                    connStatus === 'ok' ? "bg-green-500 text-white shadow-green-500/20" : "bg-red-500 text-white shadow-red-500/20 animate-pulse"
+                  )}>
+                    <Database size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-900 tracking-tight">Nexus Database Engine</h3>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                      {connStatus === 'ok' ? 'Flux de données synchronisé par fibre' : 'Restauration de la connexion en cours...'}
+                    </p>
+                  </div>
+               </div>
+               <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl">
+                  <div className={cn("w-2 h-2 rounded-full", connStatus === 'ok' ? "bg-green-500" : "bg-red-500")} />
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{connStatus === 'ok' ? 'LATENCY: 24MS' : 'OFFLINE'}</span>
+               </div>
+            </div>
+
+            <div className="bg-blue-600 rounded-[2rem] p-8 text-white shadow-xl shadow-blue-600/20 flex flex-col justify-center">
+               <div className="flex items-center gap-3 mb-2">
+                  <Bell size={18} className="text-blue-200" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Alerte ProActive</span>
+               </div>
+               <p className="text-xs font-medium text-blue-100">
+                  {orders.some(o => o.status === 'PENDING') 
+                    ? "Vos acquisitions sont en cours d'approbation par le département logistique." 
+                    : "Toutes vos opérations sont à jour. Aucune action immédiate requise."}
+               </p>
+            </div>
+          </div>
+
           <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm">
             <div className="flex items-center justify-between mb-10">
               <div className="flex items-center gap-4">

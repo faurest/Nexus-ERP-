@@ -88,6 +88,14 @@ service cloud.firestore {
           incoming().memberEmails.size() == existing().memberEmails.size() + 1 &&
           currentUserEmail() in incoming().memberEmails
         ) ||
+        // Action: Client Auto-Enroll (Allow users listed in 'clients' to sync their access)
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees']) &&
+          incoming().memberEmails.size() == existing().memberEmails.size() + 1 &&
+          currentUserEmail() in incoming().memberEmails &&
+          exists(/databases/$(database)/documents/clients/$(currentUserEmail())) &&
+          get(/databases/$(database)/documents/clients/$(currentUserEmail())).data.companyId == companyId
+        ) ||
         // Action: Standard update for existing members
         (currentUserEmail() in resource.data.memberEmails && incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees']))
       );

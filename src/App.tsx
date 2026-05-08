@@ -953,6 +953,18 @@ export default function App() {
         </nav>
 
         <div className="p-6 border-t border-white/5 flex flex-col gap-3 bg-slate-950/20 relative z-10">
+          {user?.role === 'Client' && isSidebarOpen && (
+            <div className="mb-2 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl">
+              <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-1 italic">NEXUS CONNECT</p>
+              <p className="text-[10px] text-slate-400 leading-tight">Votre support prioritaire est actif.</p>
+              <button 
+                onClick={() => setActiveTab('ecommerce')}
+                className="mt-3 w-full py-2 bg-indigo-600 text-white text-[9px] font-black uppercase rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-indigo-500 transition-colors"
+              >
+                Ouvrir Support / Chat
+              </button>
+            </div>
+          )}
           <button 
             onClick={() => setCurrentCompany(null)}
             className="w-full flex items-center gap-5 px-5 py-4 rounded-2xl bg-white/5 text-slate-400 hover:text-white transition-all group border border-white/5 hover:border-white/20 hover:bg-white/10 active:scale-95"

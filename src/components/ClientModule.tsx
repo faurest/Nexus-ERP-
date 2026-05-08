@@ -55,7 +55,8 @@ export default function ClientModule() {
           updatedAt: serverTimestamp(),
         });
       } else {
-        await addDoc(collection(db, 'clients'), {
+        // Use email as doc ID for security rule verification
+        await setDoc(doc(db, 'clients', normalizedClient.email), {
           ...normalizedClient,
           companyId: currentCompany.id,
           salesTotal: 0,
