@@ -23,8 +23,9 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      let email = currentUserEmail();
-      return isSignedIn() && (email == 'hackeurfaurest@gmail.com' || email == 'dangafelicite@gmail.com');
+      return isSignedIn() && 
+        (currentUserEmail() == 'hackeurfaurest@gmail.com' || 
+         currentUserEmail() == 'dangafelicite@gmail.com');
     }
 
     function isValidId(id) {
@@ -45,11 +46,11 @@ service cloud.firestore {
     }
 
     function isMemberOfCompany(companyId) {
-      let path = /databases/$(database)/documents/companies/$(companyId);
-      return exists(path) && (
-        get(path).data.ownerEmail.lower() == currentUserEmail() || 
-        get(path).data.ownerId == request.auth.uid ||
-        (get(path).data.memberEmails != null && get(path).data.memberEmails.contains(currentUserEmail()))
+      return isSignedIn() && companyId != null && exists(/databases/$(database)/documents/companies/$(companyId)) && (
+        isAdmin() ||
+        get(/databases/$(database)/documents/companies/$(companyId)).data.ownerEmail.lower() == currentUserEmail() || 
+        get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid ||
+        (get(/databases/$(database)/documents/companies/$(companyId)).data.memberEmails != null && get(/databases/$(database)/documents/companies/$(companyId)).data.memberEmails.contains(currentUserEmail()))
       );
     }
 
@@ -100,6 +101,12 @@ service cloud.firestore {
       allow write: if isSignedIn() && (isAdmin() || userId == request.auth.uid);
     }
 
+    // 1.1.1 Masters (Whitelist)
+    match /masters/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
     // 1.2 Dedicated Ecommerce Orders (Ensuring access for admin and members)
     match /ecommerce_orders/{orderId} {
       allow read: if isSignedIn() && (
@@ -141,9 +148,9 @@ service cloud.firestore {
       // allow list MUST be secured.
       allow get: if isSignedIn() && isCompanyCollection() && (
         isAdmin() || 
-        (isMemberOfCompany(resource.data.companyId) && (
+        (resource.data.companyId != null && isMemberOfCompany(resource.data.companyId) && (
           (collectionName != 'collaborations' && collectionName != 'messages') || 
-          (collectionName == 'collaborations' && (resource.data.recipientEmail == 'all' || resource.data.recipientEmail.lower() == currentUserEmail() || resource.data.senderEmail.lower() == currentUserEmail())) ||
+          (collectionName == 'collaborations' && (resource.data.recipientEmail == 'all' || resource.data.recipientEmail.lower() == currentUserEmail() || (resource.data.senderEmail != null && resource.data.senderEmail.lower() == currentUserEmail()))) ||
           (collectionName == 'messages' && (resource.data.senderId == request.auth.uid || resource.data.recipientId == request.auth.uid))
         )) ||
         (resource.data.email != null && resource.data.email.lower() == currentUserEmail())
@@ -152,9 +159,9 @@ service cloud.firestore {
       // List optimization: forced to filter by companyId OR their own email
       allow list: if isSignedIn() && isCompanyCollection() && (
         isAdmin() || 
-        (isMemberOfCompany(resource.data.companyId) && (
+        (resource.data.companyId != null && isMemberOfCompany(resource.data.companyId) && (
           (collectionName != 'collaborations' && collectionName != 'messages') || 
-          (collectionName == 'collaborations' && (resource.data.recipientEmail == 'all' || resource.data.recipientEmail.lower() == currentUserEmail() || resource.data.senderEmail.lower() == currentUserEmail())) ||
+          (collectionName == 'collaborations' && (resource.data.recipientEmail == 'all' || resource.data.recipientEmail.lower() == currentUserEmail() || (resource.data.senderEmail != null && resource.data.senderEmail.lower() == currentUserEmail()))) ||
           (collectionName == 'messages' && (resource.data.senderId == request.auth.uid || resource.data.recipientId == request.auth.uid))
         )) ||
         (resource.data.email != null && resource.data.email.lower() == currentUserEmail())

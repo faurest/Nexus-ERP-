@@ -107,7 +107,8 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     } else if (errorMessage.includes('permission') || errorMessage.includes('denied')) {
       friendlyMessage = "Erreur : Vous n'avez pas les permissions nécessaires pour effectuer cette action.";
     }
-    alert(friendlyMessage + "\n\nDétails : " + errorMessage);
+    const pathDisplay = path ? ` (Chemin: ${path})` : "";
+    alert(friendlyMessage + pathDisplay + "\n\nDétails : " + errorMessage);
   }
 
   throw new Error(JSON.stringify(errInfo));
