@@ -643,7 +643,11 @@ export default function App() {
         // Try to find the user in the personnel collection for this company
         const findRole = async () => {
           try {
-            const cleanEmail = user.email.trim().toLowerCase();
+            const cleanEmail = user.email?.trim().toLowerCase();
+            if (!cleanEmail) {
+              setAccessDenied(true);
+              return;
+            }
             const q = query(
               collection(db, 'personnel'), 
               where('companyId', '==', currentCompany.id),
@@ -658,7 +662,7 @@ export default function App() {
                 setUser(prev => prev ? { ...prev, role: memberData.role || 'Personnel' } : null);
               }
             } else {
-               // Try to find if user is a Client
+               // Match as client
                const clientQ = query(
                  collection(db, 'clients'),
                  where('companyId', '==', currentCompany.id),
@@ -666,7 +670,14 @@ export default function App() {
                );
                const clientSnap = await getDocs(clientQ);
                if (!clientSnap.empty) {
+                  // Important: Sync the UID if not present to ensure security rules work better
+                  const clientRef = clientSnap.docs[0].ref;
+                  if (clientSnap.docs[0].data().uid !== user.uid) {
+                    await updateDoc(clientRef, { uid: user.uid });
+                  }
                   setUser(prev => prev ? { ...prev, role: 'Client' } : null);
+               } else {
+                 setIsBlocked(true); // Treat as unauthorized
                }
             }
           } catch (err) {

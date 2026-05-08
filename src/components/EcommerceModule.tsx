@@ -88,7 +88,8 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
-  const isAdmin = ['owner', 'Administrateur', 'Directeur'].includes(user?.role);
+  const isAdmin = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role);
+  const isSuperAdmin = ['owner', 'Administrateur', 'Directeur'].includes(user?.role);
 
   // Fetch unread messages count for all orders
   useEffect(() => {
@@ -428,96 +429,133 @@ export default function EcommerceModule({ user }: { user: any }) {
       </div>
 
       {activeView === 'catalog' && (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {/* Filters & Search */}
-          <div className="flex flex-col md:flex-row gap-6 justify-between items-center bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide w-full md:w-auto">
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={cn(
-                    "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all",
-                    activeCategory === cat ? "bg-slate-900 text-white" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
-                  )}
-                >
-                  {cat}
-                </button>
-              ))}
+        <div className="space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-8 duration-700">
+          {/* Enhanced Client Header */}
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100">
+                <LayoutDashboard size={12} />
+                Nexus Solutions Globales
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none">
+                Solutions & <span className="text-blue-600">Performance</span>
+              </h2>
+              <p className="text-slate-500 font-medium max-w-xl text-sm leading-relaxed">
+                Accédez à nos équipements industriels et solutions logicielles de pointe. 
+                Gagnez des points Nexus à chaque commande pour débloquer des avantages exclusifs.
+              </p>
             </div>
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-              <input
-                type="text"
-                placeholder="Rechercher un produit..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
+            
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="w-full sm:w-80 relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
+                <input
+                  type="text"
+                  placeholder="Rechercher une solution..."
+                  className="w-full bg-white border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium focus:ring-4 focus:ring-blue-100 focus:border-blue-200 outline-none transition-all shadow-sm"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100">
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={cn(
+                      "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                      activeCategory === cat ? "bg-slate-900 text-white shadow-xl shadow-slate-900/20" : "text-slate-400 hover:text-slate-600"
+                    )}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Product Grid */}
           <motion.div 
             layout
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
           >
             <AnimatePresence mode="popLayout">
               {filteredProducts.map(product => (
                 <motion.div 
                   layout
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
                   key={product.id} 
-                  className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
+                  className="group bg-white rounded-[2.5rem] border border-slate-50 overflow-hidden hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 flex flex-col h-full relative"
                 >
-                  <div className="aspect-[4/3] overflow-hidden relative">
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      <span className="px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-slate-900 shadow-sm">
+                  <div className="aspect-[5/4] overflow-hidden relative">
+                    <img 
+                      src={product.image || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800"} 
+                      alt={product.name} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 brightness-[0.95]" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                    
+                    <div className="absolute top-6 left-6 flex flex-col gap-2">
+                      <span className="px-3 py-1 bg-white/95 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-slate-900 shadow-xl">
                         {product.category}
                       </span>
-                      {product.stock < 5 && (
-                        <span className="px-3 py-1 bg-red-500 text-white rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
-                          Stock Faible
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-bold text-slate-900 text-lg mb-1">{product.name}</h3>
-                      <p className="text-slate-400 text-xs line-clamp-2 leading-relaxed">{product.description}</p>
                     </div>
                     
-                    <div className="space-y-4">
+                    <div className="absolute bottom-6 left-6 right-6">
+                      <div className="flex items-center gap-1.5 text-white/90">
+                        <Award size={14} className="text-blue-400" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">+{product.points} PTS NEXUS</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-8 flex-1 flex flex-col justify-between">
+                    <div className="space-y-3">
+                      <h3 className="font-black text-slate-900 text-xl tracking-tight leading-tight group-hover:text-blue-610 transition-colors">
+                        {product.name}
+                      </h3>
+                      <p className="text-slate-400 text-xs font-medium line-clamp-2 leading-relaxed">
+                        {product.description}
+                      </p>
+                    </div>
+                    
+                    <div className="mt-8 space-y-6">
                       <div className="flex items-center justify-between">
-                        <div className="text-xl font-black text-slate-900 tracking-tight">
-                          {product.price.toLocaleString()} <span className="text-xs text-slate-400 font-bold uppercase ml-1">FCFA</span>
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Tarif Operational</span>
+                          <div className="text-2xl font-black text-slate-900 tracking-tighter">
+                            {product.price.toLocaleString()} <span className="text-xs text-slate-400 font-bold ml-0.5">FCFA</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 text-blue-600">
-                          <Award size={14} />
-                          <span className="text-[10px] font-black">{product.points} pts</span>
-                        </div>
+                        {product.stock < 10 && (
+                          <div className="px-3 py-1 bg-red-50 text-red-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-red-100 animate-pulse">
+                            Stock Limité
+                          </div>
+                        )}
                       </div>
                       
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
+                        {product.stock > 0 ? (
+                          <button
+                            onClick={() => addToCart(product)}
+                            className="flex-1 py-4 bg-slate-900 text-white hover:bg-blue-600 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 active:scale-95 group-hover:shadow-blue-600/20"
+                          >
+                            <ShoppingCart size={18} /> Acheter
+                          </button>
+                        ) : (
+                          <div className="flex-1 py-4 bg-slate-50 text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center">
+                            Rupture
+                          </div>
+                        )}
                         <button
-                          onClick={() => addToCart(product)}
-                          className="flex-1 py-3 bg-slate-900 text-white hover:bg-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
-                        >
-                          <Plus size={16} /> Panier
-                        </button>
-                        <button
-                          title="Contacter le support pour ce produit"
-                          className="p-3 bg-slate-100 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                          title="Assistance technique"
+                          className="p-4 bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-blue-100 rounded-2xl transition-all active:scale-95"
                           onClick={() => {
-                            // Integration with chat would go here
-                            alert("Fonction de chat en direct bientôt disponible pour ce produit !");
+                             setActiveView('tracking'); // Redirect to orders to start a chat if needed or general support
                           }}
                         >
-                          <MessageCircle size={18} />
+                          <MessageCircle size={20} />
                         </button>
                       </div>
                     </div>
@@ -526,6 +564,36 @@ export default function EcommerceModule({ user }: { user: any }) {
               ))}
             </AnimatePresence>
           </motion.div>
+
+          {/* Special Loyalty Banner for Clients */}
+          {user.role === 'Client' && (
+            <div className="mt-12 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-[3rem] p-12 text-white relative overflow-hidden shadow-2xl shadow-blue-200">
+              <div className="absolute -right-20 -top-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
+              <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-blue-400/20 rounded-full blur-2xl" />
+              
+              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
+                <div className="space-y-4 text-center md:text-left">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-xs font-black uppercase tracking-widest">
+                    <Award size={16} />
+                    Programme privilège Nexus
+                  </div>
+                  <h3 className="text-4xl font-black tracking-tight">Votre Hub de Performance</h3>
+                  <p className="text-blue-100 font-medium max-w-lg">
+                    Vous avez actuellement <span className="text-white font-black underline decoration-2 underline-offset-4">{loyaltyPoints || 0} Points Fidélité</span>. 
+                    Chaque point vous rapproche de solutions premium gratuites et de remises exclusives.
+                  </p>
+                </div>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => setActiveView('loyalty')}
+                    className="px-8 py-5 bg-white text-blue-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-xl"
+                  >
+                    Voir mes récompenses
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -952,24 +1020,26 @@ export default function EcommerceModule({ user }: { user: any }) {
                                )}>{p.stock} en stock</span>
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <div className="flex justify-end gap-2">
-                                <button 
-                                  onClick={() => setEditingProduct(p)}
-                                  className="p-2 text-slate-300 hover:text-blue-600 transition-colors"
-                                >
-                                  <Edit2 size={18} />
-                                </button>
-                                <button 
-                                  onClick={async () => {
-                                    if (confirm('Supprimer ce produit ?')) {
-                                      await deleteDoc(doc(db, 'products', p.id)).catch(err => handleFirestoreError(err, OperationType.DELETE, 'products'));
-                                    }
-                                  }}
-                                  className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                                >
-                                  <X size={18} />
-                                </button>
-                              </div>
+                          <div className="flex justify-end gap-2">
+                            {isSuperAdmin && (
+                              <button 
+                                onClick={() => setEditingProduct(p)}
+                                className="p-2 text-slate-300 hover:text-blue-600 transition-colors"
+                              >
+                                <Edit2 size={18} />
+                              </button>
+                            )}
+                            <button 
+                              onClick={async () => {
+                                if (confirm('Supprimer ce produit ?')) {
+                                  await deleteDoc(doc(db, 'products', p.id)).catch(err => handleFirestoreError(err, OperationType.DELETE, 'products'));
+                                }
+                              }}
+                              className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                            >
+                              <X size={18} />
+                            </button>
+                          </div>
                             </td>
                           </tr>
                         ))}
