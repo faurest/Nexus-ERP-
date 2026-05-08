@@ -112,15 +112,13 @@ service cloud.firestore {
       allow read: if isSignedIn() && (
         isAdmin() || 
         (resource.data != null && resource.data.email.lower() == currentUserEmail()) ||
-        (resource.data.companyId != null && isMemberOfCompany(resource.data.companyId)) ||
-        // Allow the query during login even if resource is not yet bound
-        (request.query.limit <= 20 && request.auth.token.email != null)
+        (resource.data != null && resource.data.companyId != null && isMemberOfCompany(resource.data.companyId))
       );
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (
         isAdmin() || 
         (resource.data != null && resource.data.email.lower() == currentUserEmail()) ||
-        isMemberOfCompany(resource.data.companyId)
+        (resource.data != null && isMemberOfCompany(resource.data.companyId))
       );
       allow delete: if isAdmin();
     }
@@ -128,7 +126,7 @@ service cloud.firestore {
     match /{collectionName}/{docId} {
       function isCompanyCollection() {
         return collectionName in [
-          'personnel', 'sales', 'projects', 'partners', 
+          'personnel', 'clients', 'sales', 'projects', 'partners', 
           'expenses', 'resources', 'tasks', 'services', 
           'interventions', 'notifications', 'open_orders',
           'sales_invoices', 'invoices', 'payments', 'collaborations',

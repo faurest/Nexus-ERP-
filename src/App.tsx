@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, doc, updateDoc, arrayUnion, setDoc, serverTimestamp } from './lib/firebase';
+import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, doc, updateDoc, arrayUnion, setDoc, serverTimestamp, limit } from './lib/firebase';
 type User = any;
 import { 
   LayoutDashboard, 
@@ -219,7 +219,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         console.log("Nexus Security: Vérification des accès pour", cleanEmail);
         
         // 3. Check if they ARE an owner of a company not yet loaded
-        const companyQ = query(collection(db, 'companies'), where('ownerEmail', '==', cleanEmail));
+        const companyQ = query(collection(db, 'companies'), where('ownerEmail', '==', cleanEmail), limit(1));
         const companySnap = await getDocs(companyQ);
         if (!companySnap.empty) {
           console.log("Nexus Security: Accès autorisé (Propriétaire détecté)");
@@ -241,7 +241,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         }
 
         // 4. Search if the user's email exists in ANY personnel collection
-        const q = query(collection(db, 'personnel'), where('email', '==', cleanEmail));
+        const q = query(collection(db, 'personnel'), where('email', '==', cleanEmail), limit(1));
         const snap = await getDocs(q);
         
         if (!snap.empty) {
@@ -271,7 +271,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         }
 
         // 5. Search if the user's email exists in ANY clients collection
-        const clientQ = query(collection(db, 'clients'), where('email', '==', cleanEmail));
+        const clientQ = query(collection(db, 'clients'), where('email', '==', cleanEmail), limit(1));
         const clientSnap = await getDocs(clientQ);
         if (!clientSnap.empty) {
           console.log("Nexus Security: Accès autorisé via Client list. Auto-synchronisation des membres...");
@@ -653,7 +653,8 @@ export default function App() {
             const q = query(
               collection(db, 'personnel'), 
               where('companyId', '==', currentCompany.id),
-              where('email', '==', cleanEmail)
+              where('email', '==', cleanEmail),
+              limit(1)
             );
             const snap = await getDocs(q);
             if (!snap.empty) {
@@ -668,7 +669,8 @@ export default function App() {
                const clientQ = query(
                  collection(db, 'clients'),
                  where('companyId', '==', currentCompany.id),
-                 where('email', '==', cleanEmail)
+                 where('email', '==', cleanEmail),
+                 limit(1)
                );
                const clientSnap = await getDocs(clientQ);
                if (!clientSnap.empty) {
