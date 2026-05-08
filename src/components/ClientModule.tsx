@@ -45,14 +45,18 @@ export default function ClientModule() {
     if (!currentCompany || submitting) return;
     setSubmitting(true);
     try {
+      const normalizedClient = {
+        ...newClient,
+        email: newClient.email.trim().toLowerCase()
+      };
       if (editingClient) {
         await updateDoc(doc(db, 'clients', editingClient.id), {
-          ...newClient,
+          ...normalizedClient,
           updatedAt: serverTimestamp(),
         });
       } else {
         await addDoc(collection(db, 'clients'), {
-          ...newClient,
+          ...normalizedClient,
           companyId: currentCompany.id,
           salesTotal: 0,
           loyaltyPoints: 0,

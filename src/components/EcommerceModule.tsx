@@ -88,7 +88,7 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
-  const isAdmin = user?.role !== 'Client';
+  const isAdmin = ['owner', 'Administrateur', 'Directeur'].includes(user?.role);
 
   // Fetch unread messages count for all orders
   useEffect(() => {

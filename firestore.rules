@@ -107,25 +107,7 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // 1.2 Dedicated Ecommerce Orders (Ensuring access for admin and members)
-    match /ecommerce_orders/{orderId} {
-      allow read: if isSignedIn() && (
-        isAdmin() || 
-        (isMemberOfCompany(resource.data.companyId) && (
-          // Staff can see all, clients only their own
-          (resource.data.customerEmail != null && resource.data.customerEmail.lower() == currentUserEmail()) ||
-          // This is a bit loose, ideally we'd check if they have a non-client role
-          // But since clients are members now, we rely on the query filtering in the UI
-          // and this safety check.
-          true 
-        ))
-      );
-      allow write: if isSignedIn() && (isAdmin() || isMemberOfCompany(incoming().companyId || existing().companyId));
-    }
-
-    // 2. Generic Company-Owned Collections
-    // Pattern: {collectionName} -> document {docId} { companyId: "..." }
-    
+    // 1.2 Dedicated Ecommerce Orders & Company Entities
     match /{collectionName}/{docId} {
       function isCompanyCollection() {
         return collectionName in [
@@ -140,57 +122,57 @@ service cloud.firestore {
 
       function isValidEntity(data) {
         return data.companyId is string && isValidId(data.companyId);
-        // Additional field validation could be added here for each entity specifically
       }
 
-      // Read access: Must be a member of the company referenced in the document
-      // Note: allow get uses getCompanyData(resource.data.companyId) which is fine.
-      // allow list MUST be secured.
+      function isSelf(data) {
+        return (data.email != null && data.email.lower() == currentUserEmail()) ||
+               (data.customerEmail != null && data.customerEmail.lower() == currentUserEmail()) ||
+               (data.senderId != null && data.senderId == request.auth.uid) ||
+               (data.recipientId != null && data.recipientId == request.auth.uid) ||
+               (data.uid != null && data.uid == request.auth.uid) ||
+               (data.userIds != null && request.auth.uid in data.userIds);
+      }
+
+      // Read access: Admin, Company Member, or the User themselves (self-access)
       allow get: if isSignedIn() && isCompanyCollection() && (
         isAdmin() || 
-        (resource.data.companyId != null && isMemberOfCompany(resource.data.companyId) && (
-          (collectionName != 'collaborations' && collectionName != 'messages') || 
-          (collectionName == 'collaborations' && (resource.data.recipientEmail == 'all' || resource.data.recipientEmail.lower() == currentUserEmail() || (resource.data.senderEmail != null && resource.data.senderEmail.lower() == currentUserEmail()))) ||
-          (collectionName == 'messages' && (resource.data.senderId == request.auth.uid || resource.data.recipientId == request.auth.uid))
-        )) ||
-        (resource.data.email != null && resource.data.email.lower() == currentUserEmail())
+        (resource.data.companyId != null && (
+          isMemberOfCompany(resource.data.companyId) || 
+          isSelf(resource.data) ||
+          collectionName == 'products' // Allow browsing company products if signed in
+        ))
       );
       
-      // List optimization: forced to filter by companyId OR their own email
       allow list: if isSignedIn() && isCompanyCollection() && (
         isAdmin() || 
-        (resource.data.companyId != null && isMemberOfCompany(resource.data.companyId) && (
-          (collectionName != 'collaborations' && collectionName != 'messages') || 
-          (collectionName == 'collaborations' && (resource.data.recipientEmail == 'all' || resource.data.recipientEmail.lower() == currentUserEmail() || (resource.data.senderEmail != null && resource.data.senderEmail.lower() == currentUserEmail()))) ||
-          (collectionName == 'messages' && (resource.data.senderId == request.auth.uid || resource.data.recipientId == request.auth.uid))
-        )) ||
-        (resource.data.email != null && resource.data.email.lower() == currentUserEmail())
+        (resource.data.companyId != null && (
+          isMemberOfCompany(resource.data.companyId) || 
+          isSelf(resource.data) ||
+          collectionName == 'products'
+        ))
       );
 
       allow create: if isSignedIn() && isCompanyCollection() && 
                       isValidEntity(incoming()) && 
                       (isAdmin() || (
-                        isMemberOfCompany(incoming().companyId) &&
-                        (collectionName != 'collaborations' || incoming().senderEmail.lower() == currentUserEmail()) &&
-                        (collectionName != 'messages' || incoming().senderId == request.auth.uid) &&
-                        (collectionName != 'project_discussions' || incoming().senderId == request.auth.uid)
+                        isMemberOfCompany(incoming().companyId) ||
+                        isSelf(incoming()) ||
+                        (collectionName == 'ecommerce_orders') // Allow clients to place orders
                       )) &&
-                      (incoming().createdAt == request.time || collectionName == 'messages' || collectionName == 'project_discussions');
+                      (incoming().createdAt == request.time || collectionName == 'messages' || collectionName == 'project_discussions' || collectionName == 'order_messages');
 
       allow update: if isSignedIn() && isCompanyCollection() && 
                       (isAdmin() || (
-                        isMemberOfCompany(existing().companyId) &&
-                        (collectionName != 'collaborations' || existing().senderEmail.lower() == currentUserEmail()) &&
-                        (collectionName != 'messages' || existing().senderId == request.auth.uid)
+                        isMemberOfCompany(existing().companyId) ||
+                        isSelf(existing())
                       )) &&
                       incoming().companyId == existing().companyId &&
-                      (incoming().updatedAt == request.time || collectionName == 'messages' || collectionName == 'project_discussions');
+                      (incoming().updatedAt == request.time || collectionName == 'messages' || collectionName == 'project_discussions' || collectionName == 'order_messages');
 
       allow delete: if isSignedIn() && isCompanyCollection() && 
                       (isAdmin() || (
-                        isMemberOfCompany(existing().companyId) &&
-                        (collectionName != 'collaborations' || existing().senderEmail.lower() == currentUserEmail()) &&
-                        (collectionName != 'messages' || existing().senderId == request.auth.uid)
+                        isMemberOfCompany(existing().companyId) ||
+                        (isSelf(existing()) && collectionName == 'order_messages') // Allow deleting own messages
                       ));
     }
   }
