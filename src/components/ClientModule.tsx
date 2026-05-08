@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, addDoc, serverTimestamp, where, doc, updateDoc, deleteDoc, arrayUnion } from '../lib/firebase';
+import { collection, onSnapshot, query, setDoc, serverTimestamp, where, doc, updateDoc, deleteDoc, arrayUnion } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { Plus, Search, Filter, Phone, Mail, Award, TrendingUp, UserPlus, Edit2, Trash2 } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';

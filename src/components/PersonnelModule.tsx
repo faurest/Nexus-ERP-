@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, addDoc, updateDoc, doc, arrayUnion, deleteDoc, getDocs } from '../lib/firebase';
+import { collection, onSnapshot, query, where, setDoc, updateDoc, doc, arrayUnion, deleteDoc, getDocs } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save, Ban, Clock, CalendarRange, CheckCircle2, XCircle, Timer, FileText } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
@@ -215,11 +215,12 @@ export default function PersonnelModule({ user }: { user?: any }) {
           setCreationMessage('');
         }, 1500);
       } else {
-        await addDoc(collection(db, 'personnel'), {
+        const cleanEmail = newStaff.email.trim().toLowerCase();
+        await setDoc(doc(db, 'personnel', cleanEmail), {
           firstName: newStaff.firstName,
           lastName: newStaff.lastName,
           name: fullName,
-          email: newStaff.email.trim().toLowerCase(),
+          email: cleanEmail,
           phone: newStaff.phone,
           notes: newStaff.notes,
           role: newStaff.role,
@@ -229,9 +230,9 @@ export default function PersonnelModule({ user }: { user?: any }) {
           tasksAssignedCount: 0
         });
         await updateDoc(doc(db, 'companies', currentCompany.id), {
-          memberEmails: arrayUnion(newStaff.email.trim().toLowerCase())
+          memberEmails: arrayUnion(cleanEmail)
         });
-        setCreationMessage(`Employé ajouté avec succès ! Il peut désormais se connecter avec Google via l'adresse : ${newStaff.email}`);
+        setCreationMessage(`Employé ajouté avec succès ! Il peut désormais se connecter avec Google via l'adresse : ${cleanEmail}`);
         setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général' });
       }
     } catch (err: any) {

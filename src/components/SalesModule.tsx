@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from '../lib/firebase';
+import { collection, onSnapshot, query, where, addDoc, setDoc, serverTimestamp, doc, updateDoc, deleteDoc } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { Search, Plus, TrendingUp, Filter, ShoppingCart, Receipt, CreditCard, DollarSign, Edit2, Trash2, CheckCircle2, ArrowRight } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
@@ -237,9 +237,11 @@ export default function SalesModule() {
         if (formData.clientName) {
            const existingClient = clients.find(c => c.name.toLowerCase().trim() === formData.clientName.toLowerCase().trim());
            if (!existingClient) {
-              await addDoc(collection(db, 'clients'), {
+              const cleanName = formData.clientName.trim();
+              const tempId = `client_guest_${Date.now()}`;
+              await setDoc(doc(db, 'clients', tempId), {
                  companyId: currentCompany.id,
-                 name: formData.clientName.trim(),
+                 name: cleanName,
                  email: '',
                  phone: '',
                  address: '',
@@ -310,9 +312,11 @@ export default function SalesModule() {
       if (newOrderName) {
          const existingClient = clients.find(c => c.name.toLowerCase().trim() === newOrderName.toLowerCase().trim());
          if (!existingClient) {
-            await addDoc(collection(db, 'clients'), {
+            const cleanName = newOrderName.trim();
+            const tempId = `client_order_${Date.now()}`;
+            await setDoc(doc(db, 'clients', tempId), {
                companyId: currentCompany.id,
-               name: newOrderName.trim(),
+               name: cleanName,
                email: '',
                phone: '',
                address: '',
