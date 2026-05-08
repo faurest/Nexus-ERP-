@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, addDoc, updateDoc, doc, arrayUnion, deleteDoc, getDocs } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save, Ban } from 'lucide-react';
+import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save, Ban, Clock, CalendarRange, CheckCircle2, XCircle, Timer, FileText } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { cn } from '../lib/utils';
@@ -33,11 +33,51 @@ interface Task {
   status: 'todo' | 'in_progress' | 'done';
 }
 
+interface LeaveRequest {
+  id: string;
+  staffId: string;
+  startDate: string;
+  endDate: string;
+  type: 'leave' | 'absence' | 'medical';
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+interface TimeEntry {
+  id: string;
+  staffId: string;
+  projectId?: string;
+  date: string;
+  hours: number;
+  description: string;
+}
+
+interface SalaryAdvance {
+  id: string;
+  staffId: string;
+  amount: number;
+  requestDate: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  deductionMonth: string;
+}
+
 export default function PersonnelModule() {
   const { currentCompany } = useCompany();
-  const [activeTab, setActiveTab] = useState<'employees' | 'roles'>('employees');
+  const [activeTab, setActiveTab] = useState<'employees' | 'roles' | 'time' | 'advances'>('employees');
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [salaryAdvances, setSalaryAdvances] = useState<SalaryAdvance[]>([]);
+  const [activeTimeSubTab, setActiveTimeSubTab] = useState<'leave' | 'timesheet'>('leave');
+  const [isAddingLeave, setIsAddingLeave] = useState(false);
+  const [newLeave, setNewLeave] = useState({ staffId: '', startDate: '', endDate: '', type: 'leave', reason: '' });
+  const [isAddingTime, setIsAddingTime] = useState(false);
+  const [newTimeEntry, setNewTimeEntry] = useState({ staffId: '', date: '', hours: 8, description: '', projectId: '' });
+  const [isAddingAdvance, setIsAddingAdvance] = useState(false);
+  const [newAdvance, setNewAdvance] = useState({ staffId: '', amount: 0, reason: '', deductionMonth: new Date().toISOString().slice(0, 7) });
+  const [projectsList, setProjectsList] = useState<{id: string, name: string}[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [viewingStaff, setViewingStaff] = useState<Staff | null>(null);
@@ -87,7 +127,26 @@ export default function PersonnelModule() {
     const unsubTasks = onSnapshot(query(collection(db, 'tasks'), where('companyId', '==', currentCompany.id)), (snapshot) => {
       setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
     });
-    return () => { unsubStaff(); unsubTasks(); };
+    const unsubLeave = onSnapshot(query(collection(db, 'leave_requests'), where('companyId', '==', currentCompany.id)), (snapshot) => {
+      setLeaveRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaveRequest)));
+    });
+    const unsubTime = onSnapshot(query(collection(db, 'time_entries'), where('companyId', '==', currentCompany.id)), (snapshot) => {
+      setTimeEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TimeEntry)));
+    });
+    const unsubAdvances = onSnapshot(query(collection(db, 'salary_advances'), where('companyId', '==', currentCompany.id)), (snapshot) => {
+      setSalaryAdvances(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SalaryAdvance)));
+    });
+    const unsubProjects = onSnapshot(query(collection(db, 'projects'), where('companyId', '==', currentCompany.id)), (snapshot) => {
+      setProjectsList(snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name })));
+    });
+    return () => { 
+      unsubStaff(); 
+      unsubTasks(); 
+      unsubLeave();
+      unsubTime();
+      unsubAdvances();
+      unsubProjects();
+    };
   }, [currentCompany]);
 
   const handleCreateTask = async (e: React.FormEvent) => {
@@ -203,6 +262,97 @@ export default function PersonnelModule() {
     }
   };
 
+  const handleCreateLeave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany || !newLeave.staffId || !newLeave.startDate || submitting) return;
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, 'leave_requests'), {
+        ...newLeave,
+        companyId: currentCompany.id,
+        status: 'pending'
+      });
+      setIsAddingLeave(false);
+      setNewLeave({ staffId: '', startDate: '', endDate: '', type: 'leave', reason: '' });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'leave_requests');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdateLeaveStatus = async (requestId: string, status: 'approved' | 'rejected') => {
+    try {
+      await updateDoc(doc(db, 'leave_requests', requestId), { status });
+      
+      // If approved, optionally update staff status
+      if (status === 'approved') {
+        const req = leaveRequests.find(r => r.id === requestId);
+        if (req && req.type !== 'medical') {
+          // You could set staff status to 'on_leave' if the date is today
+          // For now let's just update the request
+        }
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'leave_requests');
+    }
+  };
+
+  const handleCreateTimeEntry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany || !newTimeEntry.staffId || !newTimeEntry.date || submitting) return;
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, 'time_entries'), {
+        ...newTimeEntry,
+        hours: Number(newTimeEntry.hours),
+        companyId: currentCompany.id
+      });
+      setIsAddingTime(false);
+      setNewTimeEntry({ staffId: '', date: '', hours: 8, description: '', projectId: '' });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'time_entries');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCreateAdvanceRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany || !newAdvance.staffId || newAdvance.amount <= 0 || submitting) return;
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, 'salary_advances'), {
+        ...newAdvance,
+        amount: Number(newAdvance.amount),
+        companyId: currentCompany.id,
+        requestDate: new Date().toISOString().split('T')[0],
+        status: 'pending'
+      });
+      setIsAddingAdvance(false);
+      setNewAdvance({ staffId: '', amount: 0, reason: '', deductionMonth: new Date().toISOString().slice(0, 7) });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'salary_advances');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdateAdvanceStatus = async (advanceId: string, status: 'approved' | 'rejected') => {
+    try {
+      await updateDoc(doc(db, 'salary_advances', advanceId), { status });
+      
+      const advance = salaryAdvances.find(a => a.id === advanceId);
+      const staff = staffList.find(s => s.id === advance?.staffId);
+      
+      if (staff) {
+        // Notification logic could go here
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'salary_advances');
+    }
+  };
+
   const filteredStaff = staffList.filter(s => 
     (s.name && s.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (s.role && s.role.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -210,37 +360,53 @@ export default function PersonnelModule() {
   );
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="relative overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 sm:p-12 text-white shadow-2xl group">
-        <div className="absolute inset-0 z-0 scale-110 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity">
-          <img 
-             src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1600" 
-             className="w-full h-full object-cover" 
-             alt="teamwork"
-          />
-        </div>
-
+    <div className="space-y-6">
+      <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
               Nexus <span className="text-blue-500">Talent</span>
             </h1>
             <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
-              Gérez votre capital humain, définissez des permissions granulaires et orchestrez les talents au sein de votre organisation.
+              Gérez votre capital humain et orchestrez les talents de votre organisation.
             </p>
           </div>
-          <div className="flex bg-white/5 backdrop-blur-md p-1.5 rounded-[1.5rem] border border-white/10 shrink-0">
+          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-white/10 overflow-x-auto scrollbar-hide max-w-full">
             <button
               onClick={() => setActiveTab('employees')}
-              className={cn("px-6 py-3 rounded-2xl text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all", activeTab === 'employees' ? "bg-white text-slate-900 shadow-xl shadow-white/10" : "text-white/60 hover:text-white")}
+              className={cn(
+                "px-6 py-2.5 rounded-lg text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap", 
+                activeTab === 'employees' ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
+              )}
             >
-              <User size={16} /> Employés
+              <User size={14} /> Employés
+            </button>
+            <button
+              onClick={() => setActiveTab('time')}
+              className={cn(
+                "px-6 py-2.5 rounded-lg text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap", 
+                activeTab === 'time' ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
+              )}
+            >
+              <Clock size={14} /> Temps
+            </button>
+            <button
+              onClick={() => setActiveTab('advances')}
+              className={cn(
+                "px-6 py-2.5 rounded-lg text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap", 
+                activeTab === 'advances' ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
+              )}
+            >
+              <FileText size={14} /> Avances
             </button>
             <button
               onClick={() => setActiveTab('roles')}
-              className={cn("px-6 py-3 rounded-2xl text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all", activeTab === 'roles' ? "bg-white text-slate-900 shadow-xl shadow-white/10" : "text-white/60 hover:text-white")}
+              className={cn(
+                "px-6 py-2.5 rounded-lg text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap", 
+                activeTab === 'roles' ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
+              )}
             >
-              <Shield size={16} /> Rôles
+              <Shield size={14} /> Rôles
             </button>
           </div>
         </div>
@@ -342,6 +508,13 @@ export default function PersonnelModule() {
                 </div>
               </TableRow>
             ))}
+            {filteredStaff.length === 0 && (
+              <div className="p-12 text-center">
+                <User size={48} className="mx-auto text-slate-200 mb-4" />
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Aucun employé trouvé</p>
+                <p className="text-xs text-slate-300 mt-1">Commencez par recruter votre premier collaborateur.</p>
+              </div>
+            )}
           </Table>
         </div>
 
@@ -400,6 +573,201 @@ export default function PersonnelModule() {
           </div>
         </div>
         </div>
+      ) : activeTab === 'time' ? (
+        <div className="space-y-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+              <button 
+                onClick={() => setActiveTimeSubTab('leave')}
+                className={cn(
+                  "px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all",
+                  activeTimeSubTab === 'leave' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                )}
+              >
+                <CalendarRange size={16} /> Congés
+              </button>
+              <button 
+                onClick={() => setActiveTimeSubTab('timesheet')}
+                className={cn(
+                  "px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all",
+                  activeTimeSubTab === 'timesheet' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                )}
+              >
+                <Timer size={16} /> Temps
+              </button>
+            </div>
+            <button 
+              onClick={() => activeTimeSubTab === 'leave' ? setIsAddingLeave(true) : setIsAddingTime(true)}
+              className="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 transition-all shadow-md"
+            >
+              <Plus size={16} /> Nouveau
+            </button>
+          </div>
+
+          {activeTimeSubTab === 'leave' ? (
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden text-black">
+               <Table headers={['Collaborateur', 'Période', 'Type', 'Motif', 'Statut', 'Actions']}>
+                 {leaveRequests.map(req => {
+                   const staff = staffList.find(s => s.id === req.staffId);
+                   return (
+                     <TableRow key={req.id}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                            {staff?.name.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <span className="font-bold text-slate-900 text-sm">{staff?.name}</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-slate-700">Du {req.startDate}</span>
+                          <span className="text-[10px] text-slate-400">Au {req.endDate}</span>
+                        </div>
+                        <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full whitespace-nowrap">
+                          {req.type === 'leave' ? 'Congé' : req.type === 'absence' ? 'Absence' : 'Médical'}
+                        </span>
+                        <p className="text-xs text-slate-600 max-w-[200px] truncate">{req.reason}</p>
+                        <div>
+                          <span className={cn(
+                            "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase",
+                            req.status === 'approved' ? "bg-green-100 text-green-700" :
+                            req.status === 'rejected' ? "bg-red-100 text-red-700" :
+                            "bg-amber-100 text-amber-700"
+                          )}>
+                            {req.status === 'pending' ? 'En attente' : req.status === 'approved' ? 'Approuvé' : 'Refusé'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {req.status === 'pending' && (
+                            <>
+                              <button onClick={() => handleUpdateLeaveStatus(req.id, 'approved')} className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg transition-colors">
+                                <CheckCircle2 size={16} />
+                              </button>
+                              <button onClick={() => handleUpdateLeaveStatus(req.id, 'rejected')} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                                <XCircle size={16} />
+                              </button>
+                            </>
+                          )}
+                          <button onClick={() => deleteDoc(doc(db, 'leave_requests', req.id))} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                     </TableRow>
+                   );
+                 })}
+                 {leaveRequests.length === 0 && (
+                   <div className="p-20 text-center space-y-4 col-span-full">
+                      <CalendarRange size={48} className="mx-auto text-slate-200" />
+                      <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Aucune demande de congé enregistrée</p>
+                   </div>
+                 )}
+               </Table>
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden text-black">
+               <Table headers={['Collaborateur', 'Date', 'Projet / Description', 'Durée', 'Actions']}>
+                  {timeEntries.map(entry => {
+                    const staff = staffList.find(s => s.id === entry.staffId);
+                    const project = projectsList.find(p => p.id === entry.projectId);
+                    return (
+                      <TableRow key={entry.id}>
+                         <div className="flex items-center gap-3">
+                           <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                             {staff?.name.split(' ').map(n => n[0]).join('')}
+                           </div>
+                           <span className="font-bold text-slate-900 text-sm">{staff?.name}</span>
+                         </div>
+                         <span className="text-xs font-bold text-slate-700">{entry.date}</span>
+                         <div className="flex flex-col">
+                           <span className="text-[10px] font-black uppercase text-indigo-600">{project?.name || 'Hors Projet'}</span>
+                           <p className="text-xs text-slate-500 max-w-[300px] truncate">{entry.description}</p>
+                         </div>
+                         <div className="flex items-center gap-2">
+                           <Clock size={14} className="text-blue-500" />
+                           <span className="text-xs font-black text-slate-900">{entry.hours}h</span>
+                         </div>
+                         <button onClick={() => deleteDoc(doc(db, 'time_entries', entry.id))} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
+                            <Trash2 size={16} />
+                         </button>
+                      </TableRow>
+                    );
+                  })}
+                  {timeEntries.length === 0 && (
+                   <div className="p-20 text-center space-y-4 col-span-full">
+                      <Timer size={48} className="mx-auto text-slate-200" />
+                      <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Aucune saisie de temps pour le moment</p>
+                   </div>
+                 )}
+               </Table>
+            </div>
+          )}
+        </div>
+      ) : activeTab === 'advances' ? (
+        <div className="space-y-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">Avances & Acomptes</h2>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Prélèvements sur salaire</p>
+            </div>
+            <button 
+              onClick={() => setIsAddingAdvance(true)}
+              className="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 transition-all shadow-md shadow-blue-600/10"
+            >
+              <Plus size={16} /> Nouvelle Demande
+            </button>
+          </div>
+
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden text-black">
+             <Table headers={['Collaborateur', 'Date Demande', 'Montant', 'Mois Déduction', 'Motif', 'Statut', 'Actions']}>
+                {salaryAdvances.map(advance => {
+                  const staff = staffList.find(s => s.id === advance.staffId);
+                  return (
+                    <TableRow key={advance.id}>
+                       <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                           {staff?.name.split(' ').map(n => n[0]).join('')}
+                         </div>
+                         <span className="font-bold text-slate-900 text-sm">{staff?.name}</span>
+                       </div>
+                       <span className="text-xs font-bold text-slate-700">{advance.requestDate}</span>
+                       <span className="text-xs font-black text-blue-600">{advance.amount.toLocaleString()} FCFA</span>
+                       <span className="text-[10px] font-black uppercase text-slate-400">{advance.deductionMonth}</span>
+                       <p className="text-xs text-slate-600 max-w-[200px] truncate">{advance.reason}</p>
+                       <div>
+                         <span className={cn(
+                           "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase",
+                           advance.status === 'approved' ? "bg-green-100 text-green-700" :
+                           advance.status === 'rejected' ? "bg-red-100 text-red-700" :
+                           "bg-amber-100 text-amber-700"
+                         )}>
+                           {advance.status === 'pending' ? 'En attente' : advance.status === 'approved' ? 'Approuvé' : 'Refusé'}
+                         </span>
+                       </div>
+                       <div className="flex items-center gap-2">
+                         {advance.status === 'pending' && (
+                           <>
+                             <button onClick={() => handleUpdateAdvanceStatus(advance.id, 'approved')} className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg transition-colors">
+                               <CheckCircle2 size={16} />
+                             </button>
+                             <button onClick={() => handleUpdateAdvanceStatus(advance.id, 'rejected')} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                               <XCircle size={16} />
+                             </button>
+                           </>
+                         )}
+                         <button onClick={() => deleteDoc(doc(db, 'salary_advances', advance.id))} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
+                           <Trash2 size={16} />
+                         </button>
+                       </div>
+                    </TableRow>
+                  );
+                })}
+                {salaryAdvances.length === 0 && (
+                   <div className="p-20 text-center space-y-4 col-span-full">
+                      <FileText size={48} className="mx-auto text-slate-200" />
+                      <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Aucun acompte ou avance demandé</p>
+                   </div>
+                 )}
+             </Table>
+          </div>
+        </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
@@ -444,12 +812,14 @@ export default function PersonnelModule() {
               <tbody className="divide-y divide-slate-50">
                 {[
                   { id: 'dashboard', label: 'Tableau de bord' },
+                  { id: 'services', label: 'Services & Prestations' },
                   { id: 'sales', label: 'Ventes & Facturation' },
-                  { id: 'clients', label: 'CRM & Clients' },
+                  { id: 'clients', label: 'Partenaires Clients' },
                   { id: 'personnel', label: 'Ressources Humaines' },
                   { id: 'resources', label: 'Stocks & Logistique' },
                   { id: 'projects', label: 'Projets & Tâches' },
-                  { id: 'accounting', label: 'Comptabilité' }
+                  { id: 'accounting', label: 'Rapport Comptable' },
+                  { id: 'collaboration', label: 'Collaboration & Comm' }
                 ].map((mod) => (
                   <tr key={mod.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="py-4 px-4 font-medium text-sm text-slate-700">
@@ -486,9 +856,160 @@ export default function PersonnelModule() {
         </div>
       )}
 
+      {/* Modals for Time Management */}
+      {isAddingLeave && (
+        <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-amber-100 text-amber-600 rounded-xl">
+                <CalendarRange size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">Déclarer une absence</h3>
+                <p className="text-sm text-slate-500">Enregistrez un congé ou une absence imprévue.</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateLeave} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Collaborateur</label>
+                <select required value={newLeave.staffId} onChange={e => setNewLeave({...newLeave, staffId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none">
+                  <option value="">Sélectionner...</option>
+                  {staffList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Date début</label>
+                  <input required type="date" value={newLeave.startDate} onChange={e => setNewLeave({...newLeave, startDate: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Date fin</label>
+                  <input required type="date" value={newLeave.endDate} onChange={e => setNewLeave({...newLeave, endDate: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Type d'absence</label>
+                <select required value={newLeave.type} onChange={e => setNewLeave({...newLeave, type: e.target.value as any})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none">
+                  <option value="leave">Congé Payé</option>
+                  <option value="absence">Absence Injustifiée</option>
+                  <option value="medical">Arrêt Maladie</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Motif / Commentaire</label>
+                <textarea value={newLeave.reason} onChange={e => setNewLeave({...newLeave, reason: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none resize-none h-24" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                <button type="button" onClick={() => setIsAddingLeave(false)} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
+                <button type="submit" disabled={submitting} className="px-6 py-3 rounded-xl bg-amber-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-amber-700 transition-all shadow-lg shadow-amber-600/20 font-mono disabled:opacity-50">Confirmer</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isAddingTime && (
+        <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
+                <Timer size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">Saisie de temps</h3>
+                <p className="text-sm text-slate-500">Facturation au temps passé / Timesheet.</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateTimeEntry} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Collaborateur</label>
+                <select required value={newTimeEntry.staffId} onChange={e => setNewTimeEntry({...newTimeEntry, staffId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none">
+                  <option value="">Sélectionner...</option>
+                  {staffList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Date</label>
+                  <input required type="date" value={newTimeEntry.date} onChange={e => setNewTimeEntry({...newTimeEntry, date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Heures</label>
+                  <input required type="number" step="0.5" value={newTimeEntry.hours} onChange={e => setNewTimeEntry({...newTimeEntry, hours: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Projet</label>
+                <select value={newTimeEntry.projectId} onChange={e => setNewTimeEntry({...newTimeEntry, projectId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none">
+                  <option value="">Hors Projet</option>
+                  {projectsList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Description du travail</label>
+                <textarea required value={newTimeEntry.description} onChange={e => setNewTimeEntry({...newTimeEntry, description: e.target.value})} placeholder="Détaillez les tâches accomplies..." className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none resize-none h-24" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                <button type="button" onClick={() => setIsAddingTime(false)} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
+                <button type="submit" disabled={submitting} className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50">Sauvegarder</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isAddingAdvance && (
+        <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
+                <FileText size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">Demander une avance</h3>
+                <p className="text-sm text-slate-500">Acompte sur salaire ou avance exceptionnelle.</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateAdvanceRequest} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Collaborateur</label>
+                <select required value={newAdvance.staffId} onChange={e => setNewAdvance({...newAdvance, staffId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none">
+                  <option value="">Sélectionner...</option>
+                  {staffList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Montant (FCFA)</label>
+                  <input required type="number" value={newAdvance.amount} onChange={e => setNewAdvance({...newAdvance, amount: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Mois de déduction</label>
+                  <input required type="month" value={newAdvance.deductionMonth} onChange={e => setNewAdvance({...newAdvance, deductionMonth: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Motif de la demande</label>
+                <textarea required value={newAdvance.reason} onChange={e => setNewAdvance({...newAdvance, reason: e.target.value})} placeholder="Expliquez brièvement le besoin..." className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none resize-none h-24" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                <button type="button" onClick={() => setIsAddingAdvance(false)} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
+                <button type="submit" disabled={submitting} className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50">Soumettre</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Modal for viewing staff info */}
       {viewingStaff && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+        <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-6">
           <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-4">
@@ -550,7 +1071,7 @@ export default function PersonnelModule() {
 
       {/* Modal for recruiting */}
       {isAdding && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6">
           <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">

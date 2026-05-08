@@ -109,7 +109,7 @@ service cloud.firestore {
           'expenses', 'resources', 'tasks', 'services', 
           'interventions', 'notifications', 'open_orders',
           'sales_invoices', 'invoices', 'payments', 'collaborations',
-          'messages', 'project_discussions'
+          'messages', 'project_discussions', 'leave_requests', 'time_entries', 'salary_advances'
         ];
       }
 

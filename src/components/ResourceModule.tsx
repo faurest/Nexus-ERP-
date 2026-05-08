@@ -102,32 +102,24 @@ export default function ResourceModule() {
   );
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="relative overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 sm:p-12 text-white shadow-2xl group">
-        <div className="absolute inset-0 z-0 scale-110 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity">
-          <img 
-             src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=1600" 
-             className="w-full h-full object-cover" 
-             alt="logistics nexus"
-          />
-        </div>
-
+    <div className="space-y-6">
+      <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
               Nexus <span className="text-blue-500">Supply</span>
             </h1>
             <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
-              Orchestrez vos flux matériels, gérez vos stocks critiques et supervisez l'ensemble des actifs technologiques et humains de votre organisation.
+              Orchestrez vos flux matériels, gérez vos stocks et supervisez vos actifs.
             </p>
           </div>
           <div className="flex flex-wrap gap-4 w-full md:w-auto shrink-0">
-            <button onClick={() => alert("Indexation des flux...")} className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2 backdrop-blur-md">
+            <button onClick={() => alert("Indexation des flux...")} className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2">
               <ArrowRightLeft size={16} /> Mouvement
             </button>
             <button 
               onClick={() => setIsAdding(true)}
-              className="px-6 py-4 rounded-2xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20 flex items-center gap-2"
+              className="px-6 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md shadow-blue-600/10 flex items-center gap-2"
             >
               <Plus size={16} /> Nouvel Actif
             </button>
@@ -135,14 +127,14 @@ export default function ResourceModule() {
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide px-2">
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {['Tous les actifs', 'Stock Consommable', 'Matériel Bureautique', 'Logiciel', 'Ressource Humaine', 'Véhicules'].map((filter) => (
           <button 
             key={filter} 
             onClick={() => setActiveFilter(filter)}
             className={cn(
-              "shrink-0 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] transition-all whitespace-nowrap",
-              activeFilter === filter ? "bg-slate-900 text-white shadow-xl shadow-slate-200" : "bg-white border border-slate-100 text-slate-400 hover:text-slate-900 shadow-sm"
+              "shrink-0 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all whitespace-nowrap",
+              activeFilter === filter ? "bg-white text-slate-900 shadow-md" : "bg-white border border-slate-100 text-slate-400 hover:text-slate-900 shadow-sm"
             )}
           >
             {filter}

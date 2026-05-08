@@ -200,35 +200,27 @@ export default function AccountingModule() {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="relative overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 sm:p-12 text-white shadow-2xl group">
-        <div className="absolute inset-0 z-0 scale-110 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity">
-          <img 
-             src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80&w=1600" 
-             className="w-full h-full object-cover" 
-             alt="audit finance"
-          />
-        </div>
-
+    <div className="space-y-6">
+      <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
               Nexus <span className="text-blue-500">Finance</span>
             </h1>
             <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
-              Analysez la santé financière de votre organisation. Supervisez les marges, contrôlez les charges et optimisez vos flux de trésorerie avec l'intelligence Nexus.
+              Analysez la santé financière de votre organisation.
             </p>
           </div>
-          <div className="flex bg-white/5 backdrop-blur-md p-1.5 rounded-[1.5rem] border border-white/10 shrink-0">
+          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-white/10 shrink-0 gap-1">
             <button 
               onClick={() => setActiveTab('report')}
-              className={cn("px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'report' ? "bg-white text-slate-900 shadow-xl" : "text-white/60 hover:text-white")}
+              className={cn("px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'report' ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white")}
             >
               Analyse
             </button>
             <button 
               onClick={() => setActiveTab('expenses')}
-              className={cn("px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'expenses' ? "bg-white text-slate-900 shadow-xl" : "text-white/60 hover:text-white")}
+              className={cn("px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'expenses' ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white")}
             >
               Journal
             </button>

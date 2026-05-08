@@ -262,25 +262,14 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
   return (
     <div className="space-y-10 pb-20">
       {/* Immersive Command Header */}
-      <div className="relative overflow-hidden bg-slate-950 rounded-[2rem] lg:rounded-[2.5rem] p-6 lg:p-12 text-white shadow-2xl group border border-white/5">
-        <div className="absolute inset-0 z-0 scale-105 blur-2xl opacity-20 pointer-events-none">
-          <img 
-             src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1600" 
-             className="w-full h-full object-cover" 
-             alt="abstract"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-indigo-600/20 z-0 opacity-50" />
+      <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] lg:rounded-[2.5rem] p-6 lg:p-12 text-white shadow-xl border border-white/5">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-slate-900 to-indigo-900 z-0 opacity-50" />
 
         <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-12">
           <div className="max-w-xl">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full mb-6">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+            <div className="transition-all duration-500">
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-white/5 border border-white/10 rounded-full mb-6">
+                <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
                 <span className="text-[9px] font-black uppercase tracking-[0.25em] text-blue-400">Nexus OS • Operational Command</span>
               </div>
               <h1 className="text-3xl lg:text-5xl font-black tracking-tight mb-4 leading-tight">
@@ -289,7 +278,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
               <p className="text-slate-400 text-xs lg:text-sm font-medium leading-relaxed max-w-md opacity-80">
                 {welcomeMessages[role] || "Accédez à une vision 360° optimisée de vos actifs, flux financiers et capital humain."}
               </p>
-            </motion.div>
+            </div>
           </div>
           
           <div className="flex flex-wrap gap-4 shrink-0 lg:bg-white/5 lg:backdrop-blur-md lg:p-2 lg:rounded-3xl lg:border lg:border-white/10">
@@ -324,27 +313,24 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
         
         {/* KPI Row - Top 4 cards */}
         {stats.map((stat, i) => (
-          <motion.div
+          <div
             key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 * i }}
-            className="col-span-12 md:col-span-6 lg:col-span-3 bg-white p-5 lg:p-7 rounded-3xl lg:rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 group"
+            className="col-span-12 md:col-span-6 lg:col-span-3 bg-white p-5 lg:p-7 rounded-2xl lg:rounded-[1.5rem] border border-slate-100 shadow-sm hover:border-blue-100 transition-all group"
           >
             <div className="flex items-center justify-between mb-4">
               <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110",
+                "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
                 stat.color.includes('green') ? 'bg-green-50 text-green-600 group-hover:bg-green-600 group-hover:text-white' : 
                 stat.color.includes('blue') ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white' : 
                 stat.color.includes('red') ? 'bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white' : 
                 'bg-orange-50 text-orange-600 group-hover:bg-orange-600 group-hover:text-white'
               )}>
-                <stat.icon size={20} />
+                <stat.icon size={18} />
               </div>
               <div className={cn(
-                "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
+                "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest",
                 stat.trend.includes('+') ? 'bg-green-100 text-green-700' : 
-                stat.trend === 'Critique' ? 'bg-red-100 text-red-700 animate-pulse' :
+                stat.trend === 'Critique' ? 'bg-red-100 text-red-700' :
                 'bg-blue-100 text-blue-700'
               )}>
                 {stat.trend}
@@ -352,7 +338,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
             </div>
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{stat.label}</p>
             <h3 className="text-2xl font-black text-slate-900 leading-none">{stat.value}</h3>
-          </motion.div>
+          </div>
         ))}
 
         {/* Intelligence Hub (Chart) - Spans 8 cols */}
@@ -379,19 +365,17 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
           <div className="h-[280px] flex items-end gap-3.5 relative z-10">
             {[45, 62, 55, 78, 68, 92, 85, 76, 88, 95, 82, 98].map((v, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-3 group/bar">
-                <motion.div 
-                  initial={{ height: 0 }}
-                  animate={{ height: `${v}%` }}
-                  transition={{ delay: 0.5 + i * 0.05, duration: 0.8 }}
+                <div 
+                  style={{ height: `${v}%` }}
                   className={cn(
-                    "w-full rounded-t-xl transition-all duration-500 relative",
-                    i === 11 ? "bg-blue-600 shadow-[0_8px_20px_rgba(37,99,235,0.25)]" : "bg-slate-100 group-hover/bar:bg-blue-100"
+                    "w-full rounded-t-lg transition-all relative",
+                    i === 11 ? "bg-blue-600 shadow-sm" : "bg-slate-100"
                   )}
                 >
-                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] font-black px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity">
+                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] font-black px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100">
                     {v}k
                   </div>
-                </motion.div>
+                </div>
                 <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">{i + 1}</span>
               </div>
             ))}
@@ -424,11 +408,9 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                     <span className="text-[10px] font-black text-white">{s.val}</span>
                   </div>
                   <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: s.w }}
-                      transition={{ duration: 1.2, delay: 0.8 }}
-                      className={cn("h-full rounded-full transition-all", s.w === '20%' ? 'bg-orange-500' : 'bg-blue-500')}
+                    <div 
+                      style={{ width: s.w }}
+                      className={cn("h-full rounded-full transition-all duration-1000", s.w === '20%' ? 'bg-orange-500' : 'bg-blue-500')}
                     />
                   </div>
                 </div>
@@ -447,44 +429,27 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
 
       </div>
 
-      {/* Infinite Scrolling Gallery with ERP Advantages */}
-      <div className="relative -mx-4 sm:-mx-8 overflow-hidden py-12 bg-slate-50 border-y border-slate-100">
-        <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-slate-50 via-slate-50/80 to-transparent z-10" />
-        <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-slate-50 via-slate-50/80 to-transparent z-10" />
-        
-        <div className="text-center mb-12 relative z-10">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Pourquoi choisir NEXUS ERP ?</h2>
-          <div className="w-20 h-1.5 bg-blue-600 rounded-full mx-auto mt-4" />
+      {/* Simplified Advantages with ERP Benefits */}
+      <div className="py-12 bg-slate-50 border-y border-slate-100">
+        <div className="text-center mb-12">
+          <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">Performance NEXUS ERP</h2>
+          <div className="w-12 h-1 bg-blue-600 rounded-full mx-auto mt-3" />
         </div>
 
-        <motion.div 
-          animate={{ x: ["0%", "-50%"] }}
-          transition={{ 
-            duration: 60, 
-            repeat: Infinity, 
-            ease: "linear" 
-          }}
-          className="flex gap-8 w-fit px-8"
-        >
-          {[...advantages, ...advantages].map((adv, i) => (
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {advantages.map((adv, i) => (
             <div 
               key={i} 
-              className="w-[350px] sm:w-[450px] rounded-[2.5rem] overflow-hidden shrink-0 shadow-xl bg-white border border-slate-100 relative group flex flex-col"
+              className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm"
             >
-              <div className="h-[200px] sm:h-[260px] overflow-hidden">
-                <img src={adv.img} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt={adv.title} />
+              <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600 mb-4 font-black text-xs">
+                0{i + 1}
               </div>
-              <div className="p-8 pb-10">
-                <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3 block">Avantage #0{ (i % advantages.length) + 1 }</span>
-                <h3 className="text-xl font-black text-slate-900 mb-3">{adv.title}</h3>
-                <p className="text-sm font-medium text-slate-500 leading-relaxed">{adv.desc}</p>
-              </div>
-              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100">
-                <TrendingUp size={20} className="text-blue-600" />
-              </div>
+              <h3 className="text-lg font-black text-slate-900 mb-2 uppercase tracking-tight">{adv.title}</h3>
+              <p className="text-xs font-medium text-slate-500 leading-relaxed">{adv.desc}</p>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
 
       {/* Cross-tenant Global Overview */}

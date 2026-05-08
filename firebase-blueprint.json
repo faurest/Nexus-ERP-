@@ -303,6 +303,53 @@
         "timestamp": { "type": "number" }
       },
       "required": ["companyId", "projectId", "senderId", "content"]
+    },
+    "LeaveRequest": {
+      "title": "Leave Request",
+      "description": "Employee leave or absence request",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "staffId": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "type": { "type": "string", "enum": ["leave", "absence", "medical"] },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] }
+      },
+      "required": ["companyId", "staffId", "startDate", "endDate", "type", "status"]
+    },
+    "TimeEntry": {
+      "title": "Time Entry",
+      "description": "Employee timesheet entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "staffId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "date": { "type": "string" },
+        "hours": { "type": "number" },
+        "description": { "type": "string" }
+      },
+      "required": ["companyId", "staffId", "date", "hours"]
+    },
+    "SalaryAdvance": {
+      "title": "Salary Advance",
+      "description": "Request for salary advance or down payment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "staffId": { "type": "string" },
+        "amount": { "type": "number" },
+        "requestDate": { "type": "string" },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "deductionMonth": { "type": "string", "description": "Format YYYY-MM" }
+      },
+      "required": ["companyId", "staffId", "amount", "requestDate", "status"]
     }
   },
   "firestore": {
@@ -324,6 +371,9 @@
     "open_orders": { "schema": "OpenOrder", "description": "Open order records" },
     "collaborations": { "schema": "Collaboration", "description": "Collaboration and data transfer records" },
     "messages": { "schema": "Message", "description": "Direct user messages" },
-    "project_discussions": { "schema": "ProjectDiscussion", "description": "Project-based discussions" }
+    "project_discussions": { "schema": "ProjectDiscussion", "description": "Project-based discussions" },
+    "leave_requests": { "schema": "LeaveRequest", "description": "Employee leave requests" },
+    "time_entries": { "schema": "TimeEntry", "description": "Employee time entries" },
+    "salary_advances": { "schema": "SalaryAdvance", "description": "Salary advance and down payment requests" }
   }
 }

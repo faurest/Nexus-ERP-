@@ -117,26 +117,18 @@ export default function PrestationsModule() {
   if (!currentCompany) return null;
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="relative overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 sm:p-12 text-white shadow-2xl group">
-        <div className="absolute inset-0 z-0 scale-110 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity">
-          <img 
-             src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=1600" 
-             className="w-full h-full object-cover" 
-             alt="business performance"
-          />
-        </div>
-
+    <div className="space-y-6">
+      <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
               Nexus <span className="text-blue-500">Services</span>
             </h1>
             <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
-              Propulsez votre efficacité opérationnelle. Gérez vos guichets, créations graphiques et processus de formation avec une précision chirurgicale.
+              Gérez vos guichets, créations graphiques et processus de formation.
             </p>
           </div>
-          <div className="flex flex-wrap bg-white/5 backdrop-blur-md p-1.5 rounded-[2rem] border border-white/10 shrink-0 gap-1 overflow-x-auto scrollbar-hide max-w-full">
+          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-white/10 shrink-0 gap-1 overflow-x-auto scrollbar-hide max-w-full">
              {[
                { id: 'pos', label: 'Guichet', icon: Printer },
                { id: 'tracking', label: 'Projets', icon: PenTool },
@@ -147,8 +139,8 @@ export default function PrestationsModule() {
                  key={item.id}
                  onClick={() => setActiveTab(item.id as any)}
                  className={cn(
-                   "px-6 py-3.5 rounded-2xl text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap flex items-center gap-2", 
-                   activeTab === item.id ? "bg-white text-slate-900 shadow-xl shadow-white/10" : "text-white/60 hover:text-white"
+                   "px-6 py-2.5 rounded-lg text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap flex items-center gap-2", 
+                   activeTab === item.id ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
                  )}
                >
                  <item.icon size={14} />

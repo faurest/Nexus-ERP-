@@ -4,7 +4,6 @@ import { db } from '../lib/firebase';
 import { Plus, Search, Filter, Phone, Mail, Award, TrendingUp, UserPlus, Edit2, Trash2 } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
-import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useCompany } from '../lib/CompanyContext';
 
@@ -86,28 +85,20 @@ export default function ClientModule() {
   );
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="relative overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 sm:p-12 text-white shadow-2xl group">
-        <div className="absolute inset-0 z-0 scale-110 blur-2xl opacity-20 group-hover:opacity-30 transition-opacity">
-          <img 
-             src="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1600" 
-             className="w-full h-full object-cover" 
-             alt="clients nexus"
-          />
-        </div>
-
+    <div className="space-y-6">
+      <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
               Nexus <span className="text-blue-500">Clients</span>
             </h1>
             <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
-              Cultivez vos relations stratégiques. Gérez votre portefeuille de partenaires, suivez la fidélisation et optimisez la valeur à vie de votre clientèle.
+              Gérez votre portefeuille de partenaires et optimisez la valeur de votre clientèle.
             </p>
           </div>
           <button 
             onClick={() => setIsAdding(true)}
-            className="px-8 py-5 bg-blue-600 text-white rounded-[1.5rem] font-black text-[12px] uppercase tracking-widest flex items-center gap-3 hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20 shrink-0"
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:bg-blue-700 transition-all shadow-md shadow-blue-600/10 shrink-0"
           >
             <Plus size={18} />
             Nouveau Partenaire
@@ -218,7 +209,7 @@ export default function ClientModule() {
       </div>
 
       {viewingClient && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+        <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-6">
           <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-4">
@@ -268,10 +259,8 @@ export default function ClientModule() {
       )}
 
       {isAdding && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <motion.div 
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6">
+          <div 
             className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100"
           >
             <div className="flex items-center gap-3 mb-6">
@@ -353,7 +342,7 @@ export default function ClientModule() {
                 </button>
               </div>
             </form>
-          </motion.div>
+          </div>
         </div>
       )}
     </div>
