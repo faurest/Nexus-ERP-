@@ -136,18 +136,18 @@ service cloud.firestore {
       // Read access: Admin, Company Member, or the User themselves (self-access)
       allow get: if isSignedIn() && isCompanyCollection() && (
         isAdmin() || 
+        isSelf(resource.data) ||
         (resource.data.companyId != null && (
           isMemberOfCompany(resource.data.companyId) || 
-          isSelf(resource.data) ||
-          collectionName == 'products' // Allow browsing company products if signed in
+          collectionName == 'products'
         ))
       );
       
       allow list: if isSignedIn() && isCompanyCollection() && (
         isAdmin() || 
+        isSelf(resource.data) ||
         (resource.data.companyId != null && (
           isMemberOfCompany(resource.data.companyId) || 
-          isSelf(resource.data) ||
           collectionName == 'products'
         ))
       );

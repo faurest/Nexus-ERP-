@@ -234,8 +234,8 @@ export default function EcommerceModule({ user }: { user: any }) {
     const unsubscribeProd = onSnapshot(prodQ, (snapshot) => {
       const prodData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
       
-      // If empty, we can bootstrap some demo products for this company
-      if (prodData.length === 0) {
+      // If empty, we can bootstrap some demo products for this company (Admins only)
+      if (prodData.length === 0 && isAdmin) {
         const demos = [
           { name: 'Ordinateur Portable Pro', description: 'Haute performance pour les entreprises.', price: 1250000, category: 'Hardware', image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&q=80&w=600', stock: 15, points: 150 },
           { name: 'Pack Office Suite', description: 'Licence annuelle pour 5 utilisateurs.', price: 450000, category: 'Software', image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=600', stock: 100, points: 50 },

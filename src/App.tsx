@@ -274,16 +274,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         const clientQ = query(collection(db, 'clients'), where('email', '==', cleanEmail));
         const clientSnap = await getDocs(clientQ);
         if (!clientSnap.empty) {
-          console.log("Nexus Security: Accès autorisé via Client list. Auto-synchronisation...");
-          for (const docSnap of clientSnap.docs) {
-             const clientData = docSnap.data();
-             if (clientData.companyId) {
-                await updateDoc(doc(db, 'companies', clientData.companyId), {
-                  memberEmails: arrayUnion(cleanEmail),
-                  employees: arrayUnion(user.uid)
-                }).catch(e => console.error("Auto-enroll client failed", e));
-             }
-          }
+          console.log("Nexus Security: Accès autorisé via Client list.");
           setIsWhitelisted(true);
           return;
         }
@@ -673,7 +664,10 @@ export default function App() {
                   // Important: Sync the UID if not present to ensure security rules work better
                   const clientRef = clientSnap.docs[0].ref;
                   if (clientSnap.docs[0].data().uid !== user.uid) {
-                    await updateDoc(clientRef, { uid: user.uid });
+                    await updateDoc(clientRef, { 
+                      uid: user.uid,
+                      updatedAt: serverTimestamp()
+                    });
                   }
                   setUser(prev => prev ? { ...prev, role: 'Client' } : null);
                } else {
@@ -739,7 +733,7 @@ export default function App() {
     if (user && user.role && currentCompany) {
       const allowed = (currentCompany.roles || DEFAULT_ROLES)[user.role] || ['dashboard'];
       if (!allowed.includes(activeTab) && activeTab !== 'admin') {
-        setActiveTab('dashboard');
+        setActiveTab(allowed[0] || 'dashboard');
       }
     }
   }, [user, currentCompany, activeTab]);
