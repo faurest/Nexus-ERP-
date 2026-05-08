@@ -22,7 +22,8 @@ import {
   MessageCircle,
   Bell,
   Star,
-  Send
+  Send,
+  Edit2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -84,6 +85,7 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [newOrderMessage, setNewOrderMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState<{ [key: string]: number }>({});
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
   const isAdmin = user?.role !== 'Client';
@@ -92,6 +94,7 @@ export default function EcommerceModule({ user }: { user: any }) {
   useEffect(() => {
     if (!currentCompany || !auth.currentUser) return;
 
+    const cleanEmail = auth.currentUser.email?.trim().toLowerCase() || '';
     const q = query(
       collection(db, 'order_messages'),
       where('companyId', '==', currentCompany.id),
@@ -209,7 +212,8 @@ export default function EcommerceModule({ user }: { user: any }) {
 
     // Fetch Client info if applicable
     if (user.role === 'Client') {
-      const qClient = query(collection(db, 'clients'), where('companyId', '==', currentCompany.id), where('email', '==', user.email));
+      const cleanEmail = user.email?.trim().toLowerCase() || '';
+      const qClient = query(collection(db, 'clients'), where('companyId', '==', currentCompany.id), where('email', '==', cleanEmail));
       const unsubscribeClient = onSnapshot(qClient, (snap) => {
         if (!snap.empty) {
           const cData = snap.docs[0].data();
@@ -245,10 +249,11 @@ export default function EcommerceModule({ user }: { user: any }) {
     // Fetch orders - filter for clients
     let orderQ = query(collection(db, 'ecommerce_orders'), where('companyId', '==', currentCompany.id));
     if (user?.role === 'Client') {
+      const cleanEmail = user.email?.trim().toLowerCase() || '';
       orderQ = query(
         collection(db, 'ecommerce_orders'), 
         where('companyId', '==', currentCompany.id),
-        where('customerEmail', '==', user.email)
+        where('customerEmail', '==', cleanEmail)
       );
     }
 
@@ -262,6 +267,17 @@ export default function EcommerceModule({ user }: { user: any }) {
       unsubscribeOrders();
     };
   }, [currentCompany, user]);
+
+  const updateProduct = async (productId: string, updates: Partial<Product>) => {
+    try {
+      await updateDoc(doc(db, 'products', productId), {
+        ...updates
+      });
+      setEditingProduct(null);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'products');
+    }
+  };
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -936,16 +952,24 @@ export default function EcommerceModule({ user }: { user: any }) {
                                )}>{p.stock} en stock</span>
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <button 
-                                onClick={async () => {
-                                  if (confirm('Supprimer ce produit ?')) {
-                                    await deleteDoc(doc(db, 'products', p.id)).catch(err => handleFirestoreError(err, OperationType.DELETE, 'products'));
-                                  }
-                                }}
-                                className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                              >
-                                <X size={18} />
-                              </button>
+                              <div className="flex justify-end gap-2">
+                                <button 
+                                  onClick={() => setEditingProduct(p)}
+                                  className="p-2 text-slate-300 hover:text-blue-600 transition-colors"
+                                >
+                                  <Edit2 size={18} />
+                                </button>
+                                <button 
+                                  onClick={async () => {
+                                    if (confirm('Supprimer ce produit ?')) {
+                                      await deleteDoc(doc(db, 'products', p.id)).catch(err => handleFirestoreError(err, OperationType.DELETE, 'products'));
+                                    }
+                                  }}
+                                  className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                                >
+                                  <X size={18} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1013,6 +1037,71 @@ export default function EcommerceModule({ user }: { user: any }) {
                 Confirmer le paiement <CheckCircle2 size={20} />
               </button>
               <p className="text-[9px] text-center text-slate-400 font-bold uppercase tracking-widest italic">Paiement sécurisé par Nexus Cryptoguard v2</p>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Edit Product Modal */}
+      {editingProduct && (
+        <div className="fixed inset-0 bg-slate-900/60 z-[120] flex items-center justify-center p-6">
+          <div className="bg-white rounded-3xl p-10 max-w-lg w-full shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h3 className="text-2xl font-bold text-slate-900">Modifier la Solution</h3>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">ID: {editingProduct.id.slice(0,8)}</p>
+              </div>
+              <button onClick={() => setEditingProduct(null)} className="p-2 hover:bg-slate-50 rounded-xl transition-colors"><X size={20} /></button>
+            </div>
+
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                updateProduct(editingProduct.id, {
+                  name: formData.get('name') as string,
+                  price: Number(formData.get('price')),
+                  stock: Number(formData.get('stock')),
+                  description: formData.get('description') as string,
+                  category: formData.get('category') as string,
+                  points: Number(formData.get('points'))
+                });
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Nom de la solution</label>
+                <input name="name" defaultValue={editingProduct.name} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none" required />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Description opérationnelle</label>
+                <textarea name="description" defaultValue={editingProduct.description} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none h-24" required />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Tarificaton (FCFA)</label>
+                  <input name="price" type="number" defaultValue={editingProduct.price} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Inventaire / Stock</label>
+                  <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Classification</label>
+                  <select name="category" defaultValue={editingProduct.category} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-600 outline-none">
+                    {['Hardware', 'Software', 'Office', 'Services'].map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Allocation Points</label>
+                  <input name="points" type="number" defaultValue={editingProduct.points} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                </div>
+              </div>
+              <div className="flex gap-4 pt-4">
+                <button type="button" onClick={() => setEditingProduct(null)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all">Annuler</button>
+                <button type="submit" className="flex-[2] py-4 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest hover:bg-slate-900 shadow-xl shadow-blue-100 transition-all">Mettre à jour Nexus</button>
+              </div>
             </form>
           </div>
         </div>

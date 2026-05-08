@@ -643,10 +643,11 @@ export default function App() {
         // Try to find the user in the personnel collection for this company
         const findRole = async () => {
           try {
+            const cleanEmail = user.email.trim().toLowerCase();
             const q = query(
               collection(db, 'personnel'), 
               where('companyId', '==', currentCompany.id),
-              where('email', '==', user.email)
+              where('email', '==', cleanEmail)
             );
             const snap = await getDocs(q);
             if (!snap.empty) {
@@ -661,7 +662,7 @@ export default function App() {
                const clientQ = query(
                  collection(db, 'clients'),
                  where('companyId', '==', currentCompany.id),
-                 where('email', '==', user.email)
+                 where('email', '==', cleanEmail)
                );
                const clientSnap = await getDocs(clientQ);
                if (!clientSnap.empty) {
