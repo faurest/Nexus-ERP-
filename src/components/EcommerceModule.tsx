@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDocs, serverTimestamp, handleFirestoreError, OperationType } from '../lib/firebase';
+import { db, auth, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDocs, serverTimestamp, handleFirestoreError, OperationType, orderBy } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
 import { 
   ShoppingBag, 
@@ -18,10 +18,16 @@ import {
   CheckCircle2,
   Clock,
   LayoutGrid,
-  List
+  List,
+  MessageCircle,
+  Bell,
+  Star,
+  Send
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import Table, { TableRow } from './ui/Table';
+import { createNotification } from '../lib/notifications';
 
 interface Product {
   id: string;
@@ -45,6 +51,20 @@ interface Order {
   status: 'PENDING' | 'SHIPPED' | 'DELIVERED';
   date: any;
   paymentMethod: string;
+  customerName?: string;
+  customerEmail?: string;
+  companyId: string;
+}
+
+interface OrderMessage {
+  id: string;
+  orderId: string;
+  senderId: string;
+  senderName: string;
+  recipientId: string;
+  content: string;
+  timestamp: any;
+  isRead: boolean;
 }
 
 export default function EcommerceModule({ user }: { user: any }) {
@@ -59,8 +79,130 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [loyaltyPoints, setLoyaltyPoints] = useState(0); 
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'MOBILE' | 'CASH'>('MOBILE');
   const [clientId, setClientId] = useState<string | null>(null);
+  const [activeChatOrder, setActiveChatOrder] = useState<Order | null>(null);
+  const [orderMessages, setOrderMessages] = useState<OrderMessage[]>([]);
+  const [newOrderMessage, setNewOrderMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState<{ [key: string]: number }>({});
+  const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
   const isAdmin = user?.role !== 'Client';
+
+  // Fetch unread messages count for all orders
+  useEffect(() => {
+    if (!currentCompany || !auth.currentUser) return;
+
+    const q = query(
+      collection(db, 'order_messages'),
+      where('companyId', '==', currentCompany.id),
+      where('recipientId', '==', auth.currentUser.uid),
+      where('isRead', '==', false)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const counts: { [key: string]: number } = {};
+      snapshot.docs.forEach(d => {
+        const data = d.data();
+        counts[data.orderId] = (counts[data.orderId] || 0) + 1;
+      });
+      setUnreadMessages(counts);
+    });
+
+    return () => unsubscribe();
+  }, [currentCompany]);
+
+  // Mark as read when chat opens
+  useEffect(() => {
+    if (!activeChatOrder || !auth.currentUser) return;
+
+    const markAsRead = async () => {
+      const q = query(
+        collection(db, 'order_messages'),
+        where('orderId', '==', activeChatOrder.id),
+        where('recipientId', '==', auth.currentUser?.uid),
+        where('isRead', '==', false)
+      );
+
+      const snap = await getDocs(q);
+      snap.docs.forEach(async (d) => {
+        await updateDoc(doc(db, 'order_messages', d.id), { isRead: true });
+      });
+    };
+
+    markAsRead();
+  }, [activeChatOrder, orderMessages]);
+
+  // Fetch messages for active chat
+  useEffect(() => {
+    if (!activeChatOrder) return;
+
+    const q = query(
+      collection(db, 'order_messages'),
+      where('orderId', '==', activeChatOrder.id),
+      orderBy('timestamp', 'asc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setOrderMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as OrderMessage)));
+      // Scroll to bottom
+      setTimeout(() => {
+        if (chatScrollRef.current) {
+          chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+        }
+      }, 100);
+    });
+
+    return () => unsubscribe();
+  }, [activeChatOrder]);
+
+  const sendOrderMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeChatOrder || !newOrderMessage.trim() || !auth.currentUser || sendingMessage) return;
+
+    setSendingMessage(true);
+    try {
+      const isClientSending = user?.role === 'Client';
+      let recipientId = '';
+
+      if (isClientSending) {
+        recipientId = currentCompany?.ownerId || '';
+      } else if (activeChatOrder.customerEmail) {
+        const q = query(collection(db, 'users'), where('email', '==', activeChatOrder.customerEmail.toLowerCase()));
+        const snap = await getDocs(q);
+        if (!snap.empty) recipientId = snap.docs[0].id;
+      }
+
+      await addDoc(collection(db, 'order_messages'), {
+        orderId: activeChatOrder.id,
+        senderId: auth.currentUser.uid,
+        senderName: auth.currentUser.displayName || 'Utilisateur',
+        recipientId,
+        content: newOrderMessage.trim(),
+        timestamp: serverTimestamp(),
+        companyId: currentCompany?.id,
+        isRead: false
+      });
+
+      // Notify the recipient
+      const targetUids = recipientId ? [recipientId] : [];
+
+      if (targetUids.length > 0 && currentCompany) {
+        await createNotification(
+          currentCompany.id,
+          targetUids,
+          'Nouveau message sur commande',
+          `${auth.currentUser.displayName || 'Nexus'} : ${newOrderMessage.slice(0, 30)}...`,
+          'general'
+        );
+      }
+
+      setNewOrderMessage('');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'order_messages');
+    } finally {
+      setSendingMessage(false);
+    }
+  };
 
   useEffect(() => {
     if (!currentCompany || !user) return;
@@ -152,15 +294,27 @@ export default function EcommerceModule({ user }: { user: any }) {
     if (!currentCompany || cart.length === 0) return;
 
     try {
-      await addDoc(collection(db, 'ecommerce_orders'), {
+      const orderRef = await addDoc(collection(db, 'ecommerce_orders'), {
         companyId: currentCompany.id,
         items: cart.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.cartQuantity })),
         total: cartTotal,
         paymentMethod,
         status: 'PENDING',
         date: serverTimestamp(),
-        customerEmail: auth.currentUser?.email || 'Guest'
+        customerEmail: auth.currentUser?.email || 'Guest',
+        customerName: auth.currentUser?.displayName || 'Client'
       });
+
+      // Notify Admin/Owner
+      if (currentCompany.ownerId) {
+        await createNotification(
+          currentCompany.id,
+          [currentCompany.ownerId],
+          'Nouvelle Commande !',
+          `${auth.currentUser?.displayName || 'Un client'} a passé une commande de ${cartTotal.toLocaleString()} FCFA.`,
+          'general'
+        );
+      }
 
       // Update loyalty points in Firestore if client
       if (clientId) {
@@ -175,6 +329,33 @@ export default function EcommerceModule({ user }: { user: any }) {
       setActiveView('tracking');
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, 'ecommerce_orders');
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, newStatus: 'PENDING' | 'SHIPPED' | 'DELIVERED', customerEmail?: string) => {
+    try {
+      await updateDoc(doc(db, 'ecommerce_orders', orderId), { status: newStatus });
+      
+      // Notify client if update is from admin
+      if (isAdmin && (customerEmail || auth.currentUser?.email) && currentCompany) {
+        const targetEmail = customerEmail || '';
+        // We find the client UID by email
+        const q = query(collection(db, 'users'), where('email', '==', targetEmail.toLowerCase()));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const clientUid = snap.docs[0].id;
+          const statusLabel = newStatus === 'SHIPPED' ? 'est En Cours d\'Expédition' : 'a été Livrée';
+          await createNotification(
+            currentCompany.id,
+            [clientUid],
+            'Mise à jour de votre commande',
+            `Votre commande CMD-${orderId.slice(0,6).toUpperCase()} ${statusLabel}.`,
+            'general'
+          );
+        }
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'ecommerce_orders');
     }
   };
 
@@ -203,7 +384,7 @@ export default function EcommerceModule({ user }: { user: any }) {
             {[
               { id: 'catalog', label: 'Catalogue', icon: Package },
               { id: 'cart', label: `Panier (${cart.length})`, icon: ShoppingCart },
-              { id: 'tracking', label: 'Suivi', icon: Truck },
+              {id: 'tracking', label: 'Suivi', icon: Truck, unread: Object.values(unreadMessages).reduce((a,b) => a+b, 0)},
               { id: 'loyalty', label: 'Fidélité', icon: Award },
               ...(isAdmin ? [{ id: 'admin', label: 'Gestion', icon: Smartphone }] : [])
             ].map(item => (
@@ -211,13 +392,19 @@ export default function EcommerceModule({ user }: { user: any }) {
                 key={item.id}
                 onClick={() => setActiveView(item.id as any)}
                 className={cn(
-                  "px-6 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap", 
+                  "px-6 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap relative", 
                   activeView === item.id 
                     ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
                     : "text-slate-300 hover:text-white hover:bg-white/5"
                 )}
               >
-                <item.icon size={14} /> {item.label}
+                <item.icon size={14} /> 
+                {item.label}
+                {item.unread && item.unread > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[8px] font-black text-white shadow-lg animate-bounce">
+                    {item.unread}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -255,41 +442,74 @@ export default function EcommerceModule({ user }: { user: any }) {
           </div>
 
           {/* Product Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map(product => (
-              <div key={product.id} className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                <div className="aspect-[4/3] overflow-hidden relative">
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                  <div className="absolute top-4 left-4">
-                    <span className="px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-slate-900 shadow-sm">
-                      {product.category}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-lg mb-1">{product.name}</h3>
-                    <p className="text-slate-400 text-xs line-clamp-2 leading-relaxed">{product.description}</p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-xl font-black text-slate-900 tracking-tight">
-                      {product.price.toLocaleString()} <span className="text-xs text-slate-400 font-bold uppercase ml-1">FCFA</span>
+          <motion.div 
+            layout
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          >
+            <AnimatePresence mode="popLayout">
+              {filteredProducts.map(product => (
+                <motion.div 
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  key={product.id} 
+                  className="group bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
+                >
+                  <div className="aspect-[4/3] overflow-hidden relative">
+                    <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <div className="absolute top-4 left-4 flex gap-2">
+                      <span className="px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-slate-900 shadow-sm">
+                        {product.category}
+                      </span>
+                      {product.stock < 5 && (
+                        <span className="px-3 py-1 bg-red-500 text-white rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
+                          Stock Faible
+                        </span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1 text-blue-600">
-                      <Award size={14} />
-                      <span className="text-[10px] font-black">{product.points} pts</span>
+                  </div>
+                  <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-bold text-slate-900 text-lg mb-1">{product.name}</h3>
+                      <p className="text-slate-400 text-xs line-clamp-2 leading-relaxed">{product.description}</p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xl font-black text-slate-900 tracking-tight">
+                          {product.price.toLocaleString()} <span className="text-xs text-slate-400 font-bold uppercase ml-1">FCFA</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-blue-600">
+                          <Award size={14} />
+                          <span className="text-[10px] font-black">{product.points} pts</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => addToCart(product)}
+                          className="flex-1 py-3 bg-slate-900 text-white hover:bg-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                        >
+                          <Plus size={16} /> Panier
+                        </button>
+                        <button
+                          title="Contacter le support pour ce produit"
+                          className="p-3 bg-slate-100 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                          onClick={() => {
+                            // Integration with chat would go here
+                            alert("Fonction de chat en direct bientôt disponible pour ce produit !");
+                          }}
+                        >
+                          <MessageCircle size={18} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => addToCart(product)}
-                    className="w-full py-3 bg-slate-50 hover:bg-blue-600 hover:text-white text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
-                  >
-                    <Plus size={16} /> Ajouter au panier
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
         </div>
       )}
 
@@ -381,44 +601,112 @@ export default function EcommerceModule({ user }: { user: any }) {
       )}
 
       {activeView === 'tracking' && (
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="p-8 border-b border-slate-50">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-3">
-              <History size={24} className="text-blue-600" />
-              Historique des commandes
-            </h2>
-          </div>
-          <Table headers={['Référence', 'Date', 'Total', 'Paiement', 'Statut']}>
-            {orders.map(order => (
-              <TableRow key={order.id}>
-                <td className="py-5 px-6 font-black text-xs text-blue-600">CMD-{order.id.slice(0, 6).toUpperCase()}</td>
-                <td className="py-5 px-6 text-sm text-slate-500">{order.date?.toDate().toLocaleDateString('fr-FR')}</td>
-                <td className="py-5 px-6 text-sm font-bold text-slate-900">{order.total.toLocaleString()} FCFA</td>
-                <td className="py-5 px-6">
-                  <div className="flex items-center gap-2">
-                    {order.paymentMethod === 'MOBILE' ? <Smartphone size={14} className="text-green-500" /> : <CreditCard size={14} className="text-blue-500" />}
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{order.paymentMethod}</span>
-                  </div>
-                </td>
-                <td className="py-5 px-6">
-                  <span className={cn(
-                    "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
-                    order.status === 'PENDING' ? "bg-amber-100 text-amber-600" :
-                    order.status === 'SHIPPED' ? "bg-blue-100 text-blue-600" :
-                    "bg-green-100 text-green-600"
-                  )}>
-                    {order.status === 'PENDING' ? 'En attente' : order.status === 'SHIPPED' ? 'Expédié' : 'Livré'}
-                  </span>
-                </td>
-              </TableRow>
-            ))}
-            {orders.length === 0 && (
-              <div className="p-20 text-center">
-                <Truck size={48} className="mx-auto text-slate-100 mb-4" />
-                <p className="text-xs font-black text-slate-300 uppercase tracking-tighter">Aucune commande en cours</p>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm">
+            <div className="flex items-center justify-between mb-10">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner">
+                  <History size={28} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Suivi des Flux</h2>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1.5">Historique et statut de vos acquisitionsnexus</p>
+                </div>
               </div>
-            )}
-          </Table>
+            </div>
+
+            <div className="space-y-6">
+              {orders.map((order, idx) => (
+                <motion.div 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  key={order.id} 
+                  className="bg-slate-50/50 rounded-3xl p-6 border border-slate-100 hover:bg-white hover:shadow-xl transition-all duration-500 group"
+                >
+                  <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center">
+                    <div className="flex-1 w-full">
+                      <div className="flex justify-between items-start mb-6">
+                        <div>
+                          <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">Commande Nexus</p>
+                          <h3 className="text-lg font-black text-slate-900 tracking-tight">CMD-{order.id.slice(0, 6).toUpperCase()}</h3>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{order.date?.toDate().toLocaleDateString('fr-FR')}</p>
+                          <p className="text-lg font-black text-slate-900">{order.total.toLocaleString()} FCFA</p>
+                        </div>
+                      </div>
+
+                      {/* Visual Timeline */}
+                      <div className="relative pt-8 pb-4 px-2">
+                        <div className="absolute top-[41px] left-4 right-4 h-1 bg-slate-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-blue-600 transition-all duration-1000 shadow-[0_0_10px_rgba(37,99,235,0.5)]" 
+                            style={{ width: order.status === 'PENDING' ? '15%' : order.status === 'SHIPPED' ? '60%' : '100%' }}
+                          />
+                        </div>
+                        <div className="flex justify-between relative">
+                          {[
+                            { id: 'PENDING', label: 'En attente', desc: 'Commande reçue', icon: <Clock size={16} /> },
+                            { id: 'SHIPPED', label: 'Expédiée', desc: 'Transit Nexus Log', icon: <Truck size={16} /> },
+                            { id: 'DELIVERED', label: 'Livrée', desc: 'Transfert terminé', icon: <CheckCircle2 size={16} /> }
+                          ].map((step, sIdx) => {
+                            const isPast = (order.status === 'SHIPPED' && sIdx <= 1) || (order.status === 'DELIVERED') || (order.status === 'PENDING' && sIdx === 0);
+                            const isActive = order.status === step.id;
+                            
+                            return (
+                              <div key={step.id} className="flex flex-col items-center gap-3">
+                                <div className={cn(
+                                  "w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 z-10 border-4 border-slate-50 shadow-sm",
+                                  isPast ? "bg-blue-600 text-white" : "bg-white text-slate-300",
+                                  isActive && "ring-4 ring-blue-100 scale-110"
+                                )}>
+                                  {step.icon}
+                                </div>
+                                <div className="text-center w-24">
+                                  <p className={cn("text-[9px] font-black uppercase tracking-widest", isPast ? "text-slate-900" : "text-slate-400")}>{step.label}</p>
+                                  <p className="text-[8px] font-medium text-slate-400 mt-0.5">{step.desc}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="lg:w-48 w-full flex flex-row lg:flex-col gap-3">
+                      <button 
+                        onClick={() => setActiveView('loyalty')}
+                        className="flex-1 py-4 bg-slate-900 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Award size={14} /> Facture
+                      </button>
+                      <button 
+                        onClick={() => setActiveChatOrder(order)}
+                        className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2 relative group-hover:border-blue-200"
+                      >
+                        <MessageCircle size={14} /> Support
+                        {unreadMessages[order.id] > 0 && (
+                          <span className="absolute -top-2 -right-2 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-lg border-2 border-white animate-pulse">
+                            {unreadMessages[order.id]}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+              {orders.length === 0 && (
+                <div className="p-20 text-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-100">
+                  <Truck size={48} className="mx-auto text-slate-200 mb-6" strokeWidth={1} />
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight">Flux Initial Inactif</h3>
+                  <p className="text-xs font-medium text-slate-400 mt-2 max-w-[240px] mx-auto leading-relaxed">
+                    Vous n'avez pas encore d'acquisitions actives. Explorez le catalogue pour initialiser votre premier flux.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -481,7 +769,93 @@ export default function EcommerceModule({ user }: { user: any }) {
       )}
 
       {activeView === 'admin' && isAdmin && (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+           {/* Section Commandes */}
+           <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+              <div className="flex justify-between items-center mb-10">
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Gestion des Flux Acquis</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
+                    <History size={14} /> Supervision des transactions et livraisonnexus
+                  </p>
+                </div>
+                <div className="px-5 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-slate-200">
+                  {orders.length} Flux Opérationnels
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto -mx-10 px-10">
+                <table className="w-full">
+                  <thead className="bg-slate-50 border-b border-slate-100">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">ID Commande</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Client / Email</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Montant</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Statut</th>
+                      <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Action Flux</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {orders.map(order => (
+                      <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-5">
+                          <span className="font-black text-blue-600 text-xs">CMD-{order.id.slice(0, 6).toUpperCase()}</span>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">{order.date?.toDate().toLocaleDateString('fr-FR')}</p>
+                        </td>
+                        <td className="px-6 py-5">
+                          <p className="font-black text-slate-900 text-sm leading-none">{order.customerName}</p>
+                          <p className="text-[10px] font-medium text-slate-400 mt-1">{order.customerEmail}</p>
+                        </td>
+                        <td className="px-6 py-5 text-sm font-black text-slate-900">{order.total.toLocaleString()} FCFA</td>
+                        <td className="px-6 py-5">
+                          <span className={cn(
+                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
+                            order.status === 'PENDING' ? "bg-amber-100 text-amber-600" :
+                            order.status === 'SHIPPED' ? "bg-blue-100 text-blue-600" :
+                            "bg-green-100 text-green-600"
+                          )}>
+                            {order.status === 'PENDING' ? 'En attente' : order.status === 'SHIPPED' ? 'Expédié' : 'Livré'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                          <div className="flex justify-end gap-2">
+                             {order.status === 'PENDING' && (
+                               <button 
+                                 onClick={() => updateOrderStatus(order.id, 'SHIPPED', order.customerEmail)}
+                                 className="px-4 py-2 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 shadow-md shadow-blue-100 transition-all font-mono"
+                               >
+                                 Expédier
+                               </button>
+                             )}
+                             {order.status === 'SHIPPED' && (
+                               <button 
+                                 onClick={() => updateOrderStatus(order.id, 'DELIVERED', order.customerEmail)}
+                                 className="px-4 py-2 bg-green-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 shadow-md shadow-green-100 transition-all font-mono"
+                               >
+                                 Livrer
+                               </button>
+                             )}
+                             <button 
+                               onClick={() => setActiveChatOrder(order)}
+                               className="p-2.5 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                             >
+                               <MessageCircle size={18} />
+                             </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {orders.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-20 text-center font-black text-slate-300 uppercase italic tracking-tighter">Aucune commande système détectée</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+           </div>
+
+           {/* Section Catalogue existing code... */}
            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-1 bg-white rounded-3xl p-8 border border-slate-100 shadow-sm space-y-6">
                 <h3 className="text-xl font-bold text-slate-900">Ajouter un Produit</h3>
@@ -643,6 +1017,112 @@ export default function EcommerceModule({ user }: { user: any }) {
           </div>
         </div>
       )}
+      {/* Order Chat Slide-over / Modal */}
+      <AnimatePresence>
+        {activeChatOrder && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-end">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveChatOrder(null)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-lg h-full bg-white shadow-2xl flex flex-col"
+            >
+              {/* Chat Header */}
+              <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center">
+                    <MessageCircle size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black tracking-tight">Assistance Nexus</h3>
+                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mt-1">Sujet: CMD-{activeChatOrder.id.slice(0,6).toUpperCase()}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setActiveChatOrder(null)}
+                  className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Chat Content */}
+              <div 
+                ref={chatScrollRef}
+                className="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-50/50 scroll-smooth"
+              >
+                <div className="text-center py-4">
+                  <div className="inline-block px-4 py-1.5 bg-slate-100 rounded-full text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">
+                    Début de la conversation sécurisée
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium px-8 leading-relaxed">
+                    Vous êtes en contact avec le centre opérationnel Nexus pour votre commande.
+                  </p>
+                </div>
+
+                {orderMessages.map((msg, idx) => {
+                  const isMe = msg.senderId === auth.currentUser?.uid;
+                  return (
+                    <motion.div 
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className={cn(
+                        "flex flex-col max-w-[85%] gap-2",
+                        isMe ? "ml-auto items-end" : "mr-auto items-start"
+                      )}
+                    >
+                      <div className={cn(
+                        "px-6 py-4 rounded-[1.5rem] shadow-sm text-sm font-medium leading-relaxed",
+                        isMe 
+                          ? "bg-slate-900 text-white rounded-tr-none shadow-xl shadow-slate-200" 
+                          : "bg-white text-slate-700 border border-slate-100 rounded-tl-none"
+                      )}>
+                        {msg.content}
+                      </div>
+                      <div className="flex items-center gap-2 px-2 opacity-40">
+                        <span className="text-[9px] font-black uppercase tracking-widest">{msg.senderName}</span>
+                        <span className="text-[8px] font-medium">—</span>
+                        <span className="text-[9px] font-bold">
+                          {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
+                        </span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Chat Input */}
+              <div className="p-8 border-t border-slate-100 bg-white">
+                <form onSubmit={sendOrderMessage} className="flex gap-4">
+                  <input 
+                    type="text" 
+                    value={newOrderMessage}
+                    onChange={(e) => setNewOrderMessage(e.target.value)}
+                    placeholder="Message opérationnel..."
+                    className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-200 transition-all text-sm font-medium"
+                  />
+                  <button 
+                    disabled={!newOrderMessage.trim() || sendingMessage}
+                    className="w-14 h-14 flex items-center justify-center bg-blue-600 text-white rounded-2xl hover:bg-slate-900 transition-all shadow-xl shadow-blue-100 disabled:opacity-50"
+                  >
+                    <Send size={24} />
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
