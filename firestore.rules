@@ -48,7 +48,7 @@ service cloud.firestore {
     function isMemberOfCompany(companyId) {
       return isSignedIn() && companyId != null && exists(/databases/$(database)/documents/companies/$(companyId)) && (
         isAdmin() ||
-        get(/databases/$(database)/documents/companies/$(companyId)).data.ownerEmail.lower() == currentUserEmail() || 
+        get(/databases/$(database)/documents/companies/$(companyId)).data.ownerEmail == currentUserEmail() || 
         get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid ||
         (get(/databases/$(database)/documents/companies/$(companyId)).data.memberEmails != null && currentUserEmail() in get(/databases/$(database)/documents/companies/$(companyId)).data.memberEmails)
       );
@@ -68,7 +68,7 @@ service cloud.firestore {
       allow get: if isSignedIn();
       allow list: if isSignedIn() && (
         isAdmin() || 
-        resource.data.ownerEmail.lower() == currentUserEmail() || 
+        resource.data.ownerEmail == currentUserEmail() || 
         resource.data.ownerId == request.auth.uid ||
         (resource.data.memberEmails != null && currentUserEmail() in resource.data.memberEmails) ||
         // Permit finding by joinCode
@@ -105,8 +105,8 @@ service cloud.firestore {
 
     // 1.1 Users
     match /users/{userId} {
-      allow read: if isSignedIn() && (isAdmin() || userId == request.auth.uid);
-      allow write: if isSignedIn() && (isAdmin() || userId == request.auth.uid);
+      allow read: if isSignedIn() && (isAdmin() || userId == request.auth.uid || userId == currentUserEmail());
+      allow write: if isSignedIn() && (isAdmin() || userId == request.auth.uid || userId == currentUserEmail());
     }
 
     // 1.1.1 Masters (Whitelist)
@@ -119,15 +119,24 @@ service cloud.firestore {
     match /clients/{clientId} {
       allow read: if isSignedIn() && (
         isAdmin() || 
-        (resource.data != null && resource.data.email.lower() == currentUserEmail()) ||
+        (resource.data != null && resource.data.email == currentUserEmail()) ||
         (resource.data != null && resource.data.companyId != null && isMemberOfCompany(resource.data.companyId))
       );
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (
         isAdmin() || 
-        (resource.data != null && resource.data.email.lower() == currentUserEmail()) ||
+        (resource.data != null && resource.data.email == currentUserEmail()) ||
         (resource.data != null && isMemberOfCompany(resource.data.companyId))
       );
+      allow delete: if isAdmin();
+    }
+
+    // Notification access
+    match /notifications/{docId} {
+      allow list: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid || resource.data.email == currentUserEmail());
+      allow get: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid || resource.data.email == currentUserEmail());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (isAdmin() || (resource.data.userId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])));
       allow delete: if isAdmin();
     }
 
@@ -148,11 +157,12 @@ service cloud.firestore {
       }
 
       function isSelf(data) {
-        return (data.email != null && data.email.lower() == currentUserEmail()) ||
-               (data.customerEmail != null && data.customerEmail.lower() == currentUserEmail()) ||
+        return (data.email != null && data.email == currentUserEmail()) ||
+               (data.customerEmail != null && data.customerEmail == currentUserEmail()) ||
                (data.senderId != null && data.senderId == request.auth.uid) ||
                (data.recipientId != null && data.recipientId == request.auth.uid) ||
                (data.uid != null && data.uid == request.auth.uid) ||
+               (data.userId != null && data.userId == request.auth.uid) ||
                (data.userIds != null && request.auth.uid in data.userIds);
       }
 

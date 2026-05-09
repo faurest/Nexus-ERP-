@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, arrayUnion, setDoc } from '../lib/firebase';
+import { db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, arrayUnion, setDoc, serverTimestamp } from '../lib/firebase';
 import { 
   Building2, 
   Plus, 
@@ -101,12 +101,13 @@ export default function AdminModule() {
 
         // 2. Overwrite with active login data (which has UID and real status)
         activeUsers.forEach(u => {
-          if (u.email) {
-            const email = u.email.toLowerCase();
+          const email = u.email?.toLowerCase() || u.id?.includes('@') ? u.id.toLowerCase() : null;
+          if (email) {
             const existing = userMap.get(email);
             userMap.set(email, {
               ...existing,
               ...u,
+              email: email, // Force preserve email
               displayName: u.displayName || u.name || existing?.displayName || 'Utilisateur Nexus',
               status: u.uid ? 'connected' : (u.status || 'active')
             });
@@ -154,7 +155,7 @@ export default function AdminModule() {
         joinCode,
         ownerId: 'manual',
         memberEmails: [newCompany.ownerEmail.trim().toLowerCase()],
-        createdAt: Date.now()
+        createdAt: serverTimestamp()
       });
       setShowCreateModal(false);
       setNewCompany({ name: '', ownerEmail: '', joinCode: '' });
@@ -520,7 +521,7 @@ export default function AdminModule() {
     if (!window.confirm("Cette action va convertir TOUTES les adresses emails en minuscules (y compris les listes de membres) pour assurer la compatibilité case-insensitive. Continuer ?")) return;
     setLoading(true);
     try {
-      const collections = ['companies', 'personnel', 'users'];
+      const collections = ['companies', 'personnel', 'users', 'clients'];
       let count = 0;
       for (const coll of collections) {
         const snap = await getDocs(collection(db, coll));
@@ -549,7 +550,11 @@ export default function AdminModule() {
           }
 
           if (Object.keys(updates).length > 0) {
-            await updateDoc(doc(db, coll, docSnap.id), updates);
+            if (coll === 'users') {
+              await setDoc(doc(db, coll, docSnap.id), updates, { merge: true });
+            } else {
+              await updateDoc(doc(db, coll, docSnap.id), updates);
+            }
             count++;
           }
         }

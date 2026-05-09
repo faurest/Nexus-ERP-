@@ -79,9 +79,9 @@ export default function ClientModule() {
         }
         
         // Also enroll client in company member emails to satisfy security rules
-        await updateDoc(doc(db, 'companies', currentCompany.id), {
+        await setDoc(doc(db, 'companies', currentCompany.id), {
           memberEmails: arrayUnion(normalizedClient.email)
-        }).catch(e => console.error("Could not enroll client in company members:", e));
+        }, { merge: true }).catch(e => console.error("Could not enroll client in company members:", e));
       }
       setNewClient({ name: '', email: '', phone: '', address: '', interactions: '' });
       setIsAdding(false);

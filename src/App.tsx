@@ -125,11 +125,12 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
     setCreatingLocally(true);
     try {
       const generatedJoinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const cleanEmail = user.email.trim().toLowerCase();
       const docRef = await addDoc(collection(db, 'companies'), {
         name: newCompanyName,
         ownerId: user.uid,
-        ownerEmail: user.email,
-        memberEmails: [user.email],
+        ownerEmail: cleanEmail,
+        memberEmails: [cleanEmail],
         employees: [user.uid],
         joinCode: generatedJoinCode
       });
@@ -172,12 +173,13 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
            return;
         }
         
+        const cleanEmail = user.email.trim().toLowerCase();
         const companyEmployees = Array.isArray(company.employees) ? company.employees : [];
-        if (!companyEmployees.includes(user.uid)) {
-          await updateDoc(doc(db, 'companies', company.id), {
+        if (!companyEmployees.includes(user.uid) || !(company.memberEmails || []).includes(cleanEmail)) {
+          await setDoc(doc(db, 'companies', company.id), {
             employees: arrayUnion(user.uid),
-            memberEmails: arrayUnion(user.email.trim().toLowerCase())
-          });
+            memberEmails: arrayUnion(cleanEmail)
+          }, { merge: true });
         }
         
         onSelect({ ...company, employees: [...companyEmployees, user.uid] });
@@ -253,10 +255,10 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
             const companyId = personnelData.companyId;
             if (companyId) {
               // Add them to the company's member list if not already there
-              await updateDoc(doc(db, 'companies', companyId), {
+              await setDoc(doc(db, 'companies', companyId), {
                 memberEmails: arrayUnion(cleanEmail),
                 employees: arrayUnion(user.uid)
-              }).catch(e => console.error("Auto-enroll failed for company", companyId, e));
+              }, { merge: true }).catch(e => console.error("Auto-enroll failed for company", companyId, e));
 
               // ALSO update the personnel record with the UID if it's missing
               if (personnelData.uid !== user.uid) {
@@ -690,10 +692,10 @@ export default function App() {
                   
                   // Double check membership in the company document
                   if (currentCompany.memberEmails && !currentCompany.memberEmails.includes(cleanEmail)) {
-                    await updateDoc(doc(db, 'companies', currentCompany.id), {
+                    await setDoc(doc(db, 'companies', currentCompany.id), {
                       memberEmails: arrayUnion(cleanEmail),
                       employees: arrayUnion(user.uid)
-                    }).catch(e => console.error("Client auto-enroll sync failed", e));
+                    }, { merge: true }).catch(e => console.error("Client auto-enroll sync failed", e));
                   }
                   
                   setUser(prev => prev ? { ...prev, role: 'Client' } : null);

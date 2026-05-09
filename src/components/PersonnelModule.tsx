@@ -177,7 +177,8 @@ export default function PersonnelModule({ user }: { user?: any }) {
       const taskDoc = await addDoc(collection(db, 'tasks'), {
         ...newTask,
         companyId: currentCompany.id,
-        status: 'todo'
+        status: 'todo',
+        createdAt: serverTimestamp()
       });
 
       // Trigger notification for the assigned staff MEMBER
@@ -264,9 +265,9 @@ export default function PersonnelModule({ user }: { user?: any }) {
           console.warn("Ghost profile creation skipped:", ghostErr);
         }
 
-        await updateDoc(doc(db, 'companies', currentCompany.id), {
+        await setDoc(doc(db, 'companies', currentCompany.id), {
           memberEmails: arrayUnion(cleanEmail)
-        });
+        }, { merge: true });
         setCreationMessage(`Employé ajouté avec succès ! Il peut désormais se connecter avec Google via l'adresse : ${cleanEmail}`);
         setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général' });
       }
@@ -306,7 +307,8 @@ export default function PersonnelModule({ user }: { user?: any }) {
       await addDoc(collection(db, 'leave_requests'), {
         ...newLeave,
         companyId: currentCompany.id,
-        status: 'pending'
+        status: 'pending',
+        createdAt: serverTimestamp()
       });
       setIsAddingLeave(false);
       setNewLeave({ staffId: '', startDate: '', endDate: '', type: 'leave', reason: '' });
@@ -342,7 +344,8 @@ export default function PersonnelModule({ user }: { user?: any }) {
       await addDoc(collection(db, 'time_entries'), {
         ...newTimeEntry,
         hours: Number(newTimeEntry.hours),
-        companyId: currentCompany.id
+        companyId: currentCompany.id,
+        createdAt: serverTimestamp()
       });
       setIsAddingTime(false);
       setNewTimeEntry({ staffId: '', date: '', hours: 8, description: '', projectId: '' });
@@ -363,7 +366,8 @@ export default function PersonnelModule({ user }: { user?: any }) {
         amount: Number(newAdvance.amount),
         companyId: currentCompany.id,
         requestDate: new Date().toISOString().split('T')[0],
-        status: 'pending'
+        status: 'pending',
+        createdAt: serverTimestamp()
       });
       setIsAddingAdvance(false);
       setNewAdvance({ staffId: '', amount: 0, reason: '', deductionMonth: new Date().toISOString().slice(0, 7) });

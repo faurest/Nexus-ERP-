@@ -261,7 +261,7 @@ export default function CommunicationModule() {
           recipientId: recipientUid,
           senderName: auth.currentUser.displayName || 'Utilisateur',
           content: newMessage.trim(),
-          timestamp: Date.now(),
+          timestamp: serverTimestamp(),
           isRead: false
         });
 
@@ -282,7 +282,7 @@ export default function CommunicationModule() {
           senderId: auth.currentUser.uid,
           senderName: auth.currentUser.displayName || 'Utilisateur',
           content: newMessage.trim(),
-          timestamp: Date.now()
+          timestamp: serverTimestamp()
         });
 
         // Notify other project members?

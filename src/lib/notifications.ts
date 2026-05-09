@@ -1,4 +1,4 @@
-import { addDoc, collection, db } from './firebase';
+import { addDoc, collection, db, serverTimestamp } from './firebase';
 
 export async function requestNotificationPermission() {
   if (!('Notification' in window)) {
@@ -48,8 +48,8 @@ export async function createNotification(
         message,
         type,
         isRead: 0,
-        date: Date.now(),
-        createdAt: Date.now()
+        date: serverTimestamp(),
+        createdAt: serverTimestamp()
       })
     );
     await Promise.all(promises);

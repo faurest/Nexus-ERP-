@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, addDoc, updateDoc, doc, deleteDoc } from '../lib/firebase';
+import { collection, onSnapshot, query, where, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { Activity, Printer, PenTool, LayoutDashboard, Search, Plus, Play, CheckCircle2, AlertCircle, ShoppingCart, User, Users, Tags, ArrowRight, Trash2 } from 'lucide-react';
 import { useCompany } from '../lib/CompanyContext';
@@ -11,7 +11,25 @@ export default function PrestationsModule() {
   const [activeTab, setActiveTab] = useState<'pos' | 'tracking' | 'catalog' | 'growth'>('pos');
   const [submitting, setSubmitting] = useState(false);
   const [isAddingService, setIsAddingService] = useState(false);
-  const [serviceForm, setServiceForm] = useState({ name: '', price: '', description: '' });
+  const [serviceForm, setServiceForm] = useState({ name: '', price: '', description: '', image: '' });
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 800000) {
+        alert("L'image est trop volumineuse (max 800 Ko).");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setImagePreview(result);
+        setServiceForm(prev => ({ ...prev, image: result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   
   const [services, setServices] = useState<any[]>([]);
   const [interventions, setInterventions] = useState<any[]>([]);
@@ -53,7 +71,8 @@ export default function PrestationsModule() {
         type: 'service',
         quantity: qty,
         amount: parseFloat(amountStr) * qty,
-        date: Date.now(),
+        date: serverTimestamp(),
+        createdAt: serverTimestamp(),
         status: 'paid'
       });
     } catch (err) {
@@ -79,7 +98,7 @@ export default function PrestationsModule() {
         message: `[${type}] ${desc}`,
         status: 'pending',
         date: new Date().toISOString(),
-        createdAt: Date.now()
+        createdAt: serverTimestamp()
       });
       form.reset();
     } catch (err) {
@@ -103,10 +122,12 @@ export default function PrestationsModule() {
          name: serviceForm.name,
          price: serviceForm.price,
          description: serviceForm.description,
-         createdAt: Date.now()
+         image: serviceForm.image || null,
+         createdAt: serverTimestamp()
        });
        setIsAddingService(false);
-       setServiceForm({ name: '', price: '', description: '' });
+       setServiceForm({ name: '', price: '', description: '', image: '' });
+       setImagePreview(null);
     } catch (err) {
        console.error(err);
     } finally {
@@ -194,6 +215,31 @@ export default function PrestationsModule() {
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:border-purple-400"
                   placeholder="Ex: Par page A4"
                 />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Image / Logo (Depuis Mobile)</label>
+                <div className="relative h-24">
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden" 
+                    id="service-image-upload"
+                  />
+                  <label 
+                    htmlFor="service-image-upload"
+                    className="flex flex-col items-center justify-center w-full h-full border-2 border-dashed border-slate-200 rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all overflow-hidden"
+                  >
+                    {imagePreview ? (
+                      <img src={imagePreview} className="h-full w-full object-cover" alt="Preview" />
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <Plus size={20} className="text-slate-300 mb-1" />
+                        <span className="text-[8px] font-black text-slate-400 uppercase">Choisir une image</span>
+                      </div>
+                    )}
+                  </label>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3 mt-8">
                 <button 
@@ -323,9 +369,16 @@ export default function PrestationsModule() {
               <div className="grid gap-4">
                 {services.map(s => (
                   <div key={s.id} className="flex justify-between items-center p-4 border border-slate-100 rounded-xl bg-slate-50 group">
-                    <div>
-                      <h4 className="font-bold text-slate-800">{s.name}</h4>
-                      <p className="text-xs text-slate-500">{s.description}</p>
+                    <div className="flex items-center gap-4">
+                      {s.image && (
+                        <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-200">
+                          <img src={s.image} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="font-bold text-slate-800">{s.name}</h4>
+                        <p className="text-xs text-slate-500">{s.description}</p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="font-mono text-lg font-black text-slate-900">{s.price} F</div>
