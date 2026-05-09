@@ -431,12 +431,12 @@ export default function ResourceModule({ user }: { user: any }) {
                     <input name="name" placeholder="ex: Serveur Nexus V3" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none" required />
                  </div>
                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Spécifications</label>
-                    <textarea name="description" placeholder="Détails techniques..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none h-20" required />
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Spécifications & Détails</label>
+                    <textarea name="description" placeholder="Détails techniques du produit..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none h-28" required />
                  </div>
                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Options de Configuration</label>
-                    <textarea name="configOptions" placeholder="ex: Couleurs: Noir, Blanc; Stockage: 512GB, 1TB" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[10px] focus:ring-2 focus:ring-blue-600 outline-none h-16" />
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Options de Configuration (Variantes)</label>
+                    <textarea name="configOptions" placeholder="ex: Couleurs: Noir, Blanc; Stockage: 512GB, 1TB" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[10px] focus:ring-2 focus:ring-blue-600 outline-none h-24" />
                  </div>
                  <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-1">
@@ -670,9 +670,14 @@ export default function ResourceModule({ user }: { user: any }) {
 
       {/* Modals for Adding/Restocking/Editing Product */}
       {editingProduct && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-6">
-          <div className="bg-white rounded-[2rem] p-8 max-w-2xl w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
-            <h2 className="text-2xl font-black text-slate-900 mb-6 uppercase tracking-tight">MODIFIER L'ARTICLE E-COMMERCE</h2>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2rem] p-6 md:p-8 max-w-2xl w-full max-h-[95vh] overflow-y-auto shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-300 scrollbar-hide">
+            <div className="flex justify-between items-start mb-6">
+              <h2 className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tight">MODIFIER L'ARTICLE</h2>
+              <button onClick={() => { setEditingProduct(null); setImagePreview(null); }} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
             <form 
               onSubmit={async (e) => {
                 e.preventDefault();
@@ -701,42 +706,42 @@ export default function ResourceModule({ user }: { user: any }) {
               }}
               className="space-y-6"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nom de l'Article</label>
-                  <input name="name" defaultValue={editingProduct.name} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <input name="name" defaultValue={editingProduct.name} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" required />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Catégorie</label>
-                  <select name="category" defaultValue={editingProduct.category} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none">
+                  <select name="category" defaultValue={editingProduct.category} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none">
                     {['Hardware', 'Software', 'Office', 'Services'].map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Prix (XAF)</label>
-                  <input name="price" type="number" defaultValue={editingProduct.price} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <input name="price" type="number" defaultValue={editingProduct.price} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Stock</label>
-                  <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Description</label>
-                <textarea name="description" defaultValue={editingProduct.description} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none h-20" required />
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Description Technique</label>
+                <textarea name="description" defaultValue={editingProduct.description} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none h-28" required />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Options de Configuration</label>
-                <textarea name="configOptions" defaultValue={editingProduct.configOptions} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-[10px] focus:ring-2 focus:ring-blue-500 outline-none h-16" />
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Options & Variantes (Configuration)</label>
+                <textarea name="configOptions" defaultValue={editingProduct.configOptions} placeholder="ex: Couleurs: Rouge, Bleu; Tailles: M, L, XL" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500 outline-none h-24" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Points Fidélité</label>
-                  <input name="points" type="number" defaultValue={editingProduct.points} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <input name="points" type="number" defaultValue={editingProduct.points} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Image (Pick from Phone)</label>
-                  <div className="relative h-[80px]">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Visuel de l'Article</label>
+                  <div className="relative h-[100px]">
                     <input 
                       type="file" 
                       accept="image/*"
@@ -746,21 +751,24 @@ export default function ResourceModule({ user }: { user: any }) {
                     />
                     <label 
                       htmlFor="edit-product-image-upload"
-                      className="flex items-center justify-center w-full h-full border border-slate-100 rounded-xl p-2 cursor-pointer bg-slate-50 hover:bg-slate-100 overflow-hidden"
+                      className="flex items-center justify-center w-full h-full border-2 border-dashed border-slate-100 rounded-xl p-2 cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-blue-300 transition-all overflow-hidden"
                     >
                       {imagePreview ? (
                         <img src={imagePreview} className="h-full object-contain" alt="Preview" />
                       ) : (
-                        <Smartphone className="w-6 h-6 text-slate-300" />
+                        <div className="flex flex-col items-center">
+                          <Smartphone className="w-6 h-6 text-slate-300 mb-1" />
+                          <span className="text-[8px] font-black text-slate-400 uppercase">Modifier l'image</span>
+                        </div>
                       )}
                     </label>
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 pt-6">
-                <button type="button" onClick={() => { setEditingProduct(null); setImagePreview(null); }} className="px-6 py-4 rounded-xl border border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">ANNULER</button>
-                <button type="submit" disabled={submitting} className="px-6 py-4 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all">
-                  {submitting ? 'TRAITEMENT...' : 'METTRE À JOUR'}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                <button type="button" onClick={() => { setEditingProduct(null); setImagePreview(null); }} className="order-2 sm:order-1 px-6 py-4 rounded-xl border border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">ANNULER</button>
+                <button type="submit" disabled={submitting} className="order-1 sm:order-2 px-6 py-4 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-slate-200">
+                  {submitting ? 'SYNCHRONISATION...' : 'ENREGISTRER LES MODIFICATIONS'}
                 </button>
               </div>
             </form>
