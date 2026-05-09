@@ -125,7 +125,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
     setCreatingLocally(true);
     try {
       const generatedJoinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const cleanEmail = user.email.trim().toLowerCase();
+      const cleanEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
       const docRef = await addDoc(collection(db, 'companies'), {
         name: newCompanyName,
         ownerId: user.uid,
@@ -664,10 +664,20 @@ export default function App() {
             );
             const snap = await getDocs(q);
             if (!snap.empty) {
-              const memberData = snap.docs[0].data();
+              const memberDoc = snap.docs[0];
+              const memberData = memberDoc.data();
               if (memberData.status === 'blocked') {
                 setIsBlocked(true);
               } else {
+                // Sync the UID and status if not present
+                if (memberData.uid !== user.uid || memberData.status !== 'active') {
+                  await updateDoc(memberDoc.ref, { 
+                    uid: user.uid,
+                    status: 'active',
+                    updatedAt: serverTimestamp()
+                  });
+                }
+
                 setUser(prev => prev ? { 
                   ...prev, 
                   role: memberData.role || 'Personnel',
@@ -684,12 +694,13 @@ export default function App() {
                );
                const clientSnap = await getDocs(clientQ);
                if (!clientSnap.empty) {
-                  // Important: Sync the UID if not present to ensure security rules work better
+                  // Important: Sync the UID and status if not present to ensure security rules work better
                   const clientRef = clientSnap.docs[0].ref;
                   const clientData = clientSnap.docs[0].data();
-                  if (clientData.uid !== user.uid) {
+                  if (clientData.uid !== user.uid || clientData.status !== 'active') {
                     await updateDoc(clientRef, { 
                       uid: user.uid,
+                      status: 'active',
                       updatedAt: serverTimestamp()
                     });
                   }
@@ -737,11 +748,12 @@ export default function App() {
         setUser(u);
         // Sync user profile to Firestore for notification lookups
         try {
-          const userId = u.email ? u.email.toLowerCase() : u.uid;
+          const cleanEmail = u.email ? u.email.trim().toLowerCase().replace(/\s+/g, '') : null;
+          const userId = cleanEmail || u.uid;
           const userRef = doc(db, 'users', userId);
           const userData = {
             uid: u.uid,
-            email: u.email?.toLowerCase() || null,
+            email: cleanEmail,
             displayName: u.displayName || null,
             photoURL: u.photoURL || null,
             lastLogin: serverTimestamp(),

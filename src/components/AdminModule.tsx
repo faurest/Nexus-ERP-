@@ -101,7 +101,7 @@ export default function AdminModule() {
 
         // 2. Overwrite with active login data (which has UID and real status)
         activeUsers.forEach(u => {
-          const email = u.email?.toLowerCase() || u.id?.includes('@') ? u.id.toLowerCase() : null;
+          const email = u.email ? u.email.toLowerCase() : (u.id?.includes('@') ? u.id.toLowerCase() : null);
           if (email) {
             const existing = userMap.get(email);
             userMap.set(email, {
