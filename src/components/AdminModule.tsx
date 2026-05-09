@@ -71,12 +71,53 @@ export default function AdminModule() {
       setGlobalSales(salesSnap.docs.map(d => d.data()));
       setGlobalExpenses(expSnap.docs.map(d => d.data()));
 
-      // Fetch users if the table exists
+      // Fetch users and potential user sources (personnel, clients)
       try {
-        const usersSnap = await getDocs(collection(db, 'users'));
-        setSystemUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        const [usersSnap, personnelSnap, clientsSnap] = await Promise.all([
+          getDocs(collection(db, 'users')),
+          getDocs(collection(db, 'personnel')),
+          getDocs(collection(db, 'clients'))
+        ]);
+        
+        const activeUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data(), source: 'active' }));
+        const personnelUsers = personnelSnap.docs.map(d => ({ id: d.id, ...d.data(), source: 'personnel' }));
+        const clientUsers = clientsSnap.docs.map(d => ({ id: d.id, ...d.data(), source: 'client' }));
+
+        // Use a Map to merge by email (normalized)
+        const userMap = new Map();
+
+        // 1. Start with personnel/clients who might not have connected yet
+        [...personnelUsers, ...clientUsers].forEach(u => {
+          if (u.email) {
+            const email = u.email.toLowerCase();
+            userMap.set(email, {
+              ...u,
+              displayName: u.name || u.displayName || 'Utilisateur Invitée',
+              status: 'invited'
+            });
+          }
+        });
+
+        // 2. Overwrite with active login data (which has UID and real status)
+        activeUsers.forEach(u => {
+          if (u.email) {
+            const email = u.email.toLowerCase();
+            const existing = userMap.get(email);
+            userMap.set(email, {
+              ...existing,
+              ...u,
+              displayName: u.displayName || u.name || existing?.displayName || 'Utilisateur Nexus',
+              status: u.uid ? 'connected' : (u.status || 'active')
+            });
+          } else {
+            // No email fallback (anonymous or broken sync)
+            userMap.set(u.id, { ...u, status: 'connected' });
+          }
+        });
+
+        setSystemUsers(Array.from(userMap.values()));
       } catch (err) {
-        console.warn("Table users non trouvée ou inaccessible");
+        console.warn("Nexus Admin: Erreur lors de l'agrégation des utilisateurs", err);
       }
     } catch (err) {
       console.error(err);
@@ -852,20 +893,31 @@ export default function AdminModule() {
               <TableRow key={u.id} className="border-b border-slate-50 last:border-0 grow">
                 <div className="py-5">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center font-black text-slate-400 text-sm">
-                      {u.displayName?.charAt(0) || u.email?.charAt(0)}
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center font-black text-sm",
+                      u.status === 'connected' ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-400"
+                    )}>
+                      {u.displayName?.charAt(0) || u.email?.charAt(0) || '?'}
                     </div>
                     <div>
-                      <p className="text-sm font-black text-slate-900">{u.displayName || 'Utilisateur Anonyme'}</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">ID: {u.uid?.substring(0, 8)}</p>
+                      <p className="text-sm font-black text-slate-900">{u.displayName || 'Utilisateur'}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                        {u.uid ? `ID: ${u.uid.substring(0, 8)}` : 'En attente de connexion'}
+                      </p>
                     </div>
                   </div>
                 </div>
-                <div className="text-xs font-bold text-slate-600">{u.email}</div>
+                <div className="text-xs font-bold text-slate-600">{u.email || '-'}</div>
                 <div>
-                  <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest">
-                    Actif
-                  </span>
+                  {u.status === 'connected' ? (
+                    <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
+                      Connecté
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
+                      Invité
+                    </span>
+                  )}
                 </div>
                 <div>
                   <div className="flex flex-wrap gap-1">

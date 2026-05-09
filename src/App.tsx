@@ -732,13 +732,18 @@ export default function App() {
         // Sync user profile to Firestore for notification lookups
         try {
           const userRef = doc(db, 'users', u.uid);
-          await setDoc(userRef, {
+          const userData = {
             uid: u.uid,
             email: u.email?.toLowerCase() || null,
             displayName: u.displayName || null,
             photoURL: u.photoURL || null,
-            lastLogin: serverTimestamp()
-          }, { merge: true });
+            lastLogin: serverTimestamp(),
+            status: 'active'
+          };
+          
+          if (userData.email) {
+            await setDoc(userRef, userData, { merge: true });
+          }
         } catch (err) {
           console.error("Nexus Sync: User profile sync failed", err);
         }

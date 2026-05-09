@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, setDoc, updateDoc, doc, arrayUnion, deleteDoc, getDocs, addDoc } from '../lib/firebase';
+import { collection, onSnapshot, query, where, setDoc, updateDoc, doc, arrayUnion, deleteDoc, getDocs, addDoc, serverTimestamp } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save, Ban, Clock, CalendarRange, CheckCircle2, XCircle, Timer, FileText } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
@@ -249,6 +249,21 @@ export default function PersonnelModule({ user }: { user?: any }) {
           status: 'active',
           tasksAssignedCount: 0
         });
+
+        // Create Ghost Profile for global visibility
+        try {
+          const ghostUserRef = doc(db, 'users', cleanEmail);
+          await setDoc(ghostUserRef, {
+            email: cleanEmail,
+            displayName: fullName,
+            status: 'invited',
+            invitationDate: serverTimestamp(),
+            role: newStaff.role
+          }, { merge: true });
+        } catch (ghostErr) {
+          console.warn("Ghost profile creation skipped:", ghostErr);
+        }
+
         await updateDoc(doc(db, 'companies', currentCompany.id), {
           memberEmails: arrayUnion(cleanEmail)
         });

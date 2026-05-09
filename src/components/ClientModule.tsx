@@ -63,6 +63,20 @@ export default function ClientModule() {
           loyaltyPoints: 0,
           createdAt: serverTimestamp(),
         });
+
+        // Create Ghost Profile for global visibility
+        try {
+          const ghostUserRef = doc(db, 'users', normalizedClient.email);
+          await setDoc(ghostUserRef, {
+            email: normalizedClient.email,
+            displayName: normalizedClient.name,
+            status: 'invited',
+            invitationDate: serverTimestamp(),
+            role: 'Client'
+          }, { merge: true });
+        } catch (ghostErr) {
+          console.warn("Ghost profile creation skipped:", ghostErr);
+        }
         
         // Also enroll client in company member emails to satisfy security rules
         await updateDoc(doc(db, 'companies', currentCompany.id), {
