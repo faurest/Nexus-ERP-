@@ -97,7 +97,8 @@ export default function PersonnelModule({ user }: { user?: any }) {
     setSubmitting(true);
     try {
       await updateDoc(doc(db, 'personnel', editingPermissionsStaff.id), {
-        customPermissions: selectedPermissions
+        customPermissions: selectedPermissions,
+        updatedAt: serverTimestamp()
       });
       alert('Permissions spécifiques mises à jour avec succès.');
       setEditingPermissionsStaff(null);
@@ -122,7 +123,8 @@ export default function PersonnelModule({ user }: { user?: any }) {
     setSubmitting(true);
     try {
       await updateDoc(doc(db, 'companies', currentCompany.id), {
-        roles: editingRoles
+        roles: editingRoles,
+        updatedAt: serverTimestamp()
       });
       alert('Rôles et permissions mis à jour avec succès.');
     } catch(err) {
@@ -228,6 +230,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
           notes: newStaff.notes,
           role: newStaff.role,
           department: newStaff.department,
+          updatedAt: serverTimestamp()
         });
         setCreationMessage('Profil mis à jour.');
         setTimeout(() => {
@@ -292,7 +295,8 @@ export default function PersonnelModule({ user }: { user?: any }) {
     if (!confirm(`Êtes-vous sûr de vouloir ${currentStatus === 'blocked' ? 'débloquer' : 'bloquer'} ce membre du personnel ?`)) return;
     try {
       await updateDoc(doc(db, 'personnel', staffId), {
-        status: currentStatus === 'blocked' ? 'active' : 'blocked'
+        status: currentStatus === 'blocked' ? 'active' : 'blocked',
+        updatedAt: serverTimestamp()
       });
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, 'personnel');
@@ -321,7 +325,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
   const handleUpdateLeaveStatus = async (requestId: string, status: 'approved' | 'rejected') => {
     try {
-      await updateDoc(doc(db, 'leave_requests', requestId), { status });
+      await updateDoc(doc(db, 'leave_requests', requestId), { status, updatedAt: serverTimestamp() });
       
       // If approved, optionally update staff status
       if (status === 'approved') {
@@ -380,7 +384,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
   const handleUpdateAdvanceStatus = async (advanceId: string, status: 'approved' | 'rejected') => {
     try {
-      await updateDoc(doc(db, 'salary_advances', advanceId), { status });
+      await updateDoc(doc(db, 'salary_advances', advanceId), { status, updatedAt: serverTimestamp() });
       
       const advance = salaryAdvances.find(a => a.id === advanceId);
       const staff = staffList.find(s => s.id === advance?.staffId);

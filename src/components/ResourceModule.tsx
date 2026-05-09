@@ -104,7 +104,8 @@ export default function ResourceModule({ user }: { user: any }) {
       if (editingResource) {
         await updateDoc(doc(db, 'resources', editingResource.id), {
           ...formData,
-          quantity: newQuantity
+          quantity: newQuantity,
+          updatedAt: serverTimestamp()
         });
       } else {
         await addDoc(collection(db, 'resources'), {
@@ -151,7 +152,8 @@ export default function ResourceModule({ user }: { user: any }) {
         const newQuantity = resource.quantity + Number(restockData.quantity);
         await updateDoc(resourceRef, {
           quantity: newQuantity,
-          status: newQuantity > 10 ? 'Available' : (newQuantity > 0 ? 'Low' : 'Out')
+          status: newQuantity > 10 ? 'Available' : (newQuantity > 0 ? 'Low' : 'Out'),
+          updatedAt: serverTimestamp()
         });
 
         // Log movement

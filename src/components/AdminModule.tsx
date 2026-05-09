@@ -178,7 +178,8 @@ export default function AdminModule() {
       await updateDoc(doc(db, 'companies', editingCompany.id), {
         name: editingCompany.name,
         joinCode: editingCompany.joinCode,
-        ownerEmail: editingCompany.ownerEmail
+        ownerEmail: editingCompany.ownerEmail,
+        updatedAt: serverTimestamp()
       });
       setEditingCompany(null);
       fetchGlobalData();
@@ -218,7 +219,8 @@ export default function AdminModule() {
 
       const updatedEmails = [...(company.memberEmails || []), email];
       await updateDoc(doc(db, 'companies', company.id), {
-        memberEmails: updatedEmails
+        memberEmails: updatedEmails,
+        updatedAt: serverTimestamp()
       });
       
       setNewMemberEmail('');
@@ -239,7 +241,8 @@ export default function AdminModule() {
 
       const updatedEmails = company.memberEmails.filter((e: string) => e !== email);
       await updateDoc(doc(db, 'companies', companyId), {
-        memberEmails: updatedEmails
+        memberEmails: updatedEmails,
+        updatedAt: serverTimestamp()
       });
       
       if (showMemberModal?.id === companyId) {
@@ -263,7 +266,8 @@ export default function AdminModule() {
       }
 
       await updateDoc(doc(db, 'companies', companyId), {
-        memberEmails: [...(company.memberEmails || []), userEmail]
+        memberEmails: [...(company.memberEmails || []), userEmail],
+        updatedAt: serverTimestamp()
       });
       
       setShowUserAssignModal(null);
@@ -283,7 +287,8 @@ export default function AdminModule() {
     try {
       await setDoc(doc(db, 'users', editingUser.id), {
         displayName: editingUser.displayName,
-        email: editingUser.email
+        email: editingUser.email,
+        updatedAt: serverTimestamp()
       }, { merge: true });
       setEditingUser(null);
       fetchGlobalData();

@@ -132,7 +132,8 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         ownerEmail: cleanEmail,
         memberEmails: [cleanEmail],
         employees: [user.uid],
-        joinCode: generatedJoinCode
+        joinCode: generatedJoinCode,
+        createdAt: serverTimestamp()
       });
       onSelect({ id: docRef.id, name: newCompanyName, ownerId: user.uid, joinCode: generatedJoinCode });
     } catch(err: any) {
@@ -178,7 +179,8 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         if (!companyEmployees.includes(user.uid) || !(company.memberEmails || []).includes(cleanEmail)) {
           await setDoc(doc(db, 'companies', company.id), {
             employees: arrayUnion(user.uid),
-            memberEmails: arrayUnion(cleanEmail)
+            memberEmails: arrayUnion(cleanEmail),
+            updatedAt: serverTimestamp()
           }, { merge: true });
         }
         

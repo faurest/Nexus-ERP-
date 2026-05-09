@@ -109,7 +109,10 @@ export default function PrestationsModule() {
   };
 
   const updateInterventionStatus = async (id: string, status: string) => {
-    await updateDoc(doc(db, 'interventions', id), { status });
+    await updateDoc(doc(db, 'interventions', id), { 
+      status,
+      updatedAt: serverTimestamp()
+    });
   };
 
   const handleAddService = async (e: React.FormEvent) => {

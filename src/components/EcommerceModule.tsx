@@ -306,7 +306,8 @@ export default function EcommerceModule({ user }: { user: any }) {
   const updateProduct = async (productId: string, updates: Partial<Product>) => {
     try {
       await updateDoc(doc(db, 'products', productId), {
-        ...updates
+        ...updates,
+        updatedAt: serverTimestamp()
       });
       setEditingProduct(null);
     } catch (err) {
@@ -371,7 +372,8 @@ export default function EcommerceModule({ user }: { user: any }) {
       if (clientId) {
         const earnedPoints = cart.reduce((acc, item) => acc + (item.points * item.cartQuantity), 0);
         await updateDoc(doc(db, 'clients', clientId), {
-          loyaltyPoints: (loyaltyPoints || 0) + earnedPoints
+          loyaltyPoints: (loyaltyPoints || 0) + earnedPoints,
+          updatedAt: serverTimestamp()
         });
       }
 
@@ -385,7 +387,10 @@ export default function EcommerceModule({ user }: { user: any }) {
 
   const updateOrderStatus = async (orderId: string, newStatus: 'PENDING' | 'SHIPPED' | 'DELIVERED', customerEmail?: string) => {
     try {
-      await updateDoc(doc(db, 'ecommerce_orders', orderId), { status: newStatus });
+      await updateDoc(doc(db, 'ecommerce_orders', orderId), { 
+        status: newStatus,
+        updatedAt: serverTimestamp()
+      });
       
       // Notify client if update is from admin
       if (isAdmin && (customerEmail || auth.currentUser?.email) && currentCompany) {

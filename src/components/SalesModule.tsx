@@ -130,7 +130,10 @@ export default function SalesModule() {
       // Update invoice status if fully paid (simple check for now)
       const totalPaid = payments.filter(p => p.invoiceId === selectedInvoice.id).reduce((sum, p) => sum + p.amount, 0) + Number(paymentForm.amount);
       if (totalPaid >= selectedInvoice.amount) {
-        await updateDoc(doc(db, 'sales_invoices', selectedInvoice.id), { status: 'paid' });
+        await updateDoc(doc(db, 'sales_invoices', selectedInvoice.id), { 
+          status: 'paid',
+          updatedAt: serverTimestamp()
+        });
       }
 
       setIsAddingPayment(false);
@@ -489,7 +492,10 @@ export default function SalesModule() {
                      <button 
                        onClick={async () => {
                          try {
-                           await updateDoc(doc(db, 'sales', sale.id), { status: 'completed' });
+                           await updateDoc(doc(db, 'sales', sale.id), { 
+                             status: 'completed',
+                             updatedAt: serverTimestamp()
+                           });
                          } catch (err) {
                            handleFirestoreError(err, OperationType.UPDATE, 'sales');
                          }

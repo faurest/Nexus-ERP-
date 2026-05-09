@@ -75,9 +75,16 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
     if (!currentCompany) return;
     try {
       if (editingService) {
-        await updateDoc(doc(db, 'services', editingService.id), newService);
+        await updateDoc(doc(db, 'services', editingService.id), {
+          ...newService,
+          updatedAt: serverTimestamp()
+        });
       } else {
-        await addDoc(collection(db, 'services'), { ...newService, companyId: currentCompany.id });
+        await addDoc(collection(db, 'services'), { 
+          ...newService, 
+          companyId: currentCompany.id,
+          createdAt: serverTimestamp()
+        });
       }
       setIsAddingService(false);
       setEditingService(null);
@@ -101,9 +108,16 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
     if (!currentCompany) return;
     try {
       if (editingIntervention) {
-        await updateDoc(doc(db, 'interventions', editingIntervention.id), newIntervention);
+        await updateDoc(doc(db, 'interventions', editingIntervention.id), {
+          ...newIntervention,
+          updatedAt: serverTimestamp()
+        });
       } else {
-        await addDoc(collection(db, 'interventions'), { ...newIntervention, companyId: currentCompany.id });
+        await addDoc(collection(db, 'interventions'), { 
+          ...newIntervention, 
+          companyId: currentCompany.id,
+          createdAt: serverTimestamp()
+        });
       }
       setIsAddingIntervention(false);
       setEditingIntervention(null);
