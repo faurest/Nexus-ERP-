@@ -806,6 +806,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                   { id: 'dashboard', label: 'Tableau de bord' },
                   { id: 'services', label: 'Services & Prestations' },
                   { id: 'sales', label: 'Ventes & Facturation' },
+                  { id: 'ecommerce', label: 'Espace Ecommerce' },
                   { id: 'clients', label: 'Partenaires Clients' },
                   { id: 'personnel', label: 'Ressources Humaines' },
                   { id: 'resources', label: 'Stocks & Logistique' },
