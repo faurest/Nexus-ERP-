@@ -731,7 +731,8 @@ export default function App() {
         setUser(u);
         // Sync user profile to Firestore for notification lookups
         try {
-          const userRef = doc(db, 'users', u.uid);
+          const userId = u.email ? u.email.toLowerCase() : u.uid;
+          const userRef = doc(db, 'users', userId);
           const userData = {
             uid: u.uid,
             email: u.email?.toLowerCase() || null,
@@ -741,9 +742,7 @@ export default function App() {
             status: 'active'
           };
           
-          if (userData.email) {
-            await setDoc(userRef, userData, { merge: true });
-          }
+          await setDoc(userRef, userData, { merge: true });
         } catch (err) {
           console.error("Nexus Sync: User profile sync failed", err);
         }

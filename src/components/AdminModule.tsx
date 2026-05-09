@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, arrayUnion } from '../lib/firebase';
+import { db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, arrayUnion, setDoc } from '../lib/firebase';
 import { 
   Building2, 
   Plus, 
@@ -92,6 +92,7 @@ export default function AdminModule() {
             const email = u.email.toLowerCase();
             userMap.set(email, {
               ...u,
+              id: email, // Use email as virtual ID for users collection if not connected
               displayName: u.name || u.displayName || 'Utilisateur Invitée',
               status: 'invited'
             });
@@ -279,10 +280,10 @@ export default function AdminModule() {
 
     setSubmitting(true);
     try {
-      await updateDoc(doc(db, 'users', editingUser.id), {
+      await setDoc(doc(db, 'users', editingUser.id), {
         displayName: editingUser.displayName,
         email: editingUser.email
-      });
+      }, { merge: true });
       setEditingUser(null);
       fetchGlobalData();
       alert('Utilisateur mis à jour');
