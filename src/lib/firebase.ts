@@ -163,9 +163,11 @@ export const loginWithGoogle = async () => {
     
     // Check/Create profile
     try {
-      await firestoreSetDoc(firestoreDoc(db, 'users', result.user.uid), {
+      const cleanEmail = result.user.email ? result.user.email.trim().toLowerCase().replace(/\s+/g, '') : null;
+      const userId = cleanEmail || result.user.uid;
+      await firestoreSetDoc(firestoreDoc(db, 'users', userId), {
         uid: result.user.uid,
-        email: result.user.email,
+        email: cleanEmail,
         displayName: result.user.displayName || result.user.email?.split('@')[0],
         updatedAt: firestoreServerTimestamp()
       }, { merge: true });

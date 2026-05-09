@@ -83,37 +83,60 @@ export default function AdminModule() {
         const personnelUsers = personnelSnap.docs.map(d => ({ id: d.id, ...d.data(), source: 'personnel' }));
         const clientUsers = clientsSnap.docs.map(d => ({ id: d.id, ...d.data(), source: 'client' }));
 
-        // Use a Map to merge by email (normalized)
-        const userMap = new Map();
+        // Use a Map to merge by email (normalized) and UID
+        const userMap = new Map<string, any>();
 
-        // 1. Start with personnel/clients who might not have connected yet
+        // 1. Process Personnel & Clients first (the "Invitations")
         [...personnelUsers, ...clientUsers].forEach(u => {
           if (u.email) {
-            const email = u.email.toLowerCase();
+            const email = u.email.trim().toLowerCase().replace(/\s+/g, '');
+            const existing = userMap.get(email);
             userMap.set(email, {
               ...u,
-              id: email, // Use email as virtual ID for users collection if not connected
-              displayName: u.name || u.displayName || 'Utilisateur Invitée',
-              status: 'invited'
+              ...existing,
+              id: email,
+              email: email,
+              displayName: u.name || u.displayName || existing?.displayName || 'Utilisateur Invitée',
+              status: u.uid ? 'connected' : 'invited'
             });
           }
         });
 
-        // 2. Overwrite with active login data (which has UID and real status)
+        // 2. Process Active Users (the "Logins")
         activeUsers.forEach(u => {
-          const email = u.email ? u.email.toLowerCase() : (u.id?.includes('@') ? u.id.toLowerCase() : null);
-          if (email) {
-            const existing = userMap.get(email);
-            userMap.set(email, {
+          const email = u.email?.trim().toLowerCase().replace(/\s+/g, '');
+          const uid = u.uid;
+          
+          // Find if we already have this user via email
+          let existingKey = email && userMap.has(email) ? email : null;
+          
+          // If not found by email, try to find by UID among existing entries
+          if (!existingKey && uid) {
+            for (const [key, val] of userMap.entries()) {
+              if (val.uid === uid) {
+                existingKey = key;
+                break;
+              }
+            }
+          }
+
+          if (existingKey) {
+            const existing = userMap.get(existingKey);
+            userMap.set(existingKey, {
               ...existing,
               ...u,
-              email: email, // Force preserve email
-              displayName: u.displayName || u.name || existing?.displayName || 'Utilisateur Nexus',
-              status: u.uid ? 'connected' : (u.status || 'active')
+              status: 'connected',
+              // Prioritize the email from the login record if it's cleaner
+              email: email || existing.email 
             });
           } else {
-            // No email fallback (anonymous or broken sync)
-            userMap.set(u.id, { ...u, status: 'connected' });
+            // New user not seen in personnel/clients
+            const key = email || uid || u.id;
+            userMap.set(key, {
+              ...u,
+              email: email || null,
+              status: 'connected'
+            });
           }
         });
 

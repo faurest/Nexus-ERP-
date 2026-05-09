@@ -205,75 +205,48 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
     const checkWhitelist = async () => {
       if (!user?.email) return;
       
-      const cleanEmail = user.email.trim().toLowerCase();
-
-      // 1. Check if Master
-      if (isMaster) {
-        setIsWhitelisted(true);
-        return;
-      }
-
-      // 2. Already in companies (owner or joined)
-      if (companies.length > 0) {
-        setIsWhitelisted(true);
-        return;
-      }
+      const cleanEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
+      const normalizedEmail = cleanEmail;
 
       try {
-        console.log("Nexus Security: Vérification des accès pour", cleanEmail);
+        console.log("Nexus Security: Analyse des accès pour", normalizedEmail);
         
-        const normalizedEmail = cleanEmail.replace(/\s+/g, '');
+        let foundAccess = false;
         
-        // 3. Check if they ARE an owner of a company not yet loaded
-        const companyQ = query(collection(db, 'companies'), where('ownerEmail', '==', normalizedEmail), limit(1));
+        // 1. Check Companies where user is owner
+        const companyQ = query(collection(db, 'companies'), where('ownerEmail', '==', normalizedEmail));
         const companySnap = await getDocs(companyQ);
         if (!companySnap.empty) {
-          console.log("Nexus Security: Accès autorisé (Propriétaire détecté)");
-          
-          // Auto-sync owner UID if missing
+          foundAccess = true;
           for (const docSnap of companySnap.docs) {
             const data = docSnap.data();
             if (data.ownerId !== user.uid) {
               await updateDoc(doc(db, 'companies', docSnap.id), {
                 ownerId: user.uid,
                 employees: arrayUnion(user.uid),
-                memberEmails: arrayUnion(cleanEmail)
-              });
+                memberEmails: arrayUnion(normalizedEmail)
+              }).catch(e => console.warn(e));
             }
           }
-          
-          setIsWhitelisted(true);
-          return;
         }
 
-        // 4. Search if the user's email exists in ANY personnel collection
-        const q = query(collection(db, 'personnel'), where('email', '==', normalizedEmail), limit(1));
-        const snap = await getDocs(q);
-        
-        if (!snap.empty) {
-          console.log("Nexus Security: Accès autorisé via Personnel list. Auto-synchronisation des membres...");
-          
-          // Auto-enroll user into the companies they belong to in the personnel records
-          for (const docSnap of snap.docs) {
-            const personnelData = docSnap.data();
-            const companyId = personnelData.companyId;
-            if (companyId) {
-              // Add them to the company's member list if not already there
-              await setDoc(doc(db, 'companies', companyId), {
+        // 2. Check Personnel records
+        const personnelQ = query(collection(db, 'personnel'), where('email', '==', normalizedEmail));
+        const personnelSnap = await getDocs(personnelQ);
+        if (!personnelSnap.empty) {
+          foundAccess = true;
+          for (const docSnap of personnelSnap.docs) {
+            const pData = docSnap.data();
+            if (pData.uid !== user.uid) {
+              await updateDoc(docSnap.ref, { uid: user.uid, status: 'active' }).catch(e => console.warn(e));
+            }
+            if (pData.companyId) {
+              await setDoc(doc(db, 'companies', pData.companyId), {
                 memberEmails: arrayUnion(normalizedEmail),
                 employees: arrayUnion(user.uid)
-              }, { merge: true }).catch(e => console.error("Auto-enroll failed for company", companyId, e));
-
-              // ALSO update the personnel record with the UID if it's missing
-              if (personnelData.uid !== user.uid) {
-                await updateDoc(docSnap.ref, { uid: user.uid })
-                  .catch(e => console.error("Personnel UID sync failed", e));
-              }
+              }, { merge: true }).catch(e => console.error(e));
             }
           }
-          
-          setIsWhitelisted(true);
-          return;
         }
 
         // 5. Search if the user's email exists in ANY clients collection
@@ -296,11 +269,16 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
           return;
         }
 
-        console.log("Nexus Security: Résultat personnel/client = Aucun accès trouvé.");
-        setIsWhitelisted(false);
+        // Final decision logic
+        if (isMaster || foundAccess || (companies && companies.length > 0)) {
+          setIsWhitelisted(true);
+        } else {
+          console.log("Nexus Security: Aucun accès trouvé pour", normalizedEmail);
+          setIsWhitelisted(false);
+        }
       } catch (err) {
         console.error("Whitelist check failed:", err);
-        setIsWhitelisted(false);
+        setIsWhitelisted(isMaster);
       }
     };
     checkWhitelist();
