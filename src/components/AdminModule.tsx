@@ -492,15 +492,44 @@ export default function AdminModule() {
     const email = diagEmail.trim().toLowerCase();
     try {
       // Find case-insensitive results for diagnosis
-      const [uSnap, pSnap, cSnap] = await Promise.all([
+      const [uSnap, pSnap, cSnap, cliSnap] = await Promise.all([
         getDocs(collection(db, 'users')),
         getDocs(collection(db, 'personnel')),
-        getDocs(collection(db, 'companies'))
+        getDocs(collection(db, 'companies')),
+        getDocs(collection(db, 'clients'))
       ]);
 
-      const inUsers = uSnap.docs.find(d => (d.data() as any).email?.toLowerCase() === email);
-      const personnelMatches = pSnap.docs.filter(d => (d.data() as any).email?.toLowerCase() === email);
-      const ownedCompanies = cSnap.docs.filter(d => (d.data() as any).ownerEmail?.toLowerCase() === email);
+      const inUsers = uSnap.docs.find(d => {
+        const e = (d.data() as any).email;
+        return e && e.toLowerCase().replace(/\s+/g, '') === email.replace(/\s+/g, '');
+      });
+      const personnelMatches = pSnap.docs.filter(d => {
+        const e = (d.data() as any).email;
+        return e && e.toLowerCase().replace(/\s+/g, '') === email.replace(/\s+/g, '');
+      });
+      const ownedCompanies = cSnap.docs.filter(d => {
+        const e = (d.data() as any).ownerEmail;
+        return e && e.toLowerCase().replace(/\s+/g, '') === email.replace(/\s+/g, '');
+      });
+      const clientMatches = cliSnap.docs.filter(d => {
+        const e = (d.data() as any).email;
+        return e && e.toLowerCase().replace(/\s+/g, '') === email.replace(/\s+/g, '');
+      });
+
+      // Fuzzy matching: check for emails that might have typos like '.' instead of '@'
+      const normalizeForFuzzy = (e: string) => e?.toLowerCase().replace(/[@.\s]/g, '');
+      const fuzzyTarget = normalizeForFuzzy(email);
+      const fuzzyMatches: string[] = [];
+
+      if (personnelMatches.length === 0 && clientMatches.length === 0 && ownedCompanies.length === 0) {
+        [...pSnap.docs, ...cliSnap.docs, ...cSnap.docs].forEach(d => {
+          const data = d.data() as any;
+          const e = data.email || data.ownerEmail;
+          if (e && normalizeForFuzzy(e) === fuzzyTarget && e.toLowerCase() !== email) {
+            fuzzyMatches.push(e);
+          }
+        });
+      }
 
       setDiagResult({
         email,
@@ -512,7 +541,14 @@ export default function AdminModule() {
           const data = d.data() as any;
           const comp = companies.find(c => c.id === data.companyId);
           return { company: comp?.name || 'Inconnue', id: data.companyId, status: data.status, role: data.role, actualEmail: data.email };
-        })
+        }),
+        clientCount: clientMatches.length,
+        clientDetails: clientMatches.map(d => {
+          const data = d.data() as any;
+          const comp = companies.find(c => c.id === data.companyId);
+          return { company: comp?.name || 'Inconnue', id: data.companyId, actualEmail: data.email };
+        }),
+        fuzzyMatches: [...new Set(fuzzyMatches)]
       });
     } catch (err) {
       console.error(err);
@@ -536,25 +572,32 @@ export default function AdminModule() {
           
           if (coll === 'companies') {
             // Normalize ownerEmail
-            if (data.ownerEmail && data.ownerEmail !== data.ownerEmail.toLowerCase()) {
-              updates.ownerEmail = data.ownerEmail.toLowerCase();
+            if (data.ownerEmail) {
+              const cleaned = data.ownerEmail.trim().toLowerCase().replace(/\s+/g, '');
+              if (data.ownerEmail !== cleaned) {
+                updates.ownerEmail = cleaned;
+              }
             }
             // Normalize memberEmails array
             if (data.memberEmails && Array.isArray(data.memberEmails)) {
-              const lowerEmails = data.memberEmails.map((e: string) => e?.toLowerCase());
-              const hasChange = data.memberEmails.some((e: string, i: number) => e !== lowerEmails[i]);
+              const cleanedEmails = data.memberEmails.map((e: string) => e?.trim().toLowerCase().replace(/\s+/g, ''));
+              const hasChange = data.memberEmails.some((e: string, i: number) => e !== cleanedEmails[i]);
               if (hasChange) {
-                updates.memberEmails = lowerEmails;
+                updates.memberEmails = cleanedEmails;
               }
             }
           } else {
             // Normalize standard email field
-            if (data.email && data.email !== data.email.toLowerCase()) {
-              updates.email = data.email.toLowerCase();
+            if (data.email) {
+              const cleaned = data.email.trim().toLowerCase().replace(/\s+/g, '');
+              if (data.email !== cleaned) {
+                updates.email = cleaned;
+              }
             }
           }
 
           if (Object.keys(updates).length > 0) {
+            updates.updatedAt = serverTimestamp();
             if (coll === 'users') {
               await setDoc(doc(db, coll, docSnap.id), updates, { merge: true });
             } else {
@@ -1062,6 +1105,24 @@ export default function AdminModule() {
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Résultats pour {diagResult.email}</span>
                   <button onClick={() => setDiagResult(null)} className="text-slate-400 hover:text-slate-900"><X size={14} /></button>
                 </div>
+
+                {diagResult.fuzzyMatches && diagResult.fuzzyMatches.length > 0 && (
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[10px] font-bold text-amber-800 space-y-1">
+                    <p className="flex items-center gap-2 mb-2"><AlertCircle size={14} /> Sommes-nous sur un cas de faute de frappe ?</p>
+                    <p>Nous avons trouvé ces adresses similaires dans la base :</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                       {diagResult.fuzzyMatches.map((m: string) => (
+                         <button 
+                          key={m} 
+                          onClick={() => { setDiagEmail(m); handleDiagnostic(); }}
+                          className="px-2 py-1 bg-white border border-amber-200 rounded hover:bg-amber-100 transition-all font-mono"
+                         >
+                           {m}
+                         </button>
+                       ))}
+                    </div>
+                  </div>
+                )}
                 
                   <div className="grid grid-cols-2 gap-4 text-[11px] font-bold">
                   <div className="p-3 bg-white rounded-xl border border-slate-100 flex flex-col gap-1">
@@ -1104,7 +1165,7 @@ export default function AdminModule() {
                     )}
                   </div>
                   {diagResult.personnelDetails.length === 0 ? (
-                    <p className="text-[10px] text-red-500 italic px-1">Aucune affiliation trouvée. Cet utilisateur ne peut pas se connecter aux espaces de travail.</p>
+                    <p className="text-[10px] text-red-500 italic px-1">Aucune affiliation personnel trouvée.</p>
                   ) : (
                     <div className="space-y-2">
                       {diagResult.personnelDetails.map((pd: any, i: number) => (
@@ -1140,6 +1201,53 @@ export default function AdminModule() {
                                 setLoading(false);
                               }}
                               className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-all border border-transparent hover:border-slate-200"
+                              title="Forcer Adhésion"
+                            >
+                              <Shield size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center ml-1 mt-4">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Affiliations Client ({diagResult.clientCount})</span>
+                  </div>
+                  {diagResult.clientDetails.length === 0 ? (
+                    <p className="text-[10px] text-red-500 italic px-1">Aucune affiliation client trouvée.</p>
+                  ) : (
+                    <div className="space-y-2">
+                       {diagResult.clientDetails.map((cd: any, i: number) => (
+                        <div key={i} className="p-3 bg-white rounded-xl border border-slate-100 flex justify-between items-center">
+                          <div className="flex flex-col">
+                            <span className="text-slate-700">{cd.company}</span>
+                            <span className="text-[8px] text-slate-400 font-mono tracking-tight">{cd.id}</span>
+                            {cd.actualEmail !== diagResult.email && (
+                              <span className="text-[8px] text-amber-600 bg-amber-50 px-1 py-0.5 rounded w-fit mt-1">⚠️ {cd.actualEmail}</span>
+                            )}
+                          </div>
+                          <div className="flex gap-2 items-center">
+                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[8px] uppercase font-bold">CLIENT</span>
+                             <button 
+                              onClick={async () => {
+                                if (!confirm("Voulez-vous forcer l'ajout de cet email aux membres de l'entreprise ?")) return;
+                                setLoading(true);
+                                try {
+                                  const { arrayUnion, doc, updateDoc, db } = await import('../lib/firebase');
+                                  const compRef = doc(db, 'companies', cd.id);
+                                  await updateDoc(compRef, {
+                                    memberEmails: arrayUnion(diagResult.email)
+                                  });
+                                  alert("Lien d'adhésion forcé pour le client sur " + cd.company);
+                                  handleDiagnostic();
+                                } catch (e) { 
+                                  console.error(e);
+                                  alert("Erreur de permission ou réseau."); 
+                                }
+                                setLoading(false);
+                              }}
+                              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-600 transition-all border border-transparent hover:border-slate-200"
                               title="Forcer Adhésion"
                             >
                               <Shield size={14} />
@@ -1254,7 +1362,7 @@ export default function AdminModule() {
                   </div>
                   <div className="text-left">
                     <p className="text-sm font-black text-slate-900">Nettoyage Emails</p>
-                    <p className="text-[10px] font-bold text-amber-600/60 uppercase tracking-widest">Forcer minuscules (Whitelist)</p>
+                    <p className="text-[10px] font-bold text-amber-600/60 uppercase tracking-widest">Minuscules & Suppression Espaces</p>
                   </div>
                 </div>
                 <Activity size={18} className="text-amber-300 group-hover:text-amber-600 transition-all" />

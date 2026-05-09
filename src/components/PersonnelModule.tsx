@@ -225,7 +225,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
           firstName: newStaff.firstName,
           lastName: newStaff.lastName,
           name: fullName,
-          email: newStaff.email.trim().toLowerCase(),
+          email: newStaff.email.trim().toLowerCase().replace(/\s+/g, ''),
           phone: newStaff.phone,
           notes: newStaff.notes,
           role: newStaff.role,
@@ -239,7 +239,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
           setCreationMessage('');
         }, 1500);
       } else {
-        const cleanEmail = newStaff.email.trim().toLowerCase();
+        const cleanEmail = newStaff.email.trim().toLowerCase().replace(/\s+/g, '');
         await setDoc(doc(db, 'personnel', cleanEmail), {
           firstName: newStaff.firstName,
           lastName: newStaff.lastName,

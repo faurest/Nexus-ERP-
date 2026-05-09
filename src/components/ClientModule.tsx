@@ -47,7 +47,7 @@ export default function ClientModule() {
     try {
       const normalizedClient = {
         ...newClient,
-        email: newClient.email.trim().toLowerCase()
+        email: newClient.email.trim().toLowerCase().replace(/\s+/g, '')
       };
       if (editingClient) {
         await updateDoc(doc(db, 'clients', editingClient.id), {

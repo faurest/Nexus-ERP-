@@ -99,7 +99,7 @@ export const DEFAULT_ROLES: Record<string, string[]> = {
   'Agent Commercial': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'projects', 'collaboration', 'communication'],
   'Collaborateur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
   'Personnel': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
-  'Client': ['ecommerce'],
+  'Client': ['dashboard', 'ecommerce'],
 };
 
 function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], user: User, onSelect: any }) {
@@ -222,8 +222,10 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
       try {
         console.log("Nexus Security: Vérification des accès pour", cleanEmail);
         
+        const normalizedEmail = cleanEmail.replace(/\s+/g, '');
+        
         // 3. Check if they ARE an owner of a company not yet loaded
-        const companyQ = query(collection(db, 'companies'), where('ownerEmail', '==', cleanEmail), limit(1));
+        const companyQ = query(collection(db, 'companies'), where('ownerEmail', '==', normalizedEmail), limit(1));
         const companySnap = await getDocs(companyQ);
         if (!companySnap.empty) {
           console.log("Nexus Security: Accès autorisé (Propriétaire détecté)");
@@ -245,7 +247,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         }
 
         // 4. Search if the user's email exists in ANY personnel collection
-        const q = query(collection(db, 'personnel'), where('email', '==', cleanEmail), limit(1));
+        const q = query(collection(db, 'personnel'), where('email', '==', normalizedEmail), limit(1));
         const snap = await getDocs(q);
         
         if (!snap.empty) {
@@ -258,7 +260,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
             if (companyId) {
               // Add them to the company's member list if not already there
               await setDoc(doc(db, 'companies', companyId), {
-                memberEmails: arrayUnion(cleanEmail),
+                memberEmails: arrayUnion(normalizedEmail),
                 employees: arrayUnion(user.uid)
               }, { merge: true }).catch(e => console.error("Auto-enroll failed for company", companyId, e));
 
@@ -275,7 +277,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         }
 
         // 5. Search if the user's email exists in ANY clients collection
-        const clientQ = query(collection(db, 'clients'), where('email', '==', cleanEmail), limit(1));
+        const clientQ = query(collection(db, 'clients'), where('email', '==', normalizedEmail), limit(1));
         const clientSnap = await getDocs(clientQ);
         if (!clientSnap.empty) {
           console.log("Nexus Security: Accès autorisé via Client list. Auto-synchronisation des membres...");
@@ -649,7 +651,7 @@ export default function App() {
         // Try to find the user in the personnel collection for this company
         const findRole = async () => {
           try {
-            const cleanEmail = user.email?.trim().toLowerCase();
+            const cleanEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '');
             if (!cleanEmail) {
               setIsBlocked(true);
               return;

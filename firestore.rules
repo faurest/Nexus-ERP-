@@ -172,7 +172,7 @@ service cloud.firestore {
         isSelf(resource.data) ||
         (resource.data.companyId != null && (
           isMemberOfCompany(resource.data.companyId) || 
-          collectionName == 'products'
+          collectionName in ['products', 'services']
         ))
       );
       
@@ -181,7 +181,7 @@ service cloud.firestore {
         isSelf(resource.data) ||
         (resource.data.companyId != null && (
           isMemberOfCompany(resource.data.companyId) || 
-          collectionName == 'products'
+          collectionName in ['products', 'services']
         ))
       );
 

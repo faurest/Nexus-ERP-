@@ -247,7 +247,7 @@ export default function EcommerceModule({ user }: { user: any }) {
 
     // Fetch Client info if applicable
     if (user.role === 'Client') {
-      const cleanEmail = user.email?.trim().toLowerCase() || '';
+      const cleanEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
       const qClient = query(collection(db, 'clients'), where('companyId', '==', currentCompany.id), where('email', '==', cleanEmail));
       const unsubscribeClient = onSnapshot(qClient, (snap) => {
         if (!snap.empty) {
