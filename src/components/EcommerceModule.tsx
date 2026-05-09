@@ -24,7 +24,8 @@ import {
   Star,
   Send,
   Edit2,
-  LayoutDashboard
+  LayoutDashboard,
+  Database
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -85,14 +86,16 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [orderMessages, setOrderMessages] = useState<OrderMessage[]>([]);
   const [newOrderMessage, setNewOrderMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState<{ [key: string]: number }>({});
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
   const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
 
-  const isAdmin = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role);
-  const isSuperAdmin = ['owner', 'Administrateur', 'Directeur'].includes(user?.role);
+  const canManage = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
+  const isAdmin = canManage;
+  const isSuperAdmin = ['owner', 'Administrateur', 'Directeur'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
 
   // Connection check
   useEffect(() => {
@@ -433,8 +436,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               { id: 'catalog', label: 'Catalogue', icon: Package },
               { id: 'cart', label: `Panier (${cart.length})`, icon: ShoppingCart },
               {id: 'tracking', label: 'Suivi', icon: Truck, unread: Object.values(unreadMessages).reduce((a,b) => a+b, 0)},
-              { id: 'loyalty', label: 'Fidélité', icon: Award },
-              ...(isAdmin ? [{ id: 'admin', label: 'Gestion', icon: Smartphone }] : [])
+              { id: 'loyalty', label: 'Fidélité', icon: Award }
             ].map(item => (
               <button
                 key={item.id}
@@ -918,205 +920,6 @@ export default function EcommerceModule({ user }: { user: any }) {
               <CheckCircle2 size={12} /> Activé
             </span>
           </div>
-        </div>
-      )}
-
-      {activeView === 'admin' && isAdmin && (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-           {/* Section Commandes */}
-           <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-              <div className="flex justify-between items-center mb-10">
-                <div>
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Gestion des Flux Acquis</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                    <History size={14} /> Supervision des transactions et livraisonnexus
-                  </p>
-                </div>
-                <div className="px-5 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-slate-200">
-                  {orders.length} Flux Opérationnels
-                </div>
-              </div>
-              
-              <div className="overflow-x-auto -mx-10 px-10">
-                <table className="w-full">
-                  <thead className="bg-slate-50 border-b border-slate-100">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">ID Commande</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Client / Email</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Montant</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Statut</th>
-                      <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Action Flux</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {orders.map(order => (
-                      <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-5">
-                          <span className="font-black text-blue-600 text-xs">CMD-{order.id.slice(0, 6).toUpperCase()}</span>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">{order.date?.toDate().toLocaleDateString('fr-FR')}</p>
-                        </td>
-                        <td className="px-6 py-5">
-                          <p className="font-black text-slate-900 text-sm leading-none">{order.customerName}</p>
-                          <p className="text-[10px] font-medium text-slate-400 mt-1">{order.customerEmail}</p>
-                        </td>
-                        <td className="px-6 py-5 text-sm font-black text-slate-900">{order.total.toLocaleString()} FCFA</td>
-                        <td className="px-6 py-5">
-                          <span className={cn(
-                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
-                            order.status === 'PENDING' ? "bg-amber-100 text-amber-600" :
-                            order.status === 'SHIPPED' ? "bg-blue-100 text-blue-600" :
-                            "bg-green-100 text-green-600"
-                          )}>
-                            {order.status === 'PENDING' ? 'En attente' : order.status === 'SHIPPED' ? 'Expédié' : 'Livré'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5 text-right">
-                          <div className="flex justify-end gap-2">
-                             {order.status === 'PENDING' && (
-                               <button 
-                                 onClick={() => updateOrderStatus(order.id, 'SHIPPED', order.customerEmail)}
-                                 className="px-4 py-2 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 shadow-md shadow-blue-100 transition-all font-mono"
-                               >
-                                 Expédier
-                               </button>
-                             )}
-                             {order.status === 'SHIPPED' && (
-                               <button 
-                                 onClick={() => updateOrderStatus(order.id, 'DELIVERED', order.customerEmail)}
-                                 className="px-4 py-2 bg-green-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 shadow-md shadow-green-100 transition-all font-mono"
-                               >
-                                 Livrer
-                               </button>
-                             )}
-                             <button 
-                               onClick={() => setActiveChatOrder(order)}
-                               className="p-2.5 text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                             >
-                               <MessageCircle size={18} />
-                             </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {orders.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="py-20 text-center font-black text-slate-300 uppercase italic tracking-tighter">Aucune commande système détectée</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-           </div>
-
-           {/* Section Catalogue existing code... */}
-           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-1 bg-white rounded-3xl p-8 border border-slate-100 shadow-sm space-y-6">
-                <h3 className="text-xl font-bold text-slate-900">Ajouter un Produit</h3>
-                <form 
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    if (!currentCompany) return;
-                    const formData = new FormData(e.currentTarget);
-                    try {
-                      await addDoc(collection(db, 'products'), {
-                        companyId: currentCompany.id,
-                        name: formData.get('name'),
-                        description: formData.get('description'),
-                        price: Number(formData.get('price')),
-                        category: formData.get('category'),
-                        stock: Number(formData.get('stock')),
-                        points: Number(formData.get('points')),
-                        image: formData.get('image') || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=600',
-                        createdAt: serverTimestamp()
-                      });
-                      (e.target as HTMLFormElement).reset();
-                    } catch(err) {
-                      handleFirestoreError(err, OperationType.CREATE, 'products');
-                    }
-                  }}
-                  className="space-y-4"
-                >
-                  <input name="name" placeholder="Nom du produit" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none" required />
-                  <textarea name="description" placeholder="Description" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none h-24" required />
-                  <div className="grid grid-cols-2 gap-4">
-                    <input name="price" type="number" placeholder="Prix (FCFA)" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none" required />
-                    <input name="stock" type="number" placeholder="Stock" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none" required />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <select name="category" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none">
-                      {['Hardware', 'Software', 'Office', 'Services'].map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                    <input name="points" type="number" placeholder="Points" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none" required />
-                  </div>
-                  <input name="image" placeholder="URL de l'image (optionnel)" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none" />
-                  <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
-                    <Plus size={18} /> Créer le produit
-                  </button>
-                </form>
-              </div>
-
-              <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-                <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-slate-900">Gestion du Catalogue</h3>
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{products.length} produits</span>
-                </div>
-                <div className="overflow-x-auto">
-                   <table className="w-full">
-                      <thead className="bg-slate-50 border-b border-slate-100">
-                        <tr>
-                          <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Produit</th>
-                          <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Catégorie</th>
-                          <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Prix</th>
-                          <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Stock</th>
-                          <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50">
-                        {products.map(p => (
-                          <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <img src={p.image} className="w-10 h-10 rounded-lg object-cover" />
-                                <span className="font-bold text-slate-900 text-sm">{p.name}</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-xs font-medium text-slate-500 uppercase">{p.category}</td>
-                            <td className="px-6 py-4 text-sm font-black text-slate-900">{p.price.toLocaleString()}</td>
-                            <td className="px-6 py-4">
-                               <span className={cn(
-                                 "px-2 py-0.5 rounded text-[10px] font-bold",
-                                 p.stock > 10 ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
-                               )}>{p.stock} en stock</span>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            {isSuperAdmin && (
-                              <button 
-                                onClick={() => setEditingProduct(p)}
-                                className="p-2 text-slate-300 hover:text-blue-600 transition-colors"
-                              >
-                                <Edit2 size={18} />
-                              </button>
-                            )}
-                            <button 
-                              onClick={async () => {
-                                if (confirm('Supprimer ce produit ?')) {
-                                  await deleteDoc(doc(db, 'products', p.id)).catch(err => handleFirestoreError(err, OperationType.DELETE, 'products'));
-                                }
-                              }}
-                              className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                            >
-                              <X size={18} />
-                            </button>
-                          </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                   </table>
-                </div>
-              </div>
-           </div>
         </div>
       )}
 

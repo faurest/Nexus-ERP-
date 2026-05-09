@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, setDoc, updateDoc, doc, arrayUnion, deleteDoc, getDocs } from '../lib/firebase';
+import { collection, onSnapshot, query, where, setDoc, updateDoc, doc, arrayUnion, deleteDoc, getDocs, addDoc } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save, Ban, Clock, CalendarRange, CheckCircle2, XCircle, Timer, FileText } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
@@ -22,6 +22,7 @@ interface Staff {
   status: 'active' | 'on_leave' | 'resigned' | 'blocked';
   department: string;
   tasksAssignedCount: number;
+  customPermissions?: string[];
 }
 
 interface Task {
@@ -88,6 +89,25 @@ export default function PersonnelModule({ user }: { user?: any }) {
   const [creationMessage, setCreationMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   
+  const [editingPermissionsStaff, setEditingPermissionsStaff] = useState<Staff | null>(null);
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  
+  const handleSaveCustomPermissions = async () => {
+    if (!editingPermissionsStaff || !currentCompany || submitting) return;
+    setSubmitting(true);
+    try {
+      await updateDoc(doc(db, 'personnel', editingPermissionsStaff.id), {
+        customPermissions: selectedPermissions
+      });
+      alert('Permissions spécifiques mises à jour avec succès.');
+      setEditingPermissionsStaff(null);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'personnel');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const companyRoles = currentCompany?.roles || DEFAULT_ROLES;
   const roleOptions = Object.keys(companyRoles).filter(r => r !== 'owner');
 
@@ -461,6 +481,16 @@ export default function PersonnelModule({ user }: { user?: any }) {
                     className="p-1 text-slate-400 hover:text-green-600 transition-colors"
                   >
                     <User size={14} />
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setEditingPermissionsStaff(staff);
+                      setSelectedPermissions(staff.customPermissions || []);
+                    }}
+                    className="p-1 text-slate-400 hover:text-indigo-600 transition-colors"
+                    title="Permissions spécifiques"
+                  >
+                    <Shield size={14} />
                   </button>
                   <button 
                     onClick={() => {
@@ -845,6 +875,85 @@ export default function PersonnelModule({ user }: { user?: any }) {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {editingPermissionsStaff && (
+        <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
+                <Shield size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900">Permissions Spécifiques</h3>
+                <p className="text-sm text-slate-500">Assignez des modules additionnels à {editingPermissionsStaff.name}.</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 mb-8 h-[400px] overflow-y-auto pr-2 scrollbar-thin">
+              {[
+                { id: 'dashboard', label: 'Tableau de bord' },
+                { id: 'services', label: 'Services & Prestations' },
+                { id: 'sales', label: 'Ventes & Facturation' },
+                { id: 'ecommerce', label: 'Espace Ecommerce' },
+                { id: 'clients', label: 'Partenaires Clients' },
+                { id: 'personnel', label: 'Ressources Humaines' },
+                { id: 'resources', label: 'Stocks & Logistique' },
+                { id: 'projects', label: 'Projets & Tâches' },
+                { id: 'accounting', label: 'Rapport Comptable' },
+                { id: 'collaboration', label: 'Collaboration & Comm' }
+              ].map((mod) => (
+                <div 
+                  key={mod.id}
+                  onClick={() => {
+                    const exists = selectedPermissions.includes(mod.id);
+                    if (exists) {
+                      setSelectedPermissions(selectedPermissions.filter(p => p !== mod.id));
+                    } else {
+                      setSelectedPermissions([...selectedPermissions, mod.id]);
+                    }
+                  }}
+                  className={cn(
+                    "p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between group",
+                    selectedPermissions.includes(mod.id) 
+                      ? "bg-indigo-50 border-indigo-200" 
+                      : "bg-white border-slate-100 hover:border-slate-200"
+                  )}
+                >
+                  <span className={cn(
+                    "text-xs font-bold uppercase tracking-wider",
+                    selectedPermissions.includes(mod.id) ? "text-indigo-900" : "text-slate-500"
+                  )}>
+                    {mod.label}
+                  </span>
+                  <div className={cn(
+                    "w-5 h-5 rounded flex items-center justify-center transition-all",
+                    selectedPermissions.includes(mod.id) ? "bg-indigo-600 text-white" : "border-2 border-slate-200 group-hover:border-slate-300"
+                  )}>
+                    {selectedPermissions.includes(mod.id) && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={4} className="w-3 h-3"><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                type="button" 
+                onClick={() => setEditingPermissionsStaff(null)} 
+                className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"
+              >
+                Annuler
+              </button>
+              <button 
+                onClick={handleSaveCustomPermissions}
+                disabled={submitting} 
+                className="px-6 py-3 rounded-xl bg-indigo-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 font-mono disabled:opacity-50"
+              >
+                {submitting ? 'Enregistrement...' : 'Sauvegarder'}
+              </button>
+            </div>
           </div>
         </div>
       )}

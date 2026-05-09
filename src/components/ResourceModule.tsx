@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, auth, orderBy, limit } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { Plus, Search, Package, ShieldCheck, AlertTriangle, ArrowRightLeft, Edit2, Trash2, RefreshCw, TrendingUp, Activity } from 'lucide-react';
+import { Plus, Search, Package, ShieldCheck, AlertTriangle, ArrowRightLeft, Edit2, Trash2, RefreshCw, TrendingUp, Activity, Smartphone, CheckCircle2, X } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { cn } from '../lib/utils';
@@ -21,20 +21,40 @@ interface Resource {
   price?: number;
 }
 
-export default function ResourceModule() {
+export default function ResourceModule({ user }: { user: any }) {
   const { currentCompany } = useCompany();
   const [resources, setResources] = useState<Resource[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'inventory' | 'movements' | 'analytics'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'ecommerce' | 'movements' | 'analytics'>('inventory');
   const [activeFilter, setActiveFilter] = useState('Tous les actifs');
   const [isAdding, setIsAdding] = useState(false);
   const [viewingResource, setViewingResource] = useState<Resource | null>(null);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
+  const [editingProduct, setEditingProduct] = useState<any | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [formData, setFormData] = useState<any>({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '', price: 0 });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 800000) { // Limit to ~800KB for Firestore base64
+        alert("L'image est trop volumineuse. Veuillez choisir une image de moins de 800 Ko.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   const [isRestocking, setIsRestocking] = useState(false);
   const [restockData, setRestockData] = useState({ resourceId: '', quantity: 0, supplier: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
   const [movementLogs, setMovementLogs] = useState<any[]>([]);
+
+  const canManageEcom = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -47,6 +67,17 @@ export default function ResourceModule() {
     });
     return unsubscribe;
   }, [currentCompany]);
+
+  useEffect(() => {
+    if (!currentCompany || activeTab !== 'ecommerce') return;
+    const q = query(collection(db, 'products'), where('companyId', '==', currentCompany.id));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'products');
+    });
+    return unsubscribe;
+  }, [currentCompany, activeTab]);
 
   useEffect(() => {
     if (!currentCompany || activeTab !== 'movements') return;
@@ -187,6 +218,7 @@ export default function ResourceModule() {
           <div className="flex bg-slate-950/40 p-1.5 rounded-2xl border border-white/10 shrink-0 overflow-x-auto scrollbar-hide max-w-full">
             {[
               { id: 'inventory', label: 'Inventaire', icon: Package },
+              { id: 'ecommerce', label: 'E-commerce', icon: Smartphone },
               { id: 'movements', label: 'Historique', icon: RefreshCw },
               { id: 'analytics', label: 'Analytique', icon: TrendingUp }
             ].map((tab) => (
@@ -355,6 +387,208 @@ export default function ResourceModule() {
             </section>
           </div>
         </div>
+      ) : activeTab === 'ecommerce' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+           <div className="lg:col-span-1 bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm space-y-6">
+             <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                   <Plus size={20} />
+                </div>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">Nouvel Article</h3>
+             </div>
+               <form 
+                 onSubmit={async (e) => {
+                   e.preventDefault();
+                   if (!currentCompany || submitting) return;
+                   setSubmitting(true);
+                   const fData = new FormData(e.currentTarget);
+                   try {
+                     await addDoc(collection(db, 'products'), {
+                       companyId: currentCompany.id,
+                       name: fData.get('name'),
+                       description: fData.get('description'),
+                       price: Number(fData.get('price')),
+                       category: fData.get('category'),
+                       stock: Number(fData.get('stock')),
+                       points: Number(fData.get('points')),
+                       configOptions: fData.get('configOptions'), // New field
+                       image: imagePreview || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=600',
+                       createdAt: serverTimestamp()
+                     });
+                     (e.target as HTMLFormElement).reset();
+                     setImagePreview(null);
+                     alert('Article ajouté au catalogue Nexus.');
+                   } catch(err) {
+                     handleFirestoreError(err, OperationType.CREATE, 'products');
+                   } finally {
+                     setSubmitting(false);
+                   }
+                 }}
+                 className="space-y-4"
+               >
+                 <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Désignation</label>
+                    <input name="name" placeholder="ex: Serveur Nexus V3" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none" required />
+                 </div>
+                 <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Spécifications</label>
+                    <textarea name="description" placeholder="Détails techniques..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none h-20" required />
+                 </div>
+                 <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Options de Configuration</label>
+                    <textarea name="configOptions" placeholder="ex: Couleurs: Noir, Blanc; Stockage: 512GB, 1TB" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[10px] focus:ring-2 focus:ring-blue-600 outline-none h-16" />
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Prix (XAF)</label>
+                      <input name="price" type="number" placeholder="0" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                   </div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Stock Initial</label>
+                      <input name="stock" type="number" placeholder="0" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                   </div>
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Secteur</label>
+                      <select name="category" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-600 outline-none">
+                        {['Hardware', 'Software', 'Office', 'Services'].map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                   </div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Poids Fidélité</label>
+                      <input name="points" type="number" placeholder="Pts" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                   </div>
+                 </div>
+                 <div className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Image (Pick from Phone)</label>
+                    <div className="relative group">
+                       <input 
+                         type="file" 
+                         accept="image/*"
+                         onChange={handleFileChange}
+                         className="hidden" 
+                         id="product-image-upload"
+                       />
+                       <label 
+                         htmlFor="product-image-upload"
+                         className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all hover:border-blue-300 overflow-hidden"
+                       >
+                         {imagePreview ? (
+                           <img src={imagePreview} className="w-full h-full object-cover" alt="Preview" />
+                         ) : (
+                           <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                             <Smartphone className="w-8 h-8 text-slate-300 mb-2" />
+                             <p className="text-[9px] font-black text-slate-400 uppercase">Cliquez pour ajouter une photo</p>
+                           </div>
+                         )}
+                       </label>
+                       {imagePreview && (
+                         <button 
+                           type="button"
+                           onClick={() => setImagePreview(null)}
+                           className="absolute top-2 right-2 p-1 bg-white/80 rounded-full text-red-500 hover:bg-black hover:text-white transition-all shadow-sm"
+                         >
+                           <X size={12} />
+                         </button>
+                       )}
+                    </div>
+                 </div>
+                 <button type="submit" disabled={submitting} className="w-full py-4 bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-2 shadow-xl shadow-slate-200 disabled:opacity-50">
+                   {submitting ? 'Synchronisation...' : <><Plus size={18} /> Déployer l'article</>}
+                 </button>
+               </form>
+           </div>
+
+           <div className="lg:col-span-3 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col h-fit">
+             <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+               <div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Inventaire E-commerce</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Supervision du catalogue boutique</p>
+               </div>
+               <div className="flex items-center gap-3">
+                  <div className="px-4 py-2 bg-white rounded-xl border border-slate-100 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                     {products.length} Solutions
+                  </div>
+               </div>
+             </div>
+             <div className="overflow-x-auto">
+                <table className="w-full">
+                   <thead>
+                     <tr className="bg-slate-50/50">
+                       <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Article / Solution</th>
+                       <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Secteur</th>
+                       <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Prix Unitaire</th>
+                       <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Stock Disponible</th>
+                       <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Configuration</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-slate-50">
+                     {products.map(p => (
+                       <tr key={p.id} className="hover:bg-blue-50/30 transition-all group">
+                         <td className="px-8 py-5">
+                           <div className="flex items-center gap-4">
+                             <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-100 shadow-sm group-hover:scale-110 transition-transform">
+                                <img src={p.image} className="w-full h-full object-cover" />
+                             </div>
+                             <div>
+                                <p className="font-black text-slate-900 text-sm">{p.name}</p>
+                                <p className="text-[10px] font-medium text-slate-400 truncate max-w-[150px]">{p.description}</p>
+                                {p.configOptions && (
+                                  <p className="text-[9px] font-black text-blue-600 uppercase mt-1 flex items-center gap-1">
+                                    <CheckCircle2 size={10} /> Configuré
+                                  </p>
+                                )}
+                             </div>
+                           </div>
+                         </td>
+                         <td className="px-8 py-5">
+                            <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-[9px] font-black uppercase tracking-widest">
+                               {p.category}
+                            </span>
+                         </td>
+                         <td className="px-8 py-5 text-sm font-black text-slate-900">
+                            {p.price.toLocaleString()} <span className="text-[10px] text-slate-400 ml-1">XAF</span>
+                         </td>
+                         <td className="px-8 py-5">
+                            <div className="flex items-center gap-3">
+                               <div className={cn(
+                                 "w-2 h-2 rounded-full",
+                                 p.stock > 10 ? "bg-green-500" : p.stock > 0 ? "bg-amber-500" : "bg-red-500"
+                               )} />
+                               <span className={cn(
+                                 "text-sm font-black",
+                                 p.stock > 10 ? "text-slate-900" : p.stock > 0 ? "text-amber-600" : "text-red-600"
+                               )}>{p.stock}</span>
+                            </div>
+                         </td>
+                         <td className="px-8 py-5 text-right">
+                            <div className="flex justify-end gap-3 translate-x-4 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all">
+                               <button 
+                                 onClick={() => { setEditingProduct(p); setImagePreview(p.image); }}
+                                 className="p-3 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all shadow-sm"
+                               >
+                                 <Edit2 size={16} />
+                               </button>
+                               <button 
+                                 onClick={async () => {
+                                   if (confirm('Voulez-vous supprimer cet article définitivement du catalogue Nexus ?')) {
+                                     await deleteDoc(doc(db, 'products', p.id)).catch(err => handleFirestoreError(err, OperationType.DELETE, 'products'));
+                                   }
+                                 }}
+                                 className="p-3 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-sm"
+                               >
+                                 <Trash2 size={16} />
+                               </button>
+                            </div>
+                         </td>
+                       </tr>
+                     ))}
+                   </tbody>
+                </table>
+             </div>
+           </div>
+        </div>
       ) : activeTab === 'movements' ? (
         <div className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-sm">
           <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
@@ -434,7 +668,105 @@ export default function ResourceModule() {
         </div>
       )}
 
-      {/* Modals for Adding/Restocking */}
+      {/* Modals for Adding/Restocking/Editing Product */}
+      {editingProduct && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-6">
+          <div className="bg-white rounded-[2rem] p-8 max-w-2xl w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
+            <h2 className="text-2xl font-black text-slate-900 mb-6 uppercase tracking-tight">MODIFIER L'ARTICLE E-COMMERCE</h2>
+            <form 
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!editingProduct || submitting) return;
+                setSubmitting(true);
+                const fData = new FormData(e.currentTarget);
+                try {
+                  await updateDoc(doc(db, 'products', editingProduct.id), {
+                    name: fData.get('name'),
+                    description: fData.get('description'),
+                    price: Number(fData.get('price')),
+                    category: fData.get('category'),
+                    stock: Number(fData.get('stock')),
+                    points: Number(fData.get('points')),
+                    configOptions: fData.get('configOptions'),
+                    image: imagePreview || editingProduct.image
+                  });
+                  setEditingProduct(null);
+                  setImagePreview(null);
+                  alert('Article mis à jour avec succès.');
+                } catch(err) {
+                  handleFirestoreError(err, OperationType.UPDATE, 'products');
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+              className="space-y-6"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nom de l'Article</label>
+                  <input name="name" defaultValue={editingProduct.name} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" required />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Catégorie</label>
+                  <select name="category" defaultValue={editingProduct.category} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none">
+                    {['Hardware', 'Software', 'Office', 'Services'].map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Prix (XAF)</label>
+                  <input name="price" type="number" defaultValue={editingProduct.price} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Stock</label>
+                  <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Description</label>
+                <textarea name="description" defaultValue={editingProduct.description} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none h-20" required />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Options de Configuration</label>
+                <textarea name="configOptions" defaultValue={editingProduct.configOptions} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-[10px] focus:ring-2 focus:ring-blue-500 outline-none h-16" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Points Fidélité</label>
+                  <input name="points" type="number" defaultValue={editingProduct.points} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Image (Pick from Phone)</label>
+                  <div className="relative h-[80px]">
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden" 
+                      id="edit-product-image-upload"
+                    />
+                    <label 
+                      htmlFor="edit-product-image-upload"
+                      className="flex items-center justify-center w-full h-full border border-slate-100 rounded-xl p-2 cursor-pointer bg-slate-50 hover:bg-slate-100 overflow-hidden"
+                    >
+                      {imagePreview ? (
+                        <img src={imagePreview} className="h-full object-contain" alt="Preview" />
+                      ) : (
+                        <Smartphone className="w-6 h-6 text-slate-300" />
+                      )}
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-6">
+                <button type="button" onClick={() => { setEditingProduct(null); setImagePreview(null); }} className="px-6 py-4 rounded-xl border border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">ANNULER</button>
+                <button type="submit" disabled={submitting} className="px-6 py-4 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all">
+                  {submitting ? 'TRAITEMENT...' : 'METTRE À JOUR'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       {isAdding && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
           <div className="bg-white rounded-[2rem] p-8 max-w-2xl w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">

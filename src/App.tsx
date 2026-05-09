@@ -662,7 +662,11 @@ export default function App() {
               if (memberData.status === 'blocked') {
                 setIsBlocked(true);
               } else {
-                setUser(prev => prev ? { ...prev, role: memberData.role || 'Personnel' } : null);
+                setUser(prev => prev ? { 
+                  ...prev, 
+                  role: memberData.role || 'Personnel',
+                  customPermissions: memberData.customPermissions || []
+                } : null);
               }
             } else {
                // Match as client
@@ -817,8 +821,9 @@ export default function App() {
     ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
   ].filter(item => {
     if (item.id === 'admin') return true;
-    const allowed = (currentCompany.roles || DEFAULT_ROLES)[user.role] || ['dashboard'];
-    return allowed.includes(item.id);
+    const allowedByRole = (currentCompany.roles || DEFAULT_ROLES)[user.role] || ['dashboard'];
+    const customPermissions = user.customPermissions || [];
+    return allowedByRole.includes(item.id) || customPermissions.includes(item.id);
   });
 
   return (
@@ -1055,7 +1060,7 @@ export default function App() {
             {activeTab === 'ecommerce' && <EcommerceModule user={user} />}
             {activeTab === 'clients' && <ClientModule />}
             {activeTab === 'personnel' && <PersonnelModule user={user} />}
-            {activeTab === 'resources' && <ResourceModule />}
+            {activeTab === 'resources' && <ResourceModule user={user} />}
             {activeTab === 'projects' && <ProjectModule />}
             {activeTab === 'accounting' && <AccountingModule />}
             {activeTab === 'collaboration' && <CollaborationModule />}
