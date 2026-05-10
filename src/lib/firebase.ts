@@ -161,16 +161,26 @@ export const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     
-    // Check/Create profile
+    // Check/Create profile with robust email detection
     try {
-      const cleanEmail = result.user.email ? result.user.email.trim().toLowerCase().replace(/\s+/g, '') : null;
+      const providerEmail = result.user.providerData?.find(p => p.email)?.email;
+      const rawEmail = result.user.email || providerEmail;
+      const cleanEmail = rawEmail ? rawEmail.trim().toLowerCase().replace(/\s+/g, '') : null;
+      
       const userId = cleanEmail || result.user.uid;
-      await firestoreSetDoc(firestoreDoc(db, 'users', userId), {
+      const userData = {
         uid: result.user.uid,
         email: cleanEmail,
-        displayName: result.user.displayName || result.user.email?.split('@')[0],
+        displayName: result.user.displayName || (cleanEmail ? cleanEmail.split('@')[0] : 'Utilisateur Nexus'),
         updatedAt: firestoreServerTimestamp()
-      }, { merge: true });
+      };
+
+      await firestoreSetDoc(firestoreDoc(db, 'users', userId), userData, { merge: true });
+      
+      // Secondary indexing if UID was used as primary
+      if (cleanEmail && userId !== cleanEmail) {
+        await firestoreSetDoc(firestoreDoc(db, 'users', cleanEmail), userData, { merge: true });
+      }
     } catch (e) {
        // Ignore if just permission error on first hit
     }

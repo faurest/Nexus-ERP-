@@ -250,26 +250,25 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         }
 
         // 5. Search if the user's email exists in ANY clients collection
-        const clientQ = query(collection(db, 'clients'), where('email', '==', normalizedEmail), limit(1));
+        const clientQ = query(collection(db, 'clients'), where('email', '==', normalizedEmail));
         const clientSnap = await getDocs(clientQ);
         if (!clientSnap.empty) {
-          console.log("Nexus Security: Accès autorisé via Client list. Auto-synchronisation des membres...");
+          console.log("Nexus Security: Accès autorisé via Client list. Affectation auto aux entreprises...");
+          foundAccess = true;
           
           for (const docSnap of clientSnap.docs) {
              const clientData = docSnap.data();
              if (clientData.companyId) {
                 await updateDoc(doc(db, 'companies', clientData.companyId), {
-                  memberEmails: arrayUnion(cleanEmail),
+                  memberEmails: arrayUnion(normalizedEmail),
                   employees: arrayUnion(user.uid)
                 }).catch(e => console.error("Auto-enroll client failed", e));
              }
           }
-          
-          setIsWhitelisted(true);
-          return;
         }
 
         // Final decision logic
+        console.log("Nexus Security: Analyse terminée. foundAccess:", foundAccess, "isMaster:", isMaster, "companies:", companies.length);
         if (isMaster || foundAccess || (companies && companies.length > 0)) {
           setIsWhitelisted(true);
         } else {
@@ -726,19 +725,26 @@ export default function App() {
         setUser(u);
         // Sync user profile to Firestore for notification lookups
         try {
-          const cleanEmail = u.email ? u.email.trim().toLowerCase().replace(/\s+/g, '') : null;
+          const rawEmail = u.email || u.providerData?.find(p => p?.email)?.email;
+          const cleanEmail = rawEmail ? rawEmail.trim().toLowerCase().replace(/\s+/g, '') : null;
+          
           const userId = cleanEmail || u.uid;
           const userRef = doc(db, 'users', userId);
           const userData = {
             uid: u.uid,
             email: cleanEmail,
-            displayName: u.displayName || null,
+            displayName: u.displayName || (cleanEmail ? cleanEmail.split('@')[0] : 'Utilisateur Nexus'),
             photoURL: u.photoURL || null,
             lastLogin: serverTimestamp(),
             status: 'active'
           };
           
           await setDoc(userRef, userData, { merge: true });
+          
+          // Double indexing to avoid duplicates in Admin list when email is discovered later
+          if (cleanEmail && userId !== cleanEmail) {
+            await setDoc(doc(db, 'users', cleanEmail), userData, { merge: true });
+          }
         } catch (err) {
           console.error("Nexus Sync: User profile sync failed", err);
         }

@@ -56,7 +56,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
       setLoading(true);
       
-      const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com';
+      const cleanEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
+      const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com';
       
       // Si c'est un maître, on ne filtre pas par ownerId pour voir TOUTES les entreprises (La Pause 237, etc.)
       const q = isMaster 
@@ -65,7 +66,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
             collection(db, 'companies'), 
             or(
               where('ownerId', '==', user.uid),
-              where('memberEmails', 'array-contains', user.email.toLowerCase())
+              where('memberEmails', 'array-contains', cleanEmail)
             )
           );
       

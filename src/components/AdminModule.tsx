@@ -97,7 +97,7 @@ export default function AdminModule() {
               id: email,
               email: email,
               displayName: u.name || u.displayName || existing?.displayName || 'Utilisateur Invitée',
-              status: u.uid ? 'connected' : 'invited'
+              status: (u.uid || existing?.uid) ? 'connected' : 'invited'
             });
           }
         });
@@ -107,13 +107,14 @@ export default function AdminModule() {
           const email = u.email?.trim().toLowerCase().replace(/\s+/g, '');
           const uid = u.uid;
           
-          // Find if we already have this user via email
+          if (!uid && !email) return;
+
+          // Find if we already have this user via email or UID
           let existingKey = email && userMap.has(email) ? email : null;
           
-          // If not found by email, try to find by UID among existing entries
           if (!existingKey && uid) {
             for (const [key, val] of userMap.entries()) {
-              if (val.uid === uid) {
+              if (val.uid === uid || (email && val.email === email)) {
                 existingKey = key;
                 break;
               }
@@ -125,15 +126,18 @@ export default function AdminModule() {
             userMap.set(existingKey, {
               ...existing,
               ...u,
+              id: existingKey,
               status: 'connected',
-              // Prioritize the email from the login record if it's cleaner
-              email: email || existing.email 
+              email: email || existing.email,
+              uid: uid || existing.uid,
+              displayName: u.displayName || existing.displayName
             });
           } else {
             // New user not seen in personnel/clients
             const key = email || uid || u.id;
             userMap.set(key, {
               ...u,
+              id: key,
               email: email || null,
               status: 'connected'
             });
