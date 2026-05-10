@@ -159,6 +159,10 @@ export function onAuthStateChanged(auth: any, cb: (user: any) => void) {
 export const loginWithGoogle = async () => {
   try {
     const provider = new GoogleAuthProvider();
+    // Explicitly request email and profile scopes to ensure Firebase captures the email
+    provider.addScope('https://www.googleapis.com/auth/userinfo.email');
+    provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
+    
     const result = await signInWithPopup(auth, provider);
     
     // Check/Create profile with robust email detection

@@ -523,11 +523,16 @@ export default function App() {
           for (const docSnap of companySnap.docs) {
             const data = docSnap.data();
             if (data.ownerId !== user.uid) {
-              await updateDoc(doc(db, 'companies', docSnap.id), {
+              const updates: any = {
                 ownerId: user.uid,
-                employees: arrayUnion(user.uid),
-                memberEmails: arrayUnion(normalizedEmail)
-              }).catch(e => console.warn("Owner auto-sync failed", e));
+                updatedAt: serverTimestamp()
+              };
+              
+              // Only add if not already in employees/memberEmails to avoid unnecessary writes
+              if (!data.employees?.includes(user.uid)) updates.employees = arrayUnion(user.uid);
+              if (!data.memberEmails?.includes(normalizedEmail)) updates.memberEmails = arrayUnion(normalizedEmail);
+
+              await updateDoc(doc(db, 'companies', docSnap.id), updates).catch(e => console.warn("Owner auto-sync failed", e));
             }
           }
         }
@@ -540,12 +545,13 @@ export default function App() {
           for (const docSnap of personnelSnap.docs) {
             const pData = docSnap.data();
             if (pData.uid !== user.uid) {
-              await updateDoc(docSnap.ref, { uid: user.uid, status: 'active' }).catch(e => console.warn("Personnel UID sync failed", e));
+              await updateDoc(docSnap.ref, { uid: user.uid, status: 'active', updatedAt: serverTimestamp() }).catch(e => console.warn("Personnel UID sync failed", e));
             }
             if (pData.companyId) {
               await setDoc(doc(db, 'companies', pData.companyId), {
                 memberEmails: arrayUnion(normalizedEmail),
-                employees: arrayUnion(user.uid)
+                employees: arrayUnion(user.uid),
+                updatedAt: serverTimestamp()
               }, { merge: true }).catch(e => console.error("Company membership sync failed", e));
             }
           }
@@ -563,8 +569,13 @@ export default function App() {
             if (clientData.companyId) {
               await updateDoc(doc(db, 'companies', clientData.companyId), {
                 memberEmails: arrayUnion(normalizedEmail),
-                employees: arrayUnion(user.uid)
+                employees: arrayUnion(user.uid),
+                updatedAt: serverTimestamp()
               }).catch(e => console.error("Auto-enroll client failed", e));
+              
+              if (clientData.uid !== user.uid) {
+                await updateDoc(docSnap.ref, { uid: user.uid, status: 'active', updatedAt: serverTimestamp() }).catch(e => console.warn("Client UID sync failed", e));
+              }
             }
           }
         }
@@ -648,7 +659,8 @@ export default function App() {
                 setUser(prev => prev ? { 
                   ...prev, 
                   role: memberData.role || 'Personnel',
-                  customPermissions: memberData.customPermissions || []
+                  customPermissions: memberData.customPermissions || [],
+                  email: user.email || memberData.email // Ensure email is not lost
                 } : null);
               }
             } else {
@@ -673,14 +685,19 @@ export default function App() {
                   }
                   
                   // Double check membership in the company document
-                  if (currentCompany.memberEmails && !currentCompany.memberEmails.includes(cleanEmail)) {
+                  if (!(currentCompany.memberEmails || []).includes(cleanEmail)) {
                     await setDoc(doc(db, 'companies', currentCompany.id), {
                       memberEmails: arrayUnion(cleanEmail),
-                      employees: arrayUnion(user.uid)
+                      employees: arrayUnion(user.uid),
+                      updatedAt: serverTimestamp()
                     }, { merge: true }).catch(e => console.error("Client auto-enroll sync failed", e));
                   }
                   
-                  setUser(prev => prev ? { ...prev, role: 'Client' } : null);
+                  setUser(prev => prev ? { 
+                    ...prev, 
+                    role: 'Client',
+                    email: user.email || clientData.email // Ensure email is not lost
+                  } : null);
                } else {
                  setIsBlocked(true); // Treat as unauthorized
                }

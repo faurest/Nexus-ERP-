@@ -633,12 +633,23 @@ export default function AdminModule() {
 
           if (Object.keys(updates).length > 0) {
             updates.updatedAt = serverTimestamp();
-            if (coll === 'users') {
-              await setDoc(doc(db, coll, docSnap.id), updates, { merge: true });
-            } else {
-              await updateDoc(doc(db, coll, docSnap.id), updates);
+            
+            // Defensive check for any remaining undefined values
+            Object.keys(updates).forEach(key => {
+              if (updates[key] === undefined) {
+                console.warn(`Nexus Security: Supprimé un champ undefined '${key}' pour ${coll}/${docSnap.id}`);
+                delete updates[key];
+              }
+            });
+
+            if (Object.keys(updates).length > 1) { // > 1 because updatedAt is always there
+              if (coll === 'users') {
+                await setDoc(doc(db, coll, docSnap.id), updates, { merge: true });
+              } else {
+                await updateDoc(doc(db, coll, docSnap.id), updates);
+              }
+              count++;
             }
-            count++;
           }
         }
       }
@@ -647,6 +658,58 @@ export default function AdminModule() {
     } catch (err) {
       console.error(err);
       alert("Erreur lors de la normalisation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeduplicateUsers = async () => {
+    if (!window.confirm("Cette action va fusionner les comptes utilisateurs en double (ceux identifiés par UID et ceux par Email) et supprimer les doublons. Voulez-vous continuer ?")) return;
+    setLoading(true);
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const emailDocs: Record<string, any[]> = {};
+      
+      usersSnap.docs.forEach(d => {
+        const data = d.data();
+        if (data.email) {
+          const clean = data.email.trim().toLowerCase().replace(/\s+/g, '');
+          if (!emailDocs[clean]) emailDocs[clean] = [];
+          emailDocs[clean].push({ id: d.id, ...data });
+        }
+      });
+
+      let mergedCount = 0;
+      for (const email in emailDocs) {
+        const docs = emailDocs[email];
+        if (docs.length > 1) {
+          // Identify the best document (the one with email as ID or the most complete)
+          const targetDoc = docs.find(d => d.id === email) || docs[0];
+          const others = docs.filter(d => d.id !== targetDoc.id);
+          
+          for (const other of others) {
+            // Merge data into target
+            const mergedData = {
+              uid: targetDoc.uid || other.uid,
+              displayName: targetDoc.displayName || other.displayName,
+              photoURL: targetDoc.photoURL || other.photoURL,
+              lastLogin: targetDoc.lastLogin || other.lastLogin,
+              email: email,
+              status: targetDoc.status === 'connected' ? 'connected' : other.status || 'invited',
+              updatedAt: serverTimestamp()
+            };
+            
+            await setDoc(doc(db, 'users', targetDoc.id), mergedData, { merge: true });
+            await deleteDoc(doc(db, 'users', other.id));
+            mergedCount++;
+          }
+        }
+      }
+      alert(`${mergedCount} comptes utilisateurs fusionnés.`);
+      fetchGlobalData();
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la déduplication.");
     } finally {
       setLoading(false);
     }
@@ -1396,11 +1459,27 @@ export default function AdminModule() {
                     <Shield size={20} />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-black text-slate-900">Nettoyage Emails</p>
+                    <p className="text-sm font-black text-slate-900">Nettoyage Emails Global</p>
                     <p className="text-[10px] font-bold text-amber-600/60 uppercase tracking-widest">Minuscules & Suppression Espaces</p>
                   </div>
                 </div>
                 <Activity size={18} className="text-amber-300 group-hover:text-amber-600 transition-all" />
+              </button>
+
+              <button 
+                onClick={handleDeduplicateUsers}
+                className="w-full flex items-center justify-between p-6 bg-emerald-50/50 rounded-[2rem] border border-emerald-100 hover:border-emerald-200 hover:bg-white transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-emerald-100 text-emerald-600 rounded-2xl group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                    <Users size={20} />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-black text-slate-900">Déduplication Utilisateurs</p>
+                    <p className="text-[10px] font-bold text-emerald-600/60 uppercase tracking-widest">Fusionner UID et Email IDs</p>
+                  </div>
+                </div>
+                <Activity size={18} className="text-emerald-300 group-hover:text-emerald-600 transition-all" />
               </button>
             </div>
           </div>
