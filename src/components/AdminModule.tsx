@@ -607,10 +607,18 @@ export default function AdminModule() {
             }
             // Normalize memberEmails array
             if (data.memberEmails && Array.isArray(data.memberEmails)) {
-              const cleanedEmails = data.memberEmails.map((e: string) => e?.trim().toLowerCase().replace(/\s+/g, ''));
-              const hasChange = data.memberEmails.some((e: string, i: number) => e !== cleanedEmails[i]);
+              const cleanedEmails = data.memberEmails
+                .filter((e: any) => typeof e === 'string' && e.trim() !== '')
+                .map((e: string) => e.trim().toLowerCase().replace(/\s+/g, ''));
+              
+              // Remove duplicates while we are at it
+              const uniqueEmails = [...new Set(cleanedEmails)];
+              
+              const hasChange = data.memberEmails.length !== uniqueEmails.length || 
+                                data.memberEmails.some((e: string, i: number) => e !== uniqueEmails[i]);
+              
               if (hasChange) {
-                updates.memberEmails = cleanedEmails;
+                updates.memberEmails = uniqueEmails;
               }
             }
           } else {

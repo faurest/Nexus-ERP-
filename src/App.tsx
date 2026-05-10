@@ -111,6 +111,18 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
   const [errorMsg, setErrorMsg] = useState('');
   const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
 
+  const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
+  const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com';
+  
+  const ownedCompanies = companies.filter(c => {
+    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
+    return c.ownerId === user?.uid || (cOwnerEmail && cOwnerEmail === cleanEmail);
+  });
+  const joinedCompanies = companies.filter(c => {
+    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
+    return c.ownerId !== user?.uid && cOwnerEmail !== cleanEmail;
+  });
+
   useEffect(() => {
     import('./lib/firebase').then(({ testFirestoreConnection }) => {
       testFirestoreConnection().then(ok => setConnStatus(ok ? 'ok' : 'fail'));
@@ -196,135 +208,6 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
     }
   };
 
-  const ownedCompanies = companies.filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email);
-  const joinedCompanies = companies.filter(c => c.ownerId !== user?.uid && c.ownerEmail !== user?.email);
-  const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com';
-  const [isWhitelisted, setIsWhitelisted] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const checkWhitelist = async () => {
-      if (!user?.email) return;
-      
-      const cleanEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
-      const normalizedEmail = cleanEmail;
-
-      try {
-        console.log("Nexus Security: Analyse des accès pour", normalizedEmail);
-        
-        let foundAccess = false;
-        
-        // 1. Check Companies where user is owner
-        const companyQ = query(collection(db, 'companies'), where('ownerEmail', '==', normalizedEmail));
-        const companySnap = await getDocs(companyQ);
-        if (!companySnap.empty) {
-          foundAccess = true;
-          for (const docSnap of companySnap.docs) {
-            const data = docSnap.data();
-            if (data.ownerId !== user.uid) {
-              await updateDoc(doc(db, 'companies', docSnap.id), {
-                ownerId: user.uid,
-                employees: arrayUnion(user.uid),
-                memberEmails: arrayUnion(normalizedEmail)
-              }).catch(e => console.warn(e));
-            }
-          }
-        }
-
-        // 2. Check Personnel records
-        const personnelQ = query(collection(db, 'personnel'), where('email', '==', normalizedEmail));
-        const personnelSnap = await getDocs(personnelQ);
-        if (!personnelSnap.empty) {
-          foundAccess = true;
-          for (const docSnap of personnelSnap.docs) {
-            const pData = docSnap.data();
-            if (pData.uid !== user.uid) {
-              await updateDoc(docSnap.ref, { uid: user.uid, status: 'active' }).catch(e => console.warn(e));
-            }
-            if (pData.companyId) {
-              await setDoc(doc(db, 'companies', pData.companyId), {
-                memberEmails: arrayUnion(normalizedEmail),
-                employees: arrayUnion(user.uid)
-              }, { merge: true }).catch(e => console.error(e));
-            }
-          }
-        }
-
-        // 5. Search if the user's email exists in ANY clients collection
-        const clientQ = query(collection(db, 'clients'), where('email', '==', normalizedEmail));
-        const clientSnap = await getDocs(clientQ);
-        if (!clientSnap.empty) {
-          console.log("Nexus Security: Accès autorisé via Client list. Affectation auto aux entreprises...");
-          foundAccess = true;
-          
-          for (const docSnap of clientSnap.docs) {
-             const clientData = docSnap.data();
-             if (clientData.companyId) {
-                await updateDoc(doc(db, 'companies', clientData.companyId), {
-                  memberEmails: arrayUnion(normalizedEmail),
-                  employees: arrayUnion(user.uid)
-                }).catch(e => console.error("Auto-enroll client failed", e));
-             }
-          }
-        }
-
-        // Final decision logic
-        console.log("Nexus Security: Analyse terminée. foundAccess:", foundAccess, "isMaster:", isMaster, "companies:", companies.length);
-        if (isMaster || foundAccess || (companies && companies.length > 0)) {
-          setIsWhitelisted(true);
-        } else {
-          console.log("Nexus Security: Aucun accès trouvé pour", normalizedEmail);
-          setIsWhitelisted(false);
-        }
-      } catch (err) {
-        console.error("Whitelist check failed:", err);
-        setIsWhitelisted(isMaster);
-      }
-    };
-    checkWhitelist();
-  }, [user?.email, companies.length, isMaster]);
-
-  if (isWhitelisted === false && !isMaster) {
-    return (
-      <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
-        <div className="max-w-md w-full bg-white rounded-2xl p-10 shadow-lg border border-red-100">
-          <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-6 mx-auto">
-            <Shield size={32} />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-4">Accès Restreint</h2>
-          <p className="text-slate-500 mb-8 leading-relaxed">
-            Votre adresse <span className="font-bold text-slate-700">{user.email}</span> n'est pas encore autorisée à accéder à l'écosystème Nexus.
-            <br /><br />
-            <span className="text-[10px] bg-amber-50 text-amber-700 p-2 rounded-lg border border-amber-100 inline-block">
-              💡 CONSEIL : Si vous devriez avoir accès, demandez à votre administrateur de vérifier l'orthographe de votre email dans la liste du personnel.
-            </span>
-            <br /><br />
-            Contactez votre administrateur pour être ajouté au personnel de votre entreprise.
-          </p>
-          <div className="space-y-3">
-            <button 
-              onClick={() => logout()}
-              className="w-full py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
-            >
-              <LogOut size={18} />
-              Se déconnecter
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (isWhitelisted === null && !isMaster && companies.length === 0) {
-    return (
-      <div className="min-h-screen w-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-pulse flex flex-col items-center">
-          <Shield size={48} className="text-slate-200 mb-4" />
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vérification des autorisations...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-slate-900 font-sans relative">
       <div className="max-w-md w-full bg-white rounded-2xl p-10 shadow-lg border border-slate-200 relative">
@@ -333,8 +216,21 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
             <Building2 size={32} />
           </div>
           <h2 className="text-2xl font-black tracking-tight text-slate-900 mb-2">Choisir un Espace</h2>
-          <p className="text-slate-500 text-sm font-medium">Sélectionnez ou créez votre environnement de travail Nexux.</p>
+          <p className="text-slate-500 text-sm font-medium">Sélectionnez ou créez votre environnement de travail NeNexus.</p>
           
+          {isMaster && (
+            <div className="mt-6 p-4 bg-slate-900 rounded-xl border border-slate-800">
+              <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-3">Privilèges Maître Détectés</p>
+              <button 
+                onClick={() => onSelect({ id: 'comp_nexus_master', name: 'Nexus Enterprise Global', ownerId: 'master_nexus_01', joinCode: 'NEXUS-ADMIN' })}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 text-white rounded-lg text-[11px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all font-mono"
+              >
+                <Shield size={18} />
+                Accéder à la Console Globale
+              </button>
+            </div>
+          )}
+
           <div className="mt-6 flex justify-center">
             {connStatus === 'testing' && (
               <span className="px-3 py-1 bg-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full">Vérification de Flux...</span>
@@ -595,6 +491,100 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { currentCompany, companies, setCurrentCompany, loading: companyLoading } = useCompany();
 
+  const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
+  const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com';
+  
+  const ownedCompanies = companies.filter(c => {
+    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
+    return c.ownerId === user?.uid || (cOwnerEmail && cOwnerEmail === cleanEmail);
+  });
+  const joinedCompanies = companies.filter(c => {
+    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
+    return c.ownerId !== user?.uid && cOwnerEmail !== cleanEmail;
+  });
+  const [isWhitelisted, setIsWhitelisted] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkWhitelist = async () => {
+      if (!user?.email || !user?.uid) return;
+      
+      const normalizedEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
+
+      try {
+        console.log("Nexus Security: Analyse des accès pour", normalizedEmail);
+        
+        let foundAccess = false;
+        
+        // 1. Check Companies where user is owner
+        const companyQ = query(collection(db, 'companies'), where('ownerEmail', '==', normalizedEmail));
+        const companySnap = await getDocs(companyQ);
+        if (!companySnap.empty) {
+          foundAccess = true;
+          for (const docSnap of companySnap.docs) {
+            const data = docSnap.data();
+            if (data.ownerId !== user.uid) {
+              await updateDoc(doc(db, 'companies', docSnap.id), {
+                ownerId: user.uid,
+                employees: arrayUnion(user.uid),
+                memberEmails: arrayUnion(normalizedEmail)
+              }).catch(e => console.warn("Owner auto-sync failed", e));
+            }
+          }
+        }
+
+        // 2. Check Personnel records
+        const personnelQ = query(collection(db, 'personnel'), where('email', '==', normalizedEmail));
+        const personnelSnap = await getDocs(personnelQ);
+        if (!personnelSnap.empty) {
+          foundAccess = true;
+          for (const docSnap of personnelSnap.docs) {
+            const pData = docSnap.data();
+            if (pData.uid !== user.uid) {
+              await updateDoc(docSnap.ref, { uid: user.uid, status: 'active' }).catch(e => console.warn("Personnel UID sync failed", e));
+            }
+            if (pData.companyId) {
+              await setDoc(doc(db, 'companies', pData.companyId), {
+                memberEmails: arrayUnion(normalizedEmail),
+                employees: arrayUnion(user.uid)
+              }, { merge: true }).catch(e => console.error("Company membership sync failed", e));
+            }
+          }
+        }
+
+        // 3. Search if the user's email exists in ANY clients collection
+        const clientQ = query(collection(db, 'clients'), where('email', '==', normalizedEmail));
+        const clientSnap = await getDocs(clientQ);
+        if (!clientSnap.empty) {
+          console.log("Nexus Security: Accès autorisé via Client list.");
+          foundAccess = true;
+          
+          for (const docSnap of clientSnap.docs) {
+            const clientData = docSnap.data();
+            if (clientData.companyId) {
+              await updateDoc(doc(db, 'companies', clientData.companyId), {
+                memberEmails: arrayUnion(normalizedEmail),
+                employees: arrayUnion(user.uid)
+              }).catch(e => console.error("Auto-enroll client failed", e));
+            }
+          }
+        }
+
+        // Final decision logic
+        console.log("Nexus Security: Analyse terminée. foundAccess:", foundAccess, "isMaster:", isMaster, "companies:", companies.length);
+        if (isMaster || foundAccess || (companies && companies.length > 0)) {
+          setIsWhitelisted(true);
+        } else {
+          console.log("Nexus Security: Aucun accès trouvé pour", normalizedEmail);
+          setIsWhitelisted(false);
+        }
+      } catch (err) {
+        console.error("Whitelist check failed:", err);
+        setIsWhitelisted(isMaster);
+      }
+    };
+    checkWhitelist();
+  }, [user?.email, user?.uid, companies.length, isMaster]);
+
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
@@ -784,6 +774,48 @@ export default function App() {
 
   if (!user) {
     return <LoginScreen />;
+  }
+
+  if (isWhitelisted === false && !isMaster) {
+    return (
+      <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+        <div className="max-w-md w-full bg-white rounded-2xl p-10 shadow-lg border border-red-100">
+          <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-6 mx-auto">
+            <Shield size={32} />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-4">Accès Restreint</h2>
+          <p className="text-slate-500 mb-8 leading-relaxed">
+            Votre adresse <span className="font-bold text-slate-700">{user.email}</span> n'est pas encore autorisée à accéder à l'écosystème Nexus.
+            <br /><br />
+            <span className="text-[10px] bg-amber-50 text-amber-700 p-2 rounded-lg border border-amber-100 inline-block">
+              💡 CONSEIL : Si vous devriez avoir accès, demandez à votre administrateur de vérifier l'orthographe de votre email dans la liste du personnel.
+            </span>
+            <br /><br />
+            Contactez votre administrateur pour être ajouté au personnel de votre entreprise.
+          </p>
+          <div className="space-y-3">
+            <button 
+              onClick={() => logout()}
+              className="w-full py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
+            >
+              <LogOut size={18} />
+              Se déconnecter
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isWhitelisted === null && !isMaster && companies.length === 0) {
+    return (
+      <div className="min-h-screen w-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-pulse flex flex-col items-center">
+          <Shield size={48} className="text-slate-200 mb-4" />
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vérification des autorisations...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!currentCompany) {
@@ -1033,10 +1065,10 @@ export default function App() {
               <div className="flex items-center gap-2 sm:gap-4">
                 <div className="hidden xs:flex flex-col items-end">
                   <span className="text-[9px] sm:text-[10px] font-black text-slate-900 uppercase tracking-tighter truncate max-w-[80px] sm:max-w-none">
-                    {user.displayName || user.email.split('@')[0]}
+                    {user?.displayName || user?.email?.split('@')[0] || 'Utilisateur'}
                   </span>
                   <span className="text-[7px] sm:text-[8px] font-black text-blue-500 uppercase tracking-[0.1em] px-1.5 sm:px-2 py-0.5 bg-blue-50 rounded-full border border-blue-100 mt-0.5">
-                    {user.role}
+                    {user?.role}
                   </span>
                 </div>
                 <div className="relative group cursor-pointer">
