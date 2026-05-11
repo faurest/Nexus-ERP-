@@ -1332,120 +1332,137 @@ export default function EcommerceModule({ user }: { user: any }) {
 
       {/* Enhanced Checkout Modal */}
       {isCheckoutModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[110] flex items-center justify-center p-4">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white rounded-[2.5rem] p-10 max-w-xl w-full shadow-2xl border border-slate-100 flex flex-col gap-8 relative overflow-hidden"
+            className="bg-white rounded-[3rem] p-10 md:p-14 max-w-2xl w-full shadow-2xl border border-slate-100 flex flex-col gap-10 relative overflow-hidden max-h-[90vh] overflow-y-auto scrollbar-hide"
           >
             <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
-              <ShoppingBag size={200} />
+              <ShoppingBag size={240} />
             </div>
 
             <div className="flex justify-between items-start relative z-10">
               <div>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase italic">Finalisation Nexus</h3>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Sécurisé & Garanti par {currentCompany?.name}</p>
+                <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-2 leading-none italic">Nexus Secure Checkout</p>
+                <h3 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight uppercase italic">Finaliser l'achat</h3>
               </div>
-              <button onClick={() => setCheckoutModalOpen(false)} className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-900 rounded-2xl transition-all">
-                <X size={20} />
+              <button onClick={() => setCheckoutModalOpen(false)} className="p-4 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-900 rounded-2xl transition-all">
+                <X size={24} />
               </button>
             </div>
 
-            <form onSubmit={handleCheckout} className="space-y-8 relative z-10">
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Mode de Paiement Préféré</label>
-                <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleCheckout} className="space-y-10 relative z-10">
+              <div className="space-y-6">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block ml-1">Veuillez choisir votre mode de paiement</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('MOBILE')}
                     className={cn(
-                      "p-8 rounded-3xl border-2 transition-all flex flex-col items-center gap-4 group",
-                      paymentMethod === 'MOBILE' ? "border-blue-600 bg-blue-50/50" : "border-slate-100 hover:border-blue-200"
+                      "p-8 rounded-[2rem] border-2 transition-all flex items-center gap-6 group text-left",
+                      paymentMethod === 'MOBILE' ? "border-blue-600 bg-blue-50/50 shadow-xl shadow-blue-50" : "border-slate-100 hover:border-blue-200 bg-white"
                     )}
                   >
                     <div className={cn(
-                      "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors",
-                      paymentMethod === 'MOBILE' ? "bg-blue-600 text-white" : "bg-slate-50 text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-600"
+                      "w-14 h-14 rounded-2xl flex items-center justify-center transition-all",
+                      paymentMethod === 'MOBILE' ? "bg-blue-600 text-white scale-110" : "bg-slate-50 text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-600"
                     )}>
-                      <Smartphone size={24} />
+                      <Smartphone size={28} />
                     </div>
-                    <span className={cn("text-[10px] font-black uppercase tracking-widest", paymentMethod === 'MOBILE' ? "text-blue-600" : "text-slate-400")}>Mobile Money</span>
+                    <div>
+                      <span className={cn("text-[11px] font-black uppercase tracking-widest block", paymentMethod === 'MOBILE' ? "text-blue-600" : "text-slate-400")}>Mobile Money</span>
+                      <p className={cn("text-[9px] font-bold mt-1 uppercase opacity-60", paymentMethod === 'MOBILE' ? "text-blue-400" : "text-slate-300")}>OM / MoMo</p>
+                    </div>
                   </button>
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('CARD')}
                     className={cn(
-                      "p-8 rounded-3xl border-2 transition-all flex flex-col items-center gap-4 group",
-                      paymentMethod === 'CARD' ? "border-blue-600 bg-blue-50/50" : "border-slate-100 hover:border-blue-200"
+                      "p-8 rounded-[2rem] border-2 transition-all flex items-center gap-6 group text-left",
+                      paymentMethod === 'CARD' ? "border-blue-600 bg-blue-50/50 shadow-xl shadow-blue-50" : "border-slate-100 hover:border-blue-200 bg-white"
                     )}
                   >
                     <div className={cn(
-                      "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors",
-                      paymentMethod === 'CARD' ? "bg-blue-600 text-white" : "bg-slate-50 text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-600"
+                      "w-14 h-14 rounded-2xl flex items-center justify-center transition-all",
+                      paymentMethod === 'CARD' ? "bg-blue-600 text-white scale-110" : "bg-slate-50 text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-600"
                     )}>
-                      <CreditCard size={24} />
+                      <CreditCard size={28} />
                     </div>
-                    <span className={cn("text-[10px] font-black uppercase tracking-widest", paymentMethod === 'CARD' ? "text-blue-600" : "text-slate-400")}>Carte Bancaire</span>
+                    <div>
+                      <span className={cn("text-[11px] font-black uppercase tracking-widest block", paymentMethod === 'CARD' ? "text-blue-600" : "text-slate-400")}>Carte Bancaire</span>
+                      <p className={cn("text-[9px] font-bold mt-1 uppercase opacity-60", paymentMethod === 'CARD' ? "text-blue-400" : "text-slate-300")}>Visa / Master</p>
+                    </div>
                   </button>
                 </div>
               </div>
 
               {currentCompany?.deliveryFees && Object.keys(currentCompany.deliveryFees).length > 0 && (
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Lieu de Livraison (Cameroun)</label>
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block ml-1">Lieu de Livraison (Cameroun)</label>
                   <div className="relative group">
                     <select 
                       value={selectedLocation}
                       onChange={(e) => setSelectedLocation(e.target.value)}
-                      className="w-full bg-slate-50 border-2 border-transparent rounded-2xl py-5 px-6 text-xs font-bold appearance-none outline-none focus:bg-white focus:border-blue-500 transition-all shadow-inner"
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl py-6 px-8 text-sm font-black appearance-none outline-none focus:bg-white focus:border-blue-500 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm"
                       required
                     >
                       <option value="">Sélectionnez votre ville / zone...</option>
                       {Object.entries(currentCompany.deliveryFees).map(([loc, fee]) => (
-                        <option key={loc} value={loc}>{loc} ({fee.toLocaleString()} FCFA)</option>
+                        <option key={loc} value={loc}>{loc} (+{fee.toLocaleString()} FCFA)</option>
                       ))}
-                      <option value="Autre / En agence">Autre / En agence (Gratuit)</option>
+                      <option value="Autre / En agence">Autre / En agence (Retrait Gratuit)</option>
                     </select>
-                    <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-focus-within:text-blue-600">
-                      <Truck size={18} />
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                      <Truck size={24} />
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="bg-slate-50/50 rounded-3xl p-8 space-y-4 border border-slate-100">
-                <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  <span>Articles</span>
-                  <span className="text-slate-900 font-black">{cartTotal.toLocaleString()} FCFA</span>
+              <div className="bg-slate-950 rounded-[2.5rem] p-10 text-white space-y-6 shadow-2xl relative overflow-hidden border border-white/5">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-indigo-400 to-blue-600 opacity-50" />
+                <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                  <span>Total Articles ({cart.length})</span>
+                  <span className="text-white text-sm">{cartTotal.toLocaleString()} FCFA</span>
                 </div>
                 {selectedLocation && (
-                   <div className="flex justify-between items-center text-[10px] font-black text-blue-600 uppercase tracking-widest">
-                    <span>Frais d'expédition</span>
+                   <div className="flex justify-between items-center text-[11px] font-black text-blue-400 uppercase tracking-widest pt-2 border-t border-white/5">
+                    <span className="italic">Expédition Nexus</span>
                     <span>{(currentCompany?.deliveryFees?.[selectedLocation] || 0).toLocaleString()} FCFA</span>
                   </div>
                 )}
-                <div className="pt-4 border-t border-slate-200 flex justify-between items-center">
-                  <span className="text-[11px] font-black text-slate-900 uppercase tracking-[0.1em]">Total à Régler</span>
+                <div className="pt-6 border-t border-white/10 flex justify-between items-center">
+                  <span className="text-xs font-black text-white uppercase tracking-[0.2em] opacity-60">Montant Final</span>
                   <div className="text-right">
-                    <span className="text-2xl font-black text-blue-600 tracking-tighter">
-                      {(cartTotal + (currentCompany?.deliveryFees?.[selectedLocation] || 0)).toLocaleString()} FCFA
+                    <span className="text-3xl font-black text-emerald-400 tracking-tighter shadow-emerald-500/20">
+                      {(cartTotal + (currentCompany?.deliveryFees?.[selectedLocation] || 0)).toLocaleString()} <span className="text-sm">FCFA</span>
                     </span>
                   </div>
                 </div>
-                <div className="flex justify-between items-center text-[9px] font-bold text-emerald-600 uppercase tracking-widest">
-                  <span>Points fidélité gagnés</span>
-                  <span>+{cart.reduce((acc, item) => acc + (item.points * item.cartQuantity), 0)} pts</span>
+                <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10 mt-2">
+                   <Award size={20} className="text-blue-400 shrink-0" />
+                   <div>
+                     <p className="text-[10px] font-black text-white uppercase tracking-widest leading-none">Bonus Nexus Loyalty</p>
+                     <p className="text-[9px] font-bold text-blue-300 uppercase mt-1 leading-none italic">+{cart.reduce((acc, item) => acc + (item.points * item.cartQuantity), 0)} pts activés</p>
+                   </div>
                 </div>
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-5 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-2xl shadow-slate-900/20 hover:bg-blue-600 transition-all flex items-center justify-center gap-3 active:scale-95"
-              >
-                Confirmer la Commande <ArrowRight size={18} />
-              </button>
-              <p className="text-[9px] text-center text-slate-400 font-bold uppercase tracking-widest italic">Paiement sécurisé par Nexus Cryptoguard v2</p>
+              <div className="flex flex-col gap-4 pt-4">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full py-7 bg-blue-600 hover:bg-white hover:text-blue-600 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/30 transition-all flex items-center justify-center gap-4 active:scale-95 border-4 border-transparent hover:border-blue-600 group"
+                >
+                  {submitting ? "Traitement Nexus ERP..." : (
+                    <>
+                      Confirmer le paiement <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+                <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest italic opacity-60">Paiement 100% sécurisé • Protocole Nexus Shield activé</p>
+              </div>
             </form>
           </motion.div>
         </div>
