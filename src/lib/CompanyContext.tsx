@@ -98,12 +98,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
               const saved = fetchedCompanies.find(c => c.id === savedId);
               if (saved) return saved;
             }
-            
-            // Auto-switch si une seule entreprise (pour simplifier l'UX client)
-            if (fetchedCompanies.length === 1 && !isMaster) {
-              return fetchedCompanies[0];
-            }
-            
+            // Retrait de l'auto-switch vers la seule entreprise pour éviter les surprises
             return prev;
           });
         } else {

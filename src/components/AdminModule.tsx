@@ -688,16 +688,23 @@ export default function AdminModule() {
           const others = docs.filter(d => d.id !== targetDoc.id);
           
           for (const other of others) {
-            // Merge data into target
-            const mergedData = {
-              uid: targetDoc.uid || other.uid,
-              displayName: targetDoc.displayName || other.displayName,
-              photoURL: targetDoc.photoURL || other.photoURL,
-              lastLogin: targetDoc.lastLogin || other.lastLogin,
-              email: email,
-              status: targetDoc.status === 'connected' ? 'connected' : other.status || 'invited',
-              updatedAt: serverTimestamp()
-            };
+            // Generic merge: target data takes priority, but other data is used if target is missing
+            const mergedData: any = { ...other, ...targetDoc };
+            
+            // Special rules for specific fields
+            mergedData.email = email;
+            mergedData.status = targetDoc.status === 'connected' ? 'connected' : other.status || targetDoc.status || 'invited';
+            mergedData.updatedAt = serverTimestamp();
+            
+            // Ensure ID is not in data
+            delete mergedData.id;
+            
+            // Explicitly remove any undefined values to satisfy Firestore
+            Object.keys(mergedData).forEach(key => {
+              if (mergedData[key] === undefined) {
+                mergedData[key] = null; // Use null instead of undefined
+              }
+            });
             
             await setDoc(doc(db, 'users', targetDoc.id), mergedData, { merge: true });
             await deleteDoc(doc(db, 'users', other.id));

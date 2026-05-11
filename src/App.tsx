@@ -242,6 +242,19 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
               </span>
             )}
           </div>
+          
+          {isMaster && (
+            <div className="mt-6 p-4 bg-slate-900 rounded-xl border border-slate-800">
+              <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-3">Privilèges Maître Détectés</p>
+              <button 
+                onClick={() => onSelect({ id: 'comp_nexus_master', name: 'Nexus Enterprise Global', ownerId: 'master_nexus_01', joinCode: 'NEXUS-ADMIN' })}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 text-white rounded-lg text-[11px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all font-mono"
+              >
+                <Shield size={18} />
+                Accéder à la Console Globale
+              </button>
+            </div>
+          )}
         </div>
 
         {errorMsg && (
@@ -758,17 +771,12 @@ export default function App() {
 
   useEffect(() => {
     if (user && user.role && currentCompany) {
-      // Default tab logic based on role
-      if (user.role === 'Client' && activeTab === 'dashboard') {
-        setActiveTab('ecommerce');
-      }
-
       const allowed = (currentCompany.roles || DEFAULT_ROLES)[user.role] || ['dashboard'];
       if (!allowed.includes(activeTab) && activeTab !== 'admin') {
         setActiveTab(allowed[0] || 'dashboard');
       }
     }
-  }, [user?.role, currentCompany?.id, activeTab]);
+  }, [user, currentCompany, activeTab]);
 
   if (loading || (user && companyLoading)) {
     return (
