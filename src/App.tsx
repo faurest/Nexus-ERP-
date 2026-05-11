@@ -821,7 +821,7 @@ export default function App() {
              </button>
           </div>
         </div>
-        <Marketplace />
+        <Marketplace onBack={() => setShowMarketplace(false)} />
       </div>
     );
   }
@@ -1148,7 +1148,7 @@ export default function App() {
             className="max-w-[1400px] mx-auto"
           >
             {activeTab === 'dashboard' && <DashboardModule user={user} companies={companies} />}
-            {activeTab === 'marketplace' && <Marketplace />}
+            {activeTab === 'marketplace' && <Marketplace onBack={() => setActiveTab('dashboard')} />}
             {activeTab === 'services' && <PrestationsModule />}
             {activeTab === 'sales' && <SalesModule />}
             {activeTab === 'ecommerce' && <EcommerceModule user={user} />}

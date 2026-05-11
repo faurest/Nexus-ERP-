@@ -61,7 +61,7 @@ interface CartItem extends Product {
   companyName: string;
 }
 
-export default function Marketplace() {
+export default function Marketplace({ onBack }: { onBack?: () => void }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -303,13 +303,15 @@ export default function Marketplace() {
       <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center gap-4 px-6 py-4">
         <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center gap-4">
           {/* Back Button */}
-          <button
-            onClick={() => (window.location.hash = "#dashboard")}
-            className="hidden md:flex items-center gap-2 p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all font-black text-[9px] uppercase tracking-widest hover:border-slate-300"
-          >
-            <ArrowLeft size={18} />
-            Accueil
-          </button>
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="hidden md:flex items-center gap-2 p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all font-black text-[9px] uppercase tracking-widest hover:border-slate-300"
+            >
+              <ArrowLeft size={18} />
+              Retour
+            </button>
+          )}
 
           <div className="flex items-center gap-3 shrink-0">
             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
