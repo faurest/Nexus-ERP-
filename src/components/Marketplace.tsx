@@ -246,7 +246,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             deliveryFee = company.deliveryFees[selectedLocation] || 0;
           }
           
-          await addDoc(collection(db, "ecommerce_orders"), {
+          const orderRef = await addDoc(collection(db, "ecommerce_orders"), {
             companyId,
             items: items.map((item) => ({
               id: item.id,
@@ -266,13 +266,17 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             customerEmail: "Marketplace Guest",
           });
 
-          // Notify company owner if possible
+          // Save to guest orders for tracking
+          const existingGuestOrders = JSON.parse(localStorage.getItem('nexus_guest_orders') || '[]');
+          localStorage.setItem('nexus_guest_orders', JSON.stringify([...existingGuestOrders, orderRef.id]));
+
+          // Notify company owner and any ecommerce manager if possible
           if (company?.ownerId) {
             await createNotification(
               companyId,
               [company.ownerId],
-              "Nouvelle Commande Marketplace !",
-              `${checkoutData.name} a passé une commande de ${companyTotal.toLocaleString()} FCFA via le Marketplace.`,
+              "URGENT: Nouvelle Commande Marketplace !",
+              `${checkoutData.name} a passé une commande de ${(companyTotal + deliveryFee).toLocaleString()} FCFA. Veuillez traiter via le module E-commerce.`,
               "alert"
             );
           }

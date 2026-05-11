@@ -25,9 +25,10 @@ import {
   Send,
   Edit2,
   LayoutDashboard,
-  Database
+  Database,
+  AlertCircle
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import Table, { TableRow } from './ui/Table';
 import { createNotification } from '../lib/notifications';
@@ -293,13 +294,55 @@ export default function EcommerceModule({ user }: { user: any }) {
 
     // Fetch orders - filter for clients
     let orderQ = query(collection(db, 'ecommerce_orders'), where('companyId', '==', currentCompany.id));
+    const guestOrderIds = JSON.parse(localStorage.getItem('nexus_guest_orders') || '[]');
+
     if (user?.role === 'Client') {
       const cleanEmail = user.email?.trim().toLowerCase() || '';
-      orderQ = query(
+      // We combine logged in orders and guest orders
+      setOrders([]); // Reset
+      
+      const unsubscribeLoggedIn = onSnapshot(query(
         collection(db, 'ecommerce_orders'), 
         where('companyId', '==', currentCompany.id),
         where('customerEmail', '==', cleanEmail)
-      );
+      ), (snapshot) => {
+        const loggedInOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+        setOrders(prev => {
+          const others = prev.filter(o => !loggedInOrders.find(l => l.id === o.id));
+          return [...others, ...loggedInOrders].sort((a,b) => (b.date?.seconds || 0) - (a.date?.seconds || 0));
+        });
+      });
+
+      // If we have guest orders, listen to them too
+      let unsubscribeGuest = () => {};
+      if (guestOrderIds.length > 0) {
+        // Firestore 'in' matches max 10/30 items depending on version, but 10 is safest
+        const chunks = [];
+        for (let i = 0; i < guestOrderIds.length; i += 10) {
+          chunks.push(guestOrderIds.slice(i, i + 10));
+        }
+
+        const unsubscribes = chunks.map(chunk => {
+          return onSnapshot(query(
+            collection(db, 'ecommerce_orders'),
+            where('companyId', '==', currentCompany.id),
+            where('__name__', 'in', chunk)
+          ), (snapshot) => {
+            const guestOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+             setOrders(prev => {
+              const others = prev.filter(o => !guestOrders.find(g => g.id === o.id));
+              return [...others, ...guestOrders].sort((a,b) => (b.date?.seconds || 0) - (a.date?.seconds || 0));
+            });
+          });
+        });
+        unsubscribeGuest = () => unsubscribes.forEach(u => u());
+      }
+
+      return () => {
+        unsubscribeProd();
+        unsubscribeLoggedIn();
+        unsubscribeGuest();
+      };
     }
 
     const unsubscribeOrders = onSnapshot(orderQ, (snapshot) => {
@@ -493,6 +536,36 @@ export default function EcommerceModule({ user }: { user: any }) {
         </div>
       </div>
 
+      {/* Urgent Order Alerts for Admin */}
+      <AnimatePresence>
+        {isAdmin && orders.filter(o => o.status === 'PENDING').length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-gradient-to-r from-red-600 to-red-500 text-white p-4 rounded-3xl shadow-xl shadow-red-200 border border-red-400 flex flex-col sm:flex-row items-center justify-between gap-4 animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2.5 rounded-2xl">
+                  <AlertCircle size={24} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-0.5">Urgent: Nouvelles Commandes</p>
+                  <p className="text-sm font-bold opacity-90">Il y a {orders.filter(o => o.status === 'PENDING').length} commande(s) en attente de traitement.</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setActiveView('admin')}
+                className="w-full sm:w-auto px-6 py-2.5 bg-white text-red-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-lg active:scale-95"
+              >
+                Gérer les Commandes
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       {activeView === 'catalog' && (
         <div className="space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-8 duration-700">
           {/* Enhanced Client Header */}
