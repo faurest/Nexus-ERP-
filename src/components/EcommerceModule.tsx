@@ -26,7 +26,9 @@ import {
   Edit2,
   LayoutDashboard,
   Database,
-  AlertCircle
+  AlertCircle,
+  MapPin,
+  ArrowRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -974,83 +976,117 @@ export default function EcommerceModule({ user }: { user: any }) {
       )}
 
       {activeView === 'settings' && isAdmin && currentCompany && (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-          <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-5">
-              <Truck size={120} />
+        <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Paramètres de Livraison</h2>
+              <p className="text-slate-500 font-medium mt-1">Gérez vos zones de chalandise et frais d'expédition au Cameroun.</p>
             </div>
-            <div className="relative z-10">
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Frais de Livraison</h2>
-              <p className="text-slate-500 font-medium mt-1">Configurez les tarifs d'expédition par ville ou zone au Cameroun.</p>
-              
-              <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-6">
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest border-b pb-2">Ajouter une Zone</h3>
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Ville / Quartier</label>
-                      <input 
-                        type="text" 
-                        placeholder="Ex: Maroua Centre, Yaoundé, Douala..."
-                        className="w-full bg-slate-50 border-2 border-transparent rounded-xl py-4 px-4 text-sm font-bold focus:bg-white focus:border-blue-500 outline-none transition-all"
-                        value={newLocation}
-                        onChange={e => setNewLocation(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Tarif (FCFA)</label>
+            <div className="p-4 bg-blue-50 rounded-2xl flex items-center gap-3">
+              <Truck className="text-blue-600" size={24} />
+              <div className="text-left">
+                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Couverture Nexus</p>
+                <p className="text-xs font-bold text-slate-900">{Object.keys(currentCompany.deliveryFees || {}).length} zones actives</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm space-y-8">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                    <Plus size={16} className="text-blue-600" /> Ajouter une Zone
+                  </h3>
+                  <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase">Définissez un nouveau tarif local</p>
+                </div>
+
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Ville ou Quartier</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: Yaoundé (Omnisport)"
+                      className="w-full bg-slate-50 border-2 border-transparent rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-300 shadow-inner"
+                      value={newLocation}
+                      onChange={e => setNewLocation(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Tarif de Livraison (FCFA)</label>
+                    <div className="relative">
                       <input 
                         type="number" 
-                        placeholder="Ex: 500"
-                        className="w-full bg-slate-50 border-2 border-transparent rounded-xl py-4 px-4 text-sm font-bold focus:bg-white focus:border-blue-500 outline-none transition-all"
+                        placeholder="0"
+                        className="w-full bg-slate-50 border-2 border-transparent rounded-xl py-4 px-4 pr-12 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-300 shadow-inner"
                         value={newFee}
                         onChange={e => setNewFee(e.target.value)}
                       />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300 uppercase">FCFA</span>
                     </div>
-                    <button 
-                      onClick={async () => {
-                        if (!newLocation || !newFee) return;
-                        const fees = currentCompany.deliveryFees || {};
-                        await updateDoc(doc(db, 'companies', currentCompany.id), {
-                          deliveryFees: { ...fees, [newLocation]: Number(newFee) }
-                        });
-                        setNewLocation('');
-                        setNewFee('');
-                      }}
-                      className="w-full py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all"
-                    >
-                      Enregistrer la Zone
-                    </button>
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      if (!newLocation || !newFee) return;
+                      const fees = currentCompany.deliveryFees || {};
+                      await updateDoc(doc(db, 'companies', currentCompany.id), {
+                        deliveryFees: { ...fees, [newLocation]: Number(newFee) }
+                      });
+                      setNewLocation('');
+                      setNewFee('');
+                    }}
+                    className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                  >
+                    Confirmer la Zone <CheckCircle2 size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                <div className="flex justify-between items-center mb-8">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Zones & Tarifs Actuels</h3>
+                    <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase">Liste des points de distribution configurés</p>
                   </div>
                 </div>
 
-                <div className="space-y-6">
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest border-b pb-2">Zones Actives</h3>
-                  <div className="space-y-3">
-                    {Object.entries(currentCompany.deliveryFees || {}).map(([loc, price]) => (
-                      <div key={loc} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 group">
-                        <div>
-                          <p className="text-sm font-bold text-slate-900">{loc}</p>
-                          <p className="text-xs text-blue-600 font-black">{price.toLocaleString()} FCFA</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(currentCompany.deliveryFees || {}).map(([loc, price]) => (
+                    <div key={loc} className="flex items-center justify-between p-5 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-blue-100 hover:shadow-md transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 border border-slate-100 shadow-sm">
+                          <MapPin size={18} />
                         </div>
-                        <button 
-                          onClick={async () => {
-                            const fees = { ...currentCompany.deliveryFees };
-                            delete fees[loc];
-                            await updateDoc(doc(db, 'companies', currentCompany.id), {
-                              deliveryFees: fees
-                            });
-                          }}
-                          className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                        >
-                          <X size={16} />
-                        </button>
+                        <div>
+                          <p className="text-xs font-black text-slate-900 uppercase">{loc}</p>
+                          <p className="text-[10px] text-blue-600 font-black tracking-widest">{price.toLocaleString()} FCFA</p>
+                        </div>
                       </div>
-                    ))}
-                    {(!currentCompany.deliveryFees || Object.keys(currentCompany.deliveryFees).length === 0) && (
-                      <p className="text-xs text-slate-400 font-medium italic py-10 text-center bg-slate-25 rounded-xl border-2 border-dashed border-slate-50">Aucun frais configuré. Livraison gratuite par défaut.</p>
-                    )}
-                  </div>
+                      <button 
+                        onClick={async () => {
+                          const fees = { ...currentCompany.deliveryFees };
+                          delete fees[loc];
+                          await updateDoc(doc(db, 'companies', currentCompany.id), {
+                            deliveryFees: fees
+                          });
+                        }}
+                        className="p-2.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  {(!currentCompany.deliveryFees || Object.keys(currentCompany.deliveryFees).length === 0) && (
+                    <div className="col-span-full py-16 text-center">
+                      <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-100">
+                        <Truck size={24} className="text-slate-200" />
+                      </div>
+                      <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Aucune Zone Définie</h4>
+                      <p className="text-[10px] text-slate-300 mt-2 font-medium">Commencez par ajouter une zone pour proposer la livraison payante.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1294,40 +1330,63 @@ export default function EcommerceModule({ user }: { user: any }) {
         </div>
       )}
 
-      {/* Checkout Modal */}
+      {/* Enhanced Checkout Modal */}
       {isCheckoutModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-center justify-center p-6">
-          <div className="bg-white rounded-3xl p-10 max-w-lg w-full shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-300">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-2xl font-bold text-slate-900">Finaliser la commande</h3>
-              <button onClick={() => setCheckoutModalOpen(false)} className="p-2 hover:bg-slate-50 rounded-xl transition-colors"><X size={20} /></button>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white rounded-[2.5rem] p-10 max-w-xl w-full shadow-2xl border border-slate-100 flex flex-col gap-8 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
+              <ShoppingBag size={200} />
             </div>
 
-            <form onSubmit={handleCheckout} className="space-y-8">
+            <div className="flex justify-between items-start relative z-10">
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase italic">Finalisation Nexus</h3>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Sécurisé & Garanti par {currentCompany?.name}</p>
+              </div>
+              <button onClick={() => setCheckoutModalOpen(false)} className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-900 rounded-2xl transition-all">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCheckout} className="space-y-8 relative z-10">
               <div className="space-y-4">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Mode de Paiement</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Mode de Paiement Préféré</label>
                 <div className="grid grid-cols-2 gap-4">
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('MOBILE')}
                     className={cn(
-                      "p-6 rounded-[1.5rem] border-2 transition-all flex flex-col items-center gap-3",
+                      "p-8 rounded-3xl border-2 transition-all flex flex-col items-center gap-4 group",
                       paymentMethod === 'MOBILE' ? "border-blue-600 bg-blue-50/50" : "border-slate-100 hover:border-blue-200"
                     )}
                   >
-                    <Smartphone size={24} className={paymentMethod === 'MOBILE' ? "text-blue-600" : "text-slate-400"} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Paiement Mobile</span>
+                    <div className={cn(
+                      "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors",
+                      paymentMethod === 'MOBILE' ? "bg-blue-600 text-white" : "bg-slate-50 text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-600"
+                    )}>
+                      <Smartphone size={24} />
+                    </div>
+                    <span className={cn("text-[10px] font-black uppercase tracking-widest", paymentMethod === 'MOBILE' ? "text-blue-600" : "text-slate-400")}>Mobile Money</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('CARD')}
                     className={cn(
-                      "p-6 rounded-[1.5rem] border-2 transition-all flex flex-col items-center gap-3",
+                      "p-8 rounded-3xl border-2 transition-all flex flex-col items-center gap-4 group",
                       paymentMethod === 'CARD' ? "border-blue-600 bg-blue-50/50" : "border-slate-100 hover:border-blue-200"
                     )}
                   >
-                    <CreditCard size={24} className={paymentMethod === 'CARD' ? "text-blue-600" : "text-slate-400"} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Carte Bancaire</span>
+                    <div className={cn(
+                      "w-12 h-12 rounded-2xl flex items-center justify-center transition-colors",
+                      paymentMethod === 'CARD' ? "bg-blue-600 text-white" : "bg-slate-50 text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-600"
+                    )}>
+                      <CreditCard size={24} />
+                    </div>
+                    <span className={cn("text-[10px] font-black uppercase tracking-widest", paymentMethod === 'CARD' ? "text-blue-600" : "text-slate-400")}>Carte Bancaire</span>
                   </button>
                 </div>
               </div>
@@ -1335,39 +1394,46 @@ export default function EcommerceModule({ user }: { user: any }) {
               {currentCompany?.deliveryFees && Object.keys(currentCompany.deliveryFees).length > 0 && (
                 <div className="space-y-4">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Lieu de Livraison (Cameroun)</label>
-                  <select 
-                    value={selectedLocation}
-                    onChange={(e) => setSelectedLocation(e.target.value)}
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 px-4 text-sm font-bold focus:bg-white focus:border-blue-500 outline-none transition-all appearance-none"
-                    required
-                  >
-                    <option value="">Sélectionnez votre ville / zone...</option>
-                    {Object.entries(currentCompany.deliveryFees).map(([loc, fee]) => (
-                      <option key={loc} value={loc}>{loc} ({fee.toLocaleString()} FCFA)</option>
-                    ))}
-                    <option value="Autre / En agence">Autre / En agence (Gratuit)</option>
-                  </select>
+                  <div className="relative group">
+                    <select 
+                      value={selectedLocation}
+                      onChange={(e) => setSelectedLocation(e.target.value)}
+                      className="w-full bg-slate-50 border-2 border-transparent rounded-2xl py-5 px-6 text-xs font-bold appearance-none outline-none focus:bg-white focus:border-blue-500 transition-all shadow-inner"
+                      required
+                    >
+                      <option value="">Sélectionnez votre ville / zone...</option>
+                      {Object.entries(currentCompany.deliveryFees).map(([loc, fee]) => (
+                        <option key={loc} value={loc}>{loc} ({fee.toLocaleString()} FCFA)</option>
+                      ))}
+                      <option value="Autre / En agence">Autre / En agence (Gratuit)</option>
+                    </select>
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-focus-within:text-blue-600">
+                      <Truck size={18} />
+                    </div>
+                  </div>
                 </div>
               )}
 
-              <div className="bg-slate-50 rounded-2xl p-6 space-y-3">
-                <div className="flex justify-between text-xs font-bold text-slate-500 uppercase tracking-widest">
+              <div className="bg-slate-50/50 rounded-3xl p-8 space-y-4 border border-slate-100">
+                <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   <span>Articles</span>
-                  <span className="text-slate-900 font-bold">{cartTotal.toLocaleString()} FCFA</span>
+                  <span className="text-slate-900 font-black">{cartTotal.toLocaleString()} FCFA</span>
                 </div>
                 {selectedLocation && (
-                   <div className="flex justify-between text-xs font-bold text-blue-600 uppercase tracking-widest">
-                    <span>Frais de Livraison</span>
+                   <div className="flex justify-between items-center text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                    <span>Frais d'expédition</span>
                     <span>{(currentCompany?.deliveryFees?.[selectedLocation] || 0).toLocaleString()} FCFA</span>
                   </div>
                 )}
-                <div className="pt-3 border-t border-slate-200 flex justify-between text-xs font-bold text-slate-500 uppercase tracking-widest">
-                  <span>Total à payer</span>
-                  <span className="text-slate-900 text-lg font-black">
-                    {(cartTotal + (currentCompany?.deliveryFees?.[selectedLocation] || 0)).toLocaleString()} FCFA
-                  </span>
+                <div className="pt-4 border-t border-slate-200 flex justify-between items-center">
+                  <span className="text-[11px] font-black text-slate-900 uppercase tracking-[0.1em]">Total à Régler</span>
+                  <div className="text-right">
+                    <span className="text-2xl font-black text-blue-600 tracking-tighter">
+                      {(cartTotal + (currentCompany?.deliveryFees?.[selectedLocation] || 0)).toLocaleString()} FCFA
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center text-[10px] font-bold text-blue-600 uppercase tracking-widest">
+                <div className="flex justify-between items-center text-[9px] font-bold text-emerald-600 uppercase tracking-widest">
                   <span>Points fidélité gagnés</span>
                   <span>+{cart.reduce((acc, item) => acc + (item.points * item.cartQuantity), 0)} pts</span>
                 </div>
@@ -1375,13 +1441,13 @@ export default function EcommerceModule({ user }: { user: any }) {
 
               <button
                 type="submit"
-                className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-[0.3em] shadow-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-3"
+                className="w-full py-5 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-2xl shadow-slate-900/20 hover:bg-blue-600 transition-all flex items-center justify-center gap-3 active:scale-95"
               >
-                Confirmer le paiement <CheckCircle2 size={20} />
+                Confirmer la Commande <ArrowRight size={18} />
               </button>
               <p className="text-[9px] text-center text-slate-400 font-bold uppercase tracking-widest italic">Paiement sécurisé par Nexus Cryptoguard v2</p>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
       {/* Edit Product Modal */}

@@ -886,110 +886,145 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                 <motion.div
                   initial={{ y: 50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  className="p-6 border-t border-slate-100 bg-white space-y-6"
+                  className="p-8 border-t border-slate-100 bg-white space-y-8"
                 >
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-black text-slate-900 uppercase italic">
-                      Finaliser ma commande
-                    </h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">
-                      Infos de livraison rapides
-                    </p>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-xl font-black text-slate-900 uppercase italic leading-none">
+                        Finaliser la Commande
+                      </h3>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">
+                        Expédition rapide & Suivi Nexus
+                      </p>
+                    </div>
+                    <div className="bg-blue-50 p-2 rounded-xl">
+                      <ShoppingBag size={20} className="text-blue-600" />
+                    </div>
                   </div>
-                  <form onSubmit={handleQuickCheckout} className="space-y-4">
-                    <input
-                      required
-                      type="text"
-                      placeholder="Votre Nom Complet"
-                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-600"
-                      value={checkoutData.name}
-                      onChange={(e) =>
-                        setCheckoutData({
-                          ...checkoutData,
-                          name: e.target.value,
-                        })
-                      }
-                    />
-                    <input
-                      required
-                      type="text"
-                      placeholder="Téléphone (WhatsApp)"
-                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-600"
-                      value={checkoutData.phone}
-                      onChange={(e) =>
-                        setCheckoutData({
-                          ...checkoutData,
-                          phone: e.target.value,
-                        })
-                      }
-                    />
-                    <input
-                      required
-                      type="text"
-                      placeholder="Quartier de livraison (ex: Dewe, Harde)"
-                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-600"
-                      value={checkoutData.quartier}
-                      onChange={(e) =>
-                        setCheckoutData({
-                          ...checkoutData,
-                          quartier: e.target.value,
-                        })
-                      }
-                    />
-                    
-                    {/* Delivery Fee Selector */}
-                    <div className="space-y-2">
-                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Ville de Livraison</label>
-                       <select 
-                         required
-                         className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-600 appearance-none"
-                         value={selectedLocation}
-                         onChange={(e) => setSelectedLocation(e.target.value)}
-                       >
-                         <option value="">Choisir une zone...</option>
-                         {/* Get unique locations from all companies in cart */}
-                         {Array.from(new Set(cart.flatMap(item => {
-                           const company = companies.find(c => c.id === item.companyId);
-                           return Object.keys(company?.deliveryFees || {});
-                         }))).map(loc => (
-                           <option key={loc} value={loc}>{loc}</option>
-                         ))}
-                         {/* Fallback if no specific fees are set */}
-                         <option value="Autre / Centre-ville">Autre / Centre-ville</option>
-                       </select>
-                       
-                       {selectedLocation && (
-                         <div className="p-3 bg-blue-50 rounded-lg space-y-1">
-                            {Array.from(new Set(cart.map(i => i.companyId))).map(cid => {
-                               const company = companies.find(c => c.id === cid);
-                               const fee = company?.deliveryFees?.[selectedLocation] || 0;
-                               return (
-                                 <div key={cid} className="flex justify-between items-center text-[9px] font-bold text-blue-700">
-                                   <span>{company?.name} :</span>
-                                   <span>{fee > 0 ? `${fee.toLocaleString()} FCFA` : 'Gratuit'}</span>
-                                 </div>
-                               );
-                            })}
-                         </div>
-                       )}
+
+                  <form onSubmit={handleQuickCheckout} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Identité Client</label>
+                        <input
+                          required
+                          type="text"
+                          placeholder="Nom complet"
+                          className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-4 py-4 text-xs font-bold outline-none focus:bg-white focus:border-blue-600 transition-all shadow-inner"
+                          value={checkoutData.name}
+                          onChange={(e) =>
+                            setCheckoutData({
+                              ...checkoutData,
+                              name: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Contact WhatsApp</label>
+                        <input
+                          required
+                          type="text"
+                          placeholder="Numéro de téléphone"
+                          className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-4 py-4 text-xs font-bold outline-none focus:bg-white focus:border-blue-600 transition-all shadow-inner"
+                          value={checkoutData.phone}
+                          onChange={(e) =>
+                            setCheckoutData({
+                              ...checkoutData,
+                              phone: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Adresse de Livraison</label>
+                        <input
+                          required
+                          type="text"
+                          placeholder="Quartier ou indications précises"
+                          className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-4 py-4 text-xs font-bold outline-none focus:bg-white focus:border-blue-600 transition-all shadow-inner"
+                          value={checkoutData.quartier}
+                          onChange={(e) =>
+                            setCheckoutData({
+                              ...checkoutData,
+                              quartier: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Zone Géographique (Cameroun)</label>
+                        <div className="relative group">
+                          <select 
+                            required
+                            className="w-full bg-slate-50 border-2 border-transparent rounded-2xl px-4 py-4 pr-10 text-xs font-bold outline-none focus:bg-white focus:border-blue-600 appearance-none transition-all shadow-inner"
+                            value={selectedLocation}
+                            onChange={(e) => setSelectedLocation(e.target.value)}
+                          >
+                            <option value="">Sélectionnez votre zone...</option>
+                            {Array.from(new Set(cart.flatMap(item => {
+                              const company = companies.find(c => c.id === item.companyId);
+                              return Object.keys(company?.deliveryFees || {});
+                            }))).map(loc => (
+                              <option key={loc} value={loc}>{loc}</option>
+                            ))}
+                            <option value="Autre / Centre-ville">Autre / Centre-ville</option>
+                          </select>
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                            <Truck size={16} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {selectedLocation && (
+                      <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100 flex flex-col gap-3">
+                        <div className="flex justify-between items-center text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                          <span>Sous-total articles</span>
+                          <span>{cartTotal.toLocaleString()} FCFA</span>
+                        </div>
+                        {Array.from(new Set(cart.map(i => i.companyId))).map(cid => {
+                          const company = companies.find(c => c.id === cid);
+                          const fee = company?.deliveryFees?.[selectedLocation] || 0;
+                          return (
+                            <div key={cid} className="flex justify-between items-center text-[9px] font-bold text-slate-500 italic">
+                              <span>Frais {company?.name} :</span>
+                              <span>{fee > 0 ? `+ ${fee.toLocaleString()} FCFA` : 'Gratuit'}</span>
+                            </div>
+                          );
+                        })}
+                        <div className="pt-3 border-t border-blue-200 mt-1 flex justify-between items-center">
+                          <span className="text-xs font-black text-slate-900 uppercase">Total Final</span>
+                          <span className="text-lg font-black text-blue-600 tracking-tighter">
+                            {(cartTotal + Array.from(new Set(cart.map(i => i.companyId))).reduce((acc, cid) => {
+                               const company = companies.find(c => c.id === cid);
+                               return acc + (company?.deliveryFees?.[selectedLocation] || 0);
+                            }, 0)).toLocaleString()} FCFA
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
                       <button
                         type="button"
                         onClick={() => setShowCheckoutForm(false)}
-                        className="flex-1 py-4 bg-slate-100 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                        className="flex-1 py-4 bg-slate-100 text-slate-400 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
                       >
                         Retour
                       </button>
                       <button
                         type="submit"
                         disabled={submitting}
-                        className="flex-[2] py-4 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="flex-[2] py-5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-3 transition-all active:scale-95"
                       >
-                        {submitting ? "Traitement..." : (
+                        {submitting ? "Traitement Nexus..." : (
                           <>
-                            Confirmer & Envoyer à l'entreprise <CheckCircle2 size={14} />
+                            Confirmer & Envoyer à l'entreprise <CheckCircle2 size={18} />
                           </>
                         )}
                       </button>
