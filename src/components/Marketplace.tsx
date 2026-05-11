@@ -105,10 +105,15 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     quartier: "",
   });
   const [paymentStep, setPaymentStep] = useState<'INFO' | 'PAYING' | 'SUCCESS'>('INFO');
-  const [paymentOperator, setPaymentOperator] = useState<'MTN' | 'ORANGE' | 'UNKNOWN'>('UNKNOWN');
+  const [paymentOperator, setPaymentOperator] = useState<'MTN' | 'ORANGE' | 'CASH' | 'UNKNOWN'>('UNKNOWN');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'MOMO' | 'CASH'>('CASH');
 
-  // Detect Operator
+  // Detect Operator for Mobile Money
   useEffect(() => {
+    if (selectedPaymentMethod === 'CASH') {
+      setPaymentOperator('CASH');
+      return;
+    }
     const num = checkoutData.phone.replace(/\s/g, "");
     if (num.startsWith("67") || num.startsWith("68") || num.startsWith("650") || num.startsWith("651") || num.startsWith("652") || num.startsWith("653") || num.startsWith("654")) {
       setPaymentOperator('MTN');
@@ -117,7 +122,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     } else {
       setPaymentOperator('UNKNOWN');
     }
-  }, [checkoutData.phone]);
+  }, [checkoutData.phone, selectedPaymentMethod]);
   const [selectedLocation, setSelectedLocation] = useState<string>("");
 
   useEffect(() => {
@@ -356,7 +361,11 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   const handleQuickCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setPaymentStep('PAYING');
+    
+    // Only show paying step if it's Mobile Money
+    if (selectedPaymentMethod === 'MOMO') {
+      setPaymentStep('PAYING');
+    }
 
     try {
       // Group items by companyId
@@ -394,8 +403,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             deliveryFee,
             deliveryLocation: selectedLocation,
             status: "PENDING",
-            paymentStatus: "PENDING_MOMO",
-            paymentMethod: paymentOperator === 'MTN' ? 'MTN MoMo' : (paymentOperator === 'ORANGE' ? 'Orange Money' : 'Mobile Money'),
+            paymentStatus: selectedPaymentMethod === 'CASH' ? "UNPAID" : "PENDING_MOMO",
+            paymentMethod: selectedPaymentMethod === 'CASH' ? 'CASH' : (paymentOperator === 'MTN' ? 'MTN MoMo' : 'Orange Money'),
             operator: paymentOperator,
             date: serverTimestamp(),
             checkoutSource: "MARKETPLACE",
@@ -411,23 +420,22 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           localStorage.setItem('nexus_guest_orders', JSON.stringify(newIds));
           setOrderIds(newIds);
 
-          // Simulated Push Notification/USSD processing
-          // This represents the delay of the user confirming on their phone
-          await new Promise(resolve => setTimeout(resolve, 8000));
+          // If Mobile Money, simulate the push delay
+          if (selectedPaymentMethod === 'MOMO') {
+            await new Promise(resolve => setTimeout(resolve, 6000));
+            await updateDoc(doc(db, "ecommerce_orders", orderRef.id), {
+              paymentStatus: "PAID",
+              status: "PROCESSING"
+            });
+          }
 
-          // UPDATE ORDER TO PAID (SIMULATED)
-          await updateDoc(doc(db, "ecommerce_orders", orderRef.id), {
-            paymentStatus: "PAID",
-            status: "PROCESSING"
-          });
-
-          // Notify company owner and any ecommerce manager if possible
+          // Notify company owner
           if (company?.ownerId) {
             await createNotification(
               companyId,
               [company.ownerId],
-              "URGENT: Nouvelle Commande Marketplace Payée !",
-              `${checkoutData.name} a passé une commande de ${(companyTotal + deliveryFee).toLocaleString()} FCFA et a payé par ${paymentOperator}.`,
+              selectedPaymentMethod === 'CASH' ? "Nouvelle Commande (Cash sur place)" : "Commande Marketplace Payée !",
+              `${checkoutData.name} a passé une commande de ${(companyTotal + deliveryFee).toLocaleString()} FCFA. Paiement: ${selectedPaymentMethod === 'CASH' ? 'Espèces' : paymentOperator}.`,
               "alert"
             );
           }
@@ -442,6 +450,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
         setShowCheckoutForm(false);
         setShowCart(false);
         setPaymentStep('INFO');
+        setSelectedPaymentMethod('CASH'); // Reset
       }, 5000);
     } catch (err) {
       console.error("Order save failed:", err);
@@ -449,6 +458,20 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
       alert("Une erreur est survenue lors de l'enregistrement de votre commande.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const cancelOrder = async (orderId: string) => {
+    if (!window.confirm("Voulez-vous vraiment annuler cette commande ?")) return;
+    
+    try {
+      await updateDoc(doc(db, "ecommerce_orders", orderId), {
+        status: "CANCELLED_BY_CUSTOMER",
+        updatedAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.error("Error cancelling order:", err);
+      alert("Erreur lors de l'annulation.");
     }
   };
 
@@ -1252,6 +1275,55 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           </div>
                         </div>
 
+                        <div className="space-y-6">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1 block">Mode de Paiement</label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPaymentMethod('CASH')}
+                              className={cn(
+                                "p-4 rounded-[1.5rem] border-2 transition-all flex items-center gap-3 text-left group relative overflow-hidden",
+                                selectedPaymentMethod === 'CASH' 
+                                  ? "border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-500/10" 
+                                  : "border-slate-100 hover:border-slate-200 bg-white"
+                              )}
+                            >
+                              <div className={cn(
+                                "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                                selectedPaymentMethod === 'CASH' ? "bg-emerald-500 text-white" : "bg-slate-50 text-slate-400 group-hover:bg-slate-100"
+                              )}>
+                                <History size={20} />
+                              </div>
+                              <div>
+                                <p className={cn("text-[10px] font-black uppercase leading-none", selectedPaymentMethod === 'CASH' ? "text-emerald-600" : "text-slate-900")}>Cash sur place</p>
+                                <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase italic">À la livraison</p>
+                              </div>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPaymentMethod('MOMO')}
+                              className={cn(
+                                "p-4 rounded-[1.5rem] border-2 transition-all flex items-center gap-3 text-left group relative overflow-hidden",
+                                selectedPaymentMethod === 'MOMO' 
+                                  ? "border-blue-600 bg-blue-50 shadow-lg shadow-blue-600/10" 
+                                  : "border-slate-100 hover:border-slate-200 bg-white"
+                              )}
+                            >
+                              <div className={cn(
+                                "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                                selectedPaymentMethod === 'MOMO' ? "bg-blue-600 text-white" : "bg-slate-50 text-slate-400 group-hover:bg-slate-100"
+                              )}>
+                                <Smartphone size={20} />
+                              </div>
+                              <div>
+                                <p className={cn("text-[10px] font-black uppercase leading-none", selectedPaymentMethod === 'MOMO' ? "text-blue-600" : "text-slate-900")}>Mobile Money</p>
+                                <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase italic">OM / MTN MoMo</p>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+
                         {selectedLocation && (
                           <div className="p-6 bg-slate-900 rounded-[2rem] text-white space-y-4 shadow-xl shadow-slate-200 overflow-hidden relative">
                             <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -1289,11 +1361,17 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           <button
                             type="submit"
                             disabled={submitting}
-                            className="w-full py-6 bg-blue-600 hover:bg-blue-700 text-white rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/30 disabled:opacity-50 flex items-center justify-center gap-4 transition-all active:scale-95 group"
+                            className={cn(
+                              "w-full py-6 text-white rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl disabled:opacity-50 flex items-center justify-center gap-4 transition-all active:scale-95 group",
+                              selectedPaymentMethod === 'CASH' 
+                                ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30" 
+                                : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30"
+                            )}
                           >
                             {submitting ? "Nexus ERP Traitement..." : (
                               <>
-                                Confirmer la commande <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                {selectedPaymentMethod === 'CASH' ? "Valider sans payer" : "Confirmer la commande"} 
+                                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                               </>
                             )}
                           </button>
@@ -1805,49 +1883,52 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                             order.status === 'PENDING' ? "bg-amber-50 text-amber-600 border-amber-100" :
                             order.status === 'PROCESSING' ? "bg-blue-50 text-blue-600 border-blue-100" :
                             order.status === 'SHIPPED' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
+                            order.status === 'CANCELLED_BY_CUSTOMER' ? "bg-red-50 text-red-600 border-red-100" :
                             "bg-emerald-50 text-emerald-600 border-emerald-100"
                           )}>
                             {order.status === 'PENDING' ? 'Attente' : 
                              order.status === 'PROCESSING' ? 'En cours' :
-                             order.status === 'SHIPPED' ? 'Expédiée' : 'Livrée'}
+                             order.status === 'SHIPPED' ? 'Expédiée' : 
+                             order.status === 'CANCELLED_BY_CUSTOMER' ? 'Annulée' : 'Livrée'}
                           </div>
                         </div>
 
-                        {/* Order Timeline Visual */}
-                        <div className="relative pt-2 px-1">
-                           <div className="absolute top-6 left-0 right-0 h-1 bg-slate-200 rounded-full" />
-                           <div 
-                             className="absolute top-6 left-0 h-1 bg-blue-600 rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(37,99,235,0.4)]" 
-                             style={{ 
-                               width: order.status === 'PENDING' ? '5%' : 
-                                      order.status === 'PROCESSING' ? '38%' : 
-                                      order.status === 'SHIPPED' ? '72%' : '100%' 
-                             }}
-                           />
-                           <div className="flex justify-between relative">
-                              {[
-                                { id: 'PENDING', icon: <Clock size={12} /> },
-                                { id: 'PROCESSING', icon: <Package size={12} /> },
-                                { id: 'SHIPPED', icon: <Truck size={12} /> },
-                                { id: 'DELIVERED', icon: <CheckCircle2 size={12} /> }
-                              ].map((step, idx) => {
-                                const statuses = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
-                                const currentIdx = statuses.indexOf(order.status);
-                                const isPast = idx <= currentIdx;
-                                
-                                return (
-                                  <div key={step.id} className="flex flex-col items-center">
-                                    <div className={cn(
-                                      "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 z-10 border-4 border-white shadow-sm",
-                                      isPast ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-400"
-                                    )}>
-                                      {step.icon}
+                        {order.status !== 'CANCELLED_BY_CUSTOMER' && (
+                          <div className="relative pt-2 px-1">
+                             <div className="absolute top-6 left-0 right-0 h-1 bg-slate-200 rounded-full" />
+                             <div 
+                               className="absolute top-6 left-0 h-1 bg-blue-600 rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(37,99,235,0.4)]" 
+                               style={{ 
+                                 width: order.status === 'PENDING' ? '5%' : 
+                                        order.status === 'PROCESSING' ? '38%' : 
+                                        order.status === 'SHIPPED' ? '72%' : '100%' 
+                               }}
+                             />
+                             <div className="flex justify-between relative">
+                                {[
+                                  { id: 'PENDING', icon: <Clock size={12} /> },
+                                  { id: 'PROCESSING', icon: <Package size={12} /> },
+                                  { id: 'SHIPPED', icon: <Truck size={12} /> },
+                                  { id: 'DELIVERED', icon: <CheckCircle2 size={12} /> }
+                                ].map((step, idx) => {
+                                  const statuses = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+                                  const currentIdx = statuses.indexOf(order.status);
+                                  const isPast = idx <= currentIdx;
+                                  
+                                  return (
+                                    <div key={step.id} className="flex flex-col items-center">
+                                      <div className={cn(
+                                        "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 z-10 border-4 border-white shadow-sm",
+                                        isPast ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-400"
+                                      )}>
+                                        {step.icon}
+                                      </div>
                                     </div>
-                                  </div>
-                                );
-                              })}
-                           </div>
-                        </div>
+                                  );
+                                })}
+                             </div>
+                          </div>
+                        )}
 
                         <div className="space-y-3 pt-2">
                           <div className="flex justify-between items-center text-[10px] font-black">
@@ -1864,19 +1945,30 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           </div>
                         </div>
 
-                        <button 
-                          onClick={() => {
-                            const company = companies.find(c => c.id === order.companyId);
-                            if (company?.whatsappNumber) {
-                               const message = `Bonjour, je souhaiterais avoir des informations sur ma commande CMD-${order.id.slice(0, 8).toUpperCase()} sur Nexus Marketplace. Merci !`;
-                               window.open(`https://wa.me/${company.whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank");
-                            }
-                          }}
-                          className="w-full py-4 bg-white border border-slate-200 rounded-2xl text-[9px] font-black text-slate-600 uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2 group/btn"
-                        >
-                          <MessageCircle size={14} className="group-hover/btn:scale-110 transition-transform" /> 
-                          Aide WhatsApp
-                        </button>
+                        <div className={cn("grid gap-3 pt-2", order.status === 'PENDING' ? "grid-cols-2" : "grid-cols-1")}>
+                          <button 
+                            onClick={() => {
+                              const company = companies.find(c => c.id === order.companyId);
+                              if (company?.whatsappNumber) {
+                                 const message = `Bonjour, je souhaiterais avoir des informations sur ma commande CMD-${order.id.slice(0, 8).toUpperCase()} sur Nexus Marketplace. Merci !`;
+                                 window.open(`https://wa.me/${company.whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank");
+                              }
+                            }}
+                            className="py-4 bg-white border border-slate-200 rounded-2xl text-[9px] font-black text-slate-600 uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2 group/btn"
+                          >
+                            <MessageCircle size={14} className="group-hover/btn:scale-110 transition-transform" /> 
+                            {order.status === 'PENDING' ? "WhatsApp" : "Aide WhatsApp"}
+                          </button>
+
+                          {order.status === 'PENDING' && (
+                             <button 
+                               onClick={() => cancelOrder(order.id)}
+                               className="py-4 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                             >
+                               Annuler
+                             </button>
+                          )}
+                        </div>
                       </div>
                     ))
                   )}
