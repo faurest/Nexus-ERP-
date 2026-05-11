@@ -6,6 +6,8 @@ import {
   query,
   where,
   onSnapshot,
+  addDoc,
+  serverTimestamp,
 } from "../lib/firebase";
 import {
   ShoppingBag,
@@ -25,9 +27,11 @@ import {
   Tag,
   ArrowLeft,
   FileText,
+  CheckCircle2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
+import { createNotification } from "../lib/notifications";
 
 interface Product {
   id: string;
@@ -49,6 +53,7 @@ interface Company {
   whatsappNumber?: string;
   category?: string;
   nairaRate?: number;
+  ownerId?: string;
 }
 
 interface CartItem extends Product {
@@ -71,6 +76,7 @@ export default function Marketplace() {
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [showTransportCalc, setShowTransportCalc] = useState(false);
   const [showCatalogue, setShowCatalogue] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [nairaEnabled, setNairaEnabled] = useState(false);
   const [checkoutData, setCheckoutData] = useState({
     name: "",
@@ -204,17 +210,80 @@ export default function Marketplace() {
         `\n\nClient: ${checkoutData.name}\nTél: ${checkoutData.phone}\nQuartier: ${checkoutData.quartier}`;
     }
 
-    window.open(
-      `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
-      "_blank",
-    );
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
   };
 
-  const handleQuickCheckout = (e: React.FormEvent) => {
+  const handleQuickCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    checkoutWhatsApp();
-    setShowCheckoutForm(false);
-    setShowCart(false);
+    setSubmitting(true);
+
+    try {
+      // Group items by companyId
+      const ordersByCompany: Record<string, CartItem[]> = {};
+      cart.forEach((item) => {
+        if (!ordersByCompany[item.companyId]) {
+          ordersByCompany[item.companyId] = [];
+        }
+        ordersByCompany[item.companyId].push(item);
+      });
+
+      // Create an order for each company
+      const orderPromises = Object.entries(ordersByCompany).map(
+        async ([companyId, items]) => {
+          const companyTotal = items.reduce(
+            (acc, item) => acc + item.price * item.cartQuantity,
+            0,
+          );
+          const company = companies.find(c => c.id === companyId);
+          
+          await addDoc(collection(db, "ecommerce_orders"), {
+            companyId,
+            items: items.map((item) => ({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              quantity: item.cartQuantity,
+            })),
+            total: companyTotal,
+            status: "PENDING",
+            date: serverTimestamp(),
+            checkoutSource: "MARKETPLACE",
+            customerName: checkoutData.name,
+            customerPhone: checkoutData.phone,
+            customerQuartier: checkoutData.quartier,
+            customerEmail: "Marketplace Guest",
+          });
+
+          // Notify company owner if possible
+          if (company?.ownerId) {
+            await createNotification(
+              companyId,
+              [company.ownerId],
+              "Nouvelle Commande Marketplace !",
+              `${checkoutData.name} a passé une commande de ${companyTotal.toLocaleString()} FCFA via le Marketplace.`,
+              "alert"
+            );
+          }
+        },
+      );
+
+      await Promise.all(orderPromises);
+
+      // Also trigger WhatsApp for the first company in the cart (or let user choose?)
+      // We'll just do the first one for direct contact
+      checkoutWhatsApp();
+
+      setCart([]);
+      setShowCheckoutForm(false);
+      setShowCart(false);
+      alert("Votre commande a été enregistrée et envoyée aux boutiques !");
+    } catch (err) {
+      console.error("Order save failed:", err);
+      alert("Une erreur est survenue lors de l'enregistrement de votre commande.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -813,9 +882,14 @@ export default function Marketplace() {
                       </button>
                       <button
                         type="submit"
-                        className="flex-[2] py-4 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20"
+                        disabled={submitting}
+                        className="flex-[2] py-4 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
                       >
-                        Commander via WhatsApp
+                        {submitting ? "Traitement..." : (
+                          <>
+                            Confirmer & WhatsApp <ArrowRight size={14} />
+                          </>
+                        )}
                       </button>
                     </div>
                   </form>

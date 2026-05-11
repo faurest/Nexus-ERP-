@@ -51,12 +51,15 @@ interface Order {
   id: string;
   items: any[];
   total: number;
-  status: 'PENDING' | 'SHIPPED' | 'DELIVERED';
+  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
   date: any;
-  paymentMethod: string;
+  paymentMethod?: string;
   customerName?: string;
   customerEmail?: string;
+  customerPhone?: string;
+  customerQuartier?: string;
   companyId: string;
+  checkoutSource?: string;
 }
 
 interface OrderMessage {
@@ -385,7 +388,7 @@ export default function EcommerceModule({ user }: { user: any }) {
     }
   };
 
-  const updateOrderStatus = async (orderId: string, newStatus: 'PENDING' | 'SHIPPED' | 'DELIVERED', customerEmail?: string) => {
+  const updateOrderStatus = async (orderId: string, newStatus: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED', customerEmail?: string) => {
     try {
       await updateDoc(doc(db, 'ecommerce_orders', orderId), { 
         status: newStatus,
@@ -400,7 +403,15 @@ export default function EcommerceModule({ user }: { user: any }) {
         const snap = await getDocs(q);
         if (!snap.empty) {
           const clientUid = snap.docs[0].id;
-          const statusLabel = newStatus === 'SHIPPED' ? 'est En Cours d\'Expédition' : 'a été Livrée';
+          const statusLabels = {
+            'PROCESSING': 'est en cours de préparation',
+            'SHIPPED': 'est en cours d\'expédition',
+            'DELIVERED': 'a été livrée',
+            'CANCELLED': 'a été annulée',
+            'PENDING': 'est en attente'
+          };
+          const statusLabel = statusLabels[newStatus] || 'a été mise à jour';
+          
           await createNotification(
             currentCompany.id,
             [clientUid],
@@ -440,7 +451,8 @@ export default function EcommerceModule({ user }: { user: any }) {
             {[
               { id: 'catalog', label: 'Catalogue', icon: Package },
               { id: 'cart', label: `Panier (${cart.length})`, icon: ShoppingCart },
-              {id: 'tracking', label: 'Suivi', icon: Truck, unread: Object.values(unreadMessages).reduce((a,b) => a+b, 0)},
+              { id: 'tracking', label: 'Suivi', icon: Truck, unread: Object.values(unreadMessages).reduce((a,b) => a+b, 0) },
+              ...(isAdmin ? [{ id: 'admin', label: 'Gestion', icon: LayoutDashboard }] : []),
               { id: 'loyalty', label: 'Fidélité', icon: Award }
             ].map(item => (
               <button
@@ -802,16 +814,19 @@ export default function EcommerceModule({ user }: { user: any }) {
                         <div className="absolute top-[41px] left-4 right-4 h-1 bg-slate-200 rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-blue-600 transition-all duration-1000 shadow-[0_0_10px_rgba(37,99,235,0.5)]" 
-                            style={{ width: order.status === 'PENDING' ? '15%' : order.status === 'SHIPPED' ? '60%' : '100%' }}
+                            style={{ width: order.status === 'PENDING' ? '10%' : order.status === 'PROCESSING' ? '40%' : order.status === 'SHIPPED' ? '70%' : '100%' }}
                           />
                         </div>
                         <div className="flex justify-between relative">
                           {[
-                            { id: 'PENDING', label: 'En attente', desc: 'Commande reçue', icon: <Clock size={16} /> },
-                            { id: 'SHIPPED', label: 'Expédiée', desc: 'Transit Nexus Log', icon: <Truck size={16} /> },
-                            { id: 'DELIVERED', label: 'Livrée', desc: 'Transfert terminé', icon: <CheckCircle2 size={16} /> }
+                            { id: 'PENDING', label: 'En attente', desc: 'Reçue', icon: <Clock size={16} /> },
+                            { id: 'PROCESSING', label: 'Traitement', desc: 'Préparation', icon: <Package size={16} /> },
+                            { id: 'SHIPPED', label: 'Expédiée', desc: 'En route', icon: <Truck size={16} /> },
+                            { id: 'DELIVERED', label: 'Livrée', desc: 'Terminée', icon: <CheckCircle2 size={16} /> }
                           ].map((step, sIdx) => {
-                            const isPast = (order.status === 'SHIPPED' && sIdx <= 1) || (order.status === 'DELIVERED') || (order.status === 'PENDING' && sIdx === 0);
+                            const statuses = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+                            const currentIdx = statuses.indexOf(order.status);
+                            const isPast = sIdx <= currentIdx;
                             const isActive = order.status === step.id;
                             
                             return (
@@ -866,6 +881,178 @@ export default function EcommerceModule({ user }: { user: any }) {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {activeView === 'admin' && isAdmin && (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Gestion des Commandes</h2>
+              <p className="text-slate-500 font-medium mt-1">Supervisez et traitez les commandes entrantes en temps réel.</p>
+            </div>
+            <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+              <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl">
+                 <div className="w-2 h-2 bg-blue-600 rounded-full animate-ping" />
+                 <span className="text-[10px] font-black uppercase">Live Nexus Engine</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { label: 'En Attente', count: orders.filter(o => o.status === 'PENDING').length, color: 'bg-amber-500' },
+              { label: 'En Traitement', count: orders.filter(o => o.status === 'PROCESSING').length, color: 'bg-blue-500' },
+              { label: 'Marketplace', count: orders.filter(o => o.checkoutSource === 'MARKETPLACE').length, color: 'bg-emerald-500' }
+            ].map(stat => (
+              <div key={stat.label} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{stat.label}</p>
+                <div className="flex items-end justify-between">
+                  <span className="text-3xl font-black text-slate-900">{stat.count}</span>
+                  <div className={`w-10 h-1 bg-slate-100 rounded-full overflow-hidden`}>
+                    <div className={`h-full ${stat.color} transition-all duration-1000`} style={{ width: '60%' }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-6">
+            {orders.map((order) => (
+              <div key={order.id} className={cn(
+                "bg-white rounded-[2.5rem] p-8 border hover:shadow-2xl transition-all duration-500 group relative overflow-hidden",
+                order.status === 'PENDING' ? "border-amber-200 shadow-lg shadow-amber-50" : "border-slate-100 shadow-sm"
+              )}>
+                {order.status === 'PENDING' && (
+                  <div className="absolute top-4 left-4 flex gap-2">
+                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-ping" />
+                    <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest">Urgent: Nouveau Flux</span>
+                  </div>
+                )}
+                {order.checkoutSource === 'MARKETPLACE' && (
+                  <div className="absolute top-0 right-0 px-6 py-2 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest rounded-bl-2xl">
+                    Source: Marketplace
+                  </div>
+                )}
+                
+                <div className="flex flex-col lg:flex-row gap-10">
+                  <div className="flex-1">
+                    <div className="flex flex-wrap justify-between items-start gap-4 mb-8">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase">CMD-{order.id.slice(0, 8)}</h3>
+                          <span className={cn(
+                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
+                            order.status === 'PENDING' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                            order.status === 'PROCESSING' ? "bg-blue-50 text-blue-600 border-blue-100" :
+                            order.status === 'SHIPPED' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
+                            "bg-emerald-50 text-emerald-600 border-emerald-100"
+                          )}>
+                            {order.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 font-medium">
+                          Passée le {order.date?.toDate().toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-black text-slate-900 tabular-nums">{order.total.toLocaleString()} FCFA</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Transaction</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-4">
+                        <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                          <ShoppingBag size={12} /> Articles ({order.items.length})
+                        </h4>
+                        <div className="space-y-2">
+                          {order.items.map((item, i) => (
+                            <div key={i} className="flex justify-between items-center text-sm p-3 bg-slate-50 rounded-xl">
+                              <span className="font-bold text-slate-700">{item.name} <span className="text-slate-400 font-medium">x{item.quantity}</span></span>
+                              <span className="font-black text-slate-900">{item.price.toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                          <CheckCircle2 size={12} /> Client & Livraison
+                        </h4>
+                        <div className="bg-slate-50 rounded-2xl p-5 space-y-3">
+                          <p className="text-sm font-bold text-slate-900">{order.customerName}</p>
+                          <div className="flex flex-col gap-1">
+                            {order.customerPhone && (
+                              <p className="text-xs text-slate-500 flex items-center gap-2">
+                                <Smartphone size={12} /> {order.customerPhone}
+                              </p>
+                            )}
+                            {order.customerQuartier && (
+                              <p className="text-xs text-slate-500 flex items-center gap-2">
+                                <Truck size={12} /> {order.customerQuartier}
+                              </p>
+                            )}
+                            <p className="text-xs text-slate-500 flex items-center gap-2">
+                               <Bell size={12} /> {order.customerEmail}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="lg:w-64 space-y-4">
+                    <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Actions Opérationnelles</h4>
+                    <div className="flex flex-col gap-2">
+                      <button 
+                        onClick={() => updateOrderStatus(order.id, 'PROCESSING', order.customerEmail)}
+                        disabled={order.status !== 'PENDING'}
+                        className={cn(
+                          "w-full py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+                          order.status === 'PROCESSING' ? "bg-blue-600 text-white" : "bg-slate-900 text-white hover:bg-blue-600 disabled:opacity-30"
+                        )}
+                      >
+                        Prise en charge
+                      </button>
+                      <button 
+                        onClick={() => updateOrderStatus(order.id, 'SHIPPED', order.customerEmail)}
+                        disabled={order.status === 'SHIPPED' || order.status === 'DELIVERED'}
+                        className="w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all flex items-center justify-center gap-2 disabled:opacity-30"
+                      >
+                        <Truck size={14} /> Expédition
+                      </button>
+                      <button 
+                        onClick={() => updateOrderStatus(order.id, 'DELIVERED', order.customerEmail)}
+                        disabled={order.status === 'DELIVERED'}
+                        className="w-full py-4 bg-emerald-50 text-emerald-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-30"
+                      >
+                        <CheckCircle2 size={14} /> Terminer
+                      </button>
+                    </div>
+                    <button 
+                      onClick={() => setActiveChatOrder(order)}
+                      className="w-full py-4 bg-blue-50 text-blue-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all flex items-center justify-center gap-2 relative mt-4"
+                    >
+                      <MessageCircle size={14} /> Chat & Support
+                      {unreadMessages[order.id] > 0 && (
+                        <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white">
+                          {unreadMessages[order.id]}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {orders.length === 0 && (
+              <div className="p-20 text-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-100">
+                <ShoppingBag size={48} className="mx-auto text-slate-200 mb-6" strokeWidth={1} />
+                <h3 className="text-lg font-black text-slate-900 tracking-tight">Aucune Commande Nexus</h3>
+                <p className="text-xs font-medium text-slate-400 mt-2">Votre flux commercial est actuellement vide.</p>
+              </div>
+            )}
           </div>
         </div>
       )}
