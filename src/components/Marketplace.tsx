@@ -54,6 +54,7 @@ interface Company {
   category?: string;
   nairaRate?: number;
   ownerId?: string;
+  deliveryFees?: Record<string, number>;
 }
 
 interface CartItem extends Product {
@@ -83,6 +84,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     phone: "",
     quartier: "",
   });
+  const [selectedLocation, setSelectedLocation] = useState<string>("");
 
   useEffect(() => {
     localStorage.setItem("nexus_cart", JSON.stringify(cart));
@@ -198,6 +200,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     if (product) {
       message = `Bonjour, je suis intéressé par le produit *${product.name}* (${product.price.toLocaleString()} FCFA) vu sur l'application Nexus Marketplace. Est-il toujours disponible ?`;
     } else {
+      const locationInfo = selectedLocation ? `\nLivraison: ${selectedLocation}` : '';
       message =
         `*Nouvelle Commande Nexus ERP*\n\n` +
         cart
@@ -206,7 +209,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               `- ${item.name} (x${item.cartQuantity}) : ${(item.price * item.cartQuantity).toLocaleString()} FCFA`,
           )
           .join("\n") +
-        `\n\n*Total : ${cartTotal.toLocaleString()} FCFA*` +
+        `\n\n*Total Articles : ${cartTotal.toLocaleString()} FCFA*` +
+        locationInfo +
         `\n\nClient: ${checkoutData.name}\nTél: ${checkoutData.phone}\nQuartier: ${checkoutData.quartier}`;
     }
 
@@ -231,11 +235,16 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
       // Create an order for each company
       const orderPromises = Object.entries(ordersByCompany).map(
         async ([companyId, items]) => {
+          const company = companies.find((c) => c.id === companyId);
           const companyTotal = items.reduce(
             (acc, item) => acc + item.price * item.cartQuantity,
             0,
           );
-          const company = companies.find(c => c.id === companyId);
+          
+          let deliveryFee = 0;
+          if (company?.deliveryFees && selectedLocation) {
+            deliveryFee = company.deliveryFees[selectedLocation] || 0;
+          }
           
           await addDoc(collection(db, "ecommerce_orders"), {
             companyId,
@@ -245,7 +254,9 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               price: item.price,
               quantity: item.cartQuantity,
             })),
-            total: companyTotal,
+            total: companyTotal + deliveryFee,
+            deliveryFee,
+            deliveryLocation: selectedLocation,
             status: "PENDING",
             date: serverTimestamp(),
             checkoutSource: "MARKETPLACE",
@@ -270,14 +281,10 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
       await Promise.all(orderPromises);
 
-      // Also trigger WhatsApp for the first company in the cart (or let user choose?)
-      // We'll just do the first one for direct contact
-      checkoutWhatsApp();
-
       setCart([]);
       setShowCheckoutForm(false);
       setShowCart(false);
-      alert("Votre commande a été enregistrée et envoyée aux boutiques !");
+      alert("Votre commande a été envoyée avec succès à l'entreprise !");
     } catch (err) {
       console.error("Order save failed:", err);
       alert("Une erreur est survenue lors de l'enregistrement de votre commande.");
@@ -874,6 +881,44 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                         })
                       }
                     />
+                    
+                    {/* Delivery Fee Selector */}
+                    <div className="space-y-2">
+                       <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Ville de Livraison</label>
+                       <select 
+                         required
+                         className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-600 appearance-none"
+                         value={selectedLocation}
+                         onChange={(e) => setSelectedLocation(e.target.value)}
+                       >
+                         <option value="">Choisir une zone...</option>
+                         {/* Get unique locations from all companies in cart */}
+                         {Array.from(new Set(cart.flatMap(item => {
+                           const company = companies.find(c => c.id === item.companyId);
+                           return Object.keys(company?.deliveryFees || {});
+                         }))).map(loc => (
+                           <option key={loc} value={loc}>{loc}</option>
+                         ))}
+                         {/* Fallback if no specific fees are set */}
+                         <option value="Autre / Centre-ville">Autre / Centre-ville</option>
+                       </select>
+                       
+                       {selectedLocation && (
+                         <div className="p-3 bg-blue-50 rounded-lg space-y-1">
+                            {Array.from(new Set(cart.map(i => i.companyId))).map(cid => {
+                               const company = companies.find(c => c.id === cid);
+                               const fee = company?.deliveryFees?.[selectedLocation] || 0;
+                               return (
+                                 <div key={cid} className="flex justify-between items-center text-[9px] font-bold text-blue-700">
+                                   <span>{company?.name} :</span>
+                                   <span>{fee > 0 ? `${fee.toLocaleString()} FCFA` : 'Gratuit'}</span>
+                                 </div>
+                               );
+                            })}
+                         </div>
+                       )}
+                    </div>
+
                     <div className="flex gap-3">
                       <button
                         type="button"
@@ -889,7 +934,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                       >
                         {submitting ? "Traitement..." : (
                           <>
-                            Confirmer & WhatsApp <ArrowRight size={14} />
+                            Confirmer & Envoyer à l'entreprise <CheckCircle2 size={14} />
                           </>
                         )}
                       </button>

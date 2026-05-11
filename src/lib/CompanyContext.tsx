@@ -10,6 +10,7 @@ export interface Company {
   memberEmails?: string[];
   joinCode?: string;
   roles?: Record<string, string[]>;
+  deliveryFees?: Record<string, number>;
   employees?: any[];
   createdAt?: any;
 }

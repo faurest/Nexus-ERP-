@@ -13,6 +13,10 @@
         "memberEmails": { "type": "string" },
         "employees": { "type": "string" },
         "roles": { "type": "string" },
+        "deliveryFees": { 
+          "type": "object",
+          "description": "Mapping of locations to delivery prices"
+        },
         "createdAt": { "type": "number" }
       },
       "required": ["name", "ownerEmail", "joinCode"]

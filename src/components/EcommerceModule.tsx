@@ -60,6 +60,8 @@ interface Order {
   customerQuartier?: string;
   companyId: string;
   checkoutSource?: string;
+  deliveryFee?: number;
+  deliveryLocation?: string;
 }
 
 interface OrderMessage {
@@ -75,7 +77,7 @@ interface OrderMessage {
 
 export default function EcommerceModule({ user }: { user: any }) {
   const { currentCompany } = useCompany();
-  const [activeView, setActiveView] = useState<'catalog' | 'cart' | 'tracking' | 'loyalty' | 'admin'>('catalog');
+  const [activeView, setActiveView] = useState<'catalog' | 'cart' | 'tracking' | 'loyalty' | 'admin' | 'settings'>('catalog');
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -92,9 +94,14 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [submitting, setSubmitting] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState<{ [key: string]: number }>({});
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showDeliverySettings, setShowDeliverySettings] = useState(false);
+  const [newLocation, setNewLocation] = useState('');
+  const [newFee, setNewFee] = useState('');
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
   const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
+
+  const [selectedLocation, setSelectedLocation] = useState('');
 
   const canManage = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
   const isAdmin = canManage;
@@ -349,10 +356,15 @@ export default function EcommerceModule({ user }: { user: any }) {
     if (!currentCompany || cart.length === 0) return;
 
     try {
+      const deliveryFee = (currentCompany.deliveryFees && selectedLocation) ? currentCompany.deliveryFees[selectedLocation] : 0;
+      const totalWithDelivery = cartTotal + deliveryFee;
+
       const orderRef = await addDoc(collection(db, 'ecommerce_orders'), {
         companyId: currentCompany.id,
         items: cart.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.cartQuantity })),
-        total: cartTotal,
+        total: totalWithDelivery,
+        deliveryFee,
+        deliveryLocation: selectedLocation,
         paymentMethod,
         status: 'PENDING',
         date: serverTimestamp(),
@@ -452,7 +464,10 @@ export default function EcommerceModule({ user }: { user: any }) {
               { id: 'catalog', label: 'Catalogue', icon: Package },
               { id: 'cart', label: `Panier (${cart.length})`, icon: ShoppingCart },
               { id: 'tracking', label: 'Suivi', icon: Truck, unread: Object.values(unreadMessages).reduce((a,b) => a+b, 0) },
-              ...(isAdmin ? [{ id: 'admin', label: 'Gestion', icon: LayoutDashboard }] : []),
+              ...(isAdmin ? [
+                { id: 'admin', label: 'Gestion', icon: LayoutDashboard },
+                { id: 'settings', label: 'Livraison', icon: Truck }
+              ] : []),
               { id: 'loyalty', label: 'Fidélité', icon: Award }
             ].map(item => (
               <button
@@ -885,6 +900,91 @@ export default function EcommerceModule({ user }: { user: any }) {
         </div>
       )}
 
+      {activeView === 'settings' && isAdmin && currentCompany && (
+        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+          <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-5">
+              <Truck size={120} />
+            </div>
+            <div className="relative z-10">
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Frais de Livraison</h2>
+              <p className="text-slate-500 font-medium mt-1">Configurez les tarifs d'expédition par ville ou zone au Cameroun.</p>
+              
+              <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest border-b pb-2">Ajouter une Zone</h3>
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Ville / Quartier</label>
+                      <input 
+                        type="text" 
+                        placeholder="Ex: Maroua Centre, Yaoundé, Douala..."
+                        className="w-full bg-slate-50 border-2 border-transparent rounded-xl py-4 px-4 text-sm font-bold focus:bg-white focus:border-blue-500 outline-none transition-all"
+                        value={newLocation}
+                        onChange={e => setNewLocation(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Tarif (FCFA)</label>
+                      <input 
+                        type="number" 
+                        placeholder="Ex: 500"
+                        className="w-full bg-slate-50 border-2 border-transparent rounded-xl py-4 px-4 text-sm font-bold focus:bg-white focus:border-blue-500 outline-none transition-all"
+                        value={newFee}
+                        onChange={e => setNewFee(e.target.value)}
+                      />
+                    </div>
+                    <button 
+                      onClick={async () => {
+                        if (!newLocation || !newFee) return;
+                        const fees = currentCompany.deliveryFees || {};
+                        await updateDoc(doc(db, 'companies', currentCompany.id), {
+                          deliveryFees: { ...fees, [newLocation]: Number(newFee) }
+                        });
+                        setNewLocation('');
+                        setNewFee('');
+                      }}
+                      className="w-full py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all"
+                    >
+                      Enregistrer la Zone
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest border-b pb-2">Zones Actives</h3>
+                  <div className="space-y-3">
+                    {Object.entries(currentCompany.deliveryFees || {}).map(([loc, price]) => (
+                      <div key={loc} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 group">
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">{loc}</p>
+                          <p className="text-xs text-blue-600 font-black">{price.toLocaleString()} FCFA</p>
+                        </div>
+                        <button 
+                          onClick={async () => {
+                            const fees = { ...currentCompany.deliveryFees };
+                            delete fees[loc];
+                            await updateDoc(doc(db, 'companies', currentCompany.id), {
+                              deliveryFees: fees
+                            });
+                          }}
+                          className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                    {(!currentCompany.deliveryFees || Object.keys(currentCompany.deliveryFees).length === 0) && (
+                      <p className="text-xs text-slate-400 font-medium italic py-10 text-center bg-slate-25 rounded-xl border-2 border-dashed border-slate-50">Aucun frais configuré. Livraison gratuite par défaut.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeView === 'admin' && isAdmin && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -993,6 +1093,12 @@ export default function EcommerceModule({ user }: { user: any }) {
                               <p className="text-xs text-slate-500 flex items-center gap-2">
                                 <Truck size={12} /> {order.customerQuartier}
                               </p>
+                            )}
+                            {order.deliveryLocation && (
+                              <div className="mt-2 p-2 bg-blue-100/50 rounded-lg">
+                                <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Livraison: {order.deliveryLocation}</p>
+                                <p className="text-[10px] font-black text-slate-900">{order.deliveryFee?.toLocaleString() || 0} FCFA</p>
+                              </div>
                             )}
                             <p className="text-xs text-slate-500 flex items-center gap-2">
                                <Bell size={12} /> {order.customerEmail}
@@ -1153,10 +1259,40 @@ export default function EcommerceModule({ user }: { user: any }) {
                 </div>
               </div>
 
+              {currentCompany?.deliveryFees && Object.keys(currentCompany.deliveryFees).length > 0 && (
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Lieu de Livraison (Cameroun)</label>
+                  <select 
+                    value={selectedLocation}
+                    onChange={(e) => setSelectedLocation(e.target.value)}
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 px-4 text-sm font-bold focus:bg-white focus:border-blue-500 outline-none transition-all appearance-none"
+                    required
+                  >
+                    <option value="">Sélectionnez votre ville / zone...</option>
+                    {Object.entries(currentCompany.deliveryFees).map(([loc, fee]) => (
+                      <option key={loc} value={loc}>{loc} ({fee.toLocaleString()} FCFA)</option>
+                    ))}
+                    <option value="Autre / En agence">Autre / En agence (Gratuit)</option>
+                  </select>
+                </div>
+              )}
+
               <div className="bg-slate-50 rounded-2xl p-6 space-y-3">
                 <div className="flex justify-between text-xs font-bold text-slate-500 uppercase tracking-widest">
+                  <span>Articles</span>
+                  <span className="text-slate-900 font-bold">{cartTotal.toLocaleString()} FCFA</span>
+                </div>
+                {selectedLocation && (
+                   <div className="flex justify-between text-xs font-bold text-blue-600 uppercase tracking-widest">
+                    <span>Frais de Livraison</span>
+                    <span>{(currentCompany?.deliveryFees?.[selectedLocation] || 0).toLocaleString()} FCFA</span>
+                  </div>
+                )}
+                <div className="pt-3 border-t border-slate-200 flex justify-between text-xs font-bold text-slate-500 uppercase tracking-widest">
                   <span>Total à payer</span>
-                  <span className="text-slate-900 text-lg font-black">{cartTotal.toLocaleString()} FCFA</span>
+                  <span className="text-slate-900 text-lg font-black">
+                    {(cartTotal + (currentCompany?.deliveryFees?.[selectedLocation] || 0)).toLocaleString()} FCFA
+                  </span>
                 </div>
                 <div className="flex justify-between items-center text-[10px] font-bold text-blue-600 uppercase tracking-widest">
                   <span>Points fidélité gagnés</span>
