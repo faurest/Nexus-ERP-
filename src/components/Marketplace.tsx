@@ -1697,15 +1697,20 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                             <h3 className="text-sm font-black text-slate-900 uppercase">CMD-{order.id.slice(0, 8)}</h3>
                           </div>
                           <div className={cn(
-                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm",
+                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm flex items-center gap-1.5",
                             order.status === 'PENDING' ? "bg-amber-50 text-amber-600 border-amber-100" :
-                            order.status === 'PROCESSING' ? "bg-blue-50 text-blue-600 border-blue-100" :
-                            order.status === 'SHIPPED' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
+                            order.status === 'PROCESSING' ? "bg-blue-50 text-blue-600 border-blue-100 animate-pulse" :
+                            order.status === 'SHIPPED' ? "bg-indigo-50 text-indigo-600 border-indigo-100 animate-pulse" :
                             "bg-emerald-50 text-emerald-600 border-emerald-100"
                           )}>
-                            {order.status === 'PENDING' ? 'Attente' : 
-                             order.status === 'PROCESSING' ? 'En cours' :
-                             order.status === 'SHIPPED' ? 'Expédiée' : 'Livrée'}
+                            <span className={cn("w-1.5 h-1.5 rounded-full", 
+                              order.status === 'PENDING' ? "bg-amber-400" :
+                              order.status === 'PROCESSING' ? "bg-blue-400" :
+                              order.status === 'SHIPPED' ? "bg-indigo-400" : "bg-emerald-400"
+                            )} />
+                            {order.status === 'PENDING' ? 'En Attente' : 
+                             order.status === 'PROCESSING' ? 'En Traitement' :
+                             order.status === 'SHIPPED' ? 'En Livraison' : 'Colis Arrivé'}
                           </div>
                         </div>
 
@@ -1735,7 +1740,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                   <div key={step.id} className="flex flex-col items-center">
                                     <div className={cn(
                                       "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 z-10 border-4 border-white shadow-sm",
-                                      isPast ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-400"
+                                      isPast ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-400",
+                                      order.status === step.id && step.id !== 'DELIVERED' && "ring-4 ring-blue-50 scale-110"
                                     )}>
                                       {step.icon}
                                     </div>
@@ -1744,6 +1750,29 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                               })}
                            </div>
                         </div>
+
+                        {/* High Visibility Status Messages */}
+                        {['PROCESSING', 'SHIPPED'].includes(order.status) && (
+                          <div className={cn(
+                            "p-4 rounded-2xl flex items-center gap-4 border",
+                            order.status === 'PROCESSING' ? "bg-blue-50/50 border-blue-100" : "bg-indigo-50/50 border-indigo-100"
+                          )}>
+                            <div className={cn(
+                              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                              order.status === 'PROCESSING' ? "bg-blue-600 text-white" : "bg-indigo-600 text-white"
+                            )}>
+                              {order.status === 'PROCESSING' ? <Package size={20} /> : <Truck size={20} />}
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 leading-tight">
+                                {order.status === 'PROCESSING' ? "Votre commande a été prise en charge." : "Votre colis est en route !"}
+                              </p>
+                              <p className="text-[9px] font-semibold text-slate-500 mt-0.5 leading-snug italic">
+                                {order.status === 'PROCESSING' ? "L'entreprise prépare actuellement vos articles." : "Le livreur est en mouvement vers Maroua."}
+                              </p>
+                            </div>
+                          </div>
+                        )}
 
                         <div className="space-y-3 pt-2">
                           <div className="flex justify-between items-center text-[10px] font-black">
@@ -1764,14 +1793,14 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           onClick={() => {
                             const company = companies.find(c => c.id === order.companyId);
                             if (company?.whatsappNumber) {
-                               const message = `Bonjour, je souhaiterais avoir des informations sur ma commande CMD-${order.id.slice(0, 8).toUpperCase()} sur Nexus Marketplace. Merci !`;
+                               const message = `Bonjour, je souhaite discuter avec l'équipe de gestion de ma commande CMD-${order.id.slice(0, 8).toUpperCase()} sur Nexus Marketplace. Merci !`;
                                window.open(`https://wa.me/${company.whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank");
                             }
                           }}
-                          className="w-full py-4 bg-white border border-slate-200 rounded-2xl text-[9px] font-black text-slate-600 uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2 group/btn"
+                          className="w-full py-5 bg-white border-2 border-slate-100 rounded-3xl text-[10px] font-black text-slate-900 uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-sm flex items-center justify-center gap-3 group/btn"
                         >
-                          <MessageCircle size={14} className="group-hover/btn:scale-110 transition-transform" /> 
-                          Aide WhatsApp
+                          <MessageCircle size={16} className="group-hover/btn:scale-110 transition-transform text-blue-600 group-hover/btn:text-white" /> 
+                          Aide de l'entreprise
                         </button>
                       </div>
                     ))
