@@ -104,6 +104,26 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   const [selectedLocation, setSelectedLocation] = useState<string>("");
 
   useEffect(() => {
+    const handlePushState = () => {
+      // Logic to handle hardware back button
+      if (showCart || showTracking || showCatalogue || showTransportCalc || selectedProduct) {
+        setShowCart(false);
+        setShowTracking(false);
+        setShowCatalogue(false);
+        setShowTransportCalc(false);
+        setSelectedProduct(null);
+      }
+    };
+
+    if (showCart || showTracking || showCatalogue || showTransportCalc || selectedProduct) {
+      window.history.pushState({ modal: true }, "");
+      window.addEventListener("popstate", handlePushState);
+    }
+
+    return () => window.removeEventListener("popstate", handlePushState);
+  }, [showCart, showTracking, showCatalogue, showTransportCalc, selectedProduct]);
+
+  useEffect(() => {
     localStorage.setItem("nexus_cart", JSON.stringify(cart));
   }, [cart]);
 
@@ -984,9 +1004,18 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             >
               <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <div className="flex items-center gap-3">
-                  <ShoppingCart size={20} className="text-blue-600" />
+                  {showCheckoutForm ? (
+                    <button
+                      onClick={() => setShowCheckoutForm(false)}
+                      className="p-2 -ml-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                    >
+                      <ArrowLeft size={20} />
+                    </button>
+                  ) : (
+                    <ShoppingCart size={20} className="text-blue-600" />
+                  )}
                   <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
-                    Votre Panier
+                    {showCheckoutForm ? "Finalisation" : "Votre Panier"}
                   </h2>
                 </div>
                 <button
@@ -997,7 +1026,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6 space-y-10 scrollbar-hide">
+              <div className="flex-1 overflow-y-auto p-6 space-y-10 scrollbar-hide pb-20">
                 {cart.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center space-y-4 opacity-40">
                     <ShoppingBag size={48} />
@@ -1007,7 +1036,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                   </div>
                 ) : showCheckoutForm ? (
                   /* Focused Order Summary when Checking Out */
-                  <div className="space-y-8">
+                  <div className="space-y-10">
                     <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-3xl border border-blue-100">
                       <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm">
                         <CheckCircle2 size={24} />
@@ -1036,6 +1065,147 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           </div>
                         )}
                       </div>
+                    </div>
+
+                    {/* MOVED FORM INSIDE SCROLLABLE AREA */}
+                    <div className="space-y-8 pb-10">
+                      <form onSubmit={handleQuickCheckout} className="space-y-8">
+                        <div className="grid grid-cols-1 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Votre Nom Complet</label>
+                            <input
+                              required
+                              type="text"
+                              placeholder="Ex: Amadou Maroua"
+                              className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm"
+                              value={checkoutData.name}
+                              onChange={(e) =>
+                                setCheckoutData({
+                                  ...checkoutData,
+                                  name: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Numéro WhatsApp</label>
+                            <input
+                              required
+                              type="tel"
+                              placeholder="6xx xx xx xx"
+                              className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm"
+                              value={checkoutData.phone}
+                              onChange={(e) =>
+                                setCheckoutData({
+                                  ...checkoutData,
+                                  phone: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-6">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Quartier & Précisions</label>
+                            <input
+                              required
+                              type="text"
+                              placeholder="Ex: Hardé, face École du Centre"
+                              className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm"
+                              value={checkoutData.quartier}
+                              onChange={(e) =>
+                                setCheckoutData({
+                                  ...checkoutData,
+                                  quartier: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Zone de Livraison</label>
+                            <div className="relative">
+                              <select 
+                                required
+                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 pr-12 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 appearance-none transition-all shadow-sm"
+                                value={selectedLocation}
+                                onChange={(e) => setSelectedLocation(e.target.value)}
+                              >
+                                <option value="">Où livrer le colis ?</option>
+                                {Array.from(new Set(cart.flatMap(item => {
+                                  const company = companies.find(c => c.id === item.companyId);
+                                  return Object.keys(company?.deliveryFees || {});
+                                }))).map(loc => (
+                                  <option key={loc} value={loc}>{loc}</option>
+                                ))}
+                                <option value="Autre / Centre-ville">Autre / Centre-ville</option>
+                              </select>
+                              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                <Truck size={20} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {selectedLocation && (
+                          <div className="p-6 bg-slate-900 rounded-[2rem] text-white space-y-4 shadow-xl shadow-slate-200 overflow-hidden relative">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                               <TrendingUp size={80} />
+                            </div>
+                            <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest opacity-60">
+                              <span>Sous-total articles</span>
+                              <span>{cartTotal.toLocaleString()} FCFA</span>
+                            </div>
+                            <div className="space-y-2">
+                               {Array.from(new Set(cart.map(i => i.companyId))).map(cid => {
+                                 const company = companies.find(c => c.id === cid);
+                                 const fee = company?.deliveryFees?.[selectedLocation] || 0;
+                                 return (
+                                   <div key={cid} className="flex justify-between items-center text-[10px] font-bold text-blue-300">
+                                     <span className="italic">Livraison {company?.name} :</span>
+                                     <span>{fee > 0 ? `+ ${fee.toLocaleString()} FCFA` : 'Inclus'}</span>
+                                   </div>
+                                 );
+                               })}
+                            </div>
+                            <div className="pt-4 border-t border-white/10 mt-2 flex justify-between items-center relative z-10">
+                              <span className="text-xs font-black uppercase">Total Final</span>
+                              <span className="text-2xl font-black text-emerald-400 tracking-tighter">
+                                {(cartTotal + Array.from(new Set(cart.map(i => i.companyId))).reduce((acc, cid) => {
+                                   const company = companies.find(c => c.id === cid);
+                                   return acc + (company?.deliveryFees?.[selectedLocation] || 0);
+                                }, 0)).toLocaleString()} FCFA
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex flex-col gap-4 pt-4">
+                          <button
+                            type="submit"
+                            disabled={submitting}
+                            className="w-full py-6 bg-blue-600 hover:bg-blue-700 text-white rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/30 disabled:opacity-50 flex items-center justify-center gap-4 transition-all active:scale-95 group"
+                          >
+                            {submitting ? "Nexus ERP Traitement..." : (
+                              <>
+                                Confirmer la commande <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowCheckoutForm(false)}
+                            className="w-full py-5 bg-white text-slate-400 rounded-3xl text-[10px] font-black uppercase tracking-widest hover:text-slate-900 transition-all border border-transparent hover:border-slate-100"
+                          >
+                            Revenir au panier
+                          </button>
+                        </div>
+                        
+                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest text-center leading-relaxed max-w-[240px] mx-auto">
+                          En confirmant, l'entreprise recevra votre demande sur sa plateforme de gestion.
+                        </p>
+                      </form>
                     </div>
                   </div>
                 ) : (
@@ -1174,151 +1344,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                 </div>
               )}
 
-              {showCheckoutForm && (
-                <motion.div
-                  initial={{ y: 50, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  className="p-8 border-t border-slate-100 bg-white space-y-10"
-                >
-                  <form onSubmit={handleQuickCheckout} className="space-y-8">
-                    <div className="grid grid-cols-1 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Votre Nom Complet</label>
-                        <input
-                          required
-                          type="text"
-                          placeholder="Ex: Amadou Maroua"
-                          className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm"
-                          value={checkoutData.name}
-                          onChange={(e) =>
-                            setCheckoutData({
-                              ...checkoutData,
-                              name: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Numéro WhatsApp</label>
-                        <input
-                          required
-                          type="tel"
-                          placeholder="6xx xx xx xx"
-                          className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm"
-                          value={checkoutData.phone}
-                          onChange={(e) =>
-                            setCheckoutData({
-                              ...checkoutData,
-                              phone: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Quartier & Précisions</label>
-                        <input
-                          required
-                          type="text"
-                          placeholder="Ex: Hardé, face École du Centre"
-                          className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm"
-                          value={checkoutData.quartier}
-                          onChange={(e) =>
-                            setCheckoutData({
-                              ...checkoutData,
-                              quartier: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Zone de Livraison</label>
-                        <div className="relative">
-                          <select 
-                            required
-                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 pr-12 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 appearance-none transition-all shadow-sm"
-                            value={selectedLocation}
-                            onChange={(e) => setSelectedLocation(e.target.value)}
-                          >
-                            <option value="">Où livrer le colis ?</option>
-                            {Array.from(new Set(cart.flatMap(item => {
-                              const company = companies.find(c => c.id === item.companyId);
-                              return Object.keys(company?.deliveryFees || {});
-                            }))).map(loc => (
-                              <option key={loc} value={loc}>{loc}</option>
-                            ))}
-                            <option value="Autre / Centre-ville">Autre / Centre-ville</option>
-                          </select>
-                          <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                            <Truck size={20} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {selectedLocation && (
-                      <div className="p-6 bg-slate-900 rounded-[2rem] text-white space-y-4 shadow-xl shadow-slate-200 overflow-hidden relative">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                           <TrendingUp size={80} />
-                        </div>
-                        <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest opacity-60">
-                          <span>Sous-total articles</span>
-                          <span>{cartTotal.toLocaleString()} FCFA</span>
-                        </div>
-                        <div className="space-y-2">
-                           {Array.from(new Set(cart.map(i => i.companyId))).map(cid => {
-                             const company = companies.find(c => c.id === cid);
-                             const fee = company?.deliveryFees?.[selectedLocation] || 0;
-                             return (
-                               <div key={cid} className="flex justify-between items-center text-[10px] font-bold text-blue-300">
-                                 <span className="italic">Livraison {company?.name} :</span>
-                                 <span>{fee > 0 ? `+ ${fee.toLocaleString()} FCFA` : 'Inclus'}</span>
-                               </div>
-                             );
-                           })}
-                        </div>
-                        <div className="pt-4 border-t border-white/10 mt-2 flex justify-between items-center relative z-10">
-                          <span className="text-xs font-black uppercase">Total Final</span>
-                          <span className="text-2xl font-black text-emerald-400 tracking-tighter">
-                            {(cartTotal + Array.from(new Set(cart.map(i => i.companyId))).reduce((acc, cid) => {
-                               const company = companies.find(c => c.id === cid);
-                               return acc + (company?.deliveryFees?.[selectedLocation] || 0);
-                            }, 0)).toLocaleString()} FCFA
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex flex-col gap-4 pt-4">
-                      <button
-                        type="submit"
-                        disabled={submitting}
-                        className="w-full py-6 bg-blue-600 hover:bg-blue-700 text-white rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/30 disabled:opacity-50 flex items-center justify-center gap-4 transition-all active:scale-95 group"
-                      >
-                        {submitting ? "Nexus ERP Traitement..." : (
-                          <>
-                            Confirmer la commande <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                          </>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowCheckoutForm(false)}
-                        className="w-full py-5 bg-white text-slate-400 rounded-3xl text-[10px] font-black uppercase tracking-widest hover:text-slate-900 transition-all border border-transparent hover:border-slate-100"
-                      >
-                        Revenir au panier
-                      </button>
-                    </div>
-                    
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest text-center leading-relaxed max-w-[240px] mx-auto">
-                      En confirmant, l'entreprise recevra votre demande sur sa plateforme de gestion.
-                    </p>
-                  </form>
-                </motion.div>
-              )}
+              {/* FORM REMOVED FROM HERE - MOVED INSIDE SCROLLABLE AREA */}
             </motion.div>
           </>
         )}

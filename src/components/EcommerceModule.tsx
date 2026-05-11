@@ -110,6 +110,24 @@ export default function EcommerceModule({ user }: { user: any }) {
   const isAdmin = canManage;
   const isSuperAdmin = ['owner', 'Administrateur', 'Directeur'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
 
+  // Hardware back button support
+  useEffect(() => {
+    const handlePushState = () => {
+      if (isCheckoutModalOpen || activeChatOrder || editingProduct) {
+        setCheckoutModalOpen(false);
+        setActiveChatOrder(null);
+        setEditingProduct(null);
+      }
+    };
+
+    if (isCheckoutModalOpen || activeChatOrder || editingProduct) {
+      window.history.pushState({ modal: true }, "");
+      window.addEventListener("popstate", handlePushState);
+    }
+
+    return () => window.removeEventListener("popstate", handlePushState);
+  }, [isCheckoutModalOpen, activeChatOrder, editingProduct]);
+
   // Connection check
   useEffect(() => {
     const checkConn = async () => {
