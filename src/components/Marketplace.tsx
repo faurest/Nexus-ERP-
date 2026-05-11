@@ -31,6 +31,9 @@ import {
   Truck,
   Clock,
   Package,
+  Heart,
+  History,
+  Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
@@ -75,6 +78,15 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     const saved = localStorage.getItem("nexus_cart");
     return saved ? JSON.parse(saved) : [];
   });
+  const [recentlyViewed, setRecentlyViewed] = useState<Product[]>(() => {
+    const saved = localStorage.getItem("nexus_recent");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    const saved = localStorage.getItem("nexus_favorites");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
@@ -94,6 +106,37 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   useEffect(() => {
     localStorage.setItem("nexus_cart", JSON.stringify(cart));
   }, [cart]);
+
+  useEffect(() => {
+    localStorage.setItem("nexus_recent", JSON.stringify(recentlyViewed));
+  }, [recentlyViewed]);
+
+  useEffect(() => {
+    localStorage.setItem("nexus_favorites", JSON.stringify(favorites));
+  }, [favorites]);
+
+  useEffect(() => {
+    if (cart.length > 0 || recentlyViewed.length > 0) {
+      setShowWelcomeBack(true);
+      const timer = setTimeout(() => setShowWelcomeBack(false), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const addToRecentlyViewed = (product: Product) => {
+    setRecentlyViewed(prev => {
+      const filtered = prev.filter(p => p.id !== product.id);
+      return [product, ...filtered].slice(0, 10); // Keep last 10
+    });
+  };
+
+  const toggleFavorite = (companyId: string) => {
+    setFavorites(prev => 
+      prev.includes(companyId) 
+        ? prev.filter(id => id !== companyId) 
+        : [...prev, companyId]
+    );
+  };
 
   const fetchGuestOrders = async () => {
     const ids = JSON.parse(localStorage.getItem("nexus_guest_orders") || "[]");
@@ -176,6 +219,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   }, [products, searchTerm, activeCompanyId]);
 
   const addToCart = (product: Product) => {
+    addToRecentlyViewed(product);
     const company = companies.find((c) => c.id === product.companyId);
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
@@ -430,6 +474,49 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
       </div>
 
       <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* Welcome Back Banner */}
+        <AnimatePresence>
+          {showWelcomeBack && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-blue-200 border border-blue-400/30 relative overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                <Sparkles size={120} />
+              </div>
+              <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30">
+                    <History size={28} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black italic uppercase tracking-tight">C'est bon de vous revoir !</h3>
+                    <p className="text-xs font-bold text-blue-50 opacity-80 uppercase tracking-widest mt-1">Nous avons conservé votre session intacte.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  {cart.length > 0 && (
+                    <button 
+                      onClick={() => setShowCart(true)}
+                      className="flex-1 sm:flex-none px-6 py-3 bg-white text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-lg active:scale-95"
+                    >
+                      Voir mon Panier ({cart.length})
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => setShowWelcomeBack(false)}
+                    className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* "Mall" Section */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -506,7 +593,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                     : "bg-white border-slate-100 hover:border-blue-200 shadow-sm",
                 )}
               >
-                <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-inner group-hover:scale-110 transition-transform bg-slate-50 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-inner group-hover:scale-110 transition-transform bg-slate-50 flex items-center justify-center relative">
                   {company.logo ? (
                     <img
                       src={company.logo}
@@ -518,6 +605,21 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                       {company.name.charAt(0)}
                     </span>
                   )}
+                  {/* Favorite Toggle */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFavorite(company.id);
+                    }}
+                    className={cn(
+                      "absolute top-1 right-1 p-1 rounded-full transition-all backdrop-blur-md",
+                      favorites.includes(company.id)
+                        ? "bg-red-500 text-white"
+                        : "bg-white/60 text-slate-400 hover:text-red-500"
+                    )}
+                  >
+                    <Heart size={10} fill={favorites.includes(company.id) ? "currentColor" : "none"} />
+                  </button>
                 </div>
                 <span
                   className={cn(
@@ -582,6 +684,119 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           })}
         </div>
 
+        {/* Personalized Sections - only on home */}
+        {searchTerm === "" && activeCompanyId === "all" && (
+          <div className="space-y-12">
+            {/* 1. Resume / Cart Reminder */}
+            {cart.length > 0 && (
+              <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8">
+                <div className="flex items-center gap-6">
+                  <div className="relative">
+                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                      <ShoppingBag size={32} />
+                    </div>
+                    <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                      {cart.length}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900 uppercase italic">Reprendre mes achats</h3>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Vous avez laissé {cart.length} article(s) dans votre panier.</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowCart(true)}
+                  className="w-full md:w-auto px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all flex items-center justify-center gap-3 shadow-xl"
+                >
+                  Finaliser la Commande <ArrowRight size={16} />
+                </button>
+              </div>
+            )}
+
+            {/* 2. Favorites / My Shops */}
+            {favorites.length > 0 && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-red-500">
+                    <Heart size={20} fill="currentColor" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest italic">Mes Adresses Favorites</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vos boutiques les plus consultées</p>
+                  </div>
+                </div>
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
+                  {companies.filter(c => favorites.includes(c.id)).map(company => (
+                    <motion.div 
+                      whileHover={{ scale: 1.05 }}
+                      key={company.id}
+                      onClick={() => setActiveCompanyId(company.id)}
+                      className="min-w-[140px] bg-white p-4 rounded-3xl border border-slate-100 flex flex-col items-center gap-4 cursor-pointer shadow-sm hover:shadow-md transition-all group"
+                    >
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-inner bg-slate-50 flex items-center justify-center">
+                        {company.logo ? <img src={company.logo} className="w-full h-full object-cover" /> : <Store className="text-slate-300" />}
+                      </div>
+                      <span className="text-[10px] font-black text-slate-900 uppercase italic truncate w-full text-center">{company.name}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 3. Recently Viewed */}
+            {recentlyViewed.length > 0 && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500">
+                    <History size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest italic">Articles Récemment Vus</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reprenez là où vous vous êtes arrêté</p>
+                  </div>
+                </div>
+                <div className="flex gap-5 overflow-x-auto pb-6 scrollbar-hide -mx-2 px-2">
+                  {recentlyViewed.map(product => (
+                    <motion.div 
+                      whileHover={{ y: -5 }}
+                      key={`recent-${product.id}`}
+                      onClick={() => {
+                        addToRecentlyViewed(product);
+                        setSelectedProduct(product);
+                      }}
+                      className="min-w-[180px] bg-white rounded-3xl border border-slate-100 overflow-hidden cursor-pointer shadow-sm group"
+                    >
+                      <div className="aspect-[4/3] overflow-hidden">
+                        <img src={product.image} className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all" />
+                      </div>
+                      <div className="p-4 space-y-1">
+                        <h4 className="text-[10px] font-black text-slate-900 uppercase italic line-clamp-1">{product.name}</h4>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[9px] font-black text-blue-600">{product.price.toLocaleString()} FCFA</span>
+                          <span className="text-[8px] font-bold text-slate-400 uppercase">{companies.find(c => c.id === product.companyId)?.name}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Dynamic List Header */}
+        <div className="flex items-center justify-between border-t border-slate-100 pt-8 mt-4">
+          <div className="space-y-0.5">
+            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic">
+              {searchTerm ? `Résultats pour "${searchTerm}"` : activeCompanyId === "all" ? "Toutes les nouveautés" : `Catalogue ${companies.find(c => c.id === activeCompanyId)?.name}`}
+            </h2>
+            <p className="text-[9px] font-bold text-slate-300 uppercase">
+              Les meilleurs prix de l'Extrême-Nord
+            </p>
+          </div>
+          <Filter className="text-slate-300" size={18} />
+        </div>
+
         {/* Product Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           <AnimatePresence mode="popLayout">
@@ -596,7 +811,10 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               >
                 <div
                   className="aspect-square overflow-hidden relative cursor-pointer group/img"
-                  onClick={() => setSelectedProduct(product)}
+                  onClick={() => {
+                    addToRecentlyViewed(product);
+                    setSelectedProduct(product);
+                  }}
                 >
                   <img
                     src={
@@ -854,7 +1072,27 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               </div>
 
               {cart.length > 0 && !showCheckoutForm && (
-                <div className="p-6 border-t border-slate-100 bg-slate-50/50 space-y-4">
+                <div className="p-6 border-t border-slate-100 bg-slate-50/50 space-y-6">
+                  {/* WhatsApp Sync Suggestion for Guests */}
+                  <div className="p-5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-3xl border border-emerald-100 flex items-center gap-4 group">
+                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-50 group-hover:scale-110 transition-transform">
+                      <MessageCircle size={24} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-tight">Sécuriser mon Panier</p>
+                      <p className="text-[9px] font-medium text-slate-500 mt-1 italic leading-snug">Liez votre activité à votre WhatsApp pour ne jamais perdre vos articles.</p>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        const message = "Bonjour Nexus, je souhaite lier mon panier Marketplace à mon compte WhatsApp. [SESSION_GUEST]";
+                        window.open(`https://wa.me/237690000000?text=${encodeURIComponent(message)}`, "_blank");
+                      }}
+                      className="p-3 bg-white text-emerald-600 rounded-xl shadow-sm hover:bg-emerald-600 hover:text-white transition-all active:scale-95"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
                       Total Estimate
