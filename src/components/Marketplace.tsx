@@ -8,6 +8,8 @@ import {
   onSnapshot,
   addDoc,
   serverTimestamp,
+  doc,
+  updateDoc,
 } from "../lib/firebase";
 import {
   ShoppingBag,
@@ -34,6 +36,7 @@ import {
   Heart,
   History,
   Sparkles,
+  Smartphone,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
@@ -101,6 +104,20 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     phone: "",
     quartier: "",
   });
+  const [paymentStep, setPaymentStep] = useState<'INFO' | 'PAYING' | 'SUCCESS'>('INFO');
+  const [paymentOperator, setPaymentOperator] = useState<'MTN' | 'ORANGE' | 'UNKNOWN'>('UNKNOWN');
+
+  // Detect Operator
+  useEffect(() => {
+    const num = checkoutData.phone.replace(/\s/g, "");
+    if (num.startsWith("67") || num.startsWith("68") || num.startsWith("650") || num.startsWith("651") || num.startsWith("652") || num.startsWith("653") || num.startsWith("654")) {
+      setPaymentOperator('MTN');
+    } else if (num.startsWith("69") || num.startsWith("655") || num.startsWith("656") || num.startsWith("657") || num.startsWith("658") || num.startsWith("659")) {
+      setPaymentOperator('ORANGE');
+    } else {
+      setPaymentOperator('UNKNOWN');
+    }
+  }, [checkoutData.phone]);
   const [selectedLocation, setSelectedLocation] = useState<string>("");
 
   useEffect(() => {
@@ -339,6 +356,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   const handleQuickCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setPaymentStep('PAYING');
 
     try {
       // Group items by companyId
@@ -376,6 +394,9 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             deliveryFee,
             deliveryLocation: selectedLocation,
             status: "PENDING",
+            paymentStatus: "PENDING_MOMO",
+            paymentMethod: paymentOperator === 'MTN' ? 'MTN MoMo' : (paymentOperator === 'ORANGE' ? 'Orange Money' : 'Mobile Money'),
+            operator: paymentOperator,
             date: serverTimestamp(),
             checkoutSource: "MARKETPLACE",
             customerName: checkoutData.name,
@@ -390,13 +411,23 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           localStorage.setItem('nexus_guest_orders', JSON.stringify(newIds));
           setOrderIds(newIds);
 
+          // Simulated Push Notification/USSD processing
+          // This represents the delay of the user confirming on their phone
+          await new Promise(resolve => setTimeout(resolve, 8000));
+
+          // UPDATE ORDER TO PAID (SIMULATED)
+          await updateDoc(doc(db, "ecommerce_orders", orderRef.id), {
+            paymentStatus: "PAID",
+            status: "PROCESSING"
+          });
+
           // Notify company owner and any ecommerce manager if possible
           if (company?.ownerId) {
             await createNotification(
               companyId,
               [company.ownerId],
-              "URGENT: Nouvelle Commande Marketplace !",
-              `${checkoutData.name} a passé une commande de ${(companyTotal + deliveryFee).toLocaleString()} FCFA. Veuillez traiter via le module E-commerce.`,
+              "URGENT: Nouvelle Commande Marketplace Payée !",
+              `${checkoutData.name} a passé une commande de ${(companyTotal + deliveryFee).toLocaleString()} FCFA et a payé par ${paymentOperator}.`,
               "alert"
             );
           }
@@ -405,12 +436,16 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
       await Promise.all(orderPromises);
 
-      setCart([]);
-      setShowCheckoutForm(false);
-      setShowCart(false);
-      alert("Votre commande a été envoyée avec succès à l'entreprise !");
+      setPaymentStep('SUCCESS');
+      setTimeout(() => {
+        setCart([]);
+        setShowCheckoutForm(false);
+        setShowCart(false);
+        setPaymentStep('INFO');
+      }, 5000);
     } catch (err) {
       console.error("Order save failed:", err);
+      setPaymentStep('INFO');
       alert("Une erreur est survenue lors de l'enregistrement de votre commande.");
     } finally {
       setSubmitting(false);
@@ -1036,7 +1071,76 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                   </div>
                 ) : showCheckoutForm ? (
                   /* Focused Order Summary when Checking Out */
-                  <div className="space-y-10">
+                  <div className="space-y-10 relative">
+                    {paymentStep === 'PAYING' && (
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="absolute inset-x-0 -top-6 bottom-0 bg-white/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-10 text-center space-y-8"
+                      >
+                        <div className="relative">
+                           <div className={cn(
+                             "w-24 h-24 rounded-[2rem] flex items-center justify-center text-white shadow-2xl animate-pulse transition-colors duration-1000",
+                             paymentOperator === 'MTN' ? "bg-[#FFCC00]" : (paymentOperator === 'ORANGE' ? "bg-[#FF7900]" : "bg-blue-600")
+                           )}>
+                             <Smartphone size={40} />
+                           </div>
+                           <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg border border-slate-100">
+                             <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                           </div>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <h3 className="text-xl font-black text-slate-900 uppercase italic">Validation USSD Push</h3>
+                          <p className="text-xs font-bold text-slate-500 leading-relaxed px-4">
+                            Veuillez consulter votre téléphone <span className="text-slate-900 font-black">({checkoutData.phone})</span> et entrer votre code secret <span className={cn("font-black", paymentOperator === 'MTN' ? "text-[#FFCC00]" : "text-[#FF7900]")}>{paymentOperator}</span> pour autoriser la transaction.
+                          </p>
+                        </div>
+                        
+                        <div className="w-full bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                           <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                             <span>Statut</span>
+                             <span className="text-blue-600 animate-pulse">En attente...</span>
+                           </div>
+                           <div className="h-1 w-full bg-slate-200 rounded-full overflow-hidden">
+                             <motion.div 
+                               initial={{ width: 0 }}
+                               animate={{ width: "100%" }}
+                               transition={{ duration: 8, ease: "linear" }}
+                               className="h-full bg-blue-600"
+                             />
+                           </div>
+                        </div>
+
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic">NE FERMEZ PAS CETTE PAGE</p>
+                      </motion.div>
+                    )}
+
+                    {paymentStep === 'SUCCESS' && (
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="absolute inset-x-0 -top-6 bottom-0 bg-white z-50 flex flex-col items-center justify-center p-10 text-center space-y-8"
+                      >
+                        <div className="w-24 h-24 bg-emerald-500 rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-emerald-500/30">
+                           <CheckCircle2 size={48} />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <h3 className="text-2xl font-black text-slate-900 uppercase italic">Paiement Réussi !</h3>
+                          <p className="text-xs font-bold text-slate-500">
+                            Votre commande a été validée et payée avec succès.
+                          </p>
+                        </div>
+
+                        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                          Transaction Terminée
+                        </div>
+                        
+                        <p className="text-[9px] font-bold text-slate-400 italic">Redirection vers vos commandes...</p>
+                      </motion.div>
+                    )}
+
                     <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-3xl border border-blue-100">
                       <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm">
                         <CheckCircle2 size={24} />
@@ -1697,20 +1801,15 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                             <h3 className="text-sm font-black text-slate-900 uppercase">CMD-{order.id.slice(0, 8)}</h3>
                           </div>
                           <div className={cn(
-                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm flex items-center gap-1.5",
+                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm",
                             order.status === 'PENDING' ? "bg-amber-50 text-amber-600 border-amber-100" :
-                            order.status === 'PROCESSING' ? "bg-blue-50 text-blue-600 border-blue-100 animate-pulse" :
-                            order.status === 'SHIPPED' ? "bg-indigo-50 text-indigo-600 border-indigo-100 animate-pulse" :
+                            order.status === 'PROCESSING' ? "bg-blue-50 text-blue-600 border-blue-100" :
+                            order.status === 'SHIPPED' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
                             "bg-emerald-50 text-emerald-600 border-emerald-100"
                           )}>
-                            <span className={cn("w-1.5 h-1.5 rounded-full", 
-                              order.status === 'PENDING' ? "bg-amber-400" :
-                              order.status === 'PROCESSING' ? "bg-blue-400" :
-                              order.status === 'SHIPPED' ? "bg-indigo-400" : "bg-emerald-400"
-                            )} />
-                            {order.status === 'PENDING' ? 'En Attente' : 
-                             order.status === 'PROCESSING' ? 'En Traitement' :
-                             order.status === 'SHIPPED' ? 'En Livraison' : 'Colis Arrivé'}
+                            {order.status === 'PENDING' ? 'Attente' : 
+                             order.status === 'PROCESSING' ? 'En cours' :
+                             order.status === 'SHIPPED' ? 'Expédiée' : 'Livrée'}
                           </div>
                         </div>
 
@@ -1740,8 +1839,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                   <div key={step.id} className="flex flex-col items-center">
                                     <div className={cn(
                                       "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 z-10 border-4 border-white shadow-sm",
-                                      isPast ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-400",
-                                      order.status === step.id && step.id !== 'DELIVERED' && "ring-4 ring-blue-50 scale-110"
+                                      isPast ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-400"
                                     )}>
                                       {step.icon}
                                     </div>
@@ -1750,29 +1848,6 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                               })}
                            </div>
                         </div>
-
-                        {/* High Visibility Status Messages */}
-                        {['PROCESSING', 'SHIPPED'].includes(order.status) && (
-                          <div className={cn(
-                            "p-4 rounded-2xl flex items-center gap-4 border",
-                            order.status === 'PROCESSING' ? "bg-blue-50/50 border-blue-100" : "bg-indigo-50/50 border-indigo-100"
-                          )}>
-                            <div className={cn(
-                              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                              order.status === 'PROCESSING' ? "bg-blue-600 text-white" : "bg-indigo-600 text-white"
-                            )}>
-                              {order.status === 'PROCESSING' ? <Package size={20} /> : <Truck size={20} />}
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 leading-tight">
-                                {order.status === 'PROCESSING' ? "Votre commande a été prise en charge." : "Votre colis est en route !"}
-                              </p>
-                              <p className="text-[9px] font-semibold text-slate-500 mt-0.5 leading-snug italic">
-                                {order.status === 'PROCESSING' ? "L'entreprise prépare actuellement vos articles." : "Le livreur est en mouvement vers Maroua."}
-                              </p>
-                            </div>
-                          </div>
-                        )}
 
                         <div className="space-y-3 pt-2">
                           <div className="flex justify-between items-center text-[10px] font-black">
@@ -1793,14 +1868,14 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           onClick={() => {
                             const company = companies.find(c => c.id === order.companyId);
                             if (company?.whatsappNumber) {
-                               const message = `Bonjour, je souhaite discuter avec l'équipe de gestion de ma commande CMD-${order.id.slice(0, 8).toUpperCase()} sur Nexus Marketplace. Merci !`;
+                               const message = `Bonjour, je souhaiterais avoir des informations sur ma commande CMD-${order.id.slice(0, 8).toUpperCase()} sur Nexus Marketplace. Merci !`;
                                window.open(`https://wa.me/${company.whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank");
                             }
                           }}
-                          className="w-full py-5 bg-white border-2 border-slate-100 rounded-3xl text-[10px] font-black text-slate-900 uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-sm flex items-center justify-center gap-3 group/btn"
+                          className="w-full py-4 bg-white border border-slate-200 rounded-2xl text-[9px] font-black text-slate-600 uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2 group/btn"
                         >
-                          <MessageCircle size={16} className="group-hover/btn:scale-110 transition-transform text-blue-600 group-hover/btn:text-white" /> 
-                          Aide de l'entreprise
+                          <MessageCircle size={14} className="group-hover/btn:scale-110 transition-transform" /> 
+                          Aide WhatsApp
                         </button>
                       </div>
                     ))
