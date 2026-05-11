@@ -97,13 +97,13 @@ export default function AdminModule() {
             const status = (u.uid || existing?.uid || u.status === 'active') ? 'connected' : 'invited';
             
             userMap.set(email, {
-              ...u,
               ...existing,
-              id: email,
+              ...u,
               email: email,
               displayName: u.name || u.displayName || existing?.displayName || 'Utilisateur Invitée',
               status: status,
-              uid: u.uid || existing?.uid || null
+              uid: u.uid || existing?.uid || null,
+              nexusId: u.id || existing?.nexusId || existing?.id || null
             });
           }
         });
@@ -672,10 +672,11 @@ export default function AdminModule() {
 
   const handleStatusCheck = () => {
     const unlinked = systemUsers.filter(u => u.status === 'invited' && u.source === 'personnel');
+    const noEmail = systemUsers.filter(u => !u.email || u.email === '-');
     const totals = systemUsers.length;
     const connected = systemUsers.filter(u => u.status === 'connected').length;
     
-    alert(`Rapport d'Intégrité:\n- Total Utilisateurs: ${totals}\n- Connectés: ${connected}\n- Invitations en attente: ${unlinked.length}`);
+    alert(`Rapport d'Intégrité:\n- Total Utilisateurs: ${totals}\n- Connectés: ${connected}\n- Invitations en attente: ${unlinked.length}\n- Sans Email: ${noEmail.length}`);
   };
 
   const handleDeduplicateUsers = async () => {
@@ -763,6 +764,10 @@ export default function AdminModule() {
           finalData.status = 'connected';
           finalData.updatedAt = serverTimestamp();
           delete finalData.id;
+          
+          // CRITICAL: Ensure email is never undefined
+          if (!finalData.email && targetDoc.id.includes('@')) finalData.email = targetDoc.id;
+          
           Object.keys(finalData).forEach(k => { if (finalData[k] === undefined) finalData[k] = null; });
           await setDoc(doc(db, 'users', targetDoc.id), finalData, { merge: true });
         }
@@ -1117,12 +1122,14 @@ export default function AdminModule() {
                     <div>
                       <p className="text-sm font-black text-slate-900">{u.displayName || 'Utilisateur'}</p>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                        {u.uid ? `ID: ${u.uid.substring(0, 8)}` : 'En attente de connexion'}
+                        {u.status === 'connected' ? `Nexus Active: ${u.uid?.substring(0, 8)}` : `Nexus ID: ${u.nexusId || u.id?.substring(0, 8) || '???'}`}
                       </p>
                     </div>
                   </div>
                 </div>
-                <div className="text-xs font-bold text-slate-600">{u.email || '-'}</div>
+                <div className="text-xs font-bold text-slate-600">
+                  {u.email || u.id || '-'}
+                </div>
                 <div>
                   {u.status === 'connected' ? (
                     <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap">

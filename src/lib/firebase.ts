@@ -172,12 +172,18 @@ export const loginWithGoogle = async () => {
       const cleanEmail = rawEmail ? rawEmail.trim().toLowerCase().replace(/\s+/g, '') : null;
       
       const userId = cleanEmail || result.user.uid;
-      const userData = {
+      const userData: any = {
         uid: result.user.uid,
-        email: cleanEmail,
+        email: cleanEmail || null,
         displayName: result.user.displayName || (cleanEmail ? cleanEmail.split('@')[0] : 'Utilisateur Nexus'),
+        photoURL: result.user.photoURL || null,
         updatedAt: firestoreServerTimestamp()
       };
+
+      // Sanitize userData to avoid Firestore crashes on undefined
+      Object.keys(userData).forEach(key => {
+        if (userData[key] === undefined) userData[key] = null;
+      });
 
       await firestoreSetDoc(firestoreDoc(db, 'users', userId), userData, { merge: true });
       

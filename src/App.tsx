@@ -657,7 +657,8 @@ export default function App() {
                   ...prev, 
                   role: memberData.role || 'Personnel',
                   customPermissions: memberData.customPermissions || [],
-                  email: user.email || memberData.email // Ensure email is not lost
+                  email: user.email || memberData.email,
+                  nexusId: memberData.id || memberDoc.id
                 } : null);
               }
             } else {
@@ -693,7 +694,8 @@ export default function App() {
                   setUser(prev => prev ? { 
                     ...prev, 
                     role: 'Client',
-                    email: user.email || clientData.email // Ensure email is not lost
+                    email: user.email || clientData.email,
+                    nexusId: clientData.id || clientSnap.docs[0].id
                   } : null);
                } else {
                  setIsBlocked(true); // Treat as unauthorized
