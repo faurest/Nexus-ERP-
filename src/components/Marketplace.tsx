@@ -28,6 +28,9 @@ import {
   ArrowLeft,
   FileText,
   CheckCircle2,
+  Truck,
+  Clock,
+  Package,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
@@ -77,6 +80,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [showTransportCalc, setShowTransportCalc] = useState(false);
   const [showCatalogue, setShowCatalogue] = useState(false);
+  const [showTracking, setShowTracking] = useState(false);
+  const [guestOrders, setGuestOrders] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [nairaEnabled, setNairaEnabled] = useState(false);
   const [checkoutData, setCheckoutData] = useState({
@@ -89,6 +94,46 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   useEffect(() => {
     localStorage.setItem("nexus_cart", JSON.stringify(cart));
   }, [cart]);
+
+  const fetchGuestOrders = async () => {
+    const ids = JSON.parse(localStorage.getItem("nexus_guest_orders") || "[]");
+    if (ids.length === 0) {
+      setGuestOrders([]);
+      return;
+    }
+
+    try {
+      const chunks = [];
+      for (let i = 0; i < ids.length; i += 10) {
+        chunks.push(ids.slice(i, i + 10));
+      }
+
+      const allOrders: any[] = [];
+      for (const chunk of chunks) {
+        const q = query(
+          collection(db, "ecommerce_orders"),
+          where("__name__", "in", chunk),
+        );
+        const snap = await getDocs(q);
+        snap.forEach((doc) => {
+          allOrders.push({ id: doc.id, ...doc.data() });
+        });
+      }
+      setGuestOrders(
+        allOrders.sort(
+          (a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0),
+        ),
+      );
+    } catch (err) {
+      console.error("Error fetching guest orders:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (showTracking) {
+      fetchGuestOrders();
+    }
+  }, [showTracking]);
 
   useEffect(() => {
     setLoading(true);
@@ -408,6 +453,12 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                 className="flex items-center gap-2 text-[9px] font-black text-slate-600 uppercase bg-white px-4 py-2 rounded-full hover:bg-slate-50 transition-all border border-slate-200 shadow-sm"
               >
                 <FileText size={12} /> Catalogue
+              </button>
+              <button
+                onClick={() => setShowTracking(true)}
+                className="flex items-center gap-2 text-[9px] font-black text-blue-600 uppercase bg-blue-50 px-4 py-2 rounded-full hover:bg-blue-100 transition-all border border-blue-100 shadow-sm"
+              >
+                <Truck size={12} /> Suivi Commandes
               </button>
             </div>
           </div>
@@ -1252,6 +1303,131 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                       </div>
                     );
                   })}
+               </div>
+            </motion.div>
+          </>
+        )}
+     </AnimatePresence>
+     {/* Tracking View Modal */}
+     <AnimatePresence>
+        {showTracking && (
+          <>
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setShowTracking(false)}
+               className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[120]"
+            />
+            <motion.div 
+               initial={{ x: "100%" }}
+               animate={{ x: 0 }}
+               exit={{ x: "100%" }}
+               className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl z-[140] flex flex-col"
+            >
+               <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0">
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900 uppercase italic">Suivi Commandes</h2>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vos derniers achats sur Nexus</p>
+                  </div>
+                  <button onClick={() => setShowTracking(false)} className="p-3 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-all"><X size={20} /></button>
+               </div>
+               
+               <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
+                  {guestOrders.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center space-y-4 opacity-40 py-20 text-center">
+                      <ShoppingBag size={48} />
+                      <p className="text-sm font-black uppercase tracking-widest">Aucune commande trouvée</p>
+                      <p className="text-[10px] font-medium text-slate-500 max-w-[200px]">Passez une commande pour commencer le suivi en temps réel.</p>
+                    </div>
+                  ) : (
+                    guestOrders.map((order) => (
+                      <div key={order.id} className="bg-slate-50 rounded-[2rem] p-6 border border-slate-100 space-y-6">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">N° COMMANDE</span>
+                            <h3 className="text-sm font-black text-slate-900 uppercase">CMD-{order.id.slice(0, 8)}</h3>
+                          </div>
+                          <div className={cn(
+                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm",
+                            order.status === 'PENDING' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                            order.status === 'PROCESSING' ? "bg-blue-50 text-blue-600 border-blue-100" :
+                            order.status === 'SHIPPED' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
+                            "bg-emerald-50 text-emerald-600 border-emerald-100"
+                          )}>
+                            {order.status === 'PENDING' ? 'Attente' : 
+                             order.status === 'PROCESSING' ? 'En cours' :
+                             order.status === 'SHIPPED' ? 'Expédiée' : 'Livrée'}
+                          </div>
+                        </div>
+
+                        {/* Order Timeline Visual */}
+                        <div className="relative pt-2 px-1">
+                           <div className="absolute top-6 left-0 right-0 h-1 bg-slate-200 rounded-full" />
+                           <div 
+                             className="absolute top-6 left-0 h-1 bg-blue-600 rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(37,99,235,0.4)]" 
+                             style={{ 
+                               width: order.status === 'PENDING' ? '5%' : 
+                                      order.status === 'PROCESSING' ? '38%' : 
+                                      order.status === 'SHIPPED' ? '72%' : '100%' 
+                             }}
+                           />
+                           <div className="flex justify-between relative">
+                              {[
+                                { id: 'PENDING', icon: <Clock size={12} /> },
+                                { id: 'PROCESSING', icon: <Package size={12} /> },
+                                { id: 'SHIPPED', icon: <Truck size={12} /> },
+                                { id: 'DELIVERED', icon: <CheckCircle2 size={12} /> }
+                              ].map((step, idx) => {
+                                const statuses = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+                                const currentIdx = statuses.indexOf(order.status);
+                                const isPast = idx <= currentIdx;
+                                
+                                return (
+                                  <div key={step.id} className="flex flex-col items-center">
+                                    <div className={cn(
+                                      "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 z-10 border-4 border-white shadow-sm",
+                                      isPast ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-400"
+                                    )}>
+                                      {step.icon}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                           </div>
+                        </div>
+
+                        <div className="space-y-3 pt-2">
+                          <div className="flex justify-between items-center text-[10px] font-black">
+                            <span className="text-slate-400 uppercase tracking-widest">Date</span>
+                            <span className="text-slate-900">{order.date?.toDate()?.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) || 'Récent'}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[10px] font-black">
+                            <span className="text-slate-400 uppercase tracking-widest">Boutique</span>
+                            <span className="text-slate-900 uppercase italic">{companies.find(c => c.id === order.companyId)?.name || 'Nexus Shop'}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[10px] font-black border-t border-slate-100 pt-3">
+                            <span className="text-slate-400 uppercase tracking-widest">Total</span>
+                            <span className="text-sm font-black text-blue-600">{order.total.toLocaleString()} FCFA</span>
+                          </div>
+                        </div>
+
+                        <button 
+                          onClick={() => {
+                            const company = companies.find(c => c.id === order.companyId);
+                            if (company?.whatsappNumber) {
+                               const message = `Bonjour, je souhaiterais avoir des informations sur ma commande CMD-${order.id.slice(0, 8).toUpperCase()} sur Nexus Marketplace. Merci !`;
+                               window.open(`https://wa.me/${company.whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank");
+                            }
+                          }}
+                          className="w-full py-4 bg-white border border-slate-200 rounded-2xl text-[9px] font-black text-slate-600 uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2 group/btn"
+                        >
+                          <MessageCircle size={14} className="group-hover/btn:scale-110 transition-transform" /> 
+                          Aide WhatsApp
+                        </button>
+                      </div>
+                    ))
+                  )}
                </div>
             </motion.div>
           </>
