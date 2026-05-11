@@ -23,6 +23,8 @@ import {
   ArrowRight,
   TrendingUp,
   Tag,
+  ArrowLeft,
+  FileText,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
@@ -68,6 +70,7 @@ export default function Marketplace() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [showTransportCalc, setShowTransportCalc] = useState(false);
+  const [showCatalogue, setShowCatalogue] = useState(false);
   const [nairaEnabled, setNairaEnabled] = useState(false);
   const [checkoutData, setCheckoutData] = useState({
     name: "",
@@ -228,8 +231,17 @@ export default function Marketplace() {
   return (
     <div className="relative min-h-screen bg-slate-50/50 pb-24">
       {/* Search & Navigation Sticky Header */}
-      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-4">
+      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center gap-4 px-6 py-4">
+        <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center gap-4">
+          {/* Back Button */}
+          <button
+            onClick={() => (window.location.hash = "#dashboard")}
+            className="hidden md:flex items-center gap-2 p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all font-black text-[9px] uppercase tracking-widest hover:border-slate-300"
+          >
+            <ArrowLeft size={18} />
+            Accueil
+          </button>
+
           <div className="flex items-center gap-3 shrink-0">
             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
               <Store size={22} />
@@ -308,6 +320,12 @@ export default function Marketplace() {
                 className="flex items-center gap-2 text-[9px] font-black text-blue-600 uppercase bg-blue-50 px-4 py-2 rounded-full hover:bg-blue-100 transition-all border border-blue-100"
               >
                 <TrendingUp size={12} /> Estimer Livraison
+              </button>
+              <button
+                onClick={() => setShowCatalogue(true)}
+                className="flex items-center gap-2 text-[9px] font-black text-slate-600 uppercase bg-white px-4 py-2 rounded-full hover:bg-slate-50 transition-all border border-slate-200 shadow-sm"
+              >
+                <FileText size={12} /> Catalogue
               </button>
             </div>
           </div>
@@ -489,7 +507,7 @@ export default function Marketplace() {
 
                 <div className="p-5 flex-1 flex flex-col justify-between">
                   <div className="space-y-1">
-                    <h3 className="text-sm font-black text-slate-900 tracking-tight line-clamp-1">
+                    <h3 className="text-sm font-black text-slate-900 tracking-tight leading-tight group-hover:text-blue-600 transition-colors italic line-clamp-1">
                       {product.name}
                     </h3>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -497,37 +515,48 @@ export default function Marketplace() {
                     </p>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-black text-slate-900 leading-none tracking-tight">
-                        {nairaEnabled
-                          ? `₦ ${((product.price * GLOBAL_NAIRA_RATE) / 1000).toFixed(1)}k`
-                          : `${product.price.toLocaleString()}`}
-                      </span>
-                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                        {nairaEnabled ? "Naira (Est)" : "FCFA"}
-                      </span>
+                  <div className="mt-4 flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-black text-slate-900 leading-none tracking-tight">
+                          {nairaEnabled
+                            ? `₦ ${((product.price * GLOBAL_NAIRA_RATE) / 1000).toFixed(1)}k`
+                            : `${product.price.toLocaleString()}`}
+                        </span>
+                        <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                          {nairaEnabled ? "Naira (Est)" : "FCFA"}
+                        </span>
+                      </div>
+                      <div
+                        className={cn(
+                          "px-2 py-1 rounded-lg text-[7px] font-black uppercase tracking-widest border",
+                          getStockStatus(product.stock).color,
+                        )}
+                      >
+                        {getStockStatus(product.stock).label}
+                      </div>
                     </div>
-                    <div className="flex gap-1.5">
+
+                    <div className="flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           checkoutWhatsApp(product);
                         }}
-                        className="w-9 h-9 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-100"
+                        className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-100 active:scale-90"
                         title="Négocier sur WhatsApp"
                       >
-                        <MessageCircle size={16} />
+                        <MessageCircle size={20} />
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           addToCart(product);
                         }}
-                        className="flex-1 h-9 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-slate-200 group-hover:shadow-blue-600/20 px-3"
+                        className="flex-1 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-slate-200 group-hover:shadow-blue-600/20 px-4"
                       >
-                        <Plus size={16} className="mr-1" />
-                        <span className="text-[9px] font-black uppercase tracking-widest">
+                        <Plus size={18} className="mr-2" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.1em]">
                           Panier
                         </span>
                       </button>
@@ -1026,6 +1055,83 @@ export default function Marketplace() {
           </>
         )}
       </AnimatePresence>
+     {/* Catalogue View Modal */}
+     <AnimatePresence>
+        {showCatalogue && (
+          <>
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setShowCatalogue(false)}
+               className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[120]"
+            />
+            <motion.div 
+               initial={{ y: "100%", opacity: 0 }}
+               animate={{ y: 0, opacity: 1 }}
+               exit={{ y: "100%", opacity: 0 }}
+               className="fixed inset-x-0 bottom-0 top-10 md:top-20 bg-white rounded-t-[3rem] shadow-2xl z-[130] flex flex-col"
+            >
+               <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white rounded-t-[3rem] sticky top-0">
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900 uppercase italic">Catalogue Complet</h2>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Maroua Nexus Connect • {filteredProducts.length} articles</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => window.print()}
+                      className="px-6 py-3 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                    >
+                      Imprimer / PDF
+                    </button>
+                    <button onClick={() => setShowCatalogue(false)} className="p-3 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-all"><X size={20} /></button>
+                  </div>
+               </div>
+               
+               <div className="flex-1 overflow-y-auto p-8 space-y-12">
+                  {companies.map(company => {
+                    const companyProducts = filteredProducts.filter(p => p.companyId === company.id);
+                    if (companyProducts.length === 0) return null;
+                    return (
+                      <div key={company.id} className="space-y-6">
+                        <div className="flex items-center gap-4 pb-4 border-b-2 border-slate-100">
+                          <div className="w-12 h-12 bg-slate-50 rounded-xl overflow-hidden shadow-inner flex items-center justify-center font-black text-slate-300">
+                            {company.logo ? <img src={company.logo} className="w-full h-full object-cover" alt="" /> : company.name.charAt(0)}
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-black text-slate-900 uppercase">{company.name}</h3>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                               <MessageCircle size={10} /> {company.whatsappNumber}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                           {companyProducts.map(p => (
+                             <div key={p.id} className="flex gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                               <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
+                                  <img src={p.image} className="w-full h-full object-cover" alt="" />
+                               </div>
+                               <div className="flex-1 flex flex-col justify-between">
+                                  <div>
+                                    <h4 className="text-xs font-black text-slate-900 uppercase italic leading-tight">{p.name}</h4>
+                                    <p className="text-[8px] font-bold text-slate-400 uppercase">{p.category}</p>
+                                  </div>
+                                  <div className="flex items-center justify-between mt-2">
+                                     <span className="text-xs font-black text-slate-900">{p.price.toLocaleString()} FCFA</span>
+                                     <span className={cn("text-[7px] font-black uppercase px-2 py-0.5 rounded-full", getStockStatus(p.stock).color)}>{getStockStatus(p.stock).label}</span>
+                                  </div>
+                                </div>
+                             </div>
+                           ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+               </div>
+            </motion.div>
+          </>
+        )}
+     </AnimatePresence>
     </div>
   );
 }
