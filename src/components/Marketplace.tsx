@@ -138,38 +138,47 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     );
   };
 
-  const fetchGuestOrders = async () => {
-    const ids = JSON.parse(localStorage.getItem("nexus_guest_orders") || "[]");
-    if (ids.length === 0) {
-      setGuestOrders([]);
-      return;
+  const [orderIds, setOrderIds] = useState<string[]>(() => {
+    return JSON.parse(localStorage.getItem("nexus_guest_orders") || "[]");
+  });
+  const [activeOrderCount, setActiveOrderCount] = useState(0);
+
+  useEffect(() => {
+    if (orderIds.length === 0) return;
+
+    const chunks = [];
+    for (let i = 0; i < orderIds.length; i += 10) {
+      chunks.push(orderIds.slice(i, i + 10));
     }
 
-    try {
-      const chunks = [];
-      for (let i = 0; i < ids.length; i += 10) {
-        chunks.push(ids.slice(i, i + 10));
-      }
-
-      const allOrders: any[] = [];
-      for (const chunk of chunks) {
-        const q = query(
-          collection(db, "ecommerce_orders"),
-          where("__name__", "in", chunk),
-        );
-        const snap = await getDocs(q);
-        snap.forEach((doc) => {
-          allOrders.push({ id: doc.id, ...doc.data() });
-        });
-      }
-      setGuestOrders(
-        allOrders.sort(
-          (a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0),
-        ),
+    const unsubscribes = chunks.map((chunk) => {
+      const q = query(
+        collection(db, "ecommerce_orders"),
+        where("__name__", "in", chunk),
       );
-    } catch (err) {
-      console.error("Error fetching guest orders:", err);
-    }
+      return onSnapshot(q, (snap) => {
+        const orders = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setGuestOrders((prev) => {
+          const otherOrders = prev.filter((o) => !chunk.includes(o.id));
+          return [...otherOrders, ...orders].sort(
+            (a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0),
+          );
+        });
+      });
+    });
+
+    return () => unsubscribes.forEach((unsub) => unsub());
+  }, [orderIds]);
+
+  useEffect(() => {
+    const active = guestOrders.filter((o) =>
+      ["PENDING", "PROCESSING", "SHIPPED"].includes(o.status),
+    ).length;
+    setActiveOrderCount(active);
+  }, [guestOrders]);
+
+  const fetchGuestOrders = async () => {
+    // This is now handled by the real-time effect
   };
 
   useEffect(() => {
@@ -357,7 +366,9 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
           // Save to guest orders for tracking
           const existingGuestOrders = JSON.parse(localStorage.getItem('nexus_guest_orders') || '[]');
-          localStorage.setItem('nexus_guest_orders', JSON.stringify([...existingGuestOrders, orderRef.id]));
+          const newIds = [...existingGuestOrders, orderRef.id];
+          localStorage.setItem('nexus_guest_orders', JSON.stringify(newIds));
+          setOrderIds(newIds);
 
           // Notify company owner and any ecommerce manager if possible
           if (company?.ownerId) {
@@ -458,6 +469,21 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             >
               {nairaEnabled ? "Naira (₦)" : "FCFA"}
             </button>
+            
+            {/* Suivi Commandes Button in Header */}
+            <button
+              onClick={() => setShowTracking(true)}
+              className="relative p-3 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:text-blue-600 transition-all shadow-sm group"
+              title="Suivi de mes commandes"
+            >
+              <Truck size={20} className={cn(activeOrderCount > 0 ? "text-blue-600" : "text-slate-400")} />
+              {activeOrderCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
+                  {activeOrderCount}
+                </span>
+              )}
+            </button>
+
             <button
               onClick={() => setShowCart(true)}
               className="relative p-3 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:text-blue-600 transition-all shadow-sm"
@@ -531,21 +557,15 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setShowTransportCalc(true)}
-                className="flex items-center gap-2 text-[9px] font-black text-blue-600 uppercase bg-blue-50 px-4 py-2 rounded-full hover:bg-blue-100 transition-all border border-blue-100"
+                className="flex items-center gap-2 text-[9px] font-black text-blue-600 uppercase bg-blue-50 px-4 py-3 rounded-2xl hover:bg-blue-100 transition-all border border-blue-100 shadow-sm"
               >
-                <TrendingUp size={12} /> Estimer Livraison
+                <TrendingUp size={14} /> Estimer Livraison
               </button>
               <button
                 onClick={() => setShowCatalogue(true)}
-                className="flex items-center gap-2 text-[9px] font-black text-slate-600 uppercase bg-white px-4 py-2 rounded-full hover:bg-slate-50 transition-all border border-slate-200 shadow-sm"
+                className="flex items-center gap-2 text-[9px] font-black text-slate-600 uppercase bg-white px-4 py-3 rounded-2xl hover:bg-slate-50 transition-all border border-slate-200 shadow-sm"
               >
-                <FileText size={12} /> Catalogue
-              </button>
-              <button
-                onClick={() => setShowTracking(true)}
-                className="flex items-center gap-2 text-[9px] font-black text-blue-600 uppercase bg-blue-50 px-4 py-2 rounded-full hover:bg-blue-100 transition-all border border-blue-100 shadow-sm"
-              >
-                <Truck size={12} /> Suivi Commandes
+                <FileText size={14} /> Catalogue Officiel
               </button>
             </div>
           </div>
@@ -1706,6 +1726,40 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           </>
         )}
      </AnimatePresence>
+
+      {/* Floating Tracking Shortcut */}
+      {activeOrderCount > 0 && !showTracking && (
+        <motion.div
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[45] w-[92%] max-w-md"
+        >
+          <button
+            onClick={() => setShowTracking(true)}
+            className="w-full bg-slate-900 border border-slate-700/50 backdrop-blur-xl p-4 rounded-[2rem] flex items-center justify-between shadow-2xl shadow-blue-900/30 group overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-emerald-400 to-blue-600 animate-pulse" />
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-600 rounded-[1.25rem] flex items-center justify-center text-white relative shadow-inner">
+                 <Truck size={22} className="group-hover:translate-x-1 transition-transform" />
+                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900" />
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] font-black text-white uppercase tracking-tighter">Mes Commandes Maroua</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase italic">
+                  {activeOrderCount} {activeOrderCount > 1 ? "articles en mouvement" : "colis en cours de livraison"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 pr-2">
+              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest hidden sm:inline">Détails</span>
+              <div className="p-2 bg-white/10 rounded-xl group-hover:bg-blue-600 transition-colors">
+                <ChevronRight size={16} className="text-white" />
+              </div>
+            </div>
+          </button>
+        </motion.div>
+      )}
     </div>
   );
 }
