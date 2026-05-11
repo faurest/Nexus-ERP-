@@ -1621,6 +1621,44 @@ export default function AdminModule() {
                 />
               </div>
 
+              <div className="pt-4 border-t border-slate-100 space-y-4">
+                <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest italic">Configuration Marketplace</h4>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Numéro WhatsApp</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: 237690000000"
+                      value={editingCompany.whatsappNumber || ''}
+                      onChange={e => setEditingCompany({...editingCompany, whatsappNumber: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Catégorie Marché</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: IT, BTP, Santé"
+                      value={editingCompany.category || ''}
+                      onChange={e => setEditingCompany({...editingCompany, category: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Lien du Logo (URL)</label>
+                  <input 
+                    type="text" 
+                    placeholder="https://..."
+                    value={editingCompany.logo || ''}
+                    onChange={e => setEditingCompany({...editingCompany, logo: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm"
+                  />
+                </div>
+              </div>
+
               <div className="flex gap-4 pt-6">
                 <button 
                   type="button" 

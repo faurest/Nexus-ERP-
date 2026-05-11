@@ -44,6 +44,7 @@ import PrestationsModule from './components/PrestationsModule';
 import EcommerceModule from './components/EcommerceModule';
 import CollaborationModule from './components/CollaborationModule';
 import CommunicationModule from './components/CommunicationModule';
+import Marketplace from './components/Marketplace';
 import NotificationBell from './components/NotificationBell';
 import CriticalNotificationOverlay from './components/CriticalNotificationOverlay';
 
@@ -393,7 +394,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
   );
 }
 
-function LoginScreen() {
+function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
   const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
@@ -475,6 +476,19 @@ function LoginScreen() {
               </>
             )}
           </button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
+            <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest"><span className="bg-white px-4 text-slate-300 italic">Ou explorez</span></div>
+          </div>
+
+          <button 
+            onClick={onMarketplace}
+            className="w-full bg-slate-900 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-4 shadow-xl"
+          >
+            <ShoppingBag size={18} />
+            <span>Accéder au Marketplace</span>
+          </button>
         </div>
       </div>
     </div>
@@ -485,6 +499,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showMarketplace, setShowMarketplace] = useState(false);
   const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth > 1024);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isBlocked, setIsBlocked] = useState(false);
@@ -788,8 +803,30 @@ export default function App() {
     );
   }
 
+  if (showMarketplace) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-sans">
+        <div className="bg-white border-b border-slate-100 p-4 sticky top-0 z-[100] shadow-sm">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowMarketplace(false)}>
+                <NexusLogo className="w-8 h-8" />
+                <span className="font-black text-slate-800 tracking-tighter">NEXUS OPERATIONAL</span>
+             </div>
+             <button 
+               onClick={() => setShowMarketplace(false)}
+               className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all font-sans"
+             >
+               Espace Connexion
+             </button>
+          </div>
+        </div>
+        <Marketplace />
+      </div>
+    );
+  }
+
   if (!user) {
-    return <LoginScreen />;
+    return <LoginScreen onMarketplace={() => setShowMarketplace(true)} />;
   }
 
   if (isWhitelisted === false && !isMaster) {
