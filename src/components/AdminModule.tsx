@@ -7,6 +7,7 @@ import {
   Search, 
   ExternalLink, 
   ShieldCheck, 
+  ShieldAlert,
   Layers,
   ArrowUpRight,
   TrendingUp,
@@ -91,13 +92,18 @@ export default function AdminModule() {
           if (u.email) {
             const email = u.email.trim().toLowerCase().replace(/\s+/g, '');
             const existing = userMap.get(email);
+            
+            // Prioritize connected status if already found
+            const status = (u.uid || existing?.uid || u.status === 'active') ? 'connected' : 'invited';
+            
             userMap.set(email, {
               ...u,
               ...existing,
               id: email,
               email: email,
               displayName: u.name || u.displayName || existing?.displayName || 'Utilisateur Invitée',
-              status: (u.uid || existing?.uid) ? 'connected' : 'invited'
+              status: status,
+              uid: u.uid || existing?.uid || null
             });
           }
         });
@@ -110,11 +116,12 @@ export default function AdminModule() {
           if (!uid && !email) return;
 
           // Find if we already have this user via email or UID
+          // We check the map values too because some keys might be UIDs if email was missing initially
           let existingKey = email && userMap.has(email) ? email : null;
           
-          if (!existingKey && uid) {
+          if (!existingKey) {
             for (const [key, val] of userMap.entries()) {
-              if (val.uid === uid || (email && val.email === email)) {
+              if ((uid && val.uid === uid) || (email && val.email === email)) {
                 existingKey = key;
                 break;
               }
@@ -663,56 +670,105 @@ export default function AdminModule() {
     }
   };
 
+  const handleStatusCheck = () => {
+    const unlinked = systemUsers.filter(u => u.status === 'invited' && u.source === 'personnel');
+    const totals = systemUsers.length;
+    const connected = systemUsers.filter(u => u.status === 'connected').length;
+    
+    alert(`Rapport d'Intégrité:\n- Total Utilisateurs: ${totals}\n- Connectés: ${connected}\n- Invitations en attente: ${unlinked.length}`);
+  };
+
   const handleDeduplicateUsers = async () => {
     if (!window.confirm("Cette action va fusionner les comptes utilisateurs en double (ceux identifiés par UID et ceux par Email) et supprimer les doublons. Voulez-vous continuer ?")) return;
     setLoading(true);
     try {
       const usersSnap = await getDocs(collection(db, 'users'));
-      const emailDocs: Record<string, any[]> = {};
+      const emailMap: Record<string, any[]> = {};
+      const uidMap: Record<string, any[]> = {};
       
       usersSnap.docs.forEach(d => {
         const data = d.data();
+        const docInfo = { id: d.id, ...data };
+        
         if (data.email) {
           const clean = data.email.trim().toLowerCase().replace(/\s+/g, '');
-          if (!emailDocs[clean]) emailDocs[clean] = [];
-          emailDocs[clean].push({ id: d.id, ...data });
+          if (!emailMap[clean]) emailMap[clean] = [];
+          emailMap[clean].push(docInfo);
+        }
+        
+        if (data.uid) {
+          if (!uidMap[data.uid]) uidMap[data.uid] = [];
+          uidMap[data.uid].push(docInfo);
         }
       });
 
       let mergedCount = 0;
-      for (const email in emailDocs) {
-        const docs = emailDocs[email];
+      const processedIds = new Set<string>();
+
+      // Merge by Email primarily
+      for (const email in emailMap) {
+        const docs = emailMap[email];
         if (docs.length > 1) {
-          // Identify the best document (the one with email as ID or the most complete)
+          // Identify best target (Prefer doc with email as ID)
           const targetDoc = docs.find(d => d.id === email) || docs[0];
           const others = docs.filter(d => d.id !== targetDoc.id);
           
+          let finalData = { ...targetDoc };
           for (const other of others) {
-            // Generic merge: target data takes priority, but other data is used if target is missing
-            const mergedData: any = { ...other, ...targetDoc };
-            
-            // Special rules for specific fields
-            mergedData.email = email;
-            mergedData.status = targetDoc.status === 'connected' ? 'connected' : other.status || targetDoc.status || 'invited';
-            mergedData.updatedAt = serverTimestamp();
-            
-            // Ensure ID is not in data
-            delete mergedData.id;
-            
-            // Explicitly remove any undefined values to satisfy Firestore
-            Object.keys(mergedData).forEach(key => {
-              if (mergedData[key] === undefined) {
-                mergedData[key] = null; // Use null instead of undefined
+            // Merge other fields if missing in target
+            Object.keys(other).forEach(key => {
+              if (finalData[key] === undefined || finalData[key] === null) {
+                finalData[key] = other[key];
               }
             });
+            // Record found UID if target was missing it
+            if (other.uid) finalData.uid = other.uid;
             
-            await setDoc(doc(db, 'users', targetDoc.id), mergedData, { merge: true });
+            await deleteDoc(doc(db, 'users', other.id));
+            processedIds.add(other.id);
+            mergedCount++;
+          }
+          
+          finalData.email = email;
+          finalData.status = finalData.uid ? 'connected' : (finalData.status || 'invited');
+          finalData.updatedAt = serverTimestamp();
+          delete finalData.id;
+          
+          // Cleanup undefined
+          Object.keys(finalData).forEach(k => { if (finalData[k] === undefined) finalData[k] = null; });
+          
+          await setDoc(doc(db, 'users', targetDoc.id), finalData, { merge: true });
+          processedIds.add(targetDoc.id);
+        }
+      }
+
+      // Merge by UID secondarily (for docs discovered remaining)
+      for (const uid in uidMap) {
+        const docs = uidMap[uid].filter(d => !processedIds.has(d.id));
+        if (docs.length > 1) {
+          const targetDoc = docs.find(d => d.id.includes('@')) || docs[0];
+          const others = docs.filter(d => d.id !== targetDoc.id);
+          
+          let finalData = { ...targetDoc };
+          for (const other of others) {
+             Object.keys(other).forEach(key => {
+              if (finalData[key] === undefined || finalData[key] === null) {
+                finalData[key] = other[key];
+              }
+            });
             await deleteDoc(doc(db, 'users', other.id));
             mergedCount++;
           }
+          
+          finalData.status = 'connected';
+          finalData.updatedAt = serverTimestamp();
+          delete finalData.id;
+          Object.keys(finalData).forEach(k => { if (finalData[k] === undefined) finalData[k] = null; });
+          await setDoc(doc(db, 'users', targetDoc.id), finalData, { merge: true });
         }
       }
-      alert(`${mergedCount} comptes utilisateurs fusionnés.`);
+
+      alert(`${mergedCount} comptes utilisateurs fusionnés et nettoyés.`);
       fetchGlobalData();
     } catch (err) {
       console.error(err);
@@ -1487,6 +1543,22 @@ export default function AdminModule() {
                   </div>
                 </div>
                 <Activity size={18} className="text-emerald-300 group-hover:text-emerald-600 transition-all" />
+              </button>
+
+              <button 
+                onClick={handleStatusCheck}
+                className="w-full flex items-center justify-between p-6 bg-blue-50/50 rounded-[2rem] border border-blue-100 hover:border-blue-200 hover:bg-white transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-all">
+                    <ShieldAlert size={20} />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-black text-slate-900">Diagnostic Intégrité</p>
+                    <p className="text-[10px] font-bold text-blue-600/60 uppercase tracking-widest">Vérifier les Synchronisations</p>
+                  </div>
+                </div>
+                <Activity size={18} className="text-blue-300 group-hover:text-blue-600 transition-all" />
               </button>
             </div>
           </div>

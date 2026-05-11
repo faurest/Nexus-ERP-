@@ -513,71 +513,68 @@ export default function App() {
       try {
         console.log("Nexus Security: Analyse des accès pour", normalizedEmail);
         
+        // 1. First find ALL companies to check if user should be owner/member
+        const [compSnap, personnelSnap, clientSnap] = await Promise.all([
+          getDocs(collection(db, 'companies')),
+          getDocs(collection(db, 'personnel')),
+          getDocs(collection(db, 'clients'))
+        ]);
+
         let foundAccess = false;
         
-        // 1. Check Companies where user is owner
-        const companyQ = query(collection(db, 'companies'), where('ownerEmail', '==', normalizedEmail));
-        const companySnap = await getDocs(companyQ);
-        if (!companySnap.empty) {
-          foundAccess = true;
-          for (const docSnap of companySnap.docs) {
-            const data = docSnap.data();
-            if (data.ownerId !== user.uid) {
-              const updates: any = {
-                ownerId: user.uid,
-                updatedAt: serverTimestamp()
-              };
-              
-              // Only add if not already in employees/memberEmails to avoid unnecessary writes
-              if (!data.employees?.includes(user.uid)) updates.employees = arrayUnion(user.uid);
-              if (!data.memberEmails?.includes(normalizedEmail)) updates.memberEmails = arrayUnion(normalizedEmail);
+        // Check Master status
+        if (isMaster) foundAccess = true;
 
-              await updateDoc(doc(db, 'companies', docSnap.id), updates).catch(e => console.warn("Owner auto-sync failed", e));
-            }
-          }
-        }
-
-        // 2. Check Personnel records
-        const personnelQ = query(collection(db, 'personnel'), where('email', '==', normalizedEmail));
-        const personnelSnap = await getDocs(personnelQ);
-        if (!personnelSnap.empty) {
-          foundAccess = true;
-          for (const docSnap of personnelSnap.docs) {
-            const pData = docSnap.data();
-            if (pData.uid !== user.uid) {
-              await updateDoc(docSnap.ref, { uid: user.uid, status: 'active', updatedAt: serverTimestamp() }).catch(e => console.warn("Personnel UID sync failed", e));
-            }
-            if (pData.companyId) {
-              await setDoc(doc(db, 'companies', pData.companyId), {
-                memberEmails: arrayUnion(normalizedEmail),
-                employees: arrayUnion(user.uid),
-                updatedAt: serverTimestamp()
-              }, { merge: true }).catch(e => console.error("Company membership sync failed", e));
-            }
-          }
-        }
-
-        // 3. Search if the user's email exists in ANY clients collection
-        const clientQ = query(collection(db, 'clients'), where('email', '==', normalizedEmail));
-        const clientSnap = await getDocs(clientQ);
-        if (!clientSnap.empty) {
-          console.log("Nexus Security: Accès autorisé via Client list.");
-          foundAccess = true;
+        // Check ownership/membership by scanning instead of literal query (more resilient if DB not normalized yet)
+        for (const docSnap of compSnap.docs) {
+          const data = docSnap.data();
+          const cOwnerEmail = data.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
+          const isMember = data.memberEmails?.some((e: string) => typeof e === 'string' && e.trim().toLowerCase().replace(/\s+/g, '') === normalizedEmail);
           
-          for (const docSnap of clientSnap.docs) {
-            const clientData = docSnap.data();
-            if (clientData.companyId) {
-              await updateDoc(doc(db, 'companies', clientData.companyId), {
-                memberEmails: arrayUnion(normalizedEmail),
-                employees: arrayUnion(user.uid),
-                updatedAt: serverTimestamp()
-              }).catch(e => console.error("Auto-enroll client failed", e));
-              
-              if (clientData.uid !== user.uid) {
-                await updateDoc(docSnap.ref, { uid: user.uid, status: 'active', updatedAt: serverTimestamp() }).catch(e => console.warn("Client UID sync failed", e));
-              }
+          if (cOwnerEmail === normalizedEmail || isMember) {
+            foundAccess = true;
+            const updates: any = {};
+            if (cOwnerEmail === normalizedEmail && data.ownerId !== user.uid) updates.ownerId = user.uid;
+            if (!data.employees?.includes(user.uid)) updates.employees = arrayUnion(user.uid);
+            if (!data.memberEmails?.includes(normalizedEmail)) updates.memberEmails = arrayUnion(normalizedEmail);
+            
+            if (Object.keys(updates).length > 0) {
+              updates.updatedAt = serverTimestamp();
+              await updateDoc(docSnap.ref, updates).catch(e => console.warn("Owner auto-sync failed", e));
             }
           }
+        }
+
+        // Sync Personnel
+        for (const docSnap of personnelSnap.docs) {
+           const pData = docSnap.data();
+           const pEmail = pData.email?.trim().toLowerCase().replace(/\s+/g, '');
+           if (pEmail === normalizedEmail) {
+             foundAccess = true;
+             if (pData.uid !== user.uid || pData.status === 'invited') {
+               await updateDoc(docSnap.ref, { 
+                 uid: user.uid, 
+                 status: 'active', 
+                 updatedAt: serverTimestamp() 
+               }).catch(e => console.warn("Personnel Sync failed", e));
+             }
+           }
+        }
+
+        // Sync Clients
+        for (const docSnap of clientSnap.docs) {
+           const cData = docSnap.data();
+           const cEmail = cData.email?.trim().toLowerCase().replace(/\s+/g, '');
+           if (cEmail === normalizedEmail) {
+             foundAccess = true;
+             if (cData.uid !== user.uid || cData.status === 'invited') {
+               await updateDoc(docSnap.ref, { 
+                 uid: user.uid, 
+                 status: 'active', 
+                 updatedAt: serverTimestamp() 
+               }).catch(e => console.warn("Client Sync failed", e));
+             }
+           }
         }
 
         // Final decision logic
