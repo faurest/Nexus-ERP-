@@ -29,6 +29,7 @@ interface Product {
   image: string;
   stock: number;
   companyId: string;
+  location?: string;
 }
 
 interface Company {
@@ -38,6 +39,7 @@ interface Company {
   logo?: string;
   whatsappNumber?: string;
   category?: string;
+  nairaRate?: number;
 }
 
 interface CartItem extends Product {
@@ -51,9 +53,20 @@ export default function Marketplace() {
   const [loading, setLoading] = useState(true);
   const [activeCompanyId, setActiveCompanyId] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const saved = localStorage.getItem('nexus_cart');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [showCart, setShowCart] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [showTransportCalc, setShowTransportCalc] = useState(false);
+  const [nairaEnabled, setNairaEnabled] = useState(false);
+  const [checkoutData, setCheckoutData] = useState({ name: '', phone: '', quartier: '' });
+
+  useEffect(() => {
+    localStorage.setItem('nexus_cart', JSON.stringify(cart));
+  }, [cart]);
 
   useEffect(() => {
     setLoading(true);
@@ -105,17 +118,39 @@ export default function Marketplace() {
   };
 
   const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.cartQuantity), 0);
+  
+  // Default Naira rate for Maroua context if not set per company
+  const GLOBAL_NAIRA_RATE = 1.2; 
 
-  const checkoutWhatsApp = () => {
-    const message = `*Nouvelle Commande Nexus ERP*\n\n` + 
-      cart.map(item => `- ${item.name} (x${item.cartQuantity}) : ${(item.price * item.cartQuantity).toLocaleString()} FCFA`).join('\n') +
-      `\n\n*Total : ${cartTotal.toLocaleString()} FCFA*`;
+  const getStockStatus = (stock: number) => {
+    if (stock <= 0) return { label: 'Sur commande', color: 'bg-amber-50 text-amber-600 border-amber-100' };
+    if (stock <= 5) return { label: 'Stock Limité', color: 'bg-red-50 text-red-600 border-red-100' };
+    return { label: 'Disponible', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' };
+  };
+
+  const checkoutWhatsApp = (product?: Product) => {
+    const targetProduct = product || cart[0];
+    const company = companies.find(c => c.id === targetProduct?.companyId);
+    const phone = company?.whatsappNumber || '237690000000';
     
-    // In a real app, we might group by company and send to each company or a coordinator. 
-    // Here we'll just open a generic WhatsApp link (Maroua Coordinator) or use the first company's number.
-    const firstCompany = companies.find(c => c.id === cart[0].companyId);
-    const phone = firstCompany?.whatsappNumber || '237600000000'; // Fallback
+    let message = '';
+    if (product) {
+       message = `Bonjour, je suis intéressé par le produit *${product.name}* (${product.price.toLocaleString()} FCFA) vu sur l'application Nexus Marketplace. Est-il toujours disponible ?`;
+    } else {
+       message = `*Nouvelle Commande Nexus ERP*\n\n` + 
+        cart.map(item => `- ${item.name} (x${item.cartQuantity}) : ${(item.price * item.cartQuantity).toLocaleString()} FCFA`).join('\n') +
+        `\n\n*Total : ${cartTotal.toLocaleString()} FCFA*` +
+        `\n\nClient: ${checkoutData.name}\nTél: ${checkoutData.phone}\nQuartier: ${checkoutData.quartier}`;
+    }
+    
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const handleQuickCheckout = (e: React.FormEvent) => {
+     e.preventDefault();
+     checkoutWhatsApp();
+     setShowCheckoutForm(false);
+     setShowCart(false);
   };
 
   if (loading) {
@@ -146,14 +181,26 @@ export default function Marketplace() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
             <input 
               type="text" 
-              placeholder="Chercher un produit (riz, ciment, IT...)"
-              className="w-full bg-slate-100/50 border-transparent rounded-2xl py-3 pl-12 pr-4 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-200 outline-none transition-all"
+              placeholder="Riz, ciment, IT..."
+              className="w-full bg-slate-100/50 border-transparent rounded-2xl py-3 pl-12 pr-12 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-200 outline-none transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            <button className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-blue-500 transition-colors">
+               <MessageCircle size={18} />
+            </button>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+             <button 
+               onClick={() => setNairaEnabled(!nairaEnabled)}
+               className={cn(
+                 "px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border",
+                 nairaEnabled ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-white text-slate-400 border-slate-100"
+               )}
+             >
+               {nairaEnabled ? 'Naira (₦)' : 'FCFA'}
+             </button>
              <button 
                onClick={() => setShowCart(true)}
                className="relative p-3 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:text-blue-600 transition-all shadow-sm"
@@ -170,36 +217,74 @@ export default function Marketplace() {
       </div>
 
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Company Filters */}
-        <div className="flex flex-col gap-4">
+        {/* "Mall" Section */}
+        <div className="space-y-4">
            <div className="flex items-center justify-between">
-              <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] italic">Partenaires de Confiance</h2>
-              <Filter size={16} className="text-slate-300" />
+              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic">Le "Mall" Virtuel de Maroua</h2>
+              <div className="flex items-center gap-4">
+                 <button onClick={() => setShowTransportCalc(true)} className="text-[9px] font-black text-blue-600 uppercase underline decoration-2 underline-offset-4">Estimer Livraison</button>
+                 <button className="text-[9px] font-black text-slate-400 uppercase">Catalogue Offline</button>
+              </div>
            </div>
-           <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
-              <button 
+           
+           <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-10 gap-4">
+              <div 
                 onClick={() => setActiveCompanyId('all')}
                 className={cn(
-                  "px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shadow-sm border",
-                  activeCompanyId === 'all' ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-100 hover:border-blue-200"
+                  "aspect-square rounded-3xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all border-2",
+                  activeCompanyId === 'all' ? "bg-slate-900 border-slate-900 shadow-xl shadow-slate-200" : "bg-white border-slate-100 hover:border-blue-200 shadow-sm"
                 )}
               >
-                TOUT LE CATALOGUE
-              </button>
+                 <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", activeCompanyId === 'all' ? "bg-white text-slate-900" : "bg-slate-50 text-slate-400")}>
+                    <Store size={20} />
+                 </div>
+                 <span className={cn("text-[8px] font-black uppercase tracking-tighter", activeCompanyId === 'all' ? "text-white" : "text-slate-400")}>Global</span>
+              </div>
+
               {companies.map(company => (
-                <button 
+                <div 
                   key={company.id}
                   onClick={() => setActiveCompanyId(company.id)}
                   className={cn(
-                    "px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shadow-sm border flex items-center gap-3",
-                    activeCompanyId === company.id ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-100 hover:border-blue-200"
+                    "aspect-square rounded-3xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all border-2 group",
+                    activeCompanyId === company.id ? "bg-blue-600 border-blue-600 shadow-xl shadow-blue-100" : "bg-white border-slate-100 hover:border-blue-200 shadow-sm"
                   )}
                 >
-                  {company.logo && <img src={company.logo} className="w-4 h-4 rounded-full object-cover" alt="" />}
-                  {company.name}
-                </button>
+                   <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-inner group-hover:scale-110 transition-transform">
+                      {company.logo ? (
+                        <img src={company.logo} className="w-full h-full object-cover" alt={company.name} />
+                      ) : (
+                        <div className="w-full h-full bg-slate-50 flex items-center justify-center text-slate-300 font-black text-lg">
+                           {company.name.charAt(0)}
+                        </div>
+                      )}
+                   </div>
+                   <span className={cn("text-[8px] font-black uppercase tracking-tighter truncate w-full px-2 text-center", activeCompanyId === company.id ? "text-white" : "text-slate-400")}>
+                      {company.name}
+                   </span>
+                </div>
               ))}
+
+              <div 
+                onClick={() => { window.location.href = '#login'; }} 
+                className="aspect-square rounded-3xl bg-blue-50 border-2 border-dashed border-blue-200 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-blue-100 transition-all"
+              >
+                  <Plus size={20} className="text-blue-600" />
+                  <span className="text-[8px] font-black text-blue-600 uppercase tracking-tighter text-center">Vendre ici</span>
+              </div>
            </div>
+        </div>
+
+        {/* Sectors / Filters */}
+        <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+           {['Tous', 'Matériaux', 'Alimentation', 'Prestations', 'Services', 'Pièces'].map(cat => (
+             <button 
+               key={cat}
+               className="px-6 py-3 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest whitespace-nowrap hover:bg-white hover:shadow-md transition-all border border-transparent"
+             >
+               {cat}
+             </button>
+           ))}
         </div>
 
         {/* Product Grid */}
@@ -244,16 +329,31 @@ export default function Marketplace() {
                    <div className="mt-4 flex items-center justify-between">
                       <div className="flex flex-col">
                          <span className="text-base font-black text-slate-900 leading-none">
-                            {product.price.toLocaleString()}
+                            {nairaEnabled 
+                              ? `₦ ${(product.price * GLOBAL_NAIRA_RATE).toLocaleString()}`
+                              : `${product.price.toLocaleString()} FCFA`
+                            }
                          </span>
-                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">FCFA</span>
+                         {nairaEnabled && (
+                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mt-1">
+                              {product.price.toLocaleString()} FCFA
+                           </span>
+                         )}
                       </div>
-                      <button 
-                        onClick={() => addToCart(product)}
-                        className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-blue-600 transition-all active:scale-90 shadow-lg shadow-slate-200 group-hover:shadow-blue-600/20"
-                      >
-                         <Plus size={18} />
-                      </button>
+                      <div className="flex gap-2">
+                         <button 
+                           onClick={(e) => { e.stopPropagation(); checkoutWhatsApp(product); }}
+                           className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+                         >
+                            <MessageCircle size={18} />
+                         </button>
+                         <button 
+                           onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+                           className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-blue-600 transition-all active:scale-90 shadow-lg shadow-slate-200 group-hover:shadow-blue-600/20"
+                         >
+                            <Plus size={18} />
+                         </button>
+                      </div>
                    </div>
                 </div>
               </motion.div>
@@ -332,10 +432,10 @@ export default function Marketplace() {
                                   <button onClick={() => updateQuantity(item.id, 1)} className="p-1 hover:text-blue-600 transition-colors"><Plus size={12} /></button>
                                </div>
                                <button 
-                                 onClick={() => updateQuantity(item.id, -item.cartQuantity)}
-                                 className="text-[9px] font-black text-red-500 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity"
+                                 onClick={() => { setSelectedProduct(item); setShowCart(false); }}
+                                 className="text-[9px] font-black text-blue-600 uppercase tracking-widest"
                                >
-                                  Supprimer
+                                  Détails
                                </button>
                             </div>
                          </div>
@@ -344,31 +444,79 @@ export default function Marketplace() {
                   )}
                </div>
 
-               {cart.length > 0 && (
+               {cart.length > 0 && !showCheckoutForm && (
                  <div className="p-6 border-t border-slate-100 bg-slate-50/50 space-y-4">
-                    <div className="flex items-center justify-between">
-                       <span className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Total Estimate</span>
-                       <span className="text-2xl font-black text-slate-900 tracking-tighter">{cartTotal.toLocaleString()} FCFA</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                       <button 
-                         onClick={checkoutWhatsApp}
-                         className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95"
-                       >
-                          <MessageCircle size={18} /> WhatsApp
-                       </button>
-                       <button 
-                         onClick={() => {alert('Connectez-vous pour valider officiellement cette commande.'); setShowCart(false);}}
-                         className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20 active:scale-95"
-                       >
-                          Nexus Official <ArrowRight size={18} />
-                       </button>
-                    </div>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest text-center leading-relaxed">
-                       La commande via WhatsApp ne nécessite pas de compte.<br/>
-                       L'historique officiel nécessite une connexion Nexus.
-                    </p>
+                     <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Total Estimate</span>
+                        <div className="flex flex-col items-end">
+                           <span className="text-2xl font-black text-slate-900 tracking-tighter">{cartTotal.toLocaleString()} FCFA</span>
+                           {nairaEnabled && <span className="text-[10px] font-black text-amber-600 italic">₦ {(cartTotal * GLOBAL_NAIRA_RATE).toLocaleString()}</span>}
+                        </div>
+                     </div>
+                     <button 
+                       onClick={() => setShowCheckoutForm(true)}
+                       className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                     >
+                        Acheter maintenant <ArrowRight size={18} />
+                     </button>
+                     <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest text-center leading-relaxed">
+                        Sans compte, par WhatsApp. Simple, rapide, Maroua.
+                     </p>
                  </div>
+               )}
+
+               {showCheckoutForm && (
+                 <motion.div 
+                   initial={{ y: 50, opacity: 0 }}
+                   animate={{ y: 0, opacity: 1 }}
+                   className="p-6 border-t border-slate-100 bg-white space-y-6"
+                 >
+                    <div className="space-y-1">
+                       <h3 className="text-sm font-black text-slate-900 uppercase italic">Finaliser ma commande</h3>
+                       <p className="text-[10px] font-bold text-slate-400 uppercase">Infos de livraison rapides</p>
+                    </div>
+                    <form onSubmit={handleQuickCheckout} className="space-y-4">
+                       <input 
+                         required
+                         type="text" 
+                         placeholder="Votre Nom Complet"
+                         className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-600"
+                         value={checkoutData.name}
+                         onChange={e => setCheckoutData({...checkoutData, name: e.target.value})}
+                       />
+                       <input 
+                         required
+                         type="text" 
+                         placeholder="Téléphone (WhatsApp)"
+                         className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-600"
+                         value={checkoutData.phone}
+                         onChange={e => setCheckoutData({...checkoutData, phone: e.target.value})}
+                       />
+                       <input 
+                         required
+                         type="text" 
+                         placeholder="Quartier de livraison (ex: Dewe, Harde)"
+                         className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-600"
+                         value={checkoutData.quartier}
+                         onChange={e => setCheckoutData({...checkoutData, quartier: e.target.value})}
+                       />
+                       <div className="flex gap-3">
+                          <button 
+                            type="button"
+                            onClick={() => setShowCheckoutForm(false)}
+                            className="flex-1 py-4 bg-slate-100 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                          >
+                             Retour
+                          </button>
+                          <button 
+                            type="submit"
+                            className="flex-[2] py-4 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20"
+                          >
+                             Commander via WhatsApp
+                          </button>
+                       </div>
+                    </form>
+                 </motion.div>
                )}
             </motion.div>
           </>
@@ -425,21 +573,42 @@ export default function Marketplace() {
                      <div className="flex items-end justify-between">
                         <div className="space-y-1">
                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Prix Global</span>
-                           <div className="flex items-baseline gap-1">
-                              <span className="text-3xl font-black text-slate-900 tracking-tighter">{selectedProduct.price.toLocaleString()}</span>
-                              <span className="text-xs font-black text-slate-400 uppercase">FCFA</span>
+                           <div className="flex flex-col">
+                              <div className="flex items-baseline gap-1">
+                                 <span className="text-3xl font-black text-slate-900 tracking-tighter">
+                                    {nairaEnabled ? (selectedProduct.price * GLOBAL_NAIRA_RATE).toLocaleString() : selectedProduct.price.toLocaleString()}
+                                 </span>
+                                 <span className="text-xs font-black text-slate-400 uppercase">{nairaEnabled ? '₦' : 'FCFA'}</span>
+                              </div>
+                              {nairaEnabled && <span className="text-[10px] font-bold text-slate-400 uppercase">{selectedProduct.price.toLocaleString()} FCFA</span>}
                            </div>
                         </div>
-                        <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
-                           <Tag size={12} /> Stock Disponible
+                        <div className={cn(
+                          "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                          getStockStatus(selectedProduct.stock).color
+                        )}>
+                           <Tag size={12} /> {getStockStatus(selectedProduct.stock).label}
                         </div>
                      </div>
-                     <button 
-                       onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); setShowCart(true); }}
-                       className="w-full py-5 bg-slate-900 text-white hover:bg-blue-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 active:scale-95"
-                     >
-                        <ShoppingCart size={18} /> Ajouter au Panier
-                     </button>
+
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                        Localisation: <span className="text-slate-700 font-black italic">{selectedProduct.location || 'Dewe / Hardé'}</span>
+                     </p>
+
+                     <div className="grid grid-cols-1 gap-3">
+                       <button 
+                         onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); setShowCart(true); }}
+                         className="w-full py-5 bg-slate-900 text-white hover:bg-blue-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 active:scale-95"
+                       >
+                          <ShoppingCart size={18} /> Ajouter au Panier
+                       </button>
+                       <button 
+                         onClick={() => checkoutWhatsApp(selectedProduct)}
+                         className="w-full py-4 border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-3 active:scale-95"
+                       >
+                          <MessageCircle size={18} /> Négocier via WhatsApp
+                       </button>
+                     </div>
                   </div>
                </div>
             </motion.div>
@@ -447,20 +616,72 @@ export default function Marketplace() {
         )}
       </AnimatePresence>
 
-      {/* Floating Cart for Mobile */}
-      {cart.length > 0 && !showCart && (
-         <motion.button 
-           initial={{ scale: 0, y: 100 }}
-           animate={{ scale: 1, y: 0 }}
-           onClick={() => setShowCart(true)}
-           className="fixed bottom-8 right-8 w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-2xl shadow-blue-600/40 z-50 active:scale-90"
-         >
-            <ShoppingBag size={28} />
-            <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white">
-               {cart.reduce((a, b) => a + b.cartQuantity, 0)}
-            </span>
-         </motion.button>
-      )}
+     {/* Floating Cart for Mobile */}
+     {cart.length > 0 && !showCart && (
+        <motion.button 
+          initial={{ scale: 0, y: 100 }}
+          animate={{ scale: 1, y: 0 }}
+          onClick={() => setShowCart(true)}
+          className="fixed bottom-8 right-8 w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-2xl shadow-blue-600/40 z-50 active:scale-90"
+        >
+           <ShoppingBag size={28} />
+           <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+              {cart.reduce((a, b) => a + b.cartQuantity, 0)}
+           </span>
+        </motion.button>
+     )}
+
+     {/* Transport Calculator Modal */}
+     <AnimatePresence>
+        {showTransportCalc && (
+          <>
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setShowTransportCalc(false)}
+               className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100]"
+            />
+            <motion.div 
+               initial={{ scale: 0.9, opacity: 0 }}
+               animate={{ scale: 1, opacity: 1 }}
+               exit={{ scale: 0.9, opacity: 0 }}
+               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-white p-8 rounded-[2rem] shadow-2xl z-[110]"
+            >
+               <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest italic">Estimer Livraison</h3>
+                  <button onClick={() => setShowTransportCalc(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={18} /></button>
+               </div>
+               <div className="space-y-4">
+                  <div className="p-4 bg-slate-50 rounded-2xl space-y-2">
+                     <p className="text-[9px] font-bold text-slate-400 uppercase">Moto-Taxi (Petit colis)</p>
+                     <div className="flex justify-between items-center">
+                        <span className="text-xs font-black text-slate-900">Centre-ville & Proximité</span>
+                        <span className="text-xs font-black text-blue-600">500 FCFA</span>
+                     </div>
+                     <div className="flex justify-between items-center">
+                        <span className="text-xs font-black text-slate-900">Zones éloignées (Dewe, Harde)</span>
+                        <span className="text-xs font-black text-blue-600">1,000 FCFA</span>
+                     </div>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-2xl space-y-2">
+                     <p className="text-[9px] font-bold text-slate-400 uppercase">Tricycle (Matériaux/Lourd)</p>
+                     <div className="flex justify-between items-center">
+                        <span className="text-xs font-black text-slate-900">Forfait Standard Maroua</span>
+                        <span className="text-xs font-black text-blue-600">2,500 FCFA</span>
+                     </div>
+                  </div>
+               </div>
+               <button 
+                 onClick={() => setShowTransportCalc(false)}
+                 className="w-full py-4 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest mt-6"
+               >
+                 Compris
+               </button>
+            </motion.div>
+          </>
+        )}
+     </AnimatePresence>
     </div>
   );
 }

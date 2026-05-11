@@ -46,18 +46,34 @@ service cloud.firestore {
     }
 
     function isMemberOfCompany(companyId) {
-      return isSignedIn() && companyId != null && exists(/databases/$(database)/documents/companies/$(companyId)) && (
+      return isSignedIn() && companyId != null && (
+        exists(/databases/$(database)/documents/companies/$(companyId)) ||
+        exists(/databases/$(database)/documents/compagnie/$(companyId))
+      ) && (
         isAdmin() ||
-        get(/databases/$(database)/documents/companies/$(companyId)).data.ownerEmail == currentUserEmail() || 
-        get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid ||
-        (get(/databases/$(database)/documents/companies/$(companyId)).data.memberEmails != null && currentUserEmail() in get(/databases/$(database)/documents/companies/$(companyId)).data.memberEmails)
+        (exists(/databases/$(database)/documents/companies/$(companyId)) && (
+          get(/databases/$(database)/documents/companies/$(companyId)).data.ownerEmail == currentUserEmail() || 
+          get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid ||
+          (get(/databases/$(database)/documents/companies/$(companyId)).data.memberEmails != null && currentUserEmail() in get(/databases/$(database)/documents/companies/$(companyId)).data.memberEmails)
+        )) ||
+        (exists(/databases/$(database)/documents/compagnie/$(companyId)) && (
+          get(/databases/$(database)/documents/compagnie/$(companyId)).data.ownerEmail == currentUserEmail() || 
+          get(/databases/$(database)/documents/compagnie/$(companyId)).data.ownerId == request.auth.uid ||
+          (get(/databases/$(database)/documents/compagnie/$(companyId)).data.memberEmails != null && currentUserEmail() in get(/databases/$(database)/documents/compagnie/$(companyId)).data.memberEmails)
+        ))
       );
     }
 
     // --- Collection Rules ---
 
-    // 1. Companies
-    // Users can create companies. They can read/write if they are owner/member.
+    // 1. Companies / Compagnie
+    match /{path=**}/companies/{companyId} {
+      allow read, write: if false; // Overridden by specific match below
+    }
+    match /compagnie/{companyId} {
+       allow read: if true;
+       allow write: if isSignedIn() && (isAdmin() || (resource != null && isMemberOfCompany(companyId)));
+    }
     match /companies/{companyId} {
       function isValidCompany(data) {
         return data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
@@ -65,15 +81,7 @@ service cloud.firestore {
                data.joinCode is string && data.joinCode.size() >= 4;
       }
 
-      allow get: if isSignedIn();
-      allow list: if isSignedIn() && (
-        isAdmin() || 
-        resource.data.ownerEmail == currentUserEmail() || 
-        resource.data.ownerId == request.auth.uid ||
-        (resource.data.memberEmails != null && currentUserEmail() in resource.data.memberEmails) ||
-        // Permit finding by joinCode
-        resource.data.joinCode != null
-      );
+      allow read: if true; // Marketplace is public
 
       allow create: if isSignedIn() && isValidCompany(incoming()) && isValidId(companyId);
 
@@ -83,21 +91,21 @@ service cloud.firestore {
         // Action: Join (Allow a non-member to add themselves if they know the joinCode)
         (
           incoming().joinCode == existing().joinCode &&
-          incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees']) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees', 'status', 'updatedAt']) &&
           incoming().memberEmails.hasAll(existing().memberEmails) &&
           incoming().memberEmails.size() == existing().memberEmails.size() + 1 &&
           currentUserEmail() in incoming().memberEmails
         ) ||
         // Action: Client Auto-Enroll (Allow users listed in 'clients' to sync their access)
         (
-          incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees']) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees', 'status', 'updatedAt']) &&
           incoming().memberEmails.size() == existing().memberEmails.size() + 1 &&
           currentUserEmail() in incoming().memberEmails &&
           exists(/databases/$(database)/documents/clients/$(currentUserEmail())) &&
           get(/databases/$(database)/documents/clients/$(currentUserEmail())).data.companyId == companyId
         ) ||
         // Action: Standard update for existing members
-        (currentUserEmail() in resource.data.memberEmails && incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees']))
+        (currentUserEmail() in resource.data.memberEmails && incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees', 'whatsappNumber', 'category', 'logo', 'updatedAt']))
       );
 
       allow delete: if isAdmin();
@@ -167,32 +175,35 @@ service cloud.firestore {
       }
 
       // Read access: Admin, Company Member, or the User themselves (self-access)
-      allow get: if isSignedIn() && isCompanyCollection() && (
-        isAdmin() || 
-        isSelf(resource.data) ||
-        (resource.data.companyId != null && (
-          isMemberOfCompany(resource.data.companyId) || 
-          collectionName in ['products', 'services']
+      // Products and Services are public for the Marketplace
+      allow get: if isCompanyCollection() && (
+        collectionName in ['products', 'services'] ||
+        (isSignedIn() && (
+          isAdmin() || 
+          isSelf(resource.data) ||
+          (resource.data.companyId != null && isMemberOfCompany(resource.data.companyId))
         ))
       );
       
-      allow list: if isSignedIn() && isCompanyCollection() && (
-        isAdmin() || 
-        isSelf(resource.data) ||
-        (resource.data.companyId != null && (
-          isMemberOfCompany(resource.data.companyId) || 
-          collectionName in ['products', 'services']
+      allow list: if isCompanyCollection() && (
+        collectionName in ['products', 'services'] ||
+        (isSignedIn() && (
+          isAdmin() || 
+          isSelf(resource.data) ||
+          (resource.data.companyId != null && isMemberOfCompany(resource.data.companyId))
         ))
       );
 
-      allow create: if isSignedIn() && isCompanyCollection() && 
-                      isValidEntity(incoming()) && 
-                      (isAdmin() || (
+      allow create: if isCompanyCollection() && 
+                    isValidEntity(incoming()) && 
+                    (isAdmin() || (
+                      collectionName == 'ecommerce_orders' || // Guest checkout
+                      (isSignedIn() && (
                         isMemberOfCompany(incoming().companyId) ||
-                        isSelf(incoming()) ||
-                        (collectionName == 'ecommerce_orders') // Allow clients to place orders
-                      )) &&
-                      (incoming().createdAt == request.time || collectionName == 'messages' || collectionName == 'project_discussions' || collectionName == 'order_messages');
+                        isSelf(incoming())
+                      ))
+                    )) &&
+                    (incoming().createdAt == request.time || collectionName == 'messages' || collectionName == 'project_discussions' || collectionName == 'order_messages');
 
       allow update: if isSignedIn() && isCompanyCollection() && 
                       (isAdmin() || (

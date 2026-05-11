@@ -26,7 +26,8 @@ import {
   FileText,
   Database,
   MessageSquare,
-  ShoppingBag
+  ShoppingBag,
+  Store
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -900,6 +901,7 @@ export default function App() {
 
   const navItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+    { id: 'marketplace', label: 'Marketplace Public', icon: Store },
     { id: 'services', label: 'Services & Prestations', icon: Layers },
     { id: 'sales', label: 'Ventes & Facturation', icon: TrendingUp },
     { id: 'ecommerce', label: 'E-commerce', icon: ShoppingBag },
@@ -1146,6 +1148,7 @@ export default function App() {
             className="max-w-[1400px] mx-auto"
           >
             {activeTab === 'dashboard' && <DashboardModule user={user} companies={companies} />}
+            {activeTab === 'marketplace' && <Marketplace />}
             {activeTab === 'services' && <PrestationsModule />}
             {activeTab === 'sales' && <SalesModule />}
             {activeTab === 'ecommerce' && <EcommerceModule user={user} />}
