@@ -406,6 +406,21 @@
         "createdAt": { "type": "number" }
       },
       "required": ["companyId", "name", "price"]
+    },
+    "NotificationConfig": {
+      "title": "Notification Config",
+      "description": "Configuration for automated notifications (WhatsApp/SMS)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "activeChannel": { "type": "string", "enum": ["whatsapp", "sms", "none"] },
+        "senderNumber": { "type": "string" },
+        "cancelTemplate": { "type": "string" },
+        "shippedTemplate": { "type": "string" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["companyId"]
     }
   },
   "firestore": {
@@ -421,6 +436,7 @@
     "services": { "schema": "Service", "description": "Service records" },
     "interventions": { "schema": "Intervention", "description": "Intervention records" },
     "notifications": { "schema": "Notification", "description": "Notification records" },
+    "notification_configs": { "schema": "NotificationConfig", "description": "Settings for automated messaging" },
     "sales_invoices": { "schema": "Invoice", "description": "Sales invoice records" },
     "invoices": { "schema": "Invoice", "description": "General invoice records" },
     "payments": { "schema": "Payment", "description": "Payment records" },

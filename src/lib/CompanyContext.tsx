@@ -13,6 +13,7 @@ export interface Company {
   deliveryFees?: Record<string, number>;
   employees?: any[];
   createdAt?: any;
+  whatsappNumber?: string;
 }
 
 interface CompanyContextType {

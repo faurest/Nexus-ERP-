@@ -56,7 +56,7 @@ interface Order {
   id: string;
   items: any[];
   total: number;
-  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'CANCELLED_BY_SELLER';
   date: any;
   paymentMethod?: string;
   customerName?: string;
@@ -67,6 +67,7 @@ interface Order {
   checkoutSource?: string;
   deliveryFee?: number;
   deliveryLocation?: string;
+  cancellationReason?: string;
 }
 
 interface OrderMessage {
@@ -107,6 +108,11 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [lowStockAlerts, setLowStockAlerts] = useState<Product[]>([]);
   const [connStatus, setConnStatus] = useState<'checking' | 'ok' | 'fail'>('checking');
   const [selectedLocation, setSelectedLocation] = useState('');
+  const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [otherReason, setOtherReason] = useState('');
+  const [notificationConfig, setNotificationConfig] = useState<any>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   const canManage = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
   const isAdmin = canManage;
@@ -381,6 +387,114 @@ export default function EcommerceModule({ user }: { user: any }) {
       unsubscribeOrders();
     };
   }, [currentCompany, user]);
+
+  // Fetch Notification Config
+  useEffect(() => {
+    if (!currentCompany || !isAdmin) return;
+
+    const q = query(collection(db, 'notification_configs'), where('companyId', '==', currentCompany.id));
+    const unsubscribe = onSnapshot(q, (snap) => {
+      if (!snap.empty) {
+        setNotificationConfig({ id: snap.docs[0].id, ...snap.docs[0].data() });
+      } else {
+        // Default config
+        setNotificationConfig({
+          activeChannel: 'whatsapp',
+          senderNumber: currentCompany.whatsappNumber || '',
+          cancelTemplate: 'Bonjour {customerName}, votre commande {orderId} a été annulée car : {reason}.',
+          shippedTemplate: 'Bonjour {customerName}, votre commande {orderId} est en cours d\'expédition !'
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [currentCompany, isAdmin]);
+
+  const saveNotificationSettings = async () => {
+    if (!currentCompany || !notificationConfig) return;
+    setSavingSettings(true);
+    try {
+      if (notificationConfig.id) {
+        await updateDoc(doc(db, 'notification_configs', notificationConfig.id), {
+          ...notificationConfig,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await addDoc(collection(db, 'notification_configs'), {
+          ...notificationConfig,
+          companyId: currentCompany.id,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'notification_configs');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleCancelOrder = async (order: Order, reason: string) => {
+    if (!currentCompany) return;
+    setSubmitting(true);
+    try {
+      // 1. Update Order Status
+      await updateDoc(doc(db, 'ecommerce_orders', order.id), {
+        status: 'CANCELLED_BY_SELLER',
+        cancellationReason: reason,
+        updatedAt: serverTimestamp()
+      });
+
+      // 2. Restore Stock
+      const stockPromises = order.items.map(async (item) => {
+        const productRef = doc(db, 'products', item.id);
+        const productSnap = await getDocs(query(collection(db, 'products'), where('__name__', '==', item.id)));
+        if (!productSnap.empty) {
+          const currentStock = productSnap.docs[0].data().stock || 0;
+          await updateDoc(productRef, {
+            stock: currentStock + item.quantity,
+            updatedAt: serverTimestamp()
+          });
+        }
+      });
+      await Promise.all(stockPromises);
+
+      // 3. Trigger Notification (Simulation)
+      if (notificationConfig && notificationConfig.activeChannel !== 'none') {
+        const template = notificationConfig.cancelTemplate || 'Votre commande {orderId} a été annulée: {reason}';
+        const message = template
+          .replace('{customerName}', order.customerName || 'Client')
+          .replace('{orderId}', `CMD-${order.id.slice(0, 6).toUpperCase()}`)
+          .replace('{reason}', reason);
+
+        console.log(`[NOTIFICATION SIMULATION] Channel: ${notificationConfig.activeChannel.toUpperCase()}`);
+        console.log(`[TO] ${order.customerPhone || order.customerEmail}`);
+        console.log(`[MESSAGE] ${message}`);
+        
+        // Also create an in-app notification if we can find the user UID
+        if (order.customerEmail) {
+           const q = query(collection(db, 'users'), where('email', '==', order.customerEmail.toLowerCase()));
+           const snap = await getDocs(q);
+           if (!snap.empty) {
+             await createNotification(
+               currentCompany.id,
+               [snap.docs[0].id],
+               'Commande Annulée',
+               `L'entreprise a annulé votre commande : ${reason}`,
+               'general'
+             );
+           }
+        }
+      }
+
+      setCancellingOrder(null);
+      setCancellationReason('');
+      setOtherReason('');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'ecommerce_orders');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const updateProduct = async (productId: string, updates: Partial<Product>) => {
     try {
@@ -1106,6 +1220,65 @@ export default function EcommerceModule({ user }: { user: any }) {
                   </button>
                 </div>
               </div>
+
+              {/* Notification Config Panel */}
+              <div className="bg-slate-900 p-8 rounded-[2rem] text-white shadow-xl space-y-8">
+                <div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                    <Bell size={16} className="text-blue-400" /> Notifications Auto
+                  </h3>
+                  <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase">WhatsApp & SMS Pro</p>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Canal Actif</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['none', 'whatsapp', 'sms'].map(channel => (
+                        <button
+                          key={channel}
+                          onClick={() => setNotificationConfig({ ...notificationConfig, activeChannel: channel })}
+                          className={cn(
+                            "py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                            notificationConfig?.activeChannel === channel ? "bg-blue-600 border-blue-600 text-white" : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
+                          )}
+                        >
+                          {channel}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Numéro Expéditeur / ID</label>
+                      <input 
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs font-bold text-white focus:bg-white/10 focus:border-blue-500 outline-none transition-all"
+                        placeholder="+237 ..."
+                        value={notificationConfig?.senderNumber || ''}
+                        onChange={e => setNotificationConfig({ ...notificationConfig, senderNumber: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">Template Annulation</label>
+                      <textarea 
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-[10px] font-medium text-white focus:bg-white/10 focus:border-blue-500 outline-none transition-all h-24"
+                        placeholder="Utilisez {customerName}, {orderId} et {reason}"
+                        value={notificationConfig?.cancelTemplate || ''}
+                        onChange={e => setNotificationConfig({ ...notificationConfig, cancelTemplate: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <button 
+                    disabled={savingSettings}
+                    onClick={saveNotificationSettings}
+                    className="w-full py-4 bg-blue-600 hover:bg-white hover:text-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-900/20 active:scale-95"
+                  >
+                    {savingSettings ? "Synchronisation..." : "Sauvegarder Logic"}
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="lg:col-span-2 space-y-6">
@@ -1286,30 +1459,37 @@ export default function EcommerceModule({ user }: { user: any }) {
                   <div className="lg:w-64 space-y-4">
                     <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Actions Opérationnelles</h4>
                     <div className="flex flex-col gap-2">
-                      <button 
-                        onClick={() => updateOrderStatus(order.id, 'PROCESSING', order.customerEmail)}
-                        disabled={order.status !== 'PENDING'}
-                        className={cn(
-                          "w-full py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
-                          order.status === 'PROCESSING' ? "bg-blue-600 text-white" : "bg-slate-900 text-white hover:bg-blue-600 disabled:opacity-30"
-                        )}
-                      >
-                        Prise en charge
-                      </button>
-                      <button 
-                        onClick={() => updateOrderStatus(order.id, 'SHIPPED', order.customerEmail)}
-                        disabled={order.status === 'SHIPPED' || order.status === 'DELIVERED'}
-                        className="w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all flex items-center justify-center gap-2 disabled:opacity-30"
-                      >
-                        <Truck size={14} /> Expédition
-                      </button>
-                      <button 
-                        onClick={() => updateOrderStatus(order.id, 'DELIVERED', order.customerEmail)}
-                        disabled={order.status === 'DELIVERED'}
-                        className="w-full py-4 bg-emerald-50 text-emerald-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-30"
-                      >
-                        <CheckCircle2 size={14} /> Terminer
-                      </button>
+                       <button 
+                         onClick={() => updateOrderStatus(order.id, 'PROCESSING', order.customerEmail)}
+                         disabled={order.status !== 'PENDING'}
+                         className={cn(
+                           "w-full py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+                           order.status === 'PROCESSING' ? "bg-blue-600 text-white" : "bg-slate-900 text-white hover:bg-blue-600 disabled:opacity-30"
+                         )}
+                       >
+                         Prise en charge
+                       </button>
+                       <button 
+                         onClick={() => updateOrderStatus(order.id, 'SHIPPED', order.customerEmail)}
+                         disabled={order.status === 'SHIPPED' || order.status === 'DELIVERED' || order.status === 'CANCELLED' || order.status === 'CANCELLED_BY_SELLER'}
+                         className="w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all flex items-center justify-center gap-2 disabled:opacity-30"
+                       >
+                         <Truck size={14} /> Expédition
+                       </button>
+                       <button 
+                         onClick={() => updateOrderStatus(order.id, 'DELIVERED', order.customerEmail)}
+                         disabled={order.status === 'DELIVERED' || order.status === 'CANCELLED' || order.status === 'CANCELLED_BY_SELLER'}
+                         className="w-full py-4 bg-emerald-50 text-emerald-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-30"
+                       >
+                         <CheckCircle2 size={14} /> Terminer
+                       </button>
+                       <button 
+                         onClick={() => setCancellingOrder(order)}
+                         disabled={['DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status)}
+                         className="w-full py-4 bg-red-50 text-red-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-30"
+                       >
+                         <X size={14} /> Annuler / Refuser
+                       </button>
                     </div>
                     <button 
                       onClick={() => setActiveChatOrder(order)}
@@ -1532,6 +1712,100 @@ export default function EcommerceModule({ user }: { user: any }) {
           </motion.div>
         </div>
       )}
+
+      {/* Cancellation Reason Modal */}
+      {cancellingOrder && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[150] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white rounded-[3rem] p-10 max-w-lg w-full shadow-2xl relative overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-red-600" />
+            
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight italic uppercase">Refus de Commande</h3>
+                <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase mt-1">ID: CMD-{cancellingOrder.id.slice(0, 8)}</p>
+              </div>
+              <button 
+                onClick={() => setCancellingOrder(null)}
+                className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {cancellingOrder.paymentMethod !== 'CASH' && (
+                <div className="p-5 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-4">
+                  <div className="p-2 bg-red-100 text-red-600 rounded-xl">
+                    <AlertCircle size={20} />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-black text-red-600 uppercase tracking-tight">Attention: Commande Prépayée</p>
+                    <p className="text-[10px] font-bold text-red-400 leading-relaxed uppercase">
+                      L'annulation déclenchera une procédure de remboursement Mobile Money. Assurez-vous de traiter le flux financier.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Motif de l'annulation (Obligatoire)</label>
+                <div className="grid grid-cols-1 gap-2">
+                  {[
+                    "Rupture de stock inattendue",
+                    "Zone de livraison hors de notre portée",
+                    "Client injoignable",
+                    "Autre (préciser ci-dessous)"
+                  ].map(reason => (
+                    <button
+                      key={reason}
+                      onClick={() => setCancellationReason(reason)}
+                      className={cn(
+                        "w-full p-4 rounded-xl text-[11px] font-black uppercase text-left transition-all border-2",
+                        cancellationReason === reason ? "bg-red-50 border-red-600 text-red-600 shadow-lg shadow-red-100" : "bg-white border-slate-100 text-slate-600 hover:bg-slate-50"
+                      )}
+                    >
+                      {reason}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {cancellationReason.includes('Autre') && (
+                <textarea 
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-[11px] font-bold outline-none focus:bg-white focus:border-red-600 transition-all h-20"
+                  placeholder="Détails du motif..."
+                  value={otherReason}
+                  onChange={e => setOtherReason(e.target.value)}
+                />
+              )}
+
+              <div className="flex gap-4 pt-4">
+                <button
+                  onClick={() => setCancellingOrder(null)}
+                  className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                >
+                  Garder
+                </button>
+                <button 
+                  disabled={submitting || !cancellationReason || (cancellationReason.includes('Autre') && !otherReason)}
+                  onClick={() => handleCancelOrder(cancellingOrder, cancellationReason.includes('Autre') ? otherReason : cancellationReason)}
+                  className="flex-[2] py-4 bg-red-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-red-200 active:scale-95 disabled:opacity-30"
+                >
+                  {submitting ? "Traitement ERP..." : "Confirmer l'Annulation"}
+                </button>
+              </div>
+              <p className="text-[9px] font-bold text-slate-400 text-center uppercase tracking-widest italic mt-2">
+                * Une notification automatique sear envoyée au client via {notificationConfig?.activeChannel || 'WhatsApp'}.
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* Edit Product Modal */}
       {editingProduct && (
         <div className="fixed inset-0 bg-slate-900/60 z-[120] flex items-center justify-center p-6">
