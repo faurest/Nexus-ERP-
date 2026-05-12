@@ -298,7 +298,7 @@ export default function EcommerceModule({ user }: { user: any }) {
           setLoyaltyPoints(cData.loyaltyPoints || 0);
           setClientId(snap.docs[0].id);
         }
-      });
+      }, (error) => handleFirestoreError(error, OperationType.GET, 'clients'));
       return () => unsubscribeClient();
     }
   }, [currentCompany, user]);
@@ -326,7 +326,7 @@ export default function EcommerceModule({ user }: { user: any }) {
         });
       }
       setProducts(prodData);
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'products'));
 
     // Fetch orders - filter for clients
     let orderQ = query(collection(db, 'ecommerce_orders'), where('companyId', '==', currentCompany.id));
@@ -347,7 +347,7 @@ export default function EcommerceModule({ user }: { user: any }) {
           const others = prev.filter(o => !loggedInOrders.find(l => l.id === o.id));
           return [...others, ...loggedInOrders].sort((a,b) => (b.date?.seconds || 0) - (a.date?.seconds || 0));
         });
-      });
+      }, (error) => handleFirestoreError(error, OperationType.GET, 'ecommerce_orders_loggedin'));
 
       // If we have guest orders, listen to them too
       let unsubscribeGuest = () => {};
@@ -369,7 +369,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               const others = prev.filter(o => !guestOrders.find(g => g.id === o.id));
               return [...others, ...guestOrders].sort((a,b) => (b.date?.seconds || 0) - (a.date?.seconds || 0));
             });
-          });
+          }, (error) => handleFirestoreError(error, OperationType.GET, 'ecommerce_orders_guest'));
         });
         unsubscribeGuest = () => unsubscribes.forEach(u => u());
       }
@@ -409,7 +409,7 @@ export default function EcommerceModule({ user }: { user: any }) {
           shippedTemplate: 'Bonjour {customerName}, votre commande {orderId} est en cours d\'expédition !'
         });
       }
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'notification_configs'));
 
     return () => unsubscribe();
   }, [currentCompany, isAdmin]);

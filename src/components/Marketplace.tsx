@@ -204,7 +204,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           .sort((a: any, b: any) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
         
         setOrderHistories(prev => ({ ...prev, [orderId]: history }));
-      });
+      }, (error) => handleFirestoreError(error, OperationType.GET, "order_history"));
     });
 
     return () => unsubscribes.forEach(unsub => unsub());
@@ -241,7 +241,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             (a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0),
           );
         });
-      });
+      }, (error) => handleFirestoreError(error, OperationType.GET, "ecommerce_orders"));
     });
 
     return () => unsubscribes.forEach((unsub) => unsub());

@@ -177,7 +177,7 @@ service cloud.firestore {
       // Read access: Admin, Company Member, or the User themselves (self-access)
       // Products, Services and guest Orders are public for the Marketplace
       allow get: if isCompanyCollection() && (
-        collectionName in ['products', 'services', 'ecommerce_orders'] ||
+        collectionName in ['products', 'services', 'ecommerce_orders', 'order_history'] ||
         (isSignedIn() && (
           isAdmin() || 
           isSelf(resource.data) ||
@@ -186,7 +186,7 @@ service cloud.firestore {
       );
       
       allow list: if isCompanyCollection() && (
-        collectionName in ['products', 'services', 'ecommerce_orders'] ||
+        collectionName in ['products', 'services', 'ecommerce_orders', 'order_history'] ||
         (isSignedIn() && (
           isAdmin() || 
           isSelf(resource.data) ||
