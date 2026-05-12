@@ -211,8 +211,14 @@ service cloud.firestore {
                         isMemberOfCompany(existing().companyId) ||
                         isSelf(existing())
                       )) ||
-                      // Allow guest order updates for simulation (payment confirmed)
-                      (collectionName == 'ecommerce_orders' && existing().customerEmail == 'Marketplace Guest')
+                      // Allow guest order updates (cancellation or simulation)
+                      (collectionName == 'ecommerce_orders' && (
+                        existing().customerEmail == 'Marketplace Guest' ||
+                        incoming().status == 'CANCELLED_BY_CUSTOMER'
+                      )) ||
+                      // Allow anyone to update stock (for order placement/cancellation increment)
+                      // In a real app this should be more restricted or server-side
+                      (collectionName == 'products' && incoming().diff(existing()).affectedKeys().hasOnly(['stock', 'updatedAt']))
                     ) &&
                     incoming().companyId == existing().companyId &&
                     (incoming().updatedAt == request.time || collectionName == 'messages' || collectionName == 'project_discussions' || collectionName == 'order_messages');

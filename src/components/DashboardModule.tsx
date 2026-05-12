@@ -47,6 +47,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
   const [newTask, setNewTask] = useState({ title: '', assignedTo: '', endDate: '' });
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [personnel, setPersonnel] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -67,7 +68,11 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       setPersonnel(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => handleFirestoreError(err, OperationType.LIST, 'personnel'));
 
-    return () => { unsubServices(); unsubInterventions(); unsubTasks(); unsubPersonnel(); };
+    const unsubProducts = onSnapshot(query(collection(db, 'products'), where('companyId', '==', currentCompany.id)), snap => {
+      setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'products'));
+
+    return () => { unsubServices(); unsubInterventions(); unsubTasks(); unsubPersonnel(); unsubProducts(); };
   }, [currentCompany]);
 
   const handleSaveService = async (e: React.FormEvent) => {
@@ -236,8 +241,8 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
   const stats = [
     { label: 'Ventes du mois', value: '45,200 FCFA', icon: TrendingUp, trend: '+12%', color: 'text-green-600' },
     { label: 'Nouveaux Clients', value: '24', icon: Users, trend: '+5%', color: 'text-blue-600' },
-    { label: 'Tâches en retard', value: '8', icon: AlertCircle, trend: '-2', color: 'text-red-500' },
-    { label: 'Ruptures Stock', value: '3', icon: Package, trend: 'Critique', color: 'text-orange-600' },
+    { label: 'Tâches en retard', value: tasks.filter(t => t.status === 'pending').length.toString(), icon: AlertCircle, trend: 'Actif', color: 'text-red-500' },
+    { label: 'Ruptures Stock', value: products.filter(p => p.stock <= 0).length.toString(), icon: Package, trend: products.filter(p => p.stock <= (p.stockThreshold || 5)).length > 0 ? 'Critique' : 'OK', color: 'text-orange-600' },
   ];
 
   const advantages = [

@@ -52,6 +52,7 @@ interface Product {
   stock: number;
   companyId: string;
   location?: string;
+  allowBackorder?: boolean;
 }
 
 interface Company {
@@ -282,11 +283,20 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   }, [products, searchTerm, activeCompanyId]);
 
   const addToCart = (product: Product) => {
+    if (product.stock <= 0 && !product.allowBackorder) {
+      alert("Désolé, ce produit est en rupture de stock.");
+      return;
+    }
+    
     addToRecentlyViewed(product);
     const company = companies.find((c) => c.id === product.companyId);
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
+        if (!product.allowBackorder && existing.cartQuantity >= product.stock) {
+          alert(`Désolé, seulement ${product.stock} articles sont disponibles.`);
+          return prev;
+        }
         return prev.map((item) =>
           item.id === product.id
             ? { ...item, cartQuantity: item.cartQuantity + 1 }
@@ -329,16 +339,16 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   const getStockStatus = (stock: number) => {
     if (stock <= 0)
       return {
-        label: "Sur commande",
-        color: "bg-amber-50 text-amber-600 border-amber-100",
+        label: "Rupture de Stock",
+        color: "bg-slate-100 text-slate-500 border-slate-200",
       };
-    if (stock <= 5)
+    if (stock <= 10)
       return {
-        label: "Stock Limité",
-        color: "bg-red-50 text-red-600 border-red-100",
+        label: `Stock Limité - Plus que ${stock}`,
+        color: "bg-orange-50 text-orange-600 border-orange-100",
       };
     return {
-      label: "Disponible",
+      label: "En Stock",
       color: "bg-emerald-50 text-emerald-600 border-emerald-100",
     };
   };
@@ -346,7 +356,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   const checkoutWhatsApp = (product?: Product) => {
     const targetProduct = product || cart[0];
     const company = companies.find((c) => c.id === targetProduct?.companyId);
-    const phone = company?.whatsappNumber || "237690000000";
+    // Use company number if available, otherwise global help number
+    const phone = company?.whatsappNumber || "640790996";
 
     let message = "";
     if (product) {
@@ -426,6 +437,16 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             customerEmail: "Marketplace Guest",
           });
 
+          // Deduct Stock immediately (Reservation)
+          for (const item of items) {
+             const productRef = doc(db, "products", item.id);
+             // We use increment with negative value
+             const { increment } = await import("firebase/firestore");
+             await updateDoc(productRef, {
+               stock: increment(-item.cartQuantity)
+             });
+          }
+
           // Save to guest orders for tracking
           const existingGuestOrders = JSON.parse(localStorage.getItem('nexus_guest_orders') || '[]');
           const newIds = [...existingGuestOrders, orderRef.id];
@@ -489,7 +510,26 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     console.log("Attempting to cancel order:", orderId, "Reason:", reason);
     
     try {
+      const { getDoc, increment } = await import("firebase/firestore");
       const orderRef = doc(db, "ecommerce_orders", orderId);
+      const orderSnap = await getDoc(orderRef);
+      
+      if (!orderSnap.exists()) return;
+      const orderData = orderSnap.data();
+
+      // Restore Stock if order wasn't already cancelled/delivered
+      if (orderData.status === 'PENDING') {
+        const items = orderData.items || [];
+        for (const item of items) {
+          if (item.id) {
+            const productRef = doc(db, "products", item.id);
+            await updateDoc(productRef, {
+              stock: increment(item.quantity || 0)
+            });
+          }
+        }
+      }
+
       await updateDoc(orderRef, {
         status: "CANCELLED_BY_CUSTOMER",
         cancellationReason: reason,
@@ -519,6 +559,23 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
   return (
     <div className="relative min-h-screen bg-slate-50/50 pb-24">
+      {/* Floating WhatsApp Help Button */}
+      <motion.button
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => {
+          const url = `https://wa.me/237640790996?text=${encodeURIComponent("Bonjour Nexus Aide, j'ai besoin d'assistance sur la Marketplace.")}`;
+          window.open(url, '_blank');
+        }}
+        className="fixed bottom-24 right-6 z-50 bg-emerald-500 text-white p-4 rounded-full shadow-2xl flex items-center justify-center hover:bg-emerald-600 transition-all border-4 border-white group"
+      >
+        <MessageCircle size={24} />
+        <span className="max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em]">
+          Aide Nexus
+        </span>
+      </motion.button>
       {/* Search & Navigation Sticky Header */}
       <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center gap-4 px-6 py-4">
         <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center gap-4">
@@ -1037,13 +1094,19 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          addToCart(product);
+                          if (product.stock > 0) addToCart(product);
                         }}
-                        className="flex-1 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-slate-200 group-hover:shadow-blue-600/20 px-4"
+                        disabled={product.stock <= 0}
+                        className={cn(
+                          "flex-1 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-xl px-4",
+                          product.stock > 0 
+                            ? "bg-slate-900 text-white hover:bg-blue-600 shadow-slate-200 group-hover:shadow-blue-600/20" 
+                            : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none"
+                        )}
                       >
                         <Plus size={18} className="mr-2" />
                         <span className="text-[10px] font-black uppercase tracking-[0.1em]">
-                          Panier
+                          {product.stock > 0 ? "Panier" : "Rupture"}
                         </span>
                       </button>
                     </div>
@@ -1363,31 +1426,45 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                               className={cn(
                                 "p-4 rounded-[1.5rem] border-2 transition-all flex items-center gap-3 text-left group relative overflow-hidden",
                                 selectedPaymentMethod === 'MOMO' 
-                                  ? "border-blue-600 bg-blue-50 shadow-lg shadow-blue-600/10" 
+                                  ? "border-amber-500 bg-amber-50 shadow-lg shadow-amber-500/10" 
                                   : "border-slate-100 hover:border-slate-200 bg-white"
                               )}
                             >
                               <div className={cn(
                                 "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                                selectedPaymentMethod === 'MOMO' ? "bg-blue-600 text-white" : "bg-slate-50 text-slate-400 group-hover:bg-slate-100"
+                                selectedPaymentMethod === 'MOMO' ? "bg-amber-500 text-white" : "bg-slate-50 text-slate-400 group-hover:bg-slate-100"
                               )}>
                                 <Smartphone size={20} />
                               </div>
                               <div>
-                                <p className={cn("text-[10px] font-black uppercase leading-none", selectedPaymentMethod === 'MOMO' ? "text-blue-600" : "text-slate-900")}>Mobile Money</p>
-                                <div className="flex items-center gap-1 mt-1 opacity-80">
-                                   <div className="w-2 h-2 rounded-full bg-orange-400" />
-                                   <div className="w-2 h-2 rounded-full bg-yellow-400" />
-                                   <p className="text-[8px] font-bold text-slate-400 uppercase italic leading-none">OM / MoMo</p>
+                                <p className={cn("text-[10px] font-black uppercase leading-none", selectedPaymentMethod === 'MOMO' ? "text-amber-600" : "text-slate-900")}>Mobile Money</p>
+                                <div className="flex items-center gap-1.5 mt-1">
+                                   <div className="px-1 py-0.5 bg-orange-500 text-white text-[7px] font-black rounded uppercase">Orange</div>
+                                   <div className="px-1 py-0.5 bg-yellow-400 text-slate-900 text-[7px] font-black rounded uppercase">MTN</div>
                                 </div>
                               </div>
                             </button>
                           </div>
+                          {selectedPaymentMethod === 'MOMO' && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="p-4 bg-amber-50 border border-amber-100 rounded-3xl space-y-3"
+                            >
+                              <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest leading-snug">
+                                Payez via Orange Money ou MTN MoMo. Un message USSD de confirmation sera envoyé sur votre téléphone après validation.
+                              </p>
+                              <div className="flex items-center gap-2 px-3 py-2 bg-white/50 rounded-xl border border-amber-200/50">
+                                <Info size={12} className="text-amber-500" />
+                                <span className="text-[8px] font-bold text-amber-400 uppercase italic">Utilise le numéro WhatsApp saisi plus haut</span>
+                              </div>
+                            </motion.div>
+                          )}
                           {selectedPaymentMethod === 'CASH' && (
-                            <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3">
-                              <Info size={14} className="text-emerald-600 shrink-0" />
-                              <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest leading-relaxed">
-                                Note: Vous paierez le montant total à l'agent de livraison lors de la réception de votre colis.
+                            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center gap-3">
+                              <History size={16} className="text-emerald-500" />
+                              <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-snug italic">
+                                Vous paierez le montant total directement à l'agent de livraison lors de la réception de vos articles.
                               </p>
                             </div>
                           )}

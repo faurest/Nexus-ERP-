@@ -44,6 +44,8 @@ interface Product {
   image: string;
   stock: number;
   points: number;
+  stockThreshold?: number;
+  allowBackorder?: boolean;
 }
 
 interface CartItem extends Product {
@@ -102,8 +104,8 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [newFee, setNewFee] = useState('');
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
-  const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
-
+  const [lowStockAlerts, setLowStockAlerts] = useState<Product[]>([]);
+  const [connStatus, setConnStatus] = useState<'checking' | 'ok' | 'fail'>('checking');
   const [selectedLocation, setSelectedLocation] = useState('');
 
   const canManage = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
@@ -299,6 +301,10 @@ export default function EcommerceModule({ user }: { user: any }) {
     const unsubscribeProd = onSnapshot(prodQ, (snapshot) => {
       const prodData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
       
+      // Update low stock alerts
+      const problematic = prodData.filter(p => p.stock <= (p.stockThreshold || 5));
+      setLowStockAlerts(problematic);
+
       // If empty, we can bootstrap some demo products for this company (Admins only)
       if (prodData.length === 0 && isAdmin) {
         const demos = [
@@ -586,6 +592,47 @@ export default function EcommerceModule({ user }: { user: any }) {
         )}
       </AnimatePresence>
       
+      {/* Low Stock Alerts for Admin */}
+      <AnimatePresence>
+        {isAdmin && lowStockAlerts.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden mb-4"
+          >
+            <div className="bg-amber-50 border border-amber-200 p-6 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center shadow-inner">
+                  <AlertCircle size={24} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-amber-900 uppercase italic">Alerte Réapprovisionnement</h3>
+                  <p className="text-xs font-bold text-amber-600/80 uppercase tracking-widest mt-1">
+                    {lowStockAlerts.length} produit(s) ont atteint le seuil critique.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 overflow-x-auto max-w-full pb-2 md:pb-0 scrollbar-hide">
+                {lowStockAlerts.slice(0, 3).map(p => (
+                  <div key={p.id} className="px-4 py-2 bg-white rounded-xl border border-amber-100 flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] font-black text-slate-700 uppercase">{p.name}</span>
+                    <span className="px-1.5 py-0.5 bg-amber-500 text-white text-[9px] font-black rounded-md">{p.stock}</span>
+                  </div>
+                ))}
+                {lowStockAlerts.length > 3 && <span className="text-[10px] font-black text-amber-400 self-center">+{lowStockAlerts.length - 3}</span>}
+              </div>
+              <button 
+                onClick={() => setActiveView('admin')}
+                className="px-6 py-3 bg-amber-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all flex items-center gap-2 shadow-lg shadow-amber-200 active:scale-95 whitespace-nowrap"
+              >
+                Gérer le Stock <ArrowRight size={14} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {activeView === 'catalog' && (
         <div className="space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-8 duration-700">
           {/* Enhanced Client Header */}
@@ -1505,6 +1552,8 @@ export default function EcommerceModule({ user }: { user: any }) {
                   name: formData.get('name') as string,
                   price: Number(formData.get('price')),
                   stock: Number(formData.get('stock')),
+                  stockThreshold: Number(formData.get('stockThreshold')),
+                  allowBackorder: formData.get('allowBackorder') === 'on',
                   description: formData.get('description') as string,
                   category: formData.get('category') as string,
                   points: Number(formData.get('points'))
@@ -1525,9 +1574,22 @@ export default function EcommerceModule({ user }: { user: any }) {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Tarificaton (FCFA)</label>
                   <input name="price" type="number" defaultValue={editingProduct.price} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
                 </div>
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Inventaire / Stock</label>
-                  <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Inventaire / Stock</label>
+                    <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Seuil d'Alerte</label>
+                    <input name="stockThreshold" type="number" defaultValue={editingProduct.stockThreshold || 5} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <input name="allowBackorder" type="checkbox" defaultChecked={editingProduct.allowBackorder} className="w-5 h-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500" />
+                  <div>
+                    <label className="text-xs font-black text-slate-700 uppercase tracking-tight">Permettre la surcommande</label>
+                    <p className="text-[9px] font-medium text-slate-500 uppercase">Le produit restera disponible même si le stock est à zéro.</p>
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
