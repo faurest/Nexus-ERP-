@@ -1478,12 +1478,15 @@ export default function EcommerceModule({ user }: { user: any }) {
                           <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase">CMD-{order.id.slice(0, 8)}</h3>
                           <span className={cn(
                             "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
-                            order.status === 'PENDING' ? "bg-amber-50 text-amber-600 border-amber-100" :
-                            order.status === 'PROCESSING' ? "bg-blue-50 text-blue-600 border-blue-100" :
-                            order.status === 'SHIPPED' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
-                            "bg-emerald-50 text-emerald-600 border-emerald-100"
+                            order.status === 'PENDING' ? "bg-blue-50 text-blue-600 border-blue-100" :
+                            order.status === 'PROCESSING' ? "bg-slate-50 text-slate-600 border-slate-100" :
+                            order.status === 'SHIPPED' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                            order.status === 'DELIVERED' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                            "bg-slate-100 text-slate-500 border-slate-200"
                           )}>
-                            {order.status}
+                            {order.status === 'PENDING' ? 'Reçue' : 
+                             order.status === 'SHIPPED' ? 'En route' :
+                             order.status.replace(/_/g, ' ')}
                           </span>
                         </div>
                         <p className="text-xs text-slate-400 font-medium">

@@ -15,7 +15,17 @@ import {
   Edit2,
   Save,
   MessageSquare,
-  ArrowLeft
+  ArrowLeft,
+  AlertTriangle,
+  CreditCard,
+  Smartphone,
+  Truck,
+  History,
+  BarChart3,
+  PieChart,
+  DollarSign,
+  ShoppingCart,
+  Zap
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
@@ -48,6 +58,9 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [personnel, setPersonnel] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [orderHistory, setOrderHistory] = useState<any[]>([]);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -72,7 +85,28 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => handleFirestoreError(err, OperationType.LIST, 'products'));
 
-    return () => { unsubServices(); unsubInterventions(); unsubTasks(); unsubPersonnel(); unsubProducts(); };
+    const unsubOrders = onSnapshot(query(collection(db, 'ecommerce_orders'), where('companyId', '==', currentCompany.id)), snap => {
+      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'ecommerce_orders'));
+
+    const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('companyId', '==', currentCompany.id)), snap => {
+      setPayments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'payments'));
+
+    const unsubHistory = onSnapshot(query(collection(db, 'order_history'), where('companyId', '==', currentCompany.id)), snap => {
+      setOrderHistory(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'order_history'));
+
+    return () => { 
+      unsubServices(); 
+      unsubInterventions(); 
+      unsubTasks(); 
+      unsubPersonnel(); 
+      unsubProducts(); 
+      unsubOrders(); 
+      unsubPayments();
+      unsubHistory();
+    };
   }, [currentCompany]);
 
   const handleSaveService = async (e: React.FormEvent) => {
@@ -239,11 +273,63 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
   };
 
   const stats = [
-    { label: 'Ventes du mois', value: '45,200 FCFA', icon: TrendingUp, trend: '+12%', color: 'text-green-600' },
-    { label: 'Nouveaux Clients', value: '24', icon: Users, trend: '+5%', color: 'text-blue-600' },
-    { label: 'Tâches en retard', value: tasks.filter(t => t.status === 'pending').length.toString(), icon: AlertCircle, trend: 'Actif', color: 'text-red-500' },
-    { label: 'Ruptures Stock', value: products.filter(p => p.stock <= 0).length.toString(), icon: Package, trend: products.filter(p => p.stock <= (p.stockThreshold || 5)).length > 0 ? 'Critique' : 'OK', color: 'text-orange-600' },
+    { 
+      label: 'CA du jour', 
+      value: `${orders
+        .filter(o => {
+          const date = o.date?.toDate ? o.date.toDate() : new Date(o.date);
+          return date.toDateString() === new Date().toDateString() && o.status !== 'CANCELLED' && o.status !== 'CANCELLED_BY_SELLER';
+        })
+        .reduce((sum, o) => sum + (o.total || 0), 0)
+        .toLocaleString()} FCFA`, 
+      icon: DollarSign, 
+      trend: orders.filter(o => o.paymentMethod === 'MOMO').length > 0 ? 'MoMo Focus' : '+8%', 
+      color: 'text-emerald-600' 
+    },
+    { 
+      label: 'Commandes en attente', 
+      value: orders.filter(o => o.status === 'PENDING').length.toString(), 
+      icon: ShoppingCart, 
+      trend: 'Nouveau', 
+      color: 'text-blue-600' 
+    },
+    { 
+      label: 'Succès Livraison', 
+      value: `${orders.length > 0 ? Math.round((orders.filter(o => o.status === 'DELIVERED').length / orders.filter(o => ['DELIVERED', 'DELIVERY_FAILED'].includes(o.status)).length || 1) * 100) : 0}%`, 
+      icon: Zap, 
+      trend: 'Ops', 
+      color: 'text-indigo-600' 
+    },
+    { 
+      label: 'Ruptures Stock', 
+      value: products.filter(p => p.stock <= 0).length.toString(), 
+      icon: Package, 
+      trend: products.filter(p => p.stock <= (p.stockThreshold || 5)).length > 0 ? 'Critique' : 'OK', 
+      color: 'text-orange-600' 
+    },
   ];
+
+  const logisticsIncidents = orderHistory
+    .filter(h => ['DELIVERY_FAILED', 'CANCELLED_BY_SELLER'].includes(h.newStatus))
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+    .slice(0, 5);
+
+  const cashToCollect = orders
+    .filter(o => o.status === 'SHIPPED' && o.paymentMethod === 'CASH')
+    .reduce((sum, o) => sum + (o.total || 0), 0);
+
+  const balanceMomo = orders
+    .filter(o => o.paymentMethod === 'MOMO' && o.status !== 'CANCELLED')
+    .reduce((sum, o) => sum + (o.total || 0), 0);
+    
+  const balanceOrange = orders
+    .filter(o => o.paymentMethod === 'OM' && o.status !== 'CANCELLED')
+    .reduce((sum, o) => sum + (o.total || 0), 0);
+
+  const stars = [...products]
+    .sort((a, b) => (b.views || 0) - (a.views || 0))
+    .slice(0, 3);
+
 
   const advantages = [
     { 
@@ -314,6 +400,14 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                 <input type="file" accept=".json" id="import-json" hidden onChange={handleImport} />
                 
                 <button 
+                  onClick={() => window.print()}
+                  className="px-6 py-4 rounded-2xl bg-white text-slate-900 text-[9px] font-black uppercase tracking-[0.15em] hover:bg-slate-50 transition-all shadow-xl flex items-center gap-3 active:scale-95"
+                >
+                  <BarChart3 size={14} />
+                  Générer Rapport
+                </button>
+                
+                <button 
                   onClick={handleExport}
                   disabled={isExporting || isImporting}
                   className="px-6 py-4 rounded-2xl bg-blue-600 text-white text-[9px] font-black uppercase tracking-[0.15em] hover:bg-blue-500 transition-all shadow-[0_15px_30px_rgba(37,99,235,0.2)] flex items-center gap-3"
@@ -382,54 +476,60 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
           </div>
 
           <div className="h-[280px] flex items-end gap-3.5 relative z-10">
-            {[45, 62, 55, 78, 68, 92, 85, 76, 88, 95, 82, 98].map((v, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-3 group/bar">
-                <div 
-                  style={{ height: `${v}%` }}
-                  className={cn(
-                    "w-full rounded-t-lg transition-all relative",
-                    i === 11 ? "bg-blue-600 shadow-sm" : "bg-slate-100"
-                  )}
-                >
-                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] font-black px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100">
-                    {v}k
+            {Array.from({ length: 12 }).map((_, i) => {
+              const val = orders.filter(o => {
+                const d = o.date?.toDate ? o.date.toDate() : new Date(o.date);
+                return d.getMonth() === i;
+              }).reduce((sum, o) => sum + (o.total || 0), 0) / 1000;
+              
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-3 group/bar">
+                  <div 
+                    style={{ height: `${Math.min(val, 100)}%` }}
+                    className={cn(
+                      "w-full rounded-t-lg transition-all relative",
+                      i === new Date().getMonth() ? "bg-blue-600 shadow-sm" : "bg-slate-100"
+                    )}
+                  >
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] font-black px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 whitespace-nowrap">
+                      {Math.round(val)}k FCFA
+                    </div>
                   </div>
+                  <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">{i + 1}</span>
                 </div>
-                <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">{i + 1}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        {/* Global Status - Spans 4 cols */}
+        {/* Financial Flow Tracker */}
         <div className="col-span-12 xl:col-span-4 bg-slate-900 rounded-3xl lg:rounded-[2.5rem] p-7 lg:p-9 text-white shadow-xl relative overflow-hidden flex flex-col justify-between">
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/40 via-transparent to-transparent z-0 pointer-events-none" />
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-8">
-              <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
-                <Activity size={16} />
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <DollarSign size={20} />
               </div>
               <div>
-                <h3 className="text-md font-black uppercase tracking-wider">Passerelle Nexus</h3>
-                <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Connecté • 98.4% Health</p>
+                <h3 className="text-md font-black uppercase tracking-wider">Trésorerie Digitale</h3>
+                <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Réconciliation Actuelle</p>
               </div>
             </div>
             
             <div className="space-y-6">
               {[
-                { label: 'Uptime Système', val: '99.9%', w: '99%' },
-                { label: 'Flux Trésorerie', val: 'Stable', w: '85%' },
-                { label: 'Stock Critique', val: '2 items', w: '20%' },
+                { label: 'Solde MoMo (Simulé)', val: `${balanceMomo.toLocaleString()} FCFA`, color: 'bg-violet-500' },
+                { label: 'Solde Orange Money', val: `${balanceOrange.toLocaleString()} FCFA`, color: 'bg-orange-500' },
+                { label: 'Fonds de Caisse / Cash', val: `${cashToCollect.toLocaleString()} FCFA`, color: 'bg-emerald-500' },
               ].map(s => (
                 <div key={s.label}>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em]">{s.label}</span>
-                    <span className="text-[10px] font-black text-white">{s.val}</span>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{s.label}</span>
+                    <span className="text-[11px] font-black text-white">{s.val}</span>
                   </div>
-                  <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                     <div 
-                      style={{ width: s.w }}
-                      className={cn("h-full rounded-full transition-all duration-1000", s.w === '20%' ? 'bg-orange-500' : 'bg-blue-500')}
+                      className={cn("h-full rounded-full w-full opacity-50", s.color)}
                     />
                   </div>
                 </div>
@@ -437,15 +537,128 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
             </div>
           </div>
 
-          <div className="mt-10 p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md relative z-10 transition-transform hover:scale-[1.02] cursor-default">
+          <div className="mt-10 p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md relative z-10">
              <div className="flex items-center gap-2 mb-2">
-               <AlertCircle size={14} className="text-blue-400" />
-               <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Recommandation AI</span>
+               <Truck size={14} className="text-blue-400" />
+               <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Collecte Terrain</span>
              </div>
-             <p className="text-[11px] font-medium text-slate-300 leading-relaxed italic">"Optimisez vos flux de trésorerie en consolidant les règlements fournisseurs demain."</p>
+             <p className="text-[11px] font-medium text-slate-300 leading-relaxed italic">
+               "{orders.filter(o => o.status === 'SHIPPED' && o.paymentMethod === 'CASH').length} livreurs sont en route avec des encaissements espèces."
+             </p>
           </div>
         </div>
 
+        {/* Logistics Tracking Center */}
+        <div className="col-span-12 xl:col-span-8 space-y-6">
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
+            <div className="flex justify-between items-center mb-8">
+               <div>
+                  <h3 className="text-xl font-black text-slate-900 uppercase">Logistics Tracker</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Alertes et incidents opérationnels</p>
+               </div>
+               <div className="p-3 bg-red-50 text-red-600 rounded-2xl">
+                 <AlertTriangle size={24} />
+               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {logisticsIncidents.length > 0 ? logisticsIncidents.map((incident, idx) => (
+                <div key={idx} className={cn(
+                  "p-5 rounded-3xl border-2 flex flex-col justify-between gap-4 transition-all hover:scale-[1.02]",
+                  incident.newStatus === 'DELIVERY_FAILED' ? "bg-amber-50 border-amber-100" : "bg-red-50 border-red-100"
+                )}>
+                  <div className="flex justify-between items-start">
+                    <div className={cn(
+                        "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest",
+                        incident.newStatus === 'DELIVERY_FAILED' ? "bg-amber-200 text-amber-800" : "bg-red-200 text-red-800"
+                      )}>
+                      {incident.newStatus === 'DELIVERY_FAILED' ? 'Échec de livraison' : 'Annulation Interne'}
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-400">
+                      CMD-{incident.orderId.slice(0, 6)}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <p className="text-xs font-black text-slate-800 uppercase italic">"{incident.reason}"</p>
+                    {incident.comment && <p className="text-[10px] font-medium text-slate-500 leading-relaxed">Perso: {incident.comment}</p>}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button className="flex-1 py-2 bg-white rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-600 border border-slate-200 hover:bg-slate-50 transition-all">
+                      Détails Flux
+                    </button>
+                    {incident.newStatus === 'DELIVERY_FAILED' && (
+                      <button className="flex-1 py-2 bg-blue-600 rounded-xl text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
+                        Retenter (WhatsApp)
+                      </button>
+                    )}
+                    {incident.newStatus === 'CANCELLED_BY_SELLER' && (
+                      <button className="flex-1 py-2 bg-slate-900 rounded-xl text-[9px] font-black uppercase tracking-widest text-white shadow-lg hover:bg-slate-800 transition-all">
+                        Inventory Corr.
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )) : (
+                <div className="col-span-2 py-12 text-center">
+                   <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-200">
+                      <Truck size={32} />
+                   </div>
+                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Aucun incident logistique récent</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Marketplace Intelligence */}
+        <div className="col-span-12 xl:col-span-4 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col">
+           <div className="flex justify-between items-center mb-8">
+              <div>
+                <h3 className="text-xl font-black text-slate-900 uppercase">Marketplace AI</h3>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Analyse du comportement client</p>
+              </div>
+              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                <Zap size={24} />
+              </div>
+           </div>
+
+           <div className="space-y-6 flex-1">
+              <div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Produits Stars (Vues)</p>
+                <div className="space-y-3">
+                   {stars.map((p, i) => (
+                     <div key={p.id} className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white font-black text-xs">
+                          {i + 1}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-black text-slate-800 uppercase tracking-tight truncate">{p.name}</p>
+                          <p className="text-[9px] font-bold text-slate-400">{p.views || 0} consultations</p>
+                        </div>
+                        <div className="text-xs font-black text-blue-600">
+                           {p.price.toLocaleString()}
+                        </div>
+                     </div>
+                   ))}
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-slate-100">
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Conversion & Abandon</p>
+                 <div className="flex items-end gap-2 h-24">
+                   {[30, 45, 25, 60, 40].map((v, i) => (
+                     <div key={i} className="flex-1 bg-indigo-50 rounded-t-lg relative group/stat">
+                        <div style={{ height: `${v}%` }} className="absolute bottom-0 left-0 w-full bg-indigo-600 rounded-t-lg transition-all" />
+                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[8px] font-black text-indigo-600 opacity-0 group-hover/stat:opacity-100">{v}%</div>
+                     </div>
+                   ))}
+                 </div>
+                 <p className="text-[9px] font-bold text-center text-slate-400 mt-4 uppercase">Panier : 18% Taux d'abandon estimé</p>
+              </div>
+           </div>
+        </div>
       </div>
 
       {/* Simplified Advantages with ERP Benefits */}
