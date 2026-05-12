@@ -423,6 +423,18 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           // If Mobile Money, simulate the push delay
           if (selectedPaymentMethod === 'MOMO') {
             await new Promise(resolve => setTimeout(resolve, 6000));
+            // Check if order was cancelled while waiting
+            try {
+              const { getDoc } = await import("firebase/firestore");
+              const freshSnap = await getDoc(doc(db, "ecommerce_orders", orderRef.id));
+              if (freshSnap.exists() && freshSnap.data()?.status === "CANCELLED_BY_CUSTOMER") {
+                console.log("Order was cancelled by user during MOMO wait, stopping processing.");
+                return;
+              }
+            } catch (e) {
+              console.error("Error checking order status during wait:", e);
+            }
+
             await updateDoc(doc(db, "ecommerce_orders", orderRef.id), {
               paymentStatus: "PAID",
               status: "PROCESSING"
@@ -462,16 +474,21 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   };
 
   const cancelOrder = async (orderId: string) => {
+    console.log("Attempting to cancel order:", orderId);
     if (!window.confirm("Voulez-vous vraiment annuler cette commande ?")) return;
     
     try {
-      await updateDoc(doc(db, "ecommerce_orders", orderId), {
+      const orderRef = doc(db, "ecommerce_orders", orderId);
+      await updateDoc(orderRef, {
         status: "CANCELLED_BY_CUSTOMER",
         updatedAt: serverTimestamp()
       });
-    } catch (err) {
+      console.log("Order cancelled successfully:", orderId);
+      alert("Votre commande a été annulée avec succès.");
+    } catch (err: any) {
       console.error("Error cancelling order:", err);
-      alert("Erreur lors de l'annulation.");
+      const errorMsg = err.message || "Erreur inconnue";
+      alert(`Erreur lors de l'annulation: ${errorMsg}. Veuillez contacter le support.`);
     }
   };
 
