@@ -27,6 +27,7 @@ import {
   LayoutDashboard,
   Database,
   AlertCircle,
+  AlertTriangle,
   MapPin,
   ArrowRight,
 } from 'lucide-react';
@@ -113,6 +114,9 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [otherReason, setOtherReason] = useState('');
   const [notificationConfig, setNotificationConfig] = useState<any>(null);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [updatingStatusOrder, setUpdatingStatusOrder] = useState<{order: Order, nextStatus: string} | null>(null);
+  const [statusComment, setStatusComment] = useState('');
+  const [statusReason, setStatusReason] = useState('');
 
   const canManage = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
   const isAdmin = canManage;
@@ -489,6 +493,89 @@ export default function EcommerceModule({ user }: { user: any }) {
       setCancellingOrder(null);
       setCancellationReason('');
       setOtherReason('');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'ecommerce_orders');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const recordOrderHistory = async (orderId: string, prevStatus: string, newStatus: string, reason: string, comment: string) => {
+    if (!currentCompany) return;
+    try {
+      await addDoc(collection(db, 'order_history'), {
+        companyId: currentCompany.id,
+        orderId,
+        previousStatus: prevStatus,
+        newStatus,
+        reason,
+        comment,
+        authorName: user?.name || 'Système',
+        authorRole: user?.role || 'Admin',
+        createdAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.error("History log failed:", err);
+    }
+  };
+
+  const handleStatusUpdate = async (order: Order, nextStatus: string, reason: string, comment: string) => {
+    if (!currentCompany) return;
+    setSubmitting(true);
+    try {
+      await updateDoc(doc(db, 'ecommerce_orders', order.id), {
+        status: nextStatus as any,
+        updatedAt: serverTimestamp()
+      });
+
+      await recordOrderHistory(order.id, order.status, nextStatus, reason, comment);
+
+      // Handle stock if cancelled
+      if (nextStatus === 'CANCELLED' || nextStatus === 'CANCELLED_BY_SELLER') {
+        const stockPromises = order.items.map(async (item) => {
+          const productRef = doc(db, 'products', item.id);
+          const productSnap = await getDocs(query(collection(db, 'products'), where('__name__', '==', item.id)));
+          if (!productSnap.empty) {
+            const currentStock = productSnap.docs[0].data().stock || 0;
+            await updateDoc(productRef, {
+              stock: currentStock + item.quantity,
+              updatedAt: serverTimestamp()
+            });
+          }
+        });
+        await Promise.all(stockPromises);
+      }
+
+      // Trigger notification
+      if (notificationConfig && notificationConfig.activeChannel !== 'none') {
+        let template = notificationConfig.shippedTemplate;
+        if (nextStatus.includes('CANCELLED')) template = notificationConfig.cancelTemplate;
+        
+        // Custom templates for failure
+        if (nextStatus === 'DELIVERY_FAILED') {
+          template = "Bonjour {customerName}, notre livreur n'a pas pu vous livrer (Motif: {reason}). Nous retenterons bientôt.";
+        }
+
+        const message = (template || 'Mise à jour de commande {orderId}: {nextStatus}')
+          .replace('{customerName}', order.customerName || 'Client')
+          .replace('{orderId}', `CMD-${order.id.slice(0, 6).toUpperCase()}`)
+          .replace('{reason}', reason || comment || 'Non spécifié')
+          .replace('{nextStatus}', nextStatus);
+
+        console.log(`[NOTIF] ${nextStatus} -> ${order.customerPhone || order.customerEmail}: ${message}`);
+        
+        // App notification
+        if (order.customerEmail) {
+           const uSnap = await getDocs(query(collection(db, 'users'), where('email', '==', order.customerEmail.toLowerCase())));
+           if (!uSnap.empty) {
+             await createNotification(currentCompany.id, [uSnap.docs[0].id], 'Ma Commande', message, 'general');
+           }
+        }
+      }
+
+      setUpdatingStatusOrder(null);
+      setStatusReason('');
+      setStatusComment('');
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, 'ecommerce_orders');
     } finally {
@@ -1460,28 +1547,39 @@ export default function EcommerceModule({ user }: { user: any }) {
                     <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Actions Opérationnelles</h4>
                     <div className="flex flex-col gap-2">
                        <button 
-                         onClick={() => updateOrderStatus(order.id, 'PROCESSING', order.customerEmail)}
+                         onClick={() => {
+                           if (order.status === 'PENDING') {
+                             handleStatusUpdate(order, 'PROCESSING', '', 'Prise en charge de la commande');
+                           }
+                         }}
                          disabled={order.status !== 'PENDING'}
                          className={cn(
                            "w-full py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
-                           order.status === 'PROCESSING' ? "bg-blue-600 text-white" : "bg-slate-900 text-white hover:bg-blue-600 disabled:opacity-30"
+                           order.status === 'PROCESSING' || order.status === 'SHIPPED' || order.status === 'DELIVERED' ? "bg-blue-600 text-white" : "bg-slate-900 text-white hover:bg-blue-600 disabled:opacity-30"
                          )}
                        >
-                         Prise en charge
+                         {order.status === 'PENDING' ? 'Prise en charge' : 'En traitement'}
                        </button>
                        <button 
-                         onClick={() => updateOrderStatus(order.id, 'SHIPPED', order.customerEmail)}
-                         disabled={order.status === 'SHIPPED' || order.status === 'DELIVERED' || order.status === 'CANCELLED' || order.status === 'CANCELLED_BY_SELLER'}
+                         onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'SHIPPED' })}
+                         disabled={['SHIPPED', 'DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status)}
                          className="w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all flex items-center justify-center gap-2 disabled:opacity-30"
                        >
                          <Truck size={14} /> Expédition
                        </button>
                        <button 
-                         onClick={() => updateOrderStatus(order.id, 'DELIVERED', order.customerEmail)}
-                         disabled={order.status === 'DELIVERED' || order.status === 'CANCELLED' || order.status === 'CANCELLED_BY_SELLER'}
+                         onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'DELIVERED' })}
+                         disabled={['DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status)}
                          className="w-full py-4 bg-emerald-50 text-emerald-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-30"
                        >
                          <CheckCircle2 size={14} /> Terminer
+                       </button>
+                       <button 
+                         onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'DELIVERY_FAILED' })}
+                         disabled={['DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status) || order.status === 'PENDING'}
+                         className="w-full py-4 bg-amber-50 text-amber-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-amber-600 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-30"
+                       >
+                         <AlertTriangle size={14} /> Échec Livraison
                        </button>
                        <button 
                          onClick={() => setCancellingOrder(order)}
@@ -1709,6 +1807,87 @@ export default function EcommerceModule({ user }: { user: any }) {
                 <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest italic opacity-60">Paiement 100% sécurisé • Protocole Nexus Shield activé</p>
               </div>
             </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Status Update Details Modal */}
+      {updatingStatusOrder && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[160] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white rounded-[3rem] p-10 max-w-lg w-full shadow-2xl relative overflow-hidden"
+          >
+            <div className={cn("absolute top-0 left-0 w-full h-1.5", 
+              updatingStatusOrder.nextStatus === 'DELIVERY_FAILED' ? "bg-amber-500" : "bg-blue-600"
+            )} />
+            
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight italic uppercase">Mettre à jour le statut</h3>
+                <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase mt-1">Nouveau: {updatingStatusOrder.nextStatus}</p>
+              </div>
+              <button 
+                onClick={() => setUpdatingStatusOrder(null)}
+                className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Motif / Détail opérationnel</label>
+                <div className="grid grid-cols-1 gap-2">
+                  {(updatingStatusOrder.nextStatus === 'DELIVERY_FAILED' ? [
+                    "Client absent / Injoignable",
+                    "Adresse introuvable",
+                    "Zone dangereuse / Barrage",
+                    "Autre (préciser)"
+                  ] : [
+                    "Livraison standard",
+                    "Remis en main propre",
+                    "Dépôt sécurisé",
+                    "Autre (préciser)"
+                  ]).map(reason => (
+                    <button
+                      key={reason}
+                      onClick={() => setStatusReason(reason)}
+                      className={cn(
+                        "w-full p-4 rounded-xl text-[11px] font-black uppercase text-left transition-all border-2",
+                        statusReason === reason ? "bg-blue-50 border-blue-600 text-blue-600 shadow-lg shadow-blue-100" : "bg-white border-slate-100 text-slate-600 hover:bg-slate-50"
+                      )}
+                    >
+                      {reason}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <textarea 
+                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-[11px] font-bold outline-none focus:bg-white focus:border-blue-600 transition-all h-24"
+                placeholder="Commentaire public pour le client..."
+                value={statusComment}
+                onChange={e => setStatusComment(e.target.value)}
+              />
+
+              <div className="flex gap-4 pt-4">
+                <button
+                  onClick={() => setUpdatingStatusOrder(null)}
+                  className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                >
+                  Annuler
+                </button>
+                <button 
+                  disabled={submitting || !statusReason}
+                  onClick={() => handleStatusUpdate(updatingStatusOrder.order, updatingStatusOrder.nextStatus, statusReason, statusComment)}
+                  className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-blue-200 active:scale-95 disabled:opacity-30"
+                >
+                  {submitting ? "Mise à jour..." : "Confirmer le Statut"}
+                </button>
+              </div>
+            </div>
           </motion.div>
         </div>
       )}

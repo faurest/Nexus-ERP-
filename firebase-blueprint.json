@@ -421,6 +421,24 @@
         "updatedAt": { "type": "number" }
       },
       "required": ["companyId"]
+    },
+    "OrderHistory": {
+      "title": "Order History",
+      "description": "Tracks every status change of an order with reasons",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderId": { "type": "string" },
+        "companyId": { "type": "string" },
+        "previousStatus": { "type": "string" },
+        "newStatus": { "type": "string" },
+        "reason": { "type": "string" },
+        "comment": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["orderId", "newStatus", "createdAt"]
     }
   },
   "firestore": {
@@ -449,6 +467,7 @@
     "salary_advances": { "schema": "SalaryAdvance", "description": "Salary advance and down payment requests" },
     "ecommerce_orders": { "schema": "EcommerceOrder", "description": "Ecommerce order records" },
     "resource_movements": { "schema": "ResourceMovement", "description": "Resource movement logs" },
-    "products": { "schema": "Product", "description": "Product catalog" }
+    "products": { "schema": "Product", "description": "Product catalog" },
+    "order_history": { "schema": "OrderHistory", "description": "Detailed log of order lifecycle" }
   }
 }

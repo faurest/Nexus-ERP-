@@ -156,7 +156,7 @@ service cloud.firestore {
           'interventions', 'notifications', 'open_orders',
           'sales_invoices', 'invoices', 'payments', 'collaborations',
           'messages', 'project_discussions', 'leave_requests', 'time_entries', 'salary_advances',
-          'ecommerce_orders', 'resource_movements', 'products', 'order_messages', 'compagnie', 'notification_configs'
+          'ecommerce_orders', 'resource_movements', 'products', 'order_messages', 'compagnie', 'notification_configs', 'order_history'
         ];
       }
 

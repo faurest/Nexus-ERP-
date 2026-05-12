@@ -186,7 +186,29 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   const [orderIds, setOrderIds] = useState<string[]>(() => {
     return JSON.parse(localStorage.getItem("nexus_guest_orders") || "[]");
   });
+  const [orderHistories, setOrderHistories] = useState<Record<string, any[]>>({});
   const [activeOrderCount, setActiveOrderCount] = useState(0);
+
+  // Fetch Order Histories
+  useEffect(() => {
+    if (orderIds.length === 0) return;
+
+    const unsubscribes = orderIds.map(orderId => {
+      const q = query(
+        collection(db, "order_history"),
+        where("orderId", "==", orderId)
+      );
+      return onSnapshot(q, (snap) => {
+        const history = snap.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .sort((a: any, b: any) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+        
+        setOrderHistories(prev => ({ ...prev, [orderId]: history }));
+      });
+    });
+
+    return () => unsubscribes.forEach(unsub => unsub());
+  }, [orderIds]);
   const [notifSettings, setNotifSettings] = useState(() => {
     const saved = localStorage.getItem("nexus_notif_settings");
     return saved ? JSON.parse(saved) : { push: true, whatsapp: true, sms: false };
@@ -2106,7 +2128,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                  width: order.status === 'PENDING' ? '5%' : 
                                         order.status === 'PROCESSING' ? '38%' : 
                                         order.status === 'SHIPPED' ? '72%' : '100%' 
-                               }}
+                                }}
                              />
                              <div className="flex justify-between relative">
                                 {[
@@ -2131,6 +2153,57 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                   );
                                 })}
                              </div>
+                          </div>
+                        )}
+
+                        {/* Activity Log (Timeline) */}
+                        {orderHistories[order.id]?.length > 0 && (
+                          <div className="space-y-4 pt-2">
+                             <div className="flex items-center gap-2">
+                                <History size={12} className="text-slate-400" />
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Journal d'activité</span>
+                             </div>
+                             <div className="space-y-3 pl-2 border-l border-slate-200 ml-1.5">
+                               {orderHistories[order.id].map((log, idx) => (
+                                 <div key={log.id} className="relative pl-6 pb-2">
+                                   <div className={cn(
+                                     "absolute left-[-5px] top-1 w-2 h-2 rounded-full",
+                                     idx === 0 ? "bg-blue-600 scale-125" : "bg-slate-300"
+                                   )} />
+                                   <div className="space-y-1">
+                                      <div className="flex items-center justify-between">
+                                        <p className={cn("text-[10px] font-black uppercase tracking-tight leading-none", idx === 0 ? "text-slate-900" : "text-slate-500")}>
+                                          {log.newStatus === 'DELIVERY_FAILED' ? "⚠️ Échec de livraison" : log.newStatus}
+                                        </p>
+                                        <span className="text-[8px] font-bold text-slate-400">
+                                          {log.timestamp?.toDate()?.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                      </div>
+                                      {log.reason && (
+                                        <p className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded inline-block">
+                                          {log.reason}
+                                        </p>
+                                      )}
+                                      {log.comment && (
+                                        <p className="text-[9px] font-medium text-slate-500 italic">"{log.comment}"</p>
+                                      )}
+                                   </div>
+                                 </div>
+                               ))}
+                             </div>
+                             
+                             {/* Context Action Button */}
+                             {orderHistories[order.id][0]?.reason === "Client absent / Injoignable" && (
+                               <button 
+                                 onClick={() => {
+                                   const message = `Bonjour Nexus Support, mon livreur n'a pas pu me joindre pour ma commande CMD-${order.id.slice(0,8).toUpperCase()}. Voici mon numéro de secours : `;
+                                   window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
+                                 }}
+                                 className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2"
+                               >
+                                 <Smartphone size={14} /> Mettre à jour mon numéro
+                               </button>
+                             )}
                           </div>
                         )}
 
