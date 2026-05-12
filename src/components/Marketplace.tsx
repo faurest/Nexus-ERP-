@@ -107,6 +107,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   const [paymentStep, setPaymentStep] = useState<'INFO' | 'PAYING' | 'SUCCESS'>('INFO');
   const [paymentOperator, setPaymentOperator] = useState<'MTN' | 'ORANGE' | 'CASH' | 'UNKNOWN'>('UNKNOWN');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'MOMO' | 'CASH'>('CASH');
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
 
   // Detect Operator for Mobile Money
   useEffect(() => {
@@ -483,17 +485,19 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     }
   };
 
-  const cancelOrder = async (orderId: string) => {
-    console.log("Attempting to cancel order:", orderId);
-    if (!window.confirm("Voulez-vous vraiment annuler cette commande ?")) return;
+  const cancelOrder = async (orderId: string, reason: string) => {
+    console.log("Attempting to cancel order:", orderId, "Reason:", reason);
     
     try {
       const orderRef = doc(db, "ecommerce_orders", orderId);
       await updateDoc(orderRef, {
         status: "CANCELLED_BY_CUSTOMER",
+        cancellationReason: reason,
         updatedAt: serverTimestamp()
       });
       console.log("Order cancelled successfully:", orderId);
+      setCancellingOrderId(null);
+      setCancelReason("");
       alert("Votre commande a été annulée avec succès.");
     } catch (err: any) {
       console.error("Error cancelling order:", err);
@@ -1183,17 +1187,37 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                         </div>
                         
                         <div className="space-y-2">
-                          <h3 className="text-2xl font-black text-slate-900 uppercase italic">Paiement Réussi !</h3>
-                          <p className="text-xs font-bold text-slate-500">
-                            Votre commande a été validée et payée avec succès.
+                          <h3 className="text-2xl font-black text-slate-900 uppercase italic">Succès !</h3>
+                          <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                            Votre commande a été reçue. Nous vous contacterons sous peu pour la confirmation finale.
                           </p>
                         </div>
 
-                        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-[10px] font-black text-emerald-600 uppercase tracking-widest">
-                          Transaction Terminée
+                        <div className="space-y-3 w-full">
+                          <button
+                            onClick={() => {
+                              setShowTracking(true);
+                              // We don't Reset yet, let the timeout handle it or user can do it
+                            }}
+                            className="w-full py-5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all"
+                          >
+                            <Truck size={16} /> Suivre ou Annuler
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              const message = `Bonjour Nexus, je viens de passer une commande sur Nexus Marketplace. Pouvez-vous confirmer la réception ? [CLIENT: ${checkoutData.name}]`;
+                              window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
+                            }}
+                            className="w-full py-5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all"
+                          >
+                            <MessageCircle size={16} /> Confirmation WhatsApp
+                          </button>
                         </div>
                         
-                        <p className="text-[9px] font-bold text-slate-400 italic">Redirection vers vos commandes...</p>
+                        <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                          <p className="text-[8px] font-black text-slate-400 italic uppercase">Redirection automatique dans quelques secondes...</p>
+                        </div>
                       </motion.div>
                     )}
 
@@ -1328,8 +1352,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                 <History size={20} />
                               </div>
                               <div>
-                                <p className={cn("text-[10px] font-black uppercase leading-none", selectedPaymentMethod === 'CASH' ? "text-emerald-600" : "text-slate-900")}>Cash sur place</p>
-                                <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase italic">À la livraison</p>
+                                <p className={cn("text-[10px] font-black uppercase leading-none", selectedPaymentMethod === 'CASH' ? "text-emerald-600" : "text-slate-900")}>Espèces (COD)</p>
+                                <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase italic">Payer à la livraison</p>
                               </div>
                             </button>
 
@@ -1351,10 +1375,22 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                               </div>
                               <div>
                                 <p className={cn("text-[10px] font-black uppercase leading-none", selectedPaymentMethod === 'MOMO' ? "text-blue-600" : "text-slate-900")}>Mobile Money</p>
-                                <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase italic">OM / MTN MoMo</p>
+                                <div className="flex items-center gap-1 mt-1 opacity-80">
+                                   <div className="w-2 h-2 rounded-full bg-orange-400" />
+                                   <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                                   <p className="text-[8px] font-bold text-slate-400 uppercase italic leading-none">OM / MoMo</p>
+                                </div>
                               </div>
                             </button>
                           </div>
+                          {selectedPaymentMethod === 'CASH' && (
+                            <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3">
+                              <Info size={14} className="text-emerald-600 shrink-0" />
+                              <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest leading-relaxed">
+                                Note: Vous paierez le montant total à l'agent de livraison lors de la réception de votre colis.
+                              </p>
+                            </div>
+                          )}
                         </div>
 
                         {selectedLocation && (
@@ -2050,7 +2086,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
                           {order.status === 'PENDING' && (
                              <button 
-                               onClick={() => cancelOrder(order.id)}
+                               onClick={() => setCancellingOrderId(order.id)}
                                className="py-4 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
                              >
                                Annuler
@@ -2099,6 +2135,65 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           </button>
         </motion.div>
       )}
+
+      {/* Cancellation Reason Modal */}
+      <AnimatePresence>
+        {cancellingOrderId && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setCancellingOrderId(null)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150]"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm bg-white z-[160] rounded-[2.5rem] shadow-2xl p-8 border border-slate-100"
+            >
+              <div className="text-center space-y-4 mb-8">
+                <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mx-auto">
+                  <X size={32} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 uppercase italic">Annuler la commande ?</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Dites-nous pourquoi pour nous améliorer</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {[
+                  "Erreur de produit",
+                  "Trop cher / Frais de livraison",
+                  "Changement d'avis",
+                  "Délais trop longs",
+                  "Autre raison"
+                ].map((reason) => (
+                  <button
+                    key={reason}
+                    onClick={() => {
+                      setCancelReason(reason);
+                      cancelOrder(cancellingOrderId, reason);
+                    }}
+                    className="w-full p-4 rounded-2xl border-2 border-slate-50 hover:border-red-100 hover:bg-red-50 text-left text-[10px] font-black text-slate-600 uppercase tracking-widest transition-all"
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setCancellingOrderId(null)}
+                className="w-full mt-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-all"
+              >
+                Garder la commande
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
