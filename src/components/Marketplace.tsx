@@ -184,6 +184,16 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     return JSON.parse(localStorage.getItem("nexus_guest_orders") || "[]");
   });
   const [activeOrderCount, setActiveOrderCount] = useState(0);
+  const [notifSettings, setNotifSettings] = useState(() => {
+    const saved = localStorage.getItem("nexus_notif_settings");
+    return saved ? JSON.parse(saved) : { push: true, whatsapp: true, sms: false };
+  });
+
+  const SUPPORT_NUMBER = "237640790996";
+
+  useEffect(() => {
+    localStorage.setItem("nexus_notif_settings", JSON.stringify(notifSettings));
+  }, [notifSettings]);
 
   useEffect(() => {
     if (orderIds.length === 0) return;
@@ -546,7 +556,13 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+              <button 
+                onClick={() => {
+                  const message = "Bonjour, j'ai une question sur Nexus Marketplace.";
+                  window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
+                }}
+                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+              >
                 <MessageCircle size={18} />
               </button>
             </div>
@@ -1881,6 +1897,64 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                </div>
                
                <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
+                  {/* Notification Settings Section */}
+                  <div className="bg-blue-600 rounded-[2rem] p-6 text-white overflow-hidden relative group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                      <Sparkles size={60} />
+                    </div>
+                    <div className="relative z-10 space-y-4">
+                      <div>
+                        <h3 className="text-xs font-black uppercase tracking-widest italic">Configurations Notifications</h3>
+                        <p className="text-[9px] font-bold opacity-80 uppercase mt-1">Recevez des mises à jour en temps réel</p>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <button 
+                          onClick={() => setNotifSettings(prev => ({ ...prev, push: !prev.push }))}
+                          className={cn(
+                            "p-3 rounded-xl border flex flex-col gap-2 transition-all text-left",
+                            notifSettings.push ? "bg-white/20 border-white/40 shadow-inner" : "bg-white/5 border-white/10 opacity-60"
+                          )}
+                        >
+                          <Smartphone size={14} />
+                          <span className="text-[10px] font-black uppercase">Push App</span>
+                        </button>
+                        <button 
+                          onClick={() => setNotifSettings(prev => ({ ...prev, whatsapp: !prev.whatsapp }))}
+                          className={cn(
+                            "p-3 rounded-xl border flex flex-col gap-2 transition-all text-left",
+                            notifSettings.whatsapp ? "bg-white/20 border-white/40 shadow-inner" : "bg-white/5 border-white/10 opacity-60"
+                          )}
+                        >
+                          <MessageCircle size={14} />
+                          <span className="text-[10px] font-black uppercase">WhatsApp</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* General Support Button */}
+                  <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white">
+                        <MessageCircle size={20} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase text-emerald-600">Support Nexus 24/7</p>
+                        <p className="text-[8px] font-bold text-emerald-400 uppercase">Contact Direct Maroua</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        const message = "Bonjour, j'ai besoin d'une assistance sur Nexus Marketplace.";
+                        window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
+                      }}
+                      className="px-4 py-2 bg-white text-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest border border-emerald-100 hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
+                    >
+                      Discuter
+                    </button>
+                  </div>
+
                   {guestOrders.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center space-y-4 opacity-40 py-20 text-center">
                       <ShoppingBag size={48} />
@@ -1965,11 +2039,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                         <div className={cn("grid gap-3 pt-2", order.status === 'PENDING' ? "grid-cols-2" : "grid-cols-1")}>
                           <button 
                             onClick={() => {
-                              const company = companies.find(c => c.id === order.companyId);
-                              if (company?.whatsappNumber) {
-                                 const message = `Bonjour, je souhaiterais avoir des informations sur ma commande CMD-${order.id.slice(0, 8).toUpperCase()} sur Nexus Marketplace. Merci !`;
-                                 window.open(`https://wa.me/${company.whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank");
-                              }
+                              const message = `Bonjour, je souhaiterais avoir des informations sur ma commande CMD-${order.id.slice(0, 8).toUpperCase()} sur Nexus Marketplace. Merci !`;
+                              window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
                             }}
                             className="py-4 bg-white border border-slate-200 rounded-2xl text-[9px] font-black text-slate-600 uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2 group/btn"
                           >
