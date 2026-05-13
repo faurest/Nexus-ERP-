@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDocs, serverTimestamp, handleFirestoreError, OperationType, orderBy } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
+import { HelpTrigger } from './ContextualHelp';
 import { 
   ShoppingBag, 
   ShoppingCart, 
@@ -1940,7 +1941,10 @@ export default function EcommerceModule({ user }: { user: any }) {
             
             <div className="flex justify-between items-center mb-8">
               <div>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight italic uppercase">Mettre à jour le statut</h3>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight italic uppercase flex items-center gap-2">
+                  Mettre à jour le statut
+                  <HelpTrigger topic={updatingStatusOrder.nextStatus === 'DELIVERY_FAILED' ? 'ANNULATION' : 'SALES'} />
+                </h3>
                 <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase mt-1">Nouveau: {updatingStatusOrder.nextStatus}</p>
               </div>
               <button 

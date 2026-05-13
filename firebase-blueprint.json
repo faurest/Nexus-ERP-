@@ -447,6 +447,21 @@
         "createdAt": { "type": "number" }
       },
       "required": ["orderId", "newStatus", "createdAt"]
+    },
+    "GuideStep": {
+      "title": "Guide Step",
+      "description": "Dynamic operational guide content",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string", "enum": ["SALES", "LOGISTICS", "FINANCE", "STOCK"] },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "keywords": { "type": "array" },
+        "order": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["category", "title", "content"]
     }
   },
   "firestore": {
@@ -476,6 +491,7 @@
     "ecommerce_orders": { "schema": "EcommerceOrder", "description": "Ecommerce order records" },
     "resource_movements": { "schema": "ResourceMovement", "description": "Resource movement logs" },
     "products": { "schema": "Product", "description": "Product catalog" },
-    "order_history": { "schema": "OrderHistory", "description": "Detailed log of order lifecycle" }
+    "order_history": { "schema": "OrderHistory", "description": "Detailed log of order lifecycle" },
+    "guide_steps": { "schema": "GuideStep", "description": "Operational guide articles" }
   }
 }

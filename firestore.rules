@@ -111,7 +111,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // 1.1 Users
+    match /guide_steps/{stepId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+ 
     match /users/{userId} {
       allow read: if isSignedIn() && (isAdmin() || userId == request.auth.uid || userId == currentUserEmail());
       allow write: if isSignedIn() && (isAdmin() || userId == request.auth.uid || userId == currentUserEmail());

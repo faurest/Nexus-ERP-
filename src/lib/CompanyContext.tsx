@@ -14,6 +14,7 @@ export interface Company {
   employees?: any[];
   createdAt?: any;
   whatsappNumber?: string;
+  nairaRate?: number;
 }
 
 interface CompanyContextType {

@@ -50,7 +50,7 @@ export default function AdminModule() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newCompany, setNewCompany] = useState({ name: '', ownerEmail: '', joinCode: '' });
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeAdminTab, setActiveAdminTab] = useState<'companies' | 'users' | 'tools'>('companies');
+  const [activeAdminTab, setActiveAdminTab] = useState<'companies' | 'users' | 'tools' | 'guide'>('companies');
   const [systemUsers, setSystemUsers] = useState<any[]>([]);
   const [editingCompany, setEditingCompany] = useState<any | null>(null);
   const [showMemberModal, setShowMemberModal] = useState<any | null>(null);
@@ -977,6 +977,15 @@ export default function AdminModule() {
         >
           Outils & Migration
         </button>
+        <button 
+          onClick={() => setActiveAdminTab('guide')}
+          className={cn(
+            "pb-3 px-2 text-sm font-black transition-all border-b-2 uppercase tracking-widest",
+            activeAdminTab === 'guide' ? "text-blue-600 border-blue-600" : "text-slate-400 border-transparent hover:text-slate-600"
+          )}
+        >
+          Guide Pratique
+        </button>
       </div>
 
       {activeAdminTab === 'companies' && (
@@ -1567,6 +1576,61 @@ export default function AdminModule() {
                 </div>
                 <Activity size={18} className="text-blue-300 group-hover:text-blue-600 transition-all" />
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeAdminTab === 'guide' && (
+        <div className="space-y-8">
+          <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 p-10">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Gestion du Guide Équipe</h2>
+                <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">Configurez les fiches actions et le contenu de formation</p>
+              </div>
+              <button 
+                onClick={async () => {
+                   if (!confirm("Voulez-vous injecter les données de démonstration pour le guide ?")) return;
+                   const { addDoc, collection, db, serverTimestamp } = await import('../lib/firebase');
+                   try {
+                     const steps = [
+                       { title: "Réception Commande", content: "Vérifiez le stock, cliquez sur Accepter. Un message WhatsApp est envoyé.", category: "Marketplace", order: 1, keywords: ["commande", "réception", "whatsapp"] },
+                       { title: "Paiement Mobile", content: "Assurez-vous que le client a bien validé sur son téléphone avant de livrer.", category: "Finance", order: 2, keywords: ["momo", "orange", "mtn", "paiement"] },
+                       { title: "Naira vs CFA", content: "Utilisez le convertisseur en haut à droite pour donner le prix juste.", category: "Outils", order: 3, keywords: ["naira", "cfa", "taux", "change"] }
+                     ];
+                     for (const s of steps) {
+                       await addDoc(collection(db, 'guide_steps'), { 
+                         ...s, 
+                         createdAt: serverTimestamp(), 
+                         updatedAt: serverTimestamp() 
+                       });
+                     }
+                     alert("Guide initialisé avec succès !");
+                   } catch (e) { console.error(e); alert("Erreur d'injection"); }
+                }}
+                className="px-6 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-200 hover:scale-105 transition-all"
+              >
+                Initialiser Guide (Seed)
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                  <h4 className="text-sm font-black text-slate-900 mb-2">Fiches Actions</h4>
+                  <p className="text-xs text-slate-500 leading-relaxed mb-4">Centralisez les procédures standards pour réduire les erreurs de manipulation.</p>
+                  <button onClick={() => alert("Interface de modification en cours...")} className="w-full py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-blue-600 transition-all">Gérer les fiches</button>
+               </div>
+               <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100">
+                  <h4 className="text-sm font-black text-emerald-900 mb-2">Nexus Academy</h4>
+                  <p className="text-xs text-emerald-600 leading-relaxed mb-4">Créez des quiz pour certifier que vos vendeurs maîtrisent l'outil.</p>
+                  <button onClick={() => alert("Lancement Nexus Academy Studio...")} className="w-full py-3 bg-white border border-emerald-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all">Studio Quiz</button>
+               </div>
+               <div className="p-6 bg-amber-50 rounded-3xl border border-amber-100">
+                  <h4 className="text-sm font-black text-amber-900 mb-2">Support & FAQ</h4>
+                  <p className="text-xs text-amber-600 leading-relaxed mb-4">Réponses aux questions les plus fréquentes des clients de Maroua.</p>
+                  <button onClick={() => alert("Edition FAQ...")} className="w-full py-3 bg-white border border-amber-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-amber-600 hover:bg-amber-600 hover:text-white transition-all">Éditer FAQ</button>
+               </div>
             </div>
           </div>
         </div>

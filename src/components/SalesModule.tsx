@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, addDoc, setDoc, serverTimestamp, doc, updateDoc, deleteDoc } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { Search, Plus, TrendingUp, Filter, ShoppingCart, Receipt, CreditCard, DollarSign, Edit2, Trash2, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Search, Plus, TrendingUp, Filter, ShoppingCart, Receipt, CreditCard, DollarSign, Edit2, Trash2, CheckCircle2, ArrowRight, HelpCircle } from 'lucide-react';
+import { HelpTrigger } from './ContextualHelp';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
@@ -415,6 +416,7 @@ export default function SalesModule() {
           </div>
           <button onClick={() => setIsAdding(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-blue-100">
              <Plus size={14} /> Nouvelle Vente
+             <HelpTrigger topic="SALES" className="text-white/60 hover:text-white" />
           </button>
         </div>
 

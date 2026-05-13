@@ -10,6 +10,8 @@ import {
   serverTimestamp,
   doc,
   updateDoc,
+  handleFirestoreError,
+  OperationType,
 } from "../lib/firebase";
 import {
   ShoppingBag,
@@ -39,6 +41,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { HelpTrigger } from "./ContextualHelp";
 import { cn } from "../lib/utils";
 import { createNotification } from "../lib/notifications";
 
@@ -1467,7 +1470,10 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                 <Smartphone size={20} />
                               </div>
                               <div>
-                                <p className={cn("text-[10px] font-black uppercase leading-none", selectedPaymentMethod === 'MOMO' ? "text-amber-600" : "text-slate-900")}>Mobile Money</p>
+                                <p className={cn("text-[10px] font-black uppercase leading-none flex items-center gap-1", selectedPaymentMethod === 'MOMO' ? "text-amber-600" : "text-slate-900")}>
+                                  Mobile Money
+                                  <HelpTrigger topic="PAYMENT" />
+                                </p>
                                 <div className="flex items-center gap-1.5 mt-1">
                                    <div className="px-1 py-0.5 bg-orange-500 text-white text-[7px] font-black rounded uppercase">Orange</div>
                                    <div className="px-1 py-0.5 bg-yellow-400 text-slate-900 text-[7px] font-black rounded uppercase">MTN</div>

@@ -48,6 +48,7 @@ import CollaborationModule from './components/CollaborationModule';
 import CommunicationModule from './components/CommunicationModule';
 import Marketplace from './components/Marketplace';
 import GuideModule from './components/GuideModule';
+import ContextualHelp from './components/ContextualHelp';
 import NotificationBell from './components/NotificationBell';
 import CriticalNotificationOverlay from './components/CriticalNotificationOverlay';
 
@@ -502,6 +503,8 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [helpTopic, setHelpTopic] = useState<string | undefined>(undefined);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [showMarketplace, setShowMarketplace] = useState(false);
   const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth > 1024);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -521,6 +524,22 @@ export default function App() {
     return c.ownerId !== user?.uid && cOwnerEmail !== cleanEmail;
   });
   const [isWhitelisted, setIsWhitelisted] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const handleOpenHelp = (e: any) => {
+      setHelpTopic(e.detail);
+      setIsHelpOpen(true);
+    };
+    const handleNavigate = (e: any) => {
+      setActiveTab(e.detail);
+    };
+    window.addEventListener('OPEN_HELP', handleOpenHelp);
+    window.addEventListener('NAVIGATE_TAB', handleNavigate);
+    return () => {
+      window.removeEventListener('OPEN_HELP', handleOpenHelp);
+      window.removeEventListener('NAVIGATE_TAB', handleNavigate);
+    };
+  }, []);
 
   useEffect(() => {
     const checkWhitelist = async () => {
@@ -1165,6 +1184,12 @@ export default function App() {
             {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com') && <AdminModule />}
           </div>
         </div>
+
+        <ContextualHelp 
+          isOpen={isHelpOpen} 
+          onClose={() => setIsHelpOpen(false)} 
+          topic={helpTopic}
+        />
 
         {/* Global Footer */}
         <footer className="mt-auto px-4 sm:px-8 py-6 border-t border-slate-200 bg-white flex flex-col md:flex-row justify-between items-center gap-4">
