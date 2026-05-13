@@ -27,7 +27,8 @@ import {
   Database,
   MessageSquare,
   ShoppingBag,
-  Store
+  Store,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -46,6 +47,7 @@ import EcommerceModule from './components/EcommerceModule';
 import CollaborationModule from './components/CollaborationModule';
 import CommunicationModule from './components/CommunicationModule';
 import Marketplace from './components/Marketplace';
+import GuideModule from './components/GuideModule';
 import NotificationBell from './components/NotificationBell';
 import CriticalNotificationOverlay from './components/CriticalNotificationOverlay';
 
@@ -93,14 +95,14 @@ export const NexusLogo = ({ className = "" }: { className?: string }) => (
 );
 
 export const DEFAULT_ROLES: Record<string, string[]> = {
-  'owner': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
-  'Directeur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
-  'Administrateur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
-  'Secrétaire': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
-  'Comptable': ['dashboard', 'services', 'sales', 'ecommerce', 'projects', 'accounting', 'collaboration', 'communication'],
-  'Agent Commercial': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'projects', 'collaboration', 'communication'],
-  'Collaborateur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
-  'Personnel': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication'],
+  'owner': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
+  'Directeur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
+  'Administrateur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
+  'Secrétaire': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
+  'Comptable': ['dashboard', 'services', 'sales', 'ecommerce', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
+  'Agent Commercial': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'projects', 'collaboration', 'communication', 'guide'],
+  'Collaborateur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
+  'Personnel': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
   'Client': ['dashboard', 'ecommerce'],
 };
 
@@ -911,6 +913,7 @@ export default function App() {
     { id: 'projects', label: 'Projets & Tâches', icon: FolderKanban },
     { id: 'collaboration', label: 'Collaboration & Comm', icon: Handshake },
     { id: 'accounting', label: 'Comptabilité & Finance', icon: Calculator },
+    { id: 'guide', label: 'Guide & Performance', icon: BookOpen },
     ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
   ].filter(item => {
     if (item.id === 'admin') return true;
@@ -1158,6 +1161,7 @@ export default function App() {
             {activeTab === 'projects' && <ProjectModule />}
             {activeTab === 'accounting' && <AccountingModule />}
             {activeTab === 'collaboration' && <CollaborationModule />}
+            {activeTab === 'guide' && <GuideModule />}
             {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com') && <AdminModule />}
           </div>
         </div>

@@ -25,7 +25,8 @@ import {
   PieChart,
   DollarSign,
   ShoppingCart,
-  Zap
+  Zap,
+  BookOpen
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
@@ -453,6 +454,25 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
             <h3 className="text-2xl font-black text-slate-900 leading-none">{stat.value}</h3>
           </div>
         ))}
+
+        {/* Operational Guide Quick Link */}
+        <div className="col-span-12 bg-blue-600 rounded-[2rem] p-8 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl shadow-blue-900/20 relative overflow-hidden group">
+           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32 transition-transform duration-700 group-hover:scale-110" />
+           <div className="flex items-center gap-6 relative z-10">
+              <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-md border border-white/20">
+                 <BookOpen size={32} className="text-white" />
+              </div>
+              <div>
+                 <h2 className="text-2xl font-black italic tracking-tighter uppercase mb-1">Guide de Performance Nexus</h2>
+                 <p className="text-blue-100 text-xs font-medium max-w-lg">
+                   Consultez les 4 piliers opérationnels pour maximiser vos revenus et l'efficacité de vos équipes à Maroua.
+                 </p>
+              </div>
+           </div>
+           <div className="relative z-10 px-6 py-3 bg-white text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg group-hover:bg-blue-50 transition-colors">
+              Accessible via le menu : Guide & Performance
+           </div>
+        </div>
 
         {/* Intelligence Hub (Chart) - Spans 8 cols */}
         <div className="col-span-12 xl:col-span-8 bg-white rounded-3xl lg:rounded-[2.5rem] p-6 lg:p-10 border border-slate-100 shadow-sm relative overflow-hidden group">
