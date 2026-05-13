@@ -17,6 +17,10 @@
           "type": "object",
           "description": "Mapping of locations to delivery prices"
         },
+        "nairaRate": { 
+          "type": "number",
+          "description": "Exchange rate 1 CFA = X Naira"
+        },
         "createdAt": { "type": "number" }
       },
       "required": ["name", "ownerEmail", "joinCode"]
@@ -367,7 +371,8 @@
         "paymentMethod": { "type": "string" },
         "status": { "type": "string", "enum": ["PENDING", "SHIPPED", "DELIVERED"] },
         "date": { "type": "object" },
-        "customerEmail": { "type": "string" }
+        "customerEmail": { "type": "string" },
+        "internalNotes": { "type": "string" }
       },
       "required": ["companyId", "items", "total", "status"]
     },
@@ -403,6 +408,9 @@
         "image": { "type": "string" },
         "stock": { "type": "number" },
         "points": { "type": "number" },
+        "views": { "type": "number" },
+        "tags": { "type": "array" },
+        "soldCount": { "type": "number" },
         "createdAt": { "type": "number" }
       },
       "required": ["companyId", "name", "price"]

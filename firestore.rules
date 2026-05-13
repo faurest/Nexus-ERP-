@@ -105,7 +105,7 @@ service cloud.firestore {
           get(/databases/$(database)/documents/clients/$(currentUserEmail())).data.companyId == companyId
         ) ||
         // Action: Standard update for existing members
-        (currentUserEmail() in resource.data.memberEmails && incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees', 'whatsappNumber', 'category', 'logo', 'updatedAt']))
+        (currentUserEmail() in resource.data.memberEmails && incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees', 'whatsappNumber', 'category', 'logo', 'nairaRate', 'updatedAt']))
       );
 
       allow delete: if isAdmin();
@@ -218,7 +218,7 @@ service cloud.firestore {
                       )) ||
                       // Allow anyone to update stock (for order placement/cancellation increment)
                       // In a real app this should be more restricted or server-side
-                      (collectionName == 'products' && incoming().diff(existing()).affectedKeys().hasOnly(['stock', 'updatedAt']))
+                      (collectionName == 'products' && incoming().diff(existing()).affectedKeys().hasOnly(['stock', 'views', 'soldCount', 'updatedAt']))
                     ) &&
                     incoming().companyId == existing().companyId &&
                     (incoming().updatedAt == request.time || collectionName == 'messages' || collectionName == 'project_discussions' || collectionName == 'order_messages');

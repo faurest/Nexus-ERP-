@@ -169,6 +169,14 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   }, []);
 
   const addToRecentlyViewed = (product: Product) => {
+    // Increment views for the product (conversion KPI)
+    const productRef = doc(db, "products", product.id);
+    import("firebase/firestore").then(({ increment }) => {
+      updateDoc(productRef, {
+        views: increment(1)
+      }).catch(err => console.error("Could not increment product views", err));
+    });
+
     setRecentlyViewed(prev => {
       const filtered = prev.filter(p => p.id !== product.id);
       return [product, ...filtered].slice(0, 10); // Keep last 10
@@ -459,13 +467,13 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             customerEmail: "Marketplace Guest",
           });
 
-          // Deduct Stock immediately (Reservation)
+          // Deduct Stock immediately (Reservation) & Increment soldCount
           for (const item of items) {
              const productRef = doc(db, "products", item.id);
-             // We use increment with negative value
              const { increment } = await import("firebase/firestore");
              await updateDoc(productRef, {
-               stock: increment(-item.cartQuantity)
+               stock: increment(-item.cartQuantity),
+               soldCount: increment(item.cartQuantity)
              });
           }
 
@@ -1804,7 +1812,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                         <span className="text-4xl font-black text-slate-900 tracking-tighter">
                           {nairaEnabled
                             ? (
-                                selectedProduct.price * GLOBAL_NAIRA_RATE
+                                selectedProduct.price * (companies.find(c => c.id === selectedProduct.companyId)?.nairaRate || GLOBAL_NAIRA_RATE)
                               ).toLocaleString()
                             : selectedProduct.price.toLocaleString()}
                         </span>
@@ -1812,6 +1820,31 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           {nairaEnabled ? "₦" : "FCFA"}
                         </span>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest px-1">Produits suggérés (Vente Suggestive)</h4>
+                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                      {products
+                        .filter(p => p.category === selectedProduct.category && p.id !== selectedProduct.id)
+                        .slice(0, 4)
+                        .map(p => (
+                          <div 
+                            key={`suggest-${p.id}`}
+                            onClick={() => setSelectedProduct(p)}
+                            className="min-w-[120px] bg-slate-50 rounded-2xl p-3 border border-slate-100 cursor-pointer hover:bg-blue-50 transition-all border-dashed"
+                          >
+                            <div className="aspect-square rounded-xl overflow-hidden mb-2">
+                              <img src={p.image} className="w-full h-full object-cover" />
+                            </div>
+                            <p className="text-[8px] font-black uppercase text-slate-900 truncate">{p.name}</p>
+                            <p className="text-[7px] font-bold text-blue-600 mt-1">{p.price.toLocaleString()} F</p>
+                          </div>
+                        ))}
+                      {products.filter(p => p.category === selectedProduct.category && p.id !== selectedProduct.id).length === 0 && (
+                        <p className="text-[8px] font-bold text-slate-300 uppercase italic px-1">Complétez vos achats avec nos essentiels...</p>
+                      )}
                     </div>
                   </div>
 

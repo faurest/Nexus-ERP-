@@ -84,7 +84,7 @@ interface OrderMessage {
 
 export default function EcommerceModule({ user }: { user: any }) {
   const { currentCompany } = useCompany();
-  const [activeView, setActiveView] = useState<'catalog' | 'cart' | 'tracking' | 'loyalty' | 'admin' | 'settings'>('catalog');
+  const [activeView, setActiveView] = useState<'catalog' | 'cart' | 'tracking' | 'loyalty' | 'admin' | 'settings' | 'commando'>('catalog');
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -116,6 +116,7 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [savingSettings, setSavingSettings] = useState(false);
   const [updatingStatusOrder, setUpdatingStatusOrder] = useState<{order: Order, nextStatus: string} | null>(null);
   const [statusComment, setStatusComment] = useState('');
+  const [internalNotes, setInternalNotes] = useState('');
   const [statusReason, setStatusReason] = useState('');
 
   const canManage = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
@@ -525,6 +526,7 @@ export default function EcommerceModule({ user }: { user: any }) {
     try {
       await updateDoc(doc(db, 'ecommerce_orders', order.id), {
         status: nextStatus as any,
+        internalNotes: internalNotes.trim() ? internalNotes : (order as any).internalNotes || '',
         updatedAt: serverTimestamp()
       });
 
@@ -736,6 +738,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               { id: 'tracking', label: 'Suivi', icon: Truck, unread: Object.values(unreadMessages).reduce((a,b) => a+b, 0) },
               ...(isAdmin ? [
                 { id: 'admin', label: 'Gestion', icon: LayoutDashboard },
+                { id: 'commando', label: 'Commando', icon: Smartphone },
                 { id: 'settings', label: 'Livraison', icon: Truck }
               ] : []),
               { id: 'loyalty', label: 'Fidélité', icon: Award }
@@ -1241,6 +1244,74 @@ export default function EcommerceModule({ user }: { user: any }) {
         </div>
       )}
 
+      {activeView === 'commando' && isAdmin && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+           <div className="bg-slate-900 p-8 rounded-[2rem] text-white">
+              <h2 className="text-xl font-black italic uppercase">Le Mode Commando</h2>
+              <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mt-1">Focus Livraison Pro • Nexus Logistics</p>
+           </div>
+           
+           <div className="space-y-4">
+              {orders.filter(o => ['PROCESSING', 'SHIPPED', 'DELIVERY_FAILED'].includes(o.status)).map(order => (
+                <div key={`commando-${order.id}`} className="bg-white p-6 rounded-3xl border-2 border-slate-100 shadow-sm flex flex-col gap-4">
+                   <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">CMD-{order.id.slice(0, 8)}</span>
+                        <h4 className="text-lg font-black text-slate-900 uppercase mt-1">{order.customerQuartier || 'Centre'}</h4>
+                      </div>
+                      <div className={cn("px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight", 
+                        order.status === 'SHIPPED' ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600"
+                      )}>
+                        {order.status}
+                      </div>
+                   </div>
+                   
+                   <div className="p-4 bg-slate-50 rounded-2xl grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-[8px] font-black text-slate-400 uppercase">Contact</p>
+                        <p className="text-[11px] font-black text-slate-900">{order.customerPhone}</p>
+                      </div>
+                      <div>
+                        <p className="text-[8px] font-black text-slate-400 uppercase">Client</p>
+                        <p className="text-[11px] font-black text-slate-900">{order.customerName}</p>
+                      </div>
+                   </div>
+
+                   <div className="flex gap-3">
+                      <button 
+                        onClick={() => {
+                          const message = `Bonjour ${order.customerName}, c'est votre livreur Nexus. Je suis en route pour votre livraison à ${order.customerQuartier}.`;
+                          window.open(`https://wa.me/${order.customerPhone?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, "_blank");
+                        }}
+                        className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2"
+                      >
+                        <Smartphone size={16} /> Appeler Client
+                      </button>
+                      <button 
+                         onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'DELIVERED' })}
+                         className="flex-1 py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle2 size={16} /> Livré !
+                      </button>
+                      <button 
+                        onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'DELIVERY_FAILED' })}
+                        className="p-4 bg-slate-100 text-slate-400 rounded-2xl hover:text-red-500 transition-colors"
+                      >
+                        <AlertTriangle size={20} />
+                      </button>
+                   </div>
+                </div>
+              ))}
+              {orders.filter(o => ['PROCESSING', 'SHIPPED', 'DELIVERY_FAILED'].includes(o.status)).length === 0 && (
+                <div className="py-20 text-center opacity-30">
+                   <Truck size={48} className="mx-auto mb-4" />
+                   <p className="text-xs font-black uppercase">Aucune livraison active pour le moment.</p>
+                </div>
+              )}
+           </div>
+        </div>
+      )}
+
       {activeView === 'settings' && isAdmin && currentCompany && (
         <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -1248,11 +1319,33 @@ export default function EcommerceModule({ user }: { user: any }) {
               <h2 className="text-3xl font-black text-slate-900 tracking-tight">Paramètres de Livraison</h2>
               <p className="text-slate-500 font-medium mt-1">Gérez vos zones de chalandise et frais d'expédition au Cameroun.</p>
             </div>
-            <div className="p-4 bg-blue-50 rounded-2xl flex items-center gap-3">
-              <Truck className="text-blue-600" size={24} />
-              <div className="text-left">
-                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Couverture Nexus</p>
-                <p className="text-xs font-bold text-slate-900">{Object.keys(currentCompany.deliveryFees || {}).length} zones actives</p>
+            <div className="flex items-center gap-2">
+              <div className="p-4 bg-blue-50 rounded-2xl flex items-center gap-3">
+                <Truck className="text-blue-600" size={24} />
+                <div className="text-left">
+                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Couverture Nexus</p>
+                  <p className="text-xs font-bold text-slate-900">{Object.keys(currentCompany.deliveryFees || {}).length} zones actives</p>
+                </div>
+              </div>
+              <div className="p-4 bg-slate-950 rounded-2xl flex items-center gap-3 text-white">
+                <Smartphone className="text-blue-400" size={24} />
+                <div className="text-left">
+                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest underline underline-offset-4 decoration-2">Taux Naira (₦)</p>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    defaultValue={currentCompany.nairaRate || 0.012}
+                    onBlur={async (e) => {
+                      const val = Number(e.target.value);
+                      if (val > 0) {
+                        setSavingSettings(true);
+                        await updateDoc(doc(db, 'companies', currentCompany.id), { nairaRate: val });
+                        setSavingSettings(false);
+                      }
+                    }}
+                    className="bg-transparent border-none text-xs font-black w-14 outline-none tabular-nums"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1434,22 +1527,41 @@ export default function EcommerceModule({ user }: { user: any }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[
               { label: 'En Attente', count: orders.filter(o => o.status === 'PENDING').length, color: 'bg-amber-500' },
               { label: 'En Traitement', count: orders.filter(o => o.status === 'PROCESSING').length, color: 'bg-blue-500' },
-              { label: 'Marketplace', count: orders.filter(o => o.checkoutSource === 'MARKETPLACE').length, color: 'bg-emerald-500' }
+              { label: 'Marketplace', count: orders.filter(o => o.checkoutSource === 'MARKETPLACE').length, color: 'bg-emerald-500' },
+              { label: 'Revenus Est.', count: orders.filter(o => o.status !== 'CANCELLED' && o.status !== 'CANCELLED_BY_SELLER').reduce((a,b) => a+b.total, 0).toLocaleString() + ' F', color: 'bg-slate-900' }
             ].map(stat => (
               <div key={stat.label} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{stat.label}</p>
                 <div className="flex items-end justify-between">
-                  <span className="text-3xl font-black text-slate-900">{stat.count}</span>
+                  <span className="text-xl font-black text-slate-900">{stat.count}</span>
                   <div className={`w-10 h-1 bg-slate-100 rounded-full overflow-hidden`}>
                     <div className={`h-full ${stat.color} transition-all duration-1000`} style={{ width: '60%' }} />
                   </div>
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className="bg-white rounded-[2rem] p-6 border border-slate-100 overflow-x-auto">
+            <h3 className="text-sm font-black uppercase italic mb-4 px-2">Top Performance Produits</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               {products.sort((a,b) => ((b as any).soldCount || 0) - ((a as any).soldCount || 0)).slice(0, 3).map(p => (
+                 <div key={p.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
+                    <img src={p.image} className="w-12 h-12 rounded-xl object-cover" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-slate-900 truncate max-w-[120px]">{p.name}</p>
+                      <div className="flex gap-2 mt-1">
+                        <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">Ventes: {(p as any).soldCount || 0}</span>
+                        <span className="text-[8px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">Vues: {(p as any).views || 0}</span>
+                      </div>
+                    </div>
+                 </div>
+               ))}
+            </div>
           </div>
 
           <div className="space-y-6">
@@ -1874,6 +1986,16 @@ export default function EcommerceModule({ user }: { user: any }) {
                 value={statusComment}
                 onChange={e => setStatusComment(e.target.value)}
               />
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1 italic">Notes Internes (Privé Nexus)</label>
+                <textarea 
+                  className="w-full bg-slate-100/50 border border-slate-200 rounded-2xl p-4 text-[11px] font-black outline-none focus:bg-white transition-all h-20"
+                  placeholder="Notes de coordination, détails livreur..."
+                  defaultValue={(updatingStatusOrder.order as any).internalNotes || ''}
+                  onChange={e => setInternalNotes(e.target.value)}
+                />
+              </div>
 
               <div className="flex gap-4 pt-4">
                 <button
