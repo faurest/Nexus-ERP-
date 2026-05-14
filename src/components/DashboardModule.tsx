@@ -26,7 +26,13 @@ import {
   DollarSign,
   ShoppingCart,
   Zap,
-  BookOpen
+  BookOpen,
+  LayoutGrid,
+  HardHat,
+  Wheat,
+  Settings,
+  Hammer,
+  Monitor,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
@@ -365,6 +371,25 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
     },
   ];
 
+  const categoryIcons: Record<string, any> = {
+    'Construction': HardHat,
+    'Céréales': Wheat,
+    'Pièces détachées': Settings,
+    'Informatique': Monitor,
+    'Électroménager': Zap,
+    'Bricolage': Hammer,
+    'Bureau': Briefcase,
+    'Divers': Package
+  };
+
+  const productCategories = Array.from(new Set(products.map(p => p.category)))
+    .filter(Boolean)
+    .sort((a, b) => {
+      const aCount = products.filter(p => p.category === a).length;
+      const bCount = products.filter(p => p.category === b).length;
+      return bCount - aCount;
+    });
+
   return (
     <div className="space-y-10 pb-20">
       {/* Immersive Command Header */}
@@ -454,6 +479,39 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
             <h3 className="text-2xl font-black text-slate-900 leading-none">{stat.value}</h3>
           </div>
         ))}
+
+        {/* Top Categories Row */}
+        <div className="col-span-12">
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm overflow-hidden relative group">
+             <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full blur-3xl opacity-50 -mr-32 -mt-32" />
+             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                <div>
+                   <h2 className="text-xl font-black italic uppercase tracking-tight text-slate-900">Distribution par Rayon</h2>
+                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Vos rayons les plus actifs en catalogue</p>
+                </div>
+                <div className="flex gap-4 overflow-x-auto pb-4 md:pb-0 scrollbar-hide max-w-full">
+                   {productCategories.map((cat) => {
+                      const Icon = categoryIcons[cat] || Package;
+                      const count = products.filter(p => p.category === cat).length;
+                      return (
+                         <div key={cat} className="flex items-center gap-4 bg-slate-50 px-6 py-4 rounded-3xl border border-slate-100 shrink-0 group/cat hover:bg-slate-900 hover:text-white transition-all cursor-default">
+                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-900 shadow-sm group-hover/cat:bg-white/10 group-hover/cat:text-white transition-colors">
+                               <Icon size={18} />
+                            </div>
+                            <div>
+                               <p className="text-[10px] font-black uppercase tracking-widest">{cat}</p>
+                               <p className="text-[8px] font-bold opacity-60 uppercase">{count} Produits</p>
+                            </div>
+                         </div>
+                      );
+                   })}
+                   {productCategories.length === 0 && (
+                      <p className="text-xs font-medium text-slate-400 italic">Aucune catégorie détectée...</p>
+                   )}
+                </div>
+             </div>
+          </div>
+        </div>
 
         {/* Operational Guide Quick Link */}
         <div className="col-span-12 bg-blue-600 rounded-[2rem] p-8 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl shadow-blue-900/20 relative overflow-hidden group">

@@ -39,6 +39,13 @@ import {
   History,
   Sparkles,
   Smartphone,
+  HardHat,
+  Wheat,
+  Settings,
+  Hammer,
+  Monitor,
+  Zap,
+  LayoutGrid,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { HelpTrigger } from "./ContextualHelp";
@@ -101,6 +108,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   const [showCatalogue, setShowCatalogue] = useState(false);
   const [showTracking, setShowTracking] = useState(false);
   const [guestOrders, setGuestOrders] = useState<any[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [activeCategory, setActiveCategory] = useState<string>("Tous");
   const [submitting, setSubmitting] = useState(false);
   const [nairaEnabled, setNairaEnabled] = useState(false);
   const [checkoutData, setCheckoutData] = useState({
@@ -304,6 +313,20 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     };
   }, []);
 
+  const categoryIcons: Record<string, any> = {
+    "Tous": LayoutGrid,
+    "Construction": HardHat,
+    "Ciment": HardHat,
+    "Céréales": Wheat,
+    "Pièces détachées": Settings,
+    "Bricolage": Hammer,
+    "Informatique": Monitor,
+    "Électroménager": Zap,
+    "Divers": Package
+  };
+
+  const categories = ["Tous", "Construction", "Ciment", "Céréales", "Pièces détachées", "Bricolage", "Informatique", "Électroménager", "Divers"];
+
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       const matchesSearch =
@@ -311,9 +334,10 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
         p.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCompany =
         activeCompanyId === "all" || p.companyId === activeCompanyId;
-      return matchesSearch && matchesCompany;
+      const matchesCategory = activeCategory === "Tous" || p.category === activeCategory;
+      return matchesSearch && matchesCompany && matchesCategory;
     });
-  }, [products, searchTerm, activeCompanyId]);
+  }, [products, searchTerm, activeCompanyId, activeCategory]);
 
   const addToCart = (product: Product) => {
     if (product.stock <= 0 && !product.allowBackorder) {
@@ -663,6 +687,26 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            <div className="flex bg-slate-100 p-1 rounded-xl">
+              <button 
+                onClick={() => setViewMode('grid')}
+                className={cn("p-2 rounded-lg transition-all", viewMode === 'grid' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400")}
+              >
+                <div className="grid grid-cols-2 gap-0.5">
+                  <div className="w-1.5 h-1.5 bg-current rounded-sm" />
+                  <div className="w-1.5 h-1.5 bg-current rounded-sm" />
+                  <div className="w-1.5 h-1.5 bg-current rounded-sm" />
+                  <div className="w-1.5 h-1.5 bg-current rounded-sm" />
+                </div>
+              </button>
+              <button 
+                onClick={() => setViewMode('list')}
+                className={cn("p-2 rounded-lg transition-all", viewMode === 'list' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400")}
+              >
+                <Filter size={18} />
+              </button>
+            </div>
+
             <button
               onClick={() => setNairaEnabled(!nairaEnabled)}
               className={cn(
@@ -877,32 +921,30 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
         </div>
 
         {/* Sectors / Filters */}
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
-          {[
-            "Tous",
-            "Matériaux",
-            "Alimentation",
-            "Informatique",
-            "Services",
-            "Pièces Auto",
-          ].map((cat, idx) => {
-            const isActive =
-              (cat === "Tous" && searchTerm === "") ||
-              searchTerm.toLowerCase() === cat.toLowerCase();
+        <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide -mx-2 px-2 mask-linear-gradient-x">
+          {categories.map((cat, idx) => {
+            const isActive = activeCategory === cat;
+            const Icon = categoryIcons[cat] || Package;
             return (
               <motion.button
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.05 }}
                 key={cat}
-                onClick={() => setSearchTerm(cat === "Tous" ? "" : cat)}
+                onClick={() => setActiveCategory(cat)}
                 className={cn(
-                  "px-6 py-4 rounded-3xl text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all border shrink-0",
+                  "px-6 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all border shrink-0 flex items-center gap-3",
                   isActive
-                    ? "bg-white border-blue-600 text-blue-600 shadow-xl shadow-blue-50"
-                    : "bg-white text-slate-400 border-slate-100 hover:border-slate-200",
+                    ? "bg-slate-900 border-slate-900 text-white shadow-2xl shadow-slate-200 scale-105"
+                    : "bg-white text-slate-400 border-slate-100 hover:border-slate-200 hover:text-slate-600",
                 )}
               >
+                <div className={cn(
+                  "p-2 rounded-xl transition-all",
+                  isActive ? "bg-white/10 text-white" : "bg-slate-50 text-slate-400"
+                )}>
+                  <Icon size={14} />
+                </div>
                 {cat}
               </motion.button>
             );
@@ -1016,137 +1058,199 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               {searchTerm ? `Résultats pour "${searchTerm}"` : activeCompanyId === "all" ? "Toutes les nouveautés" : `Catalogue ${companies.find(c => c.id === activeCompanyId)?.name}`}
             </h2>
             <p className="text-[9px] font-bold text-slate-300 uppercase">
-              Les meilleurs prix de l'Extrême-Nord
+              {filteredProducts.length} articles trouvés • Maroua
             </p>
           </div>
-          <Filter className="text-slate-300" size={18} />
+          <div className="flex items-center gap-2">
+             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden sm:inline">Vue:</span>
+             <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
+               <button 
+                 onClick={() => setViewMode('grid')}
+                 className={cn("px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", viewMode === 'grid' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}
+               >
+                 Grille
+               </button>
+               <button 
+                 onClick={() => setViewMode('list')}
+                 className={cn("px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", viewMode === 'list' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}
+               >
+                 Liste
+               </button>
+             </div>
+          </div>
         </div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {/* Product Grid / List */}
+        <div className={cn(
+          "transition-all duration-500",
+          viewMode === 'grid' 
+            ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" 
+            : "flex flex-col gap-4"
+        )}>
           <AnimatePresence mode="popLayout">
-            {filteredProducts.map((product) => (
-              <motion.div
-                key={product.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="group bg-white rounded-[2rem] border border-slate-100 overflow-hidden hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 flex flex-col"
-              >
-                <div
-                  className="aspect-square overflow-hidden relative cursor-pointer group/img"
-                  onClick={() => {
-                    addToRecentlyViewed(product);
-                    setSelectedProduct(product);
-                  }}
+            {filteredProducts.map((product) => {
+              const company = companies.find((c) => c.id === product.companyId);
+              const nairaPrice = ((product.price * (company?.nairaRate || GLOBAL_NAIRA_RATE)) / 1000).toFixed(1);
+              
+              if (viewMode === 'list') {
+                return (
+                  <motion.div
+                    key={product.id}
+                    layout
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    onClick={() => {
+                      addToRecentlyViewed(product);
+                      setSelectedProduct(product);
+                    }}
+                    className="group bg-white rounded-3xl border border-slate-100 p-4 flex items-center gap-6 cursor-pointer hover:shadow-xl hover:border-blue-100 transition-all"
+                  >
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
+                      <img src={product.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    </div>
+                    <div className="flex-1 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[8px] font-black text-blue-600 underline underline-offset-4 decoration-2">{company?.name}</span>
+                          <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">• {product.category}</span>
+                        </div>
+                        <h3 className="text-sm font-black text-slate-900 uppercase italic line-clamp-1">{product.name}</h3>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <div className="text-right">
+                          <p className="text-sm font-black text-slate-900 line-none">{product.price.toLocaleString()} F</p>
+                          <p className={cn("text-[9px] font-black uppercase tracking-widest", nairaEnabled ? "text-amber-500" : "text-slate-300")}>₦ {nairaPrice}k</p>
+                        </div>
+                        <div className={cn("hidden sm:block px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border", getStockStatus(product.stock).color)}>
+                           {getStockStatus(product.stock).label}
+                        </div>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(product);
+                          }}
+                          className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-blue-600 transition-all shadow-lg shadow-slate-200"
+                        >
+                          <Plus size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              }
+
+              return (
+                <motion.div
+                  key={product.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="group bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 flex flex-col relative"
                 >
-                  <img
-                    src={
-                      product.image ||
-                      "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=60"
-                    }
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s] brightness-95 group-hover:brightness-100"
-                  />
+                  <div
+                    className="aspect-square overflow-hidden relative cursor-pointer"
+                    onClick={() => {
+                      addToRecentlyViewed(product);
+                      setSelectedProduct(product);
+                    }}
+                  >
+                    <img
+                      src={product.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=60"}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s] brightness-[0.98] group-hover:brightness-100"
+                      referrerPolicy="no-referrer"
+                    />
 
-                  {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    {/* Progressive Loading Visual Placeholder */}
+                    <div className="absolute inset-0 bg-slate-100 animate-pulse opacity-0 pointer-events-none" />
 
-                  <div className="absolute top-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-75">
-                    <div className="px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-lg text-blue-600 shadow-xl flex items-center gap-2">
-                      <Info size={14} className="font-black" />
-                      <span className="text-[9px] font-black uppercase tracking-widest">
-                        Détails
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-150">
-                    <span className="px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest text-slate-900 shadow-sm border border-slate-100">
-                      {companies.find((c) => c.id === product.companyId)
-                        ?.name || "Nexus"}
-                    </span>
-                    <div
-                      className={cn(
-                        "px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-[0.2em] border shadow-sm backdrop-blur-md",
-                        getStockStatus(product.stock).color.replace(
-                          "bg-",
-                          "bg-white/80 ",
-                        ),
+                    <div className="absolute top-4 right-4 flex flex-col gap-2 scale-90 origin-top-right">
+                      {company?.logo && (
+                        <div className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-xl p-1.5 shadow-xl border border-white/50 overflow-hidden flex items-center justify-center">
+                           <img src={company.logo} className="max-w-full max-h-full object-contain" />
+                        </div>
                       )}
-                    >
-                      {getStockStatus(product.stock).label}
                     </div>
-                  </div>
-                </div>
 
-                <div className="p-5 flex-1 flex flex-col justify-between">
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-black text-slate-900 tracking-tight leading-tight group-hover:text-blue-600 transition-colors italic line-clamp-1">
-                      {product.name}
-                    </h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                      {product.category}
-                    </p>
-                  </div>
-
-                  <div className="mt-4 flex flex-col gap-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-black text-slate-900 leading-none tracking-tight">
-                          {nairaEnabled
-                            ? `₦ ${((product.price * GLOBAL_NAIRA_RATE) / 1000).toFixed(1)}k`
-                            : `${product.price.toLocaleString()}`}
-                        </span>
-                        <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                          {nairaEnabled ? "Naira (Est)" : "FCFA"}
-                        </span>
-                      </div>
-                      <div
-                        className={cn(
-                          "px-2 py-1 rounded-lg text-[7px] font-black uppercase tracking-widest border",
-                          getStockStatus(product.stock).color,
-                        )}
-                      >
-                        {getStockStatus(product.stock).label}
+                    <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                      <div className="px-3 py-1.5 bg-slate-900/90 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest text-white shadow-xl flex items-center gap-2">
+                        <Info size={12} />
+                        Détails
                       </div>
                     </div>
+                  </div>
 
-                    <div className="flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          checkoutWhatsApp(product);
-                        }}
-                        className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-100 active:scale-90"
-                        title="Négocier sur WhatsApp"
-                      >
-                        <MessageCircle size={20} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (product.stock > 0) addToCart(product);
-                        }}
-                        disabled={product.stock <= 0}
-                        className={cn(
-                          "flex-1 h-12 rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-xl px-4",
-                          product.stock > 0 
-                            ? "bg-slate-900 text-white hover:bg-blue-600 shadow-slate-200 group-hover:shadow-blue-600/20" 
-                            : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none"
-                        )}
-                      >
-                        <Plus size={18} className="mr-2" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.1em]">
-                          {product.stock > 0 ? "Panier" : "Rupture"}
-                        </span>
-                      </button>
+                  <div className="p-6 flex-1 flex flex-col justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[7px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{product.category}</span>
+                        <div className="w-1 h-1 bg-slate-200 rounded-full" />
+                        <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest truncate">{company?.name}</span>
+                      </div>
+                      <h3 className="text-[13px] font-black text-slate-900 tracking-tight leading-tight group-hover:text-blue-600 transition-colors uppercase italic line-clamp-1 mt-1">
+                        {product.name}
+                      </h3>
+                    </div>
+
+                    <div className="mt-6 space-y-5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-[15px] font-black text-slate-900 leading-none tracking-tight">
+                            {product.price.toLocaleString()} <span className="text-[8px] opacity-40">F</span>
+                          </span>
+                          <span className={cn(
+                            "text-[8px] font-black uppercase tracking-widest mt-1.5 transition-colors",
+                            nairaEnabled ? "text-amber-500" : "text-slate-300"
+                          )}>
+                            ₦ {nairaPrice}k Naira
+                          </span>
+                        </div>
+                        <div
+                          className={cn(
+                            "px-2.5 py-1 rounded-lg text-[7px] font-black uppercase tracking-widest border shadow-sm",
+                            getStockStatus(product.stock).color,
+                          )}
+                        >
+                          {getStockStatus(product.stock).label}
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            checkoutWhatsApp(product);
+                          }}
+                          className="w-11 h-11 bg-white border border-slate-100 text-emerald-600 rounded-2xl flex items-center justify-center hover:bg-emerald-50 transition-all active:scale-95"
+                        >
+                          <MessageCircle size={18} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (product.stock > 0) addToCart(product);
+                          }}
+                          disabled={product.stock <= 0}
+                          className={cn(
+                            "flex-1 h-11 rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-xl group/btn",
+                            product.stock > 0 
+                              ? "bg-slate-950 text-white hover:bg-blue-600 shadow-slate-200 group-hover:shadow-blue-600/20" 
+                              : "bg-slate-50 text-slate-300 cursor-not-allowed border border-slate-100 shadow-none"
+                          )}
+                        >
+                          <Plus size={16} className="mr-2 group-hover/btn:rotate-90 transition-transform duration-300" />
+                          <span className="text-[9px] font-black uppercase tracking-widest">
+                            {product.stock > 0 ? "Panier" : "Rupture"}
+                          </span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </div>
 
@@ -1714,7 +1818,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
         )}
       </AnimatePresence>
 
-      {/* Product Details Modal */}
+      {/* Product Details Side-drawer */}
       <AnimatePresence>
         {selectedProduct && (
           <>
@@ -1723,154 +1827,165 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedProduct(null)}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80]"
+              className="fixed inset-0 bg-slate-950/40 backdrop-blur-md z-[80]"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-4xl bg-white z-[90] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col md:flex-row"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-2xl bg-white z-[90] shadow-2xl flex flex-col"
             >
-              <div className="md:w-1/2 bg-slate-100 relative">
-                <img
-                  src={
-                    selectedProduct.image ||
-                    "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=60"
-                  }
-                  className="w-full h-full object-cover shadow-2xl"
-                  alt=""
-                />
-                <button
-                  onClick={() => setSelectedProduct(null)}
-                  className="absolute top-6 left-6 p-3 bg-white/80 backdrop-blur-md rounded-2xl text-slate-900 shadow-xl md:hidden"
-                >
-                  <X size={20} />
-                </button>
+              <div className="p-8 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10">
+                 <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => setSelectedProduct(null)}
+                      className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"
+                    >
+                      <X size={20} />
+                    </button>
+                    <div>
+                      <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest italic">Détails de l'article</h2>
+                      <p className="text-[9px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Nexus Engineering Hub</p>
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-3">
+                   <button 
+                     onClick={() => toggleFavorite(selectedProduct.companyId)}
+                     className={cn(
+                       "p-3 rounded-2xl border transition-all",
+                       favorites.includes(selectedProduct.companyId) ? "bg-red-50 border-red-100 text-red-500" : "bg-slate-50 border-slate-100 text-slate-400"
+                     )}
+                   >
+                     <Heart size={20} fill={favorites.includes(selectedProduct.companyId) ? "currentColor" : "none"} />
+                   </button>
+                 </div>
               </div>
-              <div className="flex-1 p-10 md:p-14 flex flex-col justify-between bg-white relative">
-                <button
-                  onClick={() => setSelectedProduct(null)}
-                  className="absolute top-8 right-8 p-3 hover:bg-slate-50 rounded-2xl text-slate-300 hover:text-blue-600 transition-all hidden md:block"
-                >
-                  <X size={24} />
-                </button>
 
-                <div className="space-y-8">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg">
-                        {selectedProduct.category}
-                      </span>
-                      <div
-                        className={cn(
-                          "flex items-center gap-1 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border",
-                          getStockStatus(selectedProduct.stock).color,
-                        )}
-                      >
-                        {getStockStatus(selectedProduct.stock).label}
-                      </div>
-                    </div>
-                    <h2 className="text-4xl font-black text-slate-900 tracking-tight italic leading-tight">
-                      {selectedProduct.name}
-                    </h2>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                      Description
-                    </h4>
-                    <p className="text-base font-medium text-slate-500 leading-relaxed italic line-clamp-4">
-                      {selectedProduct.description}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                        Boutique
-                      </p>
-                      <p className="text-xs font-black text-slate-900 uppercase truncate">
-                        {
-                          companies.find(
-                            (c) => c.id === selectedProduct.companyId,
-                          )?.name
-                        }
-                      </p>
-                    </div>
-                    <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                        Emplacement
-                      </p>
-                      <p className="text-xs font-black text-slate-900 uppercase">
-                        {selectedProduct.location || "Dewe / Hardé"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-12 pt-8 border-t border-slate-100 flex flex-col gap-6">
-                  <div className="flex items-end justify-between">
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                        Prix Marketplace
-                      </span>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-black text-slate-900 tracking-tighter">
-                          {nairaEnabled
-                            ? (
-                                selectedProduct.price * (companies.find(c => c.id === selectedProduct.companyId)?.nairaRate || GLOBAL_NAIRA_RATE)
-                              ).toLocaleString()
-                            : selectedProduct.price.toLocaleString()}
-                        </span>
-                        <span className="text-xl font-black text-slate-400 uppercase">
-                          {nairaEnabled ? "₦" : "FCFA"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest px-1">Produits suggérés (Vente Suggestive)</h4>
-                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                      {products
-                        .filter(p => p.category === selectedProduct.category && p.id !== selectedProduct.id)
-                        .slice(0, 4)
-                        .map(p => (
-                          <div 
-                            key={`suggest-${p.id}`}
-                            onClick={() => setSelectedProduct(p)}
-                            className="min-w-[120px] bg-slate-50 rounded-2xl p-3 border border-slate-100 cursor-pointer hover:bg-blue-50 transition-all border-dashed"
-                          >
-                            <div className="aspect-square rounded-xl overflow-hidden mb-2">
-                              <img src={p.image} className="w-full h-full object-cover" />
-                            </div>
-                            <p className="text-[8px] font-black uppercase text-slate-900 truncate">{p.name}</p>
-                            <p className="text-[7px] font-bold text-blue-600 mt-1">{p.price.toLocaleString()} F</p>
+              <div className="flex-1 overflow-y-auto scrollbar-hide">
+                <div className="p-8 space-y-12 pb-24">
+                  {/* Hero section with image and key info */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                     <div className="aspect-square rounded-[3rem] overflow-hidden border border-slate-100 shadow-inner group">
+                        <img 
+                          src={selectedProduct.image} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                          referrerPolicy="no-referrer"
+                        />
+                     </div>
+                     <div className="flex flex-col justify-center space-y-6">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                             <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase rounded-full tracking-widest shadow-lg shadow-blue-200 italic">
+                               {selectedProduct.category}
+                             </span>
+                             <div className={cn("px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border", getStockStatus(selectedProduct.stock).color)}>
+                               {getStockStatus(selectedProduct.stock).label}
+                             </div>
                           </div>
-                        ))}
-                      {products.filter(p => p.category === selectedProduct.category && p.id !== selectedProduct.id).length === 0 && (
-                        <p className="text-[8px] font-bold text-slate-300 uppercase italic px-1">Complétez vos achats avec nos essentiels...</p>
-                      )}
-                    </div>
+                          <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tight leading-none">
+                            {selectedProduct.name}
+                          </h1>
+                        </div>
+
+                        <div className="p-6 bg-slate-950 rounded-[2rem] text-white space-y-4 shadow-xl">
+                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center italic underline underline-offset-8 decoration-blue-500">Dual Pricing Agreement</p>
+                           <div className="grid grid-cols-2 divide-x divide-white/10 items-center">
+                              <div className="text-center group">
+                                 <p className="text-[8px] font-bold text-slate-500 uppercase mb-2">Devise Locale</p>
+                                 <p className="text-2xl font-black tracking-tighter tabular-nums group-hover:text-blue-400 transition-colors">{selectedProduct.price.toLocaleString()}</p>
+                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FCFA</p>
+                              </div>
+                              <div className="text-center group">
+                                 <p className="text-[8px] font-bold text-slate-500 uppercase mb-2 group-hover:text-amber-500 transition-colors">Naira Market</p>
+                                 <p className="text-2xl font-black tracking-tighter tabular-nums text-amber-500">
+                                   ₦ {((selectedProduct.price * (companies.find(c => c.id === selectedProduct.companyId)?.nairaRate || GLOBAL_NAIRA_RATE)) / 1000).toFixed(1)}k
+                                 </p>
+                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Est. Nigeria</p>
+                              </div>
+                           </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                           <button 
+                             onClick={() => addToCart(selectedProduct)}
+                             disabled={selectedProduct.stock <= 0}
+                             className="flex-1 py-5 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-slate-900 transition-all active:scale-95 flex items-center justify-center gap-3"
+                           >
+                             <ShoppingCart size={18} /> Ajouter
+                           </button>
+                           <button 
+                             onClick={() => checkoutWhatsApp(selectedProduct)}
+                             className="flex-1 py-5 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-emerald-200 hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-3"
+                           >
+                             <MessageCircle size={18} /> WhatsApp
+                           </button>
+                        </div>
+                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button
-                      onClick={() => {
-                        addToCart(selectedProduct);
-                        setSelectedProduct(null);
-                        setShowCart(true);
-                      }}
-                      className="flex-1 py-6 bg-slate-900 text-white hover:bg-blue-600 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-2xl flex items-center justify-center gap-3 active:scale-95"
-                    >
-                      <ShoppingCart size={20} /> Ajouter
-                    </button>
-                    <button
-                      onClick={() => checkoutWhatsApp(selectedProduct)}
-                      className="flex-1 py-6 bg-emerald-500 text-white hover:bg-emerald-600 text-[11px] font-black uppercase tracking-[0.2em] rounded-[1.5rem] transition-all shadow-xl flex items-center justify-center gap-3 active:scale-95"
-                    >
-                      <MessageCircle size={20} /> WhatsApp
-                    </button>
+                  {/* Company and Detailed Description */}
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-10 border-t border-slate-100 pt-12">
+                     <div className="md:col-span-4 space-y-6">
+                        <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-200 flex flex-col items-center text-center space-y-4">
+                           <div className="w-20 h-20 bg-white rounded-3xl shadow-xl shadow-slate-200 border border-slate-100 flex items-center justify-center overflow-hidden p-3">
+                              {companies.find(c => c.id === selectedProduct.companyId)?.logo ? (
+                                <img src={companies.find(c => c.id === selectedProduct.companyId)?.logo} className="max-w-full max-h-full object-contain" />
+                              ) : (
+                                <Store className="text-slate-300" size={32} />
+                              )}
+                           </div>
+                           <div className="space-y-1">
+                              <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{companies.find(c => c.id === selectedProduct.companyId)?.name}</h4>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">{companies.find(c => c.id === selectedProduct.companyId)?.category || 'Partenaire Nexus'}</p>
+                           </div>
+                           <button 
+                             onClick={() => {
+                               setActiveCompanyId(selectedProduct.companyId);
+                               setSelectedProduct(null);
+                             }}
+                             className="w-full py-3 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-blue-600 hover:text-blue-600 transition-all"
+                           >
+                             Voir la boutique
+                           </button>
+                        </div>
+
+                        <div className="bg-blue-50/50 p-6 rounded-[2rem] border border-blue-100/50 flex items-center gap-4">
+                           <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-blue-100">
+                              <Truck size={24} />
+                           </div>
+                           <div>
+                              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Zones desservies</p>
+                              <p className="text-[11px] font-bold text-slate-600 mt-0.5">Livraison sur tout Maroua et environs</p>
+                           </div>
+                        </div>
+                     </div>
+
+                     <div className="md:col-span-8 space-y-8">
+                        <div className="space-y-4">
+                           <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tight pb-3 border-b-2 border-slate-100 inline-block">Description Technique</h3>
+                           <p className="text-slate-600 font-medium leading-relaxed">
+                             {selectedProduct.description}
+                           </p>
+                        </div>
+
+                        <div className="space-y-4">
+                           <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight">Avantages Nexus</h3>
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {[
+                                { icon: <Sparkles size={16} />, text: 'Garanti Authentique' },
+                                { icon: <Smartphone size={16} />, text: 'Payer via MoMo/Orange' },
+                                { icon: <ArrowRight size={16} />, text: 'Livraison Rapide (<2h)' },
+                                { icon: <Award size={16} />, text: 'Points de Fidélité' }
+                              ].map((adv, idx) => (
+                                <div key={idx} className="p-4 bg-slate-50 rounded-2xl flex items-center gap-3 border border-slate-100">
+                                   <div className="text-blue-600">{adv.icon}</div>
+                                   <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{adv.text}</span>
+                                </div>
+                              ))}
+                           </div>
+                        </div>
+                     </div>
                   </div>
                 </div>
               </div>

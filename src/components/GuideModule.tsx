@@ -62,9 +62,10 @@ export default function GuideModule() {
 
   const staticSections = [
     {
-      id: 'reception',
+      id: 'ventes',
       category: 'SALES',
-      title: '1. Réception Commande',
+      title: 'Fiche #01 : Ventes Rapides',
+      subtitle: 'Cible : Vendeurs',
       icon: Zap,
       color: 'amber',
       items: [
@@ -74,14 +75,28 @@ export default function GuideModule() {
       ]
     },
     {
-      id: 'delivery',
+      id: 'logistique',
       category: 'LOGISTICS',
-      title: '2. Suivi & Livraison',
+      title: 'Fiche #02 : Logistique Maroua',
+      subtitle: 'Cible : Livreurs',
       icon: Truck,
       color: 'blue',
       content: [
-        { label: 'En route', desc: 'Passez le statut à "Livraison en cours" dès que le colis quitte lentrepôt.', type: 'info' },
+        { label: 'En route', desc: 'Passez le statut à "Livraison en cours" dès que le colis quitte l’entrepôt.', type: 'info' },
         { label: 'Échec Livraison', desc: 'Ne supprimez jamais. Sélectionnez un motif : "Client Injoignable" ou "Adresse Introuvable".', type: 'error' }
+      ]
+    },
+    {
+      id: 'finance',
+      category: 'FINANCE',
+      title: 'Fiche #03 : Encaissement FCFA/Naira',
+      subtitle: 'Cible : Magasiniers/Vendeurs',
+      icon: Wallet,
+      color: 'emerald',
+      items: [
+        { text: "Utilisez le convertisseur intégré pour les clients Nigérians.", icon: Calculator },
+        { text: "Encaisser via MoMo ? Attendez toujours le SMS de confirmation Nexus.", icon: Smartphone },
+        { text: "Espèces : Remise en main propre contre validation QR-Code.", icon: ShieldCheck }
       ]
     }
   ];
@@ -193,22 +208,27 @@ export default function GuideModule() {
         ))}
 
         {/* Fallback Static Sections if DB is empty or during filtering */}
-        {dbSteps.length === 0 && staticSections.map(section => (
-          <section key={section.id} className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
-            <div className="flex items-center gap-4 mb-6">
-              <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-all", 
-                section.color === 'amber' ? "bg-amber-50 text-amber-500 group-hover:bg-amber-500 group-hover:text-white" : "bg-blue-50 text-blue-500 group-hover:bg-blue-600 group-hover:text-white"
+        {(dbSteps.length === 0 || activeCategory !== 'ALL' || search) && staticSections.filter(s => activeCategory === 'ALL' || s.category === activeCategory).map(section => (
+          <section key={section.id} className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm hover:shadow-xl transition-all group flex flex-col">
+            <div className="flex items-center gap-4 mb-8">
+              <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-sm", 
+                section.color === 'amber' ? "bg-amber-50 text-amber-500 group-hover:bg-amber-500 group-hover:text-white" : 
+                section.color === 'blue' ? "bg-blue-50 text-blue-500 group-hover:bg-blue-600 group-hover:text-white" :
+                "bg-emerald-50 text-emerald-500 group-hover:bg-emerald-600 group-hover:text-white"
               )}>
-                <section.icon size={24} />
+                <section.icon size={28} />
               </div>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">{section.title}</h2>
+              <div className="flex flex-col">
+                <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase leading-none">{section.title}</h2>
+                {section.subtitle && <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mt-2 px-1 bg-blue-50 w-fit rounded leading-tight">{section.subtitle}</p>}
+              </div>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-4 flex-1">
               {section.items ? (
                 <ul className="space-y-3">
                   {section.items.map((item, i) => (
-                    <li key={i} className="flex gap-3 text-[11px] font-bold text-slate-500 bg-slate-50 p-4 rounded-2xl border border-slate-100 italic">
-                      <item.icon size={16} className="text-slate-400 shrink-0" />
+                    <li key={i} className="flex gap-4 text-[11px] font-bold text-slate-500 bg-slate-50 p-5 rounded-2xl border border-slate-100 italic transition-all hover:bg-white hover:shadow-md">
+                      <item.icon size={18} className="text-slate-400 shrink-0" />
                       {item.text}
                     </li>
                   ))}
@@ -216,9 +236,12 @@ export default function GuideModule() {
               ) : (
                 <div className="space-y-3">
                    {section.content?.map((c, i) => (
-                     <div key={i} className={cn("p-4 rounded-2xl border", c.type === 'info' ? "bg-blue-50/50 border-blue-100" : "bg-red-50/50 border-red-100")}>
-                        <p className={cn("text-[11px] font-black uppercase", c.type === 'info' ? "text-blue-900" : "text-red-900")}>{c.label}</p>
-                        <p className={cn("text-[10px] mt-1 font-medium italic leading-tight", c.type === 'info' ? "text-blue-700/70" : "text-red-700/70")}>{c.desc}</p>
+                     <div key={i} className={cn("p-5 rounded-3xl border transition-all hover:shadow-md", c.type === 'info' ? "bg-blue-50/50 border-blue-100" : "bg-red-50/50 border-red-100")}>
+                        <p className={cn("text-[11px] font-black uppercase tracking-widest flex items-center gap-2", c.type === 'info' ? "text-blue-900" : "text-red-900")}>
+                          {c.type === 'info' ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
+                          {c.label}
+                        </p>
+                        <p className={cn("text-[10px] mt-2 font-medium italic leading-relaxed", c.type === 'info' ? "text-blue-700/80" : "text-red-700/80")}>{c.desc}</p>
                      </div>
                    ))}
                 </div>

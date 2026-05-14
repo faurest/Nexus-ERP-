@@ -31,6 +31,13 @@ import {
   AlertTriangle,
   MapPin,
   ArrowRight,
+  HardHat,
+  Wheat,
+  Settings,
+  Hammer,
+  Monitor,
+  Zap,
+  Briefcase
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -91,6 +98,9 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('Tous');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [nairaEnabled, setNairaEnabled] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isCheckoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0); 
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'MOBILE' | 'CASH'>('MOBILE');
@@ -711,7 +721,21 @@ export default function EcommerceModule({ user }: { user: any }) {
     }
   };
 
-  const categories = ['Tous', 'Hardware', 'Software', 'Office', 'Services'];
+  const categories = ['Tous', 'Construction', 'Céréales', 'Pièces détachées', 'Informatique', 'Électroménager', 'Divers'];
+  
+  const categoryIcons: Record<string, any> = {
+    'Tous': LayoutGrid,
+    'Construction': HardHat,
+    'Céréales': Wheat,
+    'Pièces détachées': Settings,
+    'Informatique': Monitor,
+    'Électroménager': Zap,
+    'Divers': Package
+  };
+
+  const getCategoryIcon = (cat: string) => {
+    return categoryIcons[cat] || Package;
+  };
   
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -839,115 +863,209 @@ export default function EcommerceModule({ user }: { user: any }) {
       </AnimatePresence>
 
       {activeView === 'catalog' && (
-        <div className="space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-8 duration-700">
-          {/* Enhanced Client Header */}
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+        <div className="flex flex-col lg:flex-row gap-8 pb-20 animate-in fade-in slide-in-from-bottom-8 duration-700">
+          {/* Enhanced Category Sidebar (Desktop Only) */}
+          <aside className="hidden lg:flex flex-col w-64 shrink-0 space-y-8 sticky top-24 h-fit">
             <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100">
-                <LayoutDashboard size={12} />
-                Nexus Solutions Globales
-              </div>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none">
-                Solutions & <span className="text-blue-600">Performance</span>
-              </h2>
-              <p className="text-slate-500 font-medium max-w-xl text-sm leading-relaxed">
-                Accédez à nos équipements industriels et solutions logicielles de pointe. 
-                Gagnez des points Nexus à chaque commande pour débloquer des avantages exclusifs.
-              </p>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="w-full sm:w-80 relative group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
-                <input
-                  type="text"
-                  placeholder="Rechercher une solution..."
-                  className="w-full bg-white border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium focus:ring-4 focus:ring-blue-100 focus:border-blue-200 outline-none transition-all shadow-sm"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div className="flex-1 flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200 max-w-full">
-                <div className="flex gap-1 min-w-max">
-                  {categories.map(cat => (
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] px-2 italic">Naviguer par Rayon</h3>
+              <div className="flex flex-col gap-1 p-2 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                {categories.map((cat) => {
+                  const count = products.filter(p => p.category === cat || cat === 'Tous').length;
+                  const Icon = getCategoryIcon(cat);
+                  return (
                     <button
-                      key={cat}
+                      key={`side-${cat}`}
                       onClick={() => setActiveCategory(cat)}
                       className={cn(
-                        "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                        activeCategory === cat ? "bg-slate-900 text-white shadow-xl shadow-slate-900/20" : "text-slate-400 hover:text-slate-600"
+                        "w-full flex items-center justify-between px-4 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all group",
+                        activeCategory === cat 
+                          ? "bg-slate-900 text-white shadow-xl shadow-slate-900/20" 
+                          : "text-slate-400 hover:bg-slate-50 hover:text-slate-900"
                       )}
                     >
-                      {cat}
+                      <div className="flex items-center gap-4">
+                         <div className={cn("p-2 rounded-xl transition-all", activeCategory === cat ? "bg-white/10 text-white" : "bg-slate-50 text-slate-400 group-hover:bg-white group-hover:text-blue-600")}>
+                            <Icon size={18} />
+                         </div>
+                         {cat}
+                      </div>
+                      <span className={cn(
+                        "px-2 py-0.5 rounded-md text-[8px] font-mono",
+                        activeCategory === cat ? "bg-white/20" : "bg-slate-100"
+                      )}>{count}</span>
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </div>
-          </div>
 
-          <motion.div 
-            layout
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
-          >
-            <AnimatePresence mode="popLayout">
-              {filteredProducts.map(product => (
-                <motion.div 
-                  layout
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  key={product.id} 
-                  className="group bg-white rounded-[2.5rem] border border-slate-50 overflow-hidden hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 flex flex-col h-full relative"
-                >
-                  <div className="aspect-[5/4] overflow-hidden relative">
-                    <img 
-                      src={product.image || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800"} 
-                      alt={product.name} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 brightness-[0.95]" 
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
-                    
-                    <div className="absolute top-6 left-6 flex flex-col gap-2">
-                      <span className="px-3 py-1 bg-white/95 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-slate-900 shadow-xl">
-                        {product.category}
-                      </span>
+            <div className="p-6 bg-slate-950 rounded-[2rem] text-white space-y-4 shadow-xl border border-white/5 relative overflow-hidden group">
+               <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
+                  <Database size={60} />
+               </div>
+               <div className="relative z-10 space-y-4">
+                 <div className="flex items-center justify-between">
+                    <p className="text-[9px] font-black uppercase text-blue-400 tracking-widest italic">Aide au Change</p>
+                    <div 
+                      onClick={() => setNairaEnabled(!nairaEnabled)}
+                      className={cn(
+                        "w-10 h-5 rounded-full p-1 cursor-pointer transition-all",
+                        nairaEnabled ? "bg-blue-600" : "bg-slate-800"
+                      )}
+                    >
+                      <div className={cn("w-3 h-3 bg-white rounded-full transition-all", nairaEnabled ? "translate-x-5" : "translate-x-0")} />
                     </div>
-                    
-                    <div className="absolute bottom-6 left-6 right-6">
-                      <div className="flex items-center gap-1.5 text-white/90">
-                        <Award size={14} className="text-blue-400" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">+{product.points} PTS NEXUS</span>
-                      </div>
-                    </div>
-                  </div>
+                 </div>
+                 <div className="space-y-1">
+                    <p className="text-xl font-black tracking-tighter">Devise Nigéria</p>
+                    <p className="text-[10px] font-bold text-slate-400 leading-snug">Affichez les estimations en Naira pour vos transactions transfrontalières.</p>
+                 </div>
+               </div>
+            </div>
+          </aside>
 
-                  <div className="p-8 flex-1 flex flex-col justify-between">
-                    <div className="space-y-3">
-                      <h3 className="font-black text-slate-900 text-xl tracking-tight leading-tight group-hover:text-blue-610 transition-colors">
-                        {product.name}
-                      </h3>
-                      <p className="text-slate-400 text-xs font-medium line-clamp-2 leading-relaxed">
-                        {product.description}
-                      </p>
+          <div className="flex-1 space-y-10">
+            {/* Control Bar */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <div className="w-full sm:w-96 relative group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
+                  <input
+                    type="text"
+                    placeholder="Rechercher une référence..."
+                    className="w-full bg-slate-50 border-none rounded-2xl py-4 pl-12 pr-4 text-xs font-bold focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder:text-slate-300"
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex items-center gap-4">
+                   {/* Mobile Categories (Horizontal Scroll) */}
+                   <div className="flex lg:hidden bg-slate-50 p-1.5 rounded-2xl max-w-[150px] sm:max-w-xs overflow-x-auto scrollbar-hide gap-2 shadow-inner">
+                      {categories.map(cat => {
+                        const Icon = getCategoryIcon(cat);
+                        return (
+                          <button
+                            key={`mob-${cat}`}
+                            onClick={() => setActiveCategory(cat)}
+                            className={cn(
+                              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
+                              activeCategory === cat ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 bg-white"
+                            )}
+                          >
+                            <Icon size={14} />
+                            {cat}
+                          </button>
+                        );
+                      })}
+                   </div>
+                   
+                   <div className="h-8 w-px bg-slate-100 hidden sm:block" />
+                   
+                   <div className="flex bg-slate-50 p-1 rounded-xl shrink-0 shadow-inner">
+                     <button 
+                       onClick={() => setViewMode('grid')}
+                       className={cn("p-2.5 rounded-lg transition-all", viewMode === 'grid' ? "bg-white text-slate-900 shadow-sm" : "text-slate-300 hover:text-slate-500")}
+                     >
+                       <LayoutGrid size={18} />
+                     </button>
+                     <button 
+                       onClick={() => setViewMode('list')}
+                       className={cn("p-2.5 rounded-lg transition-all", viewMode === 'list' ? "bg-white text-slate-900 shadow-sm" : "text-slate-300 hover:text-slate-500")}
+                     >
+                       <List size={18} />
+                     </button>
+                   </div>
+                </div>
+            </div>
+
+            <motion.div 
+              layout
+              className={cn(
+                "grid gap-8",
+                viewMode === 'grid' ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1"
+              )}
+            >
+              <AnimatePresence mode="popLayout">
+                {filteredProducts.map(product => (
+                  <motion.div 
+                    layout
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    key={product.id} 
+                    className={cn(
+                      "group bg-white border border-slate-50 overflow-hidden hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 flex relative",
+                      viewMode === 'grid' ? "flex-col h-full rounded-[2.5rem]" : "flex-row items-center p-4 rounded-[2rem] gap-6"
+                    )}
+                  >
+                    <div className={cn(
+                      "overflow-hidden relative shrink-0 cursor-pointer",
+                      viewMode === 'grid' ? "aspect-[5/4]" : "w-32 h-32 rounded-2xl"
+                    )}
+                    onClick={() => setSelectedProduct(product)}
+                    >
+                      <img 
+                        src={product.image || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800"} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                      />
+                      {viewMode === 'grid' && (
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-40" />
+                      )}
+                      
+                      {viewMode === 'grid' && (
+                        <div className="absolute top-6 left-6">
+                          <span className="px-3 py-1 bg-white/95 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-slate-900 shadow-xl italic">
+                            {product.category}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    
-                    <div className="mt-8 space-y-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Tarif Operational</span>
-                          <div className="text-2xl font-black text-slate-900 tracking-tighter">
-                            {product.price.toLocaleString()} <span className="text-xs text-slate-400 font-bold ml-0.5">FCFA</span>
+
+                    <div className={cn(
+                      "flex-1 flex flex-col justify-between",
+                      viewMode === 'grid' ? "p-8" : "py-2 pr-4"
+                    )}>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start gap-4">
+                          <h3 
+                            className="font-black text-slate-900 text-lg tracking-tight leading-tight group-hover:text-blue-600 transition-colors uppercase italic cursor-pointer"
+                            onClick={() => setSelectedProduct(product)}
+                          >
+                            {product.name}
+                          </h3>
+                          <div className="flex flex-col items-end shrink-0">
+                            <span className="text-xl font-black text-slate-900 tracking-tighter">
+                              {nairaEnabled 
+                                ? (product.price * (currentCompany?.nairaRate || 0.012)).toLocaleString() 
+                                : product.price.toLocaleString()}
+                            </span>
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                              {nairaEnabled ? "Naira Estimate" : "FCFA Nexus"}
+                            </span>
                           </div>
                         </div>
-                        {product.stock < 10 && (
-                          <div className="px-3 py-1 bg-red-50 text-red-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-red-100 animate-pulse">
-                            Stock Limité
+                        {viewMode === 'list' && (
+                          <div className="flex items-center gap-3">
+                             <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest">{product.category}</span>
+                             <div className="flex items-center gap-1.5 text-blue-400">
+                                <Award size={12} />
+                                <span className="text-[8px] font-black uppercase tracking-widest">+{product.points} PTS</span>
+                             </div>
                           </div>
                         )}
+                        <p className={cn(
+                          "text-slate-400 text-xs font-medium leading-relaxed italic",
+                          viewMode === 'grid' ? "line-clamp-2" : "line-clamp-1"
+                        )}>
+                          {product.description}
+                        </p>
                       </div>
                       
-                      <div className="flex gap-3">
+                      <div className={cn(
+                        "flex gap-3",
+                        viewMode === 'grid' ? "mt-8" : "mt-4"
+                      )}>
                         {product.stock > 0 ? (
                           <button
                             onClick={() => addToCart(product)}
@@ -956,26 +1074,23 @@ export default function EcommerceModule({ user }: { user: any }) {
                             <ShoppingCart size={18} /> Acheter
                           </button>
                         ) : (
-                          <div className="flex-1 py-4 bg-slate-50 text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center">
-                            Rupture
+                          <div className="flex-1 py-4 bg-slate-50 text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center italic">
+                            Stock Épuisé
                           </div>
                         )}
                         <button
-                          title="Assistance technique"
-                          className="p-4 bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-blue-100 rounded-2xl transition-all active:scale-95"
-                          onClick={() => {
-                             setActiveView('tracking'); // Redirect to orders to start a chat if needed or general support
-                          }}
+                          onClick={() => setSelectedProduct(product)}
+                          className="p-4 bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-blue-100 rounded-2xl transition-all active:scale-95 border border-slate-100 shadow-sm"
                         >
-                          <MessageCircle size={20} />
+                          <Search size={20} />
                         </button>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          </div>
 
           {/* Special Loyalty Banner for Clients */}
           {user.role === 'Client' && (
@@ -2298,6 +2413,157 @@ export default function EcommerceModule({ user }: { user: any }) {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+      {/* Product Detail Side-drawer */}
+      <AnimatePresence>
+        {selectedProduct && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedProduct(null)}
+              className="fixed inset-0 bg-slate-950/40 backdrop-blur-md z-[130]"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-2xl bg-white z-[140] shadow-2xl flex flex-col"
+            >
+              <div className="p-8 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10">
+                 <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => setSelectedProduct(null)}
+                      className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"
+                    >
+                      <X size={20} />
+                    </button>
+                    <div>
+                      <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest italic">Détails de la Solution</h2>
+                      <p className="text-[9px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Nexus Corporate Suite</p>
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <div className="px-4 py-2 bg-slate-950 text-white rounded-2xl flex items-center gap-2">
+                       <Award size={14} className="text-blue-400" />
+                       <span className="text-[10px] font-black uppercase tracking-widest">+{selectedProduct.points} Pts</span>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto scrollbar-hide">
+                <div className="p-8 space-y-12 pb-24">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                     <div className="aspect-square rounded-[3rem] overflow-hidden border border-slate-100 shadow-inner bg-slate-50">
+                        <img 
+                          src={selectedProduct.image} 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer"
+                        />
+                     </div>
+                     <div className="flex flex-col justify-center space-y-6">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                             <span className="px-3 py-1 bg-slate-900 text-white text-[9px] font-black uppercase rounded-full tracking-widest italic shadow-lg shadow-slate-200">
+                               {selectedProduct.category}
+                             </span>
+                             {selectedProduct.stock < 10 && (
+                               <div className="px-3 py-1 bg-red-50 text-red-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-red-100 animate-pulse">
+                                 Stock Critique
+                               </div>
+                             )}
+                          </div>
+                          <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tight leading-none">
+                            {selectedProduct.name}
+                          </h1>
+                        </div>
+
+                        <div className="p-8 bg-blue-600 rounded-[2.5rem] text-white space-y-6 shadow-2xl shadow-blue-200 relative overflow-hidden group">
+                           <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000" />
+                           <div className="relative z-10">
+                              <p className="text-[9px] font-black text-blue-200 uppercase tracking-widest mb-4 italic">Tarification Préférentielle</p>
+                              <div className="flex items-baseline gap-3">
+                                 <span className="text-5xl font-black tracking-tighter tabular-nums">{nairaEnabled 
+                                      ? (selectedProduct.price * (currentCompany?.nairaRate || 0.012)).toLocaleString() 
+                                      : selectedProduct.price.toLocaleString()}</span>
+                                 <span className="text-xl font-black text-blue-200 uppercase">{nairaEnabled ? "₦" : "FCFA"}</span>
+                              </div>
+                              <p className="text-[10px] font-bold text-blue-100 mt-2 opacity-80 uppercase tracking-widest flex items-center gap-2">
+                                <CheckCircle2 size={12} /> Facturation Nexus Automatique
+                              </p>
+                           </div>
+                        </div>
+
+                        <div className="flex gap-4">
+                           <button 
+                             disabled={selectedProduct.stock <= 0 && !selectedProduct.allowBackorder}
+                             onClick={() => {
+                               addToCart(selectedProduct);
+                               setSelectedProduct(null);
+                             }}
+                             className="flex-[2] py-6 bg-slate-900 text-white rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-slate-200 hover:bg-blue-600 transition-all active:scale-95 flex items-center justify-center gap-3"
+                           >
+                             <ShoppingCart size={20} /> Acheter Maintenant
+                           </button>
+                        </div>
+                     </div>
+                  </div>
+
+                  <div className="space-y-8 border-t border-slate-100 pt-12">
+                     <div className="space-y-4">
+                        <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tight pb-3 border-b-2 border-slate-100 inline-block">Analyse de la Solution</h3>
+                        <p className="text-slate-600 font-medium leading-relaxed text-lg italic">
+                          {selectedProduct.description}
+                        </p>
+                     </div>
+
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                           <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Spécifications</h4>
+                           <div className="space-y-3">
+                              {[
+                                { label: 'Catégorie', value: selectedProduct.category },
+                                { label: 'Disponibilité', value: selectedProduct.stock > 0 ? `${selectedProduct.stock} Unités` : 'Sur Commande' },
+                                { label: 'Points Nexus', value: `+${selectedProduct.points} PTS` },
+                                { label: 'Lieu', value: 'Maroua Hub / Nexus Centre' }
+                              ].map((spec, idx) => (
+                                <div key={idx} className="flex justify-between items-center py-3 border-b border-slate-50">
+                                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{spec.label}</span>
+                                   <span className="text-[11px] font-black text-slate-900 uppercase italic">{spec.value}</span>
+                                </div>
+                              ))}
+                           </div>
+                        </div>
+
+                        <div className="space-y-4">
+                           <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Support & Garantie</h4>
+                           <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-4">
+                              <div className="flex items-center gap-4">
+                                 <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-blue-600">
+                                    <MessageCircle size={20} />
+                                 </div>
+                                 <div>
+                                    <p className="text-[10px] font-black text-slate-900 uppercase">Assistance 24/7</p>
+                                    <p className="text-[9px] font-medium text-slate-400 uppercase">WhatsApp Conciergerie Nexus</p>
+                                 </div>
+                              </div>
+                              <button 
+                                onClick={() => setActiveView('tracking')}
+                                className="w-full py-3 bg-white text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest border border-slate-200 hover:border-blue-600 transition-all"
+                              >
+                                Discuter avec un Expert
+                              </button>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>
