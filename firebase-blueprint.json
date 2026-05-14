@@ -27,8 +27,15 @@
         },
         "categories": {
           "type": "array",
-          "items": { "type": "string" },
-          "description": "Custom product categories for this company"
+          "items": { 
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "isPriority": { "type": "boolean" },
+              "icon": { "type": "string" }
+            }
+          },
+          "description": "Custom product categories with metadata"
         },
         "createdAt": { "type": "number" }
       },

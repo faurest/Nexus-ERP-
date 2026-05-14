@@ -2,6 +2,12 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, or } from '../lib/firebase';
 import { db, auth, onAuthStateChanged } from './firebase';
 
+export interface CompanyCategory {
+  name: string;
+  isPriority: boolean;
+  icon?: string;
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -16,7 +22,7 @@ export interface Company {
   whatsappNumber?: string;
   nairaRate?: number;
   totalProfit?: number;
-  categories?: string[];
+  categories?: CompanyCategory[];
 }
 
 interface CompanyContextType {
