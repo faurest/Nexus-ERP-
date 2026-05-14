@@ -25,6 +25,11 @@
           "type": "number",
           "description": "Total accumulated realized profit from orders"
         },
+        "categories": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Custom product categories for this company"
+        },
         "createdAt": { "type": "number" }
       },
       "required": ["name", "ownerEmail", "joinCode"]

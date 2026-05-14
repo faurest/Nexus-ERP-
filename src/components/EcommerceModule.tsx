@@ -133,6 +133,7 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [statusComment, setStatusComment] = useState('');
   const [internalNotes, setInternalNotes] = useState('');
   const [statusReason, setStatusReason] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   const canManage = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
   const isAdmin = canManage;
@@ -773,7 +774,8 @@ export default function EcommerceModule({ user }: { user: any }) {
     }
   };
 
-  const categories = ['Tous', 'Construction', 'Céréales', 'Pièces détachées', 'Informatique', 'Électroménager', 'Divers'];
+  const companyCategories = currentCompany?.categories || ['Construction', 'Céréales', 'Pièces détachées', 'Informatique', 'Électroménager', 'Divers'];
+  const categories = ['Tous', ...companyCategories];
   
   const categoryIcons: Record<string, any> = {
     'Tous': LayoutGrid,
@@ -1003,7 +1005,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                          allowBackorder: false,
                          description: '',
                          image: '',
-                         category: 'Tous',
+                         category: companyCategories[0] || 'Divers',
                          points: 10
                        })}
                        className="py-4 px-6 bg-blue-600 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center gap-2 shadow-xl shadow-blue-100"
@@ -1605,6 +1607,66 @@ export default function EcommerceModule({ user }: { user: any }) {
                   >
                     Confirmer la Zone <CheckCircle2 size={14} />
                   </button>
+                </div>
+              </div>
+
+              {/* Categories Management Panel */}
+              <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm space-y-8">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                    <LayoutGrid size={16} className="text-blue-600" /> Gestion des Rayons
+                  </h3>
+                  <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase">Personnalisez vos catégories d'outils</p>
+                </div>
+
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Nom du Rayon/Catégorie</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: Électricité, Plomberie..."
+                      className="w-full bg-slate-50 border-2 border-transparent rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-300 shadow-inner"
+                      value={newCategoryName}
+                      onChange={e => setNewCategoryName(e.target.value)}
+                    />
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      if (!newCategoryName.trim()) return;
+                      const existingCategories = currentCompany.categories || ['Construction', 'Céréales', 'Pièces détachées', 'Informatique', 'Électroménager', 'Divers'];
+                      if (existingCategories.includes(newCategoryName.trim())) return;
+                      
+                      await updateDoc(doc(db, 'companies', currentCompany.id), {
+                        categories: [...existingCategories, newCategoryName.trim()]
+                      });
+                      setNewCategoryName('');
+                    }}
+                    className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                  >
+                    Ajouter le Rayon <Plus size={14} />
+                  </button>
+
+                  <div className="pt-4 border-t border-slate-50">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Rayons Actuels</p>
+                    <div className="flex flex-wrap gap-2">
+                      {companyCategories.map(cat => (
+                        <div key={cat} className="group flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg">
+                          <span className="text-[10px] font-bold text-slate-700">{cat}</span>
+                          <button 
+                            onClick={async () => {
+                              const updated = companyCategories.filter(c => c !== cat);
+                              await updateDoc(doc(db, 'companies', currentCompany.id), {
+                                categories: updated
+                              });
+                            }}
+                            className="p-1 hover:text-red-500 text-slate-300 transition-colors"
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -2432,7 +2494,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Classification</label>
                   <select name="category" defaultValue={editingProduct.category} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-600 outline-none">
-                    {['Hardware', 'Software', 'Office', 'Services'].map(c => <option key={c} value={c}>{c}</option>)}
+                    {companyCategories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>

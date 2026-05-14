@@ -16,6 +16,7 @@ export interface Company {
   whatsappNumber?: string;
   nairaRate?: number;
   totalProfit?: number;
+  categories?: string[];
 }
 
 interface CompanyContextType {
