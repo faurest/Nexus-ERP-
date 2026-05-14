@@ -160,8 +160,23 @@ service cloud.firestore {
           'interventions', 'notifications', 'open_orders',
           'sales_invoices', 'invoices', 'payments', 'collaborations',
           'messages', 'project_discussions', 'leave_requests', 'time_entries', 'salary_advances',
-          'ecommerce_orders', 'resource_movements', 'products', 'order_messages', 'compagnie', 'notification_configs', 'order_history'
+          'ecommerce_orders', 'resource_movements', 'products', 'order_messages', 'compagnie', 'notification_configs', 'order_history',
+          'internal_resources', 'stock_history'
         ];
+      }
+
+      function isValidInternalResource(data) {
+        return isValidEntity(data) &&
+               data.name is string && data.name.size() <= 200 &&
+               data.type in ["Véhicule", "Électronique", "Mobilier", "Autre"] &&
+               data.status in ["Opérationnel", "En panne", "En réparation"];
+      }
+
+      function isValidStockHistory(data) {
+        return isValidEntity(data) &&
+               data.productId is string && isValidId(data.productId) &&
+               data.type in ["ENTREE", "SORTIE", "AJUSTEMENT"] &&
+               data.quantity is number;
       }
 
       function isValidEntity(data) {
@@ -207,7 +222,12 @@ service cloud.firestore {
                         isSelf(incoming())
                       ))
                     )) &&
-                    (incoming().createdAt == request.time || collectionName == 'messages' || collectionName == 'project_discussions' || collectionName == 'order_messages');
+                    (
+                      (collectionName == 'internal_resources' && isValidInternalResource(incoming())) ||
+                      (collectionName == 'stock_history' && isValidStockHistory(incoming())) ||
+                      (collectionName != 'internal_resources' && collectionName != 'stock_history')
+                    ) &&
+                    (incoming().createdAt == request.time || collectionName == 'messages' || collectionName == 'project_discussions' || collectionName == 'order_messages' || collectionName == 'stock_history' || collectionName == 'internal_resources');
 
       allow update: if isCompanyCollection() && (
                       isAdmin() || 
@@ -225,7 +245,11 @@ service cloud.firestore {
                       (collectionName == 'products' && incoming().diff(existing()).affectedKeys().hasOnly(['stock', 'views', 'soldCount', 'updatedAt']))
                     ) &&
                     incoming().companyId == existing().companyId &&
-                    (incoming().updatedAt == request.time || collectionName == 'messages' || collectionName == 'project_discussions' || collectionName == 'order_messages');
+                    (
+                      (collectionName == 'internal_resources' && isValidInternalResource(incoming())) ||
+                      (collectionName != 'internal_resources')
+                    ) &&
+                    (incoming().updatedAt == request.time || collectionName == 'messages' || collectionName == 'project_discussions' || collectionName == 'order_messages' || collectionName == 'internal_resources');
 
       allow delete: if isSignedIn() && isCompanyCollection() && 
                       (isAdmin() || (
