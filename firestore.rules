@@ -4,7 +4,7 @@ service cloud.firestore {
     
     // 0. Global Safety Net
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if isAdmin();
     }
 
     // --- Helper Functions ---
@@ -25,11 +25,13 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && 
         (currentUserEmail() == 'hackeurfaurest@gmail.com' || 
-         currentUserEmail() == 'dangafelicite@gmail.com');
+         currentUserEmail() == 'dangafelicite@gmail.com' ||
+         currentUserEmail() == 'yaoubaboubakary43@gmail.com');
     }
 
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      // More permissive ID validation to allow emails and common characters
+      return id is string && id.size() > 0 && id.size() <= 128;
     }
 
     function incoming() {
@@ -46,11 +48,10 @@ service cloud.firestore {
     }
 
     function isMemberOfCompany(companyId) {
-      return isSignedIn() && companyId != null && (
+      return isAdmin() || (isSignedIn() && companyId != null && (
         exists(/databases/$(database)/documents/companies/$(companyId)) ||
         exists(/databases/$(database)/documents/compagnie/$(companyId))
       ) && (
-        isAdmin() ||
         (exists(/databases/$(database)/documents/companies/$(companyId)) && (
           get(/databases/$(database)/documents/companies/$(companyId)).data.ownerEmail == currentUserEmail() || 
           get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid ||
@@ -61,7 +62,7 @@ service cloud.firestore {
           get(/databases/$(database)/documents/compagnie/$(companyId)).data.ownerId == request.auth.uid ||
           (get(/databases/$(database)/documents/compagnie/$(companyId)).data.memberEmails != null && currentUserEmail() in get(/databases/$(database)/documents/compagnie/$(companyId)).data.memberEmails)
         ))
-      );
+      ));
     }
 
     // --- Collection Rules ---

@@ -487,7 +487,7 @@ export default function AdminModule() {
             email: tgt,
             name: `(Clone) ${data.name || ''}`.trim(),
             status: 'active',
-            createdAt: new Date()
+            createdAt: serverTimestamp()
           });
           created++;
         }

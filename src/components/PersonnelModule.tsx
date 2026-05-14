@@ -251,7 +251,8 @@ export default function PersonnelModule({ user }: { user?: any }) {
           department: newStaff.department,
           companyId: currentCompany.id,
           status: 'active',
-          tasksAssignedCount: 0
+          tasksAssignedCount: 0,
+          createdAt: serverTimestamp()
         });
 
         // Create Ghost Profile for global visibility
