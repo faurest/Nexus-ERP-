@@ -368,6 +368,44 @@
       },
       "required": ["companyId", "staffId", "amount", "requestDate", "status"]
     },
+    "InternalResource": {
+      "title": "Internal Resource",
+      "description": "Company assets not for sale (vehicles, electronics, etc.)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["Véhicule", "Électronique", "Mobilier", "Autre"] },
+        "status": { "type": "string", "enum": ["Opérationnel", "En panne", "En réparation"] },
+        "assignedTo": { "type": "string", "description": "Optional name or ID of employee using the resource" },
+        "acquisitionDate": { "type": "number" },
+        "purchaseValue": { "type": "number" },
+        "lastMaintenanceDate": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["companyId", "name", "type", "status"]
+    },
+    "StockHistory": {
+      "title": "Stock History",
+      "description": "Logs of commercial product stock movements",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "type": { "type": "string", "enum": ["ENTREE", "SORTIE", "AJUSTEMENT"] },
+        "quantity": { "type": "number" },
+        "previousStock": { "type": "number" },
+        "newStock": { "type": "number" },
+        "purchasePrice": { "type": "number", "description": "At the time of replenishment" },
+        "reason": { "type": "string" },
+        "authorName": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["companyId", "productId", "type", "quantity", "createdAt"]
+    },
     "EcommerceOrder": {
       "title": "Ecommerce Order",
       "description": "An order placed through the ecommerce shop",
@@ -503,6 +541,8 @@
     "time_entries": { "schema": "TimeEntry", "description": "Employee time entries" },
     "salary_advances": { "schema": "SalaryAdvance", "description": "Salary advance and down payment requests" },
     "ecommerce_orders": { "schema": "EcommerceOrder", "description": "Ecommerce order records" },
+    "internal_resources": { "schema": "InternalResource", "description": "Company internal usage assets" },
+    "stock_history": { "schema": "StockHistory", "description": "Movement logs for commercial products" },
     "resource_movements": { "schema": "ResourceMovement", "description": "Resource movement logs" },
     "products": { "schema": "Product", "description": "Product catalog" },
     "order_history": { "schema": "OrderHistory", "description": "Detailed log of order lifecycle" },

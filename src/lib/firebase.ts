@@ -16,6 +16,7 @@ import {
   setDoc as firestoreSetDoc, 
   updateDoc as firestoreUpdateDoc, 
   deleteDoc as firestoreDeleteDoc, 
+  getDoc as firestoreGetDoc,
   getDocs as firestoreGetDocs, 
   onSnapshot as firestoreOnSnapshot,
   query as firestoreQuery,
@@ -278,6 +279,20 @@ export async function deleteDoc(docRef: any) {
     await firestoreDeleteDoc(docRef);
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, docRef.path);
+    throw error;
+  }
+}
+
+export async function getDoc(docRef: any) {
+  try {
+    const snap = await firestoreGetDoc(docRef);
+    return {
+      id: snap.id,
+      exists: () => snap.exists(),
+      data: () => snap.data()
+    };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, docRef.path);
     throw error;
   }
 }

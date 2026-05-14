@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDocs, serverTimestamp, handleFirestoreError, OperationType, orderBy } from '../lib/firebase';
+import { db, auth, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDocs, getDoc, serverTimestamp, handleFirestoreError, OperationType, orderBy, limit } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
 import { HelpTrigger } from './ContextualHelp';
 import { 
@@ -37,7 +37,10 @@ import {
   Hammer,
   Monitor,
   Zap,
-  Briefcase
+  Briefcase,
+  RefreshCw,
+  Cpu,
+  Warehouse
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -56,6 +59,31 @@ interface Product {
   points: number;
   stockThreshold?: number;
   allowBackorder?: boolean;
+}
+
+interface InternalResource {
+  id: string;
+  name: string;
+  type: 'Véhicule' | 'Électronique' | 'Mobilier' | 'Autre';
+  status: 'Opérationnel' | 'En panne' | 'En réparation';
+  assignedTo?: string;
+  acquisitionDate?: number;
+  purchaseValue?: number;
+  lastMaintenanceDate?: number;
+}
+
+interface StockHistory {
+  id: string;
+  productId: string;
+  productName: string;
+  type: 'ENTREE' | 'SORTIE' | 'AJUSTEMENT';
+  quantity: number;
+  previousStock: number;
+  newStock: number;
+  purchasePrice?: number;
+  reason?: string;
+  authorName: string;
+  createdAt: number;
 }
 
 interface CartItem extends Product {
@@ -96,7 +124,7 @@ interface OrderMessage {
 
 export default function EcommerceModule({ user }: { user: any }) {
   const { currentCompany } = useCompany();
-  const [activeView, setActiveView] = useState<'catalog' | 'cart' | 'tracking' | 'loyalty' | 'admin' | 'settings' | 'commando'>('catalog');
+  const [activeView, setActiveView] = useState<'catalog' | 'cart' | 'tracking' | 'loyalty' | 'admin' | 'settings' | 'commando' | 'replenishment' | 'operations'>('catalog');
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -134,6 +162,11 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [internalNotes, setInternalNotes] = useState('');
   const [statusReason, setStatusReason] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [internalResources, setInternalResources] = useState<InternalResource[]>([]);
+  const [stockHistory, setStockHistory] = useState<StockHistory[]>([]);
+  const [replenishmentProduct, setReplenishmentProduct] = useState<Product | null>(null);
+  const [replenishmentQty, setReplenishmentQty] = useState('');
+  const [replenishmentPurchasePrice, setReplenishmentPurchasePrice] = useState('');
 
   const canManage = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
   const isAdmin = canManage;
@@ -431,6 +464,22 @@ export default function EcommerceModule({ user }: { user: any }) {
     return () => unsubscribe();
   }, [currentCompany, isAdmin]);
 
+  useEffect(() => {
+    if (!currentCompany || !isAdmin) return;
+    const q = query(collection(db, 'internal_resources'), where('companyId', '==', currentCompany.id), orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snap) => {
+      setInternalResources(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as InternalResource)));
+    }, (err) => handleFirestoreError(err, OperationType.GET, 'internal_resources'));
+  }, [currentCompany, isAdmin]);
+
+  useEffect(() => {
+    if (!currentCompany || !isAdmin) return;
+    const q = query(collection(db, 'stock_history'), where('companyId', '==', currentCompany.id), orderBy('createdAt', 'desc'), limit(50));
+    return onSnapshot(q, (snap) => {
+      setStockHistory(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as StockHistory)));
+    }, (err) => handleFirestoreError(err, OperationType.GET, 'stock_history'));
+  }, [currentCompany, isAdmin]);
+
   const saveNotificationSettings = async () => {
     if (!currentCompany || !notificationConfig) return;
     setSavingSettings(true);
@@ -641,16 +690,75 @@ export default function EcommerceModule({ user }: { user: any }) {
           ...updates,
           updatedAt: serverTimestamp()
         });
+        
+        // If stock is updated manually, record history
+        if (updates.stock !== undefined) {
+          const prod = products.find(p => p.id === productId);
+          if (prod) {
+            await recordStockHistory(productId, prod.name, updates.stock > prod.stock ? 'ENTREE' : 'SORTIE', Math.abs(updates.stock - prod.stock), prod.stock, updates.stock, updates.purchasePrice || prod.purchasePrice);
+          }
+        }
       } else {
-        await addDoc(collection(db, 'products'), {
+        const docRef = await addDoc(collection(db, 'products'), {
           ...updates,
           companyId: currentCompany.id,
           createdAt: serverTimestamp()
         });
+        if (updates.stock && updates.stock > 0) {
+          await recordStockHistory(docRef.id, updates.name || 'Nouveau Produit', 'ENTREE', updates.stock, 0, updates.stock, updates.purchasePrice, 'Stock initial recrutement');
+        }
       }
       setEditingProduct(null);
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, 'products');
+    }
+  };
+
+  const recordStockHistory = async (productId: string, productName: string, type: 'ENTREE' | 'SORTIE' | 'AJUSTEMENT', quantity: number, previousStock: number, newStock: number, purchasePrice?: number, reason?: string) => {
+    if (!currentCompany) return;
+    try {
+      await addDoc(collection(db, 'stock_history'), {
+        companyId: currentCompany.id,
+        productId,
+        productName,
+        type,
+        quantity,
+        previousStock,
+        newStock,
+        purchasePrice: purchasePrice || 0,
+        reason: reason || 'Mise à jour inventaire',
+        authorName: user?.name?.split('@')[0] || 'Admin',
+        createdAt: Date.now()
+      });
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, 'stock_history');
+    }
+  };
+
+  const handleReplenishment = async () => {
+    if (!replenishmentProduct || !replenishmentQty) return;
+    const qty = parseInt(replenishmentQty);
+    const newPrice = replenishmentPurchasePrice ? parseInt(replenishmentPurchasePrice) : replenishmentProduct.purchasePrice;
+    
+    setSubmitting(true);
+    try {
+      const newStock = replenishmentProduct.stock + qty;
+      await updateDoc(doc(db, 'products', replenishmentProduct.id), {
+        stock: newStock,
+        purchasePrice: newPrice,
+        updatedAt: serverTimestamp()
+      });
+      
+      await recordStockHistory(replenishmentProduct.id, replenishmentProduct.name, 'ENTREE', qty, replenishmentProduct.stock, newStock, newPrice, 'Réapprovisionnement fournisseur');
+      
+      setReplenishmentProduct(null);
+      setReplenishmentQty('');
+      setReplenishmentPurchasePrice('');
+      alert('Stock mis à jour avec succès !');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'products');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -817,6 +925,8 @@ export default function EcommerceModule({ user }: { user: any }) {
               { id: 'tracking', label: 'Suivi', icon: Truck, unread: Object.values(unreadMessages).reduce((a,b) => a+b, 0) },
               ...(isAdmin ? [
                 { id: 'admin', label: 'Gestion', icon: LayoutDashboard },
+                { id: 'replenishment', label: 'Stocks', icon: RefreshCw },
+                { id: 'operations', label: 'Opérations', icon: Cpu },
                 { id: 'commando', label: 'Commando', icon: Smartphone },
                 { id: 'settings', label: 'Livraison', icon: Truck }
               ] : []),
@@ -2028,6 +2138,275 @@ export default function EcommerceModule({ user }: { user: any }) {
                 <ShoppingBag size={48} className="mx-auto text-slate-200 mb-6" strokeWidth={1} />
                 <h3 className="text-lg font-black text-slate-900 tracking-tight">Aucune Commande Nexus</h3>
                 <p className="text-xs font-medium text-slate-400 mt-2">Votre flux commercial est actuellement vide.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeView === 'replenishment' && isAdmin && (
+        <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight italic">Entrée en Stock</h2>
+              <p className="text-slate-500 font-medium mt-1">Réapprovisionnez vos rayons et mettez à jour vos prix d'achat.</p>
+            </div>
+            <button 
+              onClick={() => setEditingProduct({
+                id: '',
+                name: '',
+                description: '',
+                price: 0,
+                purchasePrice: 0,
+                category: companyCategories[0] || 'Divers',
+                image: '',
+                stock: 0,
+                points: 10
+              })}
+              className="px-6 py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center gap-2 shadow-xl shadow-blue-100"
+            >
+              <Plus size={16} /> Nouveau Produit
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            {/* Stock Entry Form */}
+            <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm space-y-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner">
+                  <Warehouse size={24} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase">Saisie du Camion</h3>
+                  <p className="text-[10px] font-medium text-slate-400 mt-0.5 uppercase tracking-widest">Enregistrement des arrivages</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {/* Product Search */}
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Rechercher le Produit</label>
+                  <div className="relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
+                    <input 
+                      type="text" 
+                      placeholder="Tapez le nom ou la référence..."
+                      className="w-full bg-slate-50 border-2 border-transparent rounded-2xl py-5 pl-12 pr-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none transition-all shadow-inner"
+                      onChange={(e) => {
+                        const term = e.target.value.toLowerCase();
+                        if (term.length > 1) {
+                          const found = products.find(p => p.name.toLowerCase().includes(term));
+                          if (found) setReplenishmentProduct(found);
+                        }
+                      }}
+                    />
+                  </div>
+                  {replenishmentProduct && (
+                    <div className="mt-4 p-4 bg-blue-50 rounded-2xl flex items-center justify-between border border-blue-100 animate-in zoom-in-95">
+                      <div className="flex items-center gap-4">
+                        <img src={replenishmentProduct.image} className="w-12 h-12 rounded-xl object-cover" />
+                        <div>
+                          <p className="text-[11px] font-black text-slate-900 uppercase">{replenishmentProduct.name}</p>
+                          <p className="text-[9px] font-bold text-blue-600 uppercase">Stock Actuel: {replenishmentProduct.stock}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => setReplenishmentProduct(null)} className="p-2 text-slate-400 hover:text-red-500"><X size={16} /></button>
+                    </div>
+                  )}
+                </div>
+
+                {replenishmentProduct && (
+                  <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-4">
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Quantité Reçue</label>
+                      <input 
+                        type="number" 
+                        placeholder="Ex: 50"
+                        className="w-full bg-slate-50 border-2 border-transparent rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none shadow-inner"
+                        value={replenishmentQty}
+                        onChange={e => setReplenishmentQty(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Nouveau Prix d'Achat (Optional)</label>
+                      <div className="relative">
+                        <input 
+                          type="number" 
+                          placeholder={replenishmentProduct.purchasePrice?.toString() || "0"}
+                          className="w-full bg-slate-50 border-2 border-transparent rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none shadow-inner"
+                          value={replenishmentPurchasePrice}
+                          onChange={e => setReplenishmentPurchasePrice(e.target.value)}
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300">FCFA</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <button 
+                  disabled={!replenishmentProduct || !replenishmentQty || submitting}
+                  onClick={handleReplenishment}
+                  className="w-full py-5 bg-slate-900 text-white rounded-[2rem] text-xs font-black uppercase tracking-widest shadow-2xl shadow-slate-900/20 hover:bg-blue-600 disabled:opacity-30 transition-all flex items-center justify-center gap-3 active:scale-95"
+                >
+                  {submitting ? "Mise à jour Nexus..." : "Enregistrer l'Entrée"} <ArrowRight size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Recent History */}
+            <div className="bg-slate-900 p-8 rounded-[3rem] text-white shadow-2xl space-y-8 overflow-hidden relative border border-white/5">
+              <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+                <History size={200} />
+              </div>
+              <div className="relative z-10 flex items-center justify-between">
+                <div>
+                   <h3 className="text-sm font-black uppercase flex items-center gap-2 italic">
+                     <History size={16} className="text-blue-400" /> Historique des Stocks
+                   </h3>
+                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Traçabilité des 50 derniers mouvements</p>
+                </div>
+                <div className="px-3 py-1 bg-white/5 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/10">ERPsys v2.4</div>
+              </div>
+
+              <div className="relative z-10 space-y-3 max-h-[500px] overflow-y-auto scrollbar-hide pr-2">
+                {stockHistory.map((log) => (
+                  <div key={log.id} className="p-4 bg-white/5 rounded-2xl border border-white/5 flex items-center justify-between hover:bg-white/10 transition-all">
+                    <div className="flex items-center gap-4">
+                       <div className={cn("w-2 h-10 rounded-full", log.type === 'ENTREE' ? "bg-emerald-500" : log.type === 'SORTIE' ? "bg-red-500" : "bg-blue-500")} />
+                       <div>
+                          <p className="text-[10px] font-black uppercase truncate max-w-[150px]">{log.productName}</p>
+                          <p className="text-[9px] font-bold text-slate-500 italic">{log.reason || 'Mouvement stock'}</p>
+                       </div>
+                    </div>
+                    <div className="text-right">
+                       <p className={cn("text-sm font-black tabular-nums", log.type === 'ENTREE' ? "text-emerald-400" : log.type === 'SORTIE' ? "text-red-400" : "text-blue-400")}>
+                         {log.type === 'ENTREE' ? '+' : log.type === 'SORTIE' ? '-' : ''}{log.quantity}
+                       </p>
+                       <p className="text-[8px] font-bold text-slate-500 uppercase">{new Date(log.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                ))}
+                {stockHistory.length === 0 && (
+                  <div className="py-20 text-center opacity-20">
+                     <Package size={40} className="mx-auto mb-4" />
+                     <p className="text-[10px] font-black uppercase">Aucun mouvement enregistré</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeView === 'operations' && isAdmin && (
+        <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight italic">Opérations & Équipements</h2>
+              <p className="text-slate-500 font-medium mt-1">Gérez vos actifs internes : motos, tricycles, mobilier et groupes électrogènes.</p>
+            </div>
+            <button 
+              onClick={async () => {
+                const name = prompt('Nom de la ressource (ex: Moto Sanili 110)');
+                if (!name) return;
+                const type = prompt('Type (Véhicule, Électronique, Mobilier, Autre)', 'Véhicule') as any;
+                
+                await addDoc(collection(db, 'internal_resources'), {
+                  companyId: currentCompany.id,
+                  name,
+                  type: type || 'Autre',
+                  status: 'Opérationnel',
+                  createdAt: serverTimestamp()
+                });
+              }}
+              className="px-6 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center gap-2 shadow-xl shadow-slate-900/20"
+            >
+              <Plus size={16} /> Ajouter une Ressource
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {internalResources.map((res) => (
+              <div key={res.id} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm space-y-6 hover:shadow-xl transition-all group relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
+                   <Briefcase size={80} />
+                </div>
+                
+                <div className="flex items-center justify-between relative z-10">
+                   <div className={cn("px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border", 
+                     res.type === 'Véhicule' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                     res.type === 'Électronique' ? "bg-blue-50 text-blue-600 border-blue-100" :
+                     "bg-slate-50 text-slate-500 border-slate-100"
+                   )}>
+                     {res.type}
+                   </div>
+                   <div className={cn("w-2 h-2 rounded-full", 
+                     res.status === 'Opérationnel' ? "bg-emerald-500" :
+                     res.status === 'En réparation' ? "bg-amber-500" : "bg-red-500"
+                   )} />
+                </div>
+
+                <div className="relative z-10">
+                  <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight truncate">{res.name}</h4>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Assigné à: {res.assignedTo || 'Non assigné'}</p>
+                </div>
+
+                <div className="p-5 bg-slate-50 rounded-2xl space-y-4 relative z-10">
+                   <div className="flex justify-between items-center">
+                      <span className="text-[9px] font-black text-slate-400 uppercase">État Actuel</span>
+                      <select 
+                        value={res.status}
+                        onChange={async (e) => {
+                          await updateDoc(doc(db, 'internal_resources', res.id), { status: e.target.value });
+                        }}
+                        className="bg-transparent text-[10px] font-black text-slate-900 uppercase outline-none"
+                      >
+                        <option value="Opérationnel">Opérationnel</option>
+                        <option value="En panne">En panne</option>
+                        <option value="En réparation">En réparation</option>
+                      </select>
+                   </div>
+                   <div className="flex justify-between items-center pt-3 border-t border-slate-200">
+                      <span className="text-[9px] font-black text-slate-400 uppercase">Utilisateur</span>
+                      <input 
+                        type="text" 
+                        placeholder="Nom..."
+                        defaultValue={res.assignedTo || ''}
+                        onBlur={async (e) => {
+                           await updateDoc(doc(db, 'internal_resources', res.id), { assignedTo: e.target.value });
+                        }}
+                        className="bg-transparent text-[10px] font-black text-slate-900 uppercase outline-none text-right w-24"
+                      />
+                   </div>
+                </div>
+
+                <div className="flex gap-2 pt-2 relative z-10">
+                   <button 
+                     onClick={() => {
+                        const val = prompt('Valeur d\'achat (FCFA)', res.purchaseValue?.toString() || '0');
+                        if (val) updateDoc(doc(db, 'internal_resources', res.id), { purchaseValue: parseInt(val) });
+                     }}
+                     className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all"
+                   >
+                     Valeur
+                   </button>
+                   <button 
+                     onClick={async () => {
+                       if (confirm('Supprimer cette ressource ?')) {
+                         await deleteDoc(doc(db, 'internal_resources', res.id));
+                       }
+                     }}
+                     className="px-3 py-3 bg-slate-50 text-slate-400 hover:text-red-500 rounded-xl transition-all"
+                   >
+                     <X size={14} />
+                   </button>
+                </div>
+              </div>
+            ))}
+            {internalResources.length === 0 && (
+              <div className="col-span-full py-20 text-center opacity-30">
+                 <Briefcase size={48} className="mx-auto mb-4" />
+                 <p className="text-xs font-black uppercase">Aucune ressource interne configurée.</p>
               </div>
             )}
           </div>
