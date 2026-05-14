@@ -49,6 +49,7 @@ interface Product {
   name: string;
   description: string;
   price: number;
+  purchasePrice?: number;
   category: string;
   image: string;
   stock: number;
@@ -66,6 +67,7 @@ interface Order {
   items: any[];
   total: number;
   status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'CANCELLED_BY_SELLER';
+  paymentStatus?: 'PAID' | 'UNPAID';
   date: any;
   paymentMethod?: string;
   customerName?: string;
@@ -77,6 +79,8 @@ interface Order {
   deliveryFee?: number;
   deliveryLocation?: string;
   cancellationReason?: string;
+  realizedProfit?: number;
+  transactionFee?: number;
 }
 
 interface OrderMessage {
@@ -453,9 +457,12 @@ export default function EcommerceModule({ user }: { user: any }) {
     if (!currentCompany) return;
     setSubmitting(true);
     try {
+      const isClient = user?.role === 'Client';
+      const nextStatus = isClient ? 'CANCELLED' : 'CANCELLED_BY_SELLER';
+
       // 1. Update Order Status
       await updateDoc(doc(db, 'ecommerce_orders', order.id), {
-        status: 'CANCELLED_BY_SELLER',
+        status: nextStatus,
         cancellationReason: reason,
         updatedAt: serverTimestamp()
       });
@@ -474,33 +481,34 @@ export default function EcommerceModule({ user }: { user: any }) {
       });
       await Promise.all(stockPromises);
 
-      // 3. Trigger Notification (Simulation)
+      // 3. Trigger Notification
       if (notificationConfig && notificationConfig.activeChannel !== 'none') {
-        const template = notificationConfig.cancelTemplate || 'Votre commande {orderId} a été annulée: {reason}';
+        const template = isClient 
+          ? "Alerte Commande : Le client {customerName} a annulé sa commande {orderId}. Motif : {reason}"
+          : (notificationConfig.cancelTemplate || 'Votre commande {orderId} a été annulée: {reason}');
+          
         const message = template
           .replace('{customerName}', order.customerName || 'Client')
           .replace('{orderId}', `CMD-${order.id.slice(0, 6).toUpperCase()}`)
           .replace('{reason}', reason);
 
-        console.log(`[NOTIFICATION SIMULATION] Channel: ${notificationConfig.activeChannel.toUpperCase()}`);
-        console.log(`[TO] ${order.customerPhone || order.customerEmail}`);
-        console.log(`[MESSAGE] ${message}`);
+        console.log(`[ERP NOTIF] ${nextStatus} -> ${isClient ? 'MANAGER' : 'CLIENT'}: ${message}`);
         
-        // Also create an in-app notification if we can find the user UID
-        if (order.customerEmail) {
+        // Notify owner if client cancelled
+        if (isClient && currentCompany.ownerId) {
+          await createNotification(currentCompany.id, [currentCompany.ownerId], 'Annulation Client', message, 'general');
+        } else if (!isClient && order.customerEmail) {
+           // Notify client if admin cancelled
            const q = query(collection(db, 'users'), where('email', '==', order.customerEmail.toLowerCase()));
            const snap = await getDocs(q);
            if (!snap.empty) {
-             await createNotification(
-               currentCompany.id,
-               [snap.docs[0].id],
-               'Commande Annulée',
-               `L'entreprise a annulé votre commande : ${reason}`,
-               'general'
-             );
+             await createNotification(currentCompany.id, [snap.docs[0].id], 'Commande Annulée', message, 'general');
            }
         }
       }
+
+      // 4. Record History
+      await recordOrderHistory(order.id, order.status, nextStatus, 'ANNULATION', reason);
 
       setCancellingOrder(null);
       setCancellationReason('');
@@ -541,9 +549,10 @@ export default function EcommerceModule({ user }: { user: any }) {
         updatedAt: serverTimestamp()
       });
 
-      await recordOrderHistory(order.id, order.status, nextStatus, reason, comment);
+      // 1. Record History
+      await recordOrderHistory(order.id, order.status, nextStatus, 'STATUS_UPDATE', comment || reason || `Passage au statut ${nextStatus}`);
 
-      // Handle stock if cancelled
+      // 2. Handle stock if cancelled
       if (nextStatus === 'CANCELLED' || nextStatus === 'CANCELLED_BY_SELLER') {
         const stockPromises = order.items.map(async (item) => {
           const productRef = doc(db, 'products', item.id);
@@ -559,25 +568,51 @@ export default function EcommerceModule({ user }: { user: any }) {
         await Promise.all(stockPromises);
       }
 
-      // Trigger notification
+      // 2.5 Calculate profit if delivered and not already paid
+      if (nextStatus === 'DELIVERED' && order.paymentStatus !== 'PAID' && !order.realizedProfit) {
+        const grossProfit = order.items.reduce((acc, item) => acc + ((item.price - (item.purchasePrice || 0)) * item.quantity), 0);
+        const transactionFee = order.paymentMethod !== 'CASH' ? Math.round(order.total * 0.01) : 0;
+        const netProfit = grossProfit - transactionFee;
+        
+        await updateDoc(doc(db, 'ecommerce_orders', order.id), {
+          paymentStatus: 'PAID',
+          realizedProfit: netProfit,
+          transactionFee: transactionFee,
+          updatedAt: serverTimestamp()
+        });
+        
+        const currentTotalProfit = currentCompany.totalProfit || 0;
+        await updateDoc(doc(db, 'companies', currentCompany.id), {
+          totalProfit: currentTotalProfit + netProfit
+        });
+        
+        await recordOrderHistory(order.id, nextStatus, nextStatus, 'PAIEMENT', `Paiement auto-validé à la livraison - Bénéfice Net: ${netProfit} FCFA`);
+      }
+
+      // 3. Trigger Notification
       if (notificationConfig && notificationConfig.activeChannel !== 'none') {
+        const statusLabels: Record<string, string> = {
+          'PROCESSING': 'est en cours de préparation',
+          'SHIPPED': 'est en cours d\'expédition',
+          'DELIVERED': 'a été livrée',
+          'CANCELLED': 'a été annulée',
+          'DELIVERY_FAILED': 'n\'a pas pu être livrée'
+        };
+
         let template = notificationConfig.shippedTemplate;
         if (nextStatus.includes('CANCELLED')) template = notificationConfig.cancelTemplate;
-        
-        // Custom templates for failure
         if (nextStatus === 'DELIVERY_FAILED') {
           template = "Bonjour {customerName}, notre livreur n'a pas pu vous livrer (Motif: {reason}). Nous retenterons bientôt.";
         }
 
-        const message = (template || 'Mise à jour de commande {orderId}: {nextStatus}')
+        const message = (template || `Votre commande {orderId} ${statusLabels[nextStatus] || 'a été mise à jour'}`)
           .replace('{customerName}', order.customerName || 'Client')
           .replace('{orderId}', `CMD-${order.id.slice(0, 6).toUpperCase()}`)
           .replace('{reason}', reason || comment || 'Non spécifié')
           .replace('{nextStatus}', nextStatus);
 
-        console.log(`[NOTIF] ${nextStatus} -> ${order.customerPhone || order.customerEmail}: ${message}`);
+        console.log(`[ERP NOTIF] ${nextStatus} -> ${order.customerPhone || order.customerEmail}: ${message}`);
         
-        // App notification
         if (order.customerEmail) {
            const uSnap = await getDocs(query(collection(db, 'users'), where('email', '==', order.customerEmail.toLowerCase())));
            if (!uSnap.empty) {
@@ -589,6 +624,7 @@ export default function EcommerceModule({ user }: { user: any }) {
       setUpdatingStatusOrder(null);
       setStatusReason('');
       setStatusComment('');
+      setInternalNotes('');
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, 'ecommerce_orders');
     } finally {
@@ -597,11 +633,20 @@ export default function EcommerceModule({ user }: { user: any }) {
   };
 
   const updateProduct = async (productId: string, updates: Partial<Product>) => {
+    if (!currentCompany) return;
     try {
-      await updateDoc(doc(db, 'products', productId), {
-        ...updates,
-        updatedAt: serverTimestamp()
-      });
+      if (productId) {
+        await updateDoc(doc(db, 'products', productId), {
+          ...updates,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await addDoc(collection(db, 'products'), {
+          ...updates,
+          companyId: currentCompany.id,
+          createdAt: serverTimestamp()
+        });
+      }
       setEditingProduct(null);
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, 'products');
@@ -644,11 +689,18 @@ export default function EcommerceModule({ user }: { user: any }) {
 
       const orderRef = await addDoc(collection(db, 'ecommerce_orders'), {
         companyId: currentCompany.id,
-        items: cart.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.cartQuantity })),
+        items: cart.map(item => ({ 
+          id: item.id, 
+          name: item.name, 
+          price: item.price, 
+          purchasePrice: item.purchasePrice || 0,
+          quantity: item.cartQuantity 
+        })),
         total: totalWithDelivery,
         deliveryFee,
         deliveryLocation: selectedLocation,
         paymentMethod,
+        paymentStatus: 'UNPAID',
         status: 'PENDING',
         date: serverTimestamp(),
         customerEmail: auth.currentUser?.email || 'Guest',
@@ -939,6 +991,26 @@ export default function EcommerceModule({ user }: { user: any }) {
                 </div>
 
                 <div className="flex items-center gap-4">
+                   {isAdmin && (
+                     <button
+                       onClick={() => setEditingProduct({
+                         id: '',
+                         name: '',
+                         price: 0,
+                         purchasePrice: 0,
+                         stock: 0,
+                         stockThreshold: 5,
+                         allowBackorder: false,
+                         description: '',
+                         image: '',
+                         category: 'Tous',
+                         points: 10
+                       })}
+                       className="py-4 px-6 bg-blue-600 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center gap-2 shadow-xl shadow-blue-100"
+                     >
+                       <Plus size={16} /> Produit
+                     </button>
+                   )}
                    {/* Mobile Categories (Horizontal Scroll) */}
                    <div className="flex lg:hidden bg-slate-50 p-1.5 rounded-2xl max-w-[150px] sm:max-w-xs overflow-x-auto scrollbar-hide gap-2 shadow-inner">
                       {categories.map(cat => {
@@ -1066,6 +1138,17 @@ export default function EcommerceModule({ user }: { user: any }) {
                         "flex gap-3",
                         viewMode === 'grid' ? "mt-8" : "mt-4"
                       )}>
+                        {isAdmin && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingProduct(product);
+                            }}
+                            className="p-4 bg-slate-100 text-slate-600 hover:text-blue-600 hover:bg-blue-100 rounded-2xl transition-all active:scale-95 border border-slate-200 shadow-sm"
+                          >
+                            <Settings size={20} />
+                          </button>
+                        )}
                         {product.stock > 0 ? (
                           <button
                             onClick={() => addToCart(product)}
@@ -1325,6 +1408,14 @@ export default function EcommerceModule({ user }: { user: any }) {
                     </div>
 
                     <div className="lg:w-48 w-full flex flex-row lg:flex-col gap-3">
+                      {order.status === 'PENDING' && order.paymentStatus !== 'PAID' && (
+                        <button 
+                          onClick={() => setCancellingOrder(order)}
+                          className="flex-1 py-4 bg-red-50 text-red-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                        >
+                          <X size={14} /> Annuler
+                        </button>
+                      )}
                       <button 
                         onClick={() => setActiveView('loyalty')}
                         className="flex-1 py-4 bg-slate-900 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
@@ -1778,6 +1869,41 @@ export default function EcommerceModule({ user }: { user: any }) {
                     <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Actions Opérationnelles</h4>
                     <div className="flex flex-col gap-2">
                        <button 
+                         onClick={async () => {
+                           if (!currentCompany) return;
+                           const grossProfit = order.items.reduce((acc, item) => acc + ((item.price - (item.purchasePrice || 0)) * item.quantity), 0);
+                           const transactionFee = order.paymentMethod !== 'CASH' ? Math.round(order.total * 0.01) : 0;
+                           const netProfit = grossProfit - transactionFee;
+
+                           try {
+                             await updateDoc(doc(db, 'ecommerce_orders', order.id), {
+                               paymentStatus: 'PAID',
+                               realizedProfit: netProfit,
+                               transactionFee: transactionFee,
+                               updatedAt: serverTimestamp()
+                             });
+                             
+                             // Update company total profit
+                             const currentTotalProfit = currentCompany.totalProfit || 0;
+                             await updateDoc(doc(db, 'companies', currentCompany.id), {
+                               totalProfit: currentTotalProfit + netProfit
+                             });
+
+                             // Log history
+                             await recordOrderHistory(order.id, order.status, order.status, 'PAIEMENT', `Paiement validé - Bénéfice Net: ${netProfit} FCFA (Frais: ${transactionFee})`);
+                           } catch (err) {
+                             handleFirestoreError(err, OperationType.UPDATE, 'ecommerce_orders_payment');
+                           }
+                         }}
+                         disabled={order.paymentStatus === 'PAID'}
+                         className={cn(
+                           "w-full py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 mb-2",
+                           order.paymentStatus === 'PAID' ? "bg-emerald-600 text-white" : "bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50"
+                         )}
+                       >
+                         <CreditCard size={14} /> {order.paymentStatus === 'PAID' ? 'Paiement Validé' : 'Valider Paiement'}
+                       </button>
+                       <button 
                          onClick={() => {
                            if (order.status === 'PENDING') {
                              handleStatusUpdate(order, 'PROCESSING', '', 'Prise en charge de la commande');
@@ -2160,7 +2286,7 @@ export default function EcommerceModule({ user }: { user: any }) {
             </div>
 
             <div className="space-y-6">
-              {cancellingOrder.paymentMethod !== 'CASH' && (
+              {user.role !== 'Client' && cancellingOrder.paymentMethod !== 'CASH' && (
                 <div className="p-5 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-4">
                   <div className="p-2 bg-red-100 text-red-600 rounded-xl">
                     <AlertCircle size={20} />
@@ -2177,12 +2303,18 @@ export default function EcommerceModule({ user }: { user: any }) {
               <div className="space-y-3">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Motif de l'annulation (Obligatoire)</label>
                 <div className="grid grid-cols-1 gap-2">
-                  {[
+                  {(user.role === 'Client' ? [
+                    "Erreur de quantité",
+                    "Prix trop élevé",
+                    "Délai de livraison trop long",
+                    "Changement d'avis",
+                    "Autre (préciser ci-dessous)"
+                  ] : [
                     "Rupture de stock inattendue",
                     "Zone de livraison hors de notre portée",
                     "Client injoignable",
                     "Autre (préciser ci-dessous)"
-                  ].map(reason => (
+                  ]).map(reason => (
                     <button
                       key={reason}
                       onClick={() => setCancellationReason(reason)}
@@ -2248,6 +2380,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                 updateProduct(editingProduct.id, {
                   name: formData.get('name') as string,
                   price: Number(formData.get('price')),
+                  purchasePrice: Number(formData.get('purchasePrice')),
                   stock: Number(formData.get('stock')),
                   stockThreshold: Number(formData.get('stockThreshold')),
                   allowBackorder: formData.get('allowBackorder') === 'on',
@@ -2268,9 +2401,15 @@ export default function EcommerceModule({ user }: { user: any }) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Tarificaton (FCFA)</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Prix de Vente (FCFA)</label>
                   <input name="price" type="number" defaultValue={editingProduct.price} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
                 </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Prix d'Achat (Confidentiel)</label>
+                  <input name="purchasePrice" type="number" defaultValue={editingProduct.purchasePrice || 0} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Inventaire / Stock</label>

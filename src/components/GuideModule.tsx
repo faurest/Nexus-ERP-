@@ -20,7 +20,8 @@ import {
   Target,
   Users,
   Wallet,
-  X
+  X,
+  Calculator
 } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';

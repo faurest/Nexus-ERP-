@@ -279,30 +279,32 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
     }
   };
 
+  const totalRevenue = orders
+    .filter(o => o.status !== 'CANCELLED' && o.status !== 'CANCELLED_BY_SELLER')
+    .reduce((sum, o) => sum + (o.total || 0), 0);
+
+  const totalProfit = orders
+    .filter(o => o.paymentStatus === 'PAID')
+    .reduce((sum, o) => sum + (o.realizedProfit || 0), 0);
+
   const stats = [
     { 
-      label: 'CA du jour', 
-      value: `${orders
-        .filter(o => {
-          const date = o.date?.toDate ? o.date.toDate() : new Date(o.date);
-          return date.toDateString() === new Date().toDateString() && o.status !== 'CANCELLED' && o.status !== 'CANCELLED_BY_SELLER';
-        })
-        .reduce((sum, o) => sum + (o.total || 0), 0)
-        .toLocaleString()} FCFA`, 
+      label: 'Chiffre d\'Affaires', 
+      value: `${totalRevenue.toLocaleString()} FCFA`, 
       icon: DollarSign, 
-      trend: orders.filter(o => o.paymentMethod === 'MOMO').length > 0 ? 'MoMo Focus' : '+8%', 
+      trend: 'Global', 
       color: 'text-emerald-600' 
     },
     { 
-      label: 'Commandes en attente', 
-      value: orders.filter(o => o.status === 'PENDING').length.toString(), 
-      icon: ShoppingCart, 
-      trend: 'Nouveau', 
+      label: 'Bénéfice Net', 
+      value: `${totalProfit.toLocaleString()} FCFA`, 
+      icon: TrendingUp, 
+      trend: 'Réalisé', 
       color: 'text-blue-600' 
     },
     { 
       label: 'Succès Livraison', 
-      value: `${orders.length > 0 ? Math.round((orders.filter(o => o.status === 'DELIVERED').length / orders.filter(o => ['DELIVERED', 'DELIVERY_FAILED'].includes(o.status)).length || 1) * 100) : 0}%`, 
+      value: `${orders.length > 0 ? Math.round((orders.filter(o => o.status === 'DELIVERED').length / (orders.filter(o => ['DELIVERED', 'DELIVERY_FAILED'].includes(o.status)).length || 1)) * 100) : 0}%`, 
       icon: Zap, 
       trend: 'Ops', 
       color: 'text-indigo-600' 

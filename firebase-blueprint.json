@@ -21,6 +21,10 @@
           "type": "number",
           "description": "Exchange rate 1 CFA = X Naira"
         },
+        "totalProfit": {
+          "type": "number",
+          "description": "Total accumulated realized profit from orders"
+        },
         "createdAt": { "type": "number" }
       },
       "required": ["name", "ownerEmail", "joinCode"]
@@ -369,7 +373,11 @@
         "items": { "type": "array" },
         "total": { "type": "number" },
         "paymentMethod": { "type": "string" },
-        "status": { "type": "string", "enum": ["PENDING", "SHIPPED", "DELIVERED"] },
+        "paymentStatus": { "type": "string", "enum": ["PAID", "UNPAID"] },
+        "status": { "type": "string", "enum": ["PENDING", "SHIPPED", "DELIVERED", "CANCELLED", "CANCELLED_BY_SELLER"] },
+        "realizedProfit": { "type": "number" },
+        "transactionFee": { "type": "number", "description": "Transaction fees e.g. MoMo/OM fees" },
+        "cancellationReason": { "type": "string" },
         "date": { "type": "object" },
         "customerEmail": { "type": "string" },
         "internalNotes": { "type": "string" }
@@ -404,6 +412,7 @@
         "name": { "type": "string" },
         "description": { "type": "string" },
         "price": { "type": "number" },
+        "purchasePrice": { "type": "number", "description": "Confidential cost price for profit calculation" },
         "category": { "type": "string" },
         "image": { "type": "string" },
         "stock": { "type": "number" },

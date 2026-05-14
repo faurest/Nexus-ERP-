@@ -46,6 +46,7 @@ import {
   Monitor,
   Zap,
   LayoutGrid,
+  Award,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { HelpTrigger } from "./ContextualHelp";
