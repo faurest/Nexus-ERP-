@@ -98,6 +98,13 @@ service cloud.firestore {
           exists(/databases/$(database)/documents/clients/$(currentUserEmail())) &&
           get(/databases/$(database)/documents/clients/$(currentUserEmail())).data.companyId == companyId
         ) ||
+        // Action: Join via Code (Self-Enrollment)
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees', 'updatedAt']) &&
+          incoming().memberEmails.size() == existing().memberEmails.size() + 1 &&
+          currentUserEmail() in incoming().memberEmails &&
+          incoming().joinCode == existing().joinCode // Verifies the secret code matches
+        ) ||
         // Action: Personnel Auto-Enroll (Allow users listed in 'personnel' to sync their access)
         (
           incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees', 'updatedAt']) &&
