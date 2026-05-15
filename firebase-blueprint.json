@@ -420,6 +420,7 @@
       "properties": {
         "id": { "type": "string" },
         "companyId": { "type": "string" },
+        "globalOrderId": { "type": "string", "description": "Reference to the parent global order if multi-vendor" },
         "items": { "type": "array" },
         "total": { "type": "number" },
         "paymentMethod": { "type": "string" },
@@ -473,6 +474,25 @@
         "createdAt": { "type": "number" }
       },
       "required": ["companyId", "name", "price"]
+    },
+    "GlobalOrder": {
+      "title": "Global Order",
+      "description": "A top-level order that aggregates vendor-specific sub-orders",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "subOrderIds": { "type": "array", "items": { "type": "string" } },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["PENDING", "PROCESSING", "COMPLETED", "PARTIALLY_DELIVERED", "CANCELLED"] },
+        "paymentMethod": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "customerQuartier": { "type": "string" },
+        "customerEmail": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["subOrderIds", "total", "customerName", "customerPhone"]
     },
     "NotificationConfig": {
       "title": "Notification Config",
@@ -547,6 +567,7 @@
     "leave_requests": { "schema": "LeaveRequest", "description": "Employee leave requests" },
     "time_entries": { "schema": "TimeEntry", "description": "Employee time entries" },
     "salary_advances": { "schema": "SalaryAdvance", "description": "Salary advance and down payment requests" },
+    "global_orders": { "schema": "GlobalOrder", "description": "Aggregated marketplace orders" },
     "ecommerce_orders": { "schema": "EcommerceOrder", "description": "Ecommerce order records" },
     "internal_resources": { "schema": "InternalResource", "description": "Company internal usage assets" },
     "stock_history": { "schema": "StockHistory", "description": "Movement logs for commercial products" },

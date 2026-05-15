@@ -68,7 +68,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       
       const cleanEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
-      const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com';
+      const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
       
       // Si c'est un maître, on ne filtre pas par ownerId pour voir TOUTES les entreprises (La Pause 237, etc.)
       const q = isMaster 

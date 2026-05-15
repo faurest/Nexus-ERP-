@@ -118,7 +118,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
   const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
-  const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com';
+  const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
   
   const ownedCompanies = companies.filter(c => {
     const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
@@ -185,7 +185,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
            const data = doc.data();
            return data.email && data.email.trim().toLowerCase() === user.email?.trim().toLowerCase();
         });
-        const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com';
+        const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com';
         if (!isRegistered && user.uid !== company.ownerId && user.email !== company.ownerEmail && !isMaster) {
            setErrorMsg('Accès refusé. Vous devez être enregistré dans le personnel de cette entreprise.');
            setCreatingLocally(false);
@@ -514,7 +514,7 @@ export default function App() {
   const { currentCompany, companies, setCurrentCompany, loading: companyLoading } = useCompany();
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
-  const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com';
+  const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
   
   const ownedCompanies = companies.filter(c => {
     const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
@@ -657,7 +657,7 @@ export default function App() {
 
   useEffect(() => {
     if (user && currentCompany && !user.role) {
-      if (currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid || user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com') {
+      if (currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid || user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') {
         setUser(prev => prev ? { ...prev, role: 'owner' } : null);
         setIsBlocked(false);
       } else {
@@ -956,7 +956,7 @@ export default function App() {
     { id: 'collaboration', label: 'Collaboration & Comm', icon: Handshake },
     { id: 'accounting', label: 'Comptabilité & Finance', icon: Calculator },
     { id: 'guide', label: 'Guide & Performance', icon: BookOpen },
-    ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
+    ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
   ].filter(item => {
     if (item.id === 'admin') return true;
     const allowedByRole = (currentCompany.roles || DEFAULT_ROLES)[user.role] || ['dashboard'];
@@ -1204,7 +1204,7 @@ export default function App() {
             {activeTab === 'accounting' && <AccountingModule />}
             {activeTab === 'collaboration' && <CollaborationModule />}
             {activeTab === 'guide' && <GuideModule />}
-            {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com') && <AdminModule />}
+            {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') && <AdminModule />}
           </div>
         </div>
 

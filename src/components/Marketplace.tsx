@@ -109,6 +109,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   const [showCatalogue, setShowCatalogue] = useState(false);
   const [showTracking, setShowTracking] = useState(false);
   const [guestOrders, setGuestOrders] = useState<any[]>([]);
+  const [globalOrderId, setGlobalOrderId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeCategory, setActiveCategory] = useState<string>("Tous");
   const [submitting, setSubmitting] = useState(false);
@@ -386,6 +387,10 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     );
   };
 
+  const removeFromCart = (id: string) => {
+    setCart((prev) => prev.filter((item) => item.id !== id));
+  };
+
   const cartTotal = cart.reduce(
     (acc, item) => acc + item.price * item.cartQuantity,
     0,
@@ -449,6 +454,32 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     }
 
     try {
+      setSubmitting(true);
+      
+      // Calculate total with exactly the delivery fees for each unique vendor
+      const uniqueCompanyIds = Array.from(new Set(cart.map(i => i.companyId)));
+      const totalDeliveryFees = uniqueCompanyIds.reduce((acc, cid) => {
+        const company = companies.find(c => c.id === cid);
+        return acc + (company?.deliveryFees?.[selectedLocation] || 0);
+      }, 0);
+      const grandTotal = cartTotal + totalDeliveryFees;
+
+      // 1. Create a Global Order first
+      const globalOrderRef = await addDoc(collection(db, "global_orders"), {
+        total: grandTotal,
+        status: "PENDING",
+        paymentMethod: selectedPaymentMethod === 'CASH' ? 'CASH' : (paymentOperator === 'MTN' ? 'MTN MoMo' : 'Orange Money'),
+        paymentStatus: selectedPaymentMethod === 'CASH' ? "UNPAID" : "PENDING_MOMO",
+        customerName: checkoutData.name,
+        customerPhone: checkoutData.phone,
+        customerQuartier: checkoutData.quartier,
+        customerEmail: "Marketplace Multi-Vendor",
+        createdAt: serverTimestamp(),
+        subOrderIds: [] 
+      });
+
+      setGlobalOrderId(globalOrderRef.id);
+
       // Group items by companyId
       const ordersByCompany: Record<string, CartItem[]> = {};
       cart.forEach((item) => {
@@ -474,6 +505,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           
           const orderRef = await addDoc(collection(db, "ecommerce_orders"), {
             companyId,
+            globalOrderId: globalOrderRef.id,
             items: items.map((item) => ({
               id: item.id,
               name: item.name,
@@ -492,7 +524,13 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             customerName: checkoutData.name,
             customerPhone: checkoutData.phone,
             customerQuartier: checkoutData.quartier,
-            customerEmail: "Marketplace Guest",
+            customerEmail: "Marketplace Multi-Vendor",
+          });
+
+          // Update Global Order with sub-order ID
+          const { arrayUnion } = await import("firebase/firestore");
+          await updateDoc(doc(db, "global_orders", globalOrderRef.id), {
+            subOrderIds: arrayUnion(orderRef.id)
           });
 
           // Deduct Stock immediately (Reservation) & Increment soldCount
@@ -529,6 +567,11 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             await updateDoc(doc(db, "ecommerce_orders", orderRef.id), {
               paymentStatus: "PAID",
               status: "PROCESSING"
+            });
+
+            // Also update Global Order status if all sub-orders are paid (simplified here)
+            await updateDoc(doc(db, "global_orders", globalOrderRef.id), {
+               paymentStatus: "PAID"
             });
           }
 
@@ -1680,86 +1723,111 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                 ) : (
                   /* Full Cart List */
                   <div className="space-y-10">
-                    {Array.from(new Set(cart.map((item) => item.companyId))).map(
-                      (companyId) => {
-                        const companyName =
-                          cart.find((i) => i.companyId === companyId)
-                            ?.companyName || "Boutique";
-                        const items = cart.filter(
-                          (i) => i.companyId === companyId,
-                        );
-                        return (
-                          <div key={companyId} className="space-y-4">
-                            <div className="flex items-center gap-2 border-l-4 border-blue-600 pl-3">
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                Boutique:
+                    {Object.entries(
+                      cart.reduce((acc, item) => {
+                        if (!acc[item.companyId]) acc[item.companyId] = [];
+                        acc[item.companyId].push(item);
+                        return acc;
+                      }, {} as Record<string, CartItem[]>)
+                    ).map(([companyId, items]) => {
+                      const company = companies.find(c => c.id === companyId);
+                      const companyName = items[0]?.companyName || "Boutique";
+                      
+                      return (
+                        <div key={companyId} className="space-y-6">
+                          <div className="flex items-center justify-between border-l-4 border-blue-600 pl-3">
+                            <div className="flex flex-col">
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+                                Expédié par
                               </span>
-                              <span className="text-[10px] font-black text-slate-900 uppercase italic">
+                              <span className="text-xs font-black text-slate-900 uppercase italic">
                                 {companyName}
                               </span>
                             </div>
-                            <div className="space-y-6">
-                              {items.map((item) => (
-                                <div key={item.id} className="flex gap-4 group">
-                                  <div className="w-16 h-16 rounded-2xl overflow-hidden border border-slate-100 shrink-0 shadow-sm">
-                                    <img
-                                      src={item.image}
-                                      className="w-full h-full object-cover"
-                                      alt=""
-                                    />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-start mb-1">
-                                      <h4 className="text-xs font-black text-slate-900 truncate pr-4 italic leading-tight">
-                                        {item.name}
-                                      </h4>
-                                      <span className="text-xs font-black text-slate-900 whitespace-nowrap">
-                                        {(
-                                          item.price * item.cartQuantity
-                                        ).toLocaleString()}{" "}
-                                        FCFA
-                                      </span>
+                            {company?.deliveryFees && selectedLocation && (
+                              <div className="text-right">
+                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Livraison</span>
+                                <span className="text-[10px] font-black text-blue-600">
+                                  {company.deliveryFees[selectedLocation] 
+                                    ? `+ ${company.deliveryFees[selectedLocation].toLocaleString()} FCFA` 
+                                    : "Frais à définir"}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="space-y-6">
+                            {items.map((item) => (
+                              <div key={item.id} className="flex gap-4 group">
+                                <div className="w-16 h-16 rounded-2xl overflow-hidden border border-slate-100 shrink-0 shadow-sm relative">
+                                  <img
+                                    src={item.image}
+                                    className="w-full h-full object-cover"
+                                    alt=""
+                                  />
+                                  {item.cartQuantity > 1 && (
+                                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                                      {item.cartQuantity}
                                     </div>
-                                    <div className="flex items-center gap-3 mt-3">
-                                      <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-1 px-3 border border-slate-100">
-                                        <button
-                                          onClick={() =>
-                                            updateQuantity(item.id, -1)
-                                          }
-                                          className="p-1 hover:text-red-600 transition-colors"
-                                        >
-                                          <Minus size={12} />
-                                        </button>
-                                        <span className="text-xs font-black min-w-[20px] text-center">
-                                          {item.cartQuantity}
-                                        </span>
-                                        <button
-                                          onClick={() =>
-                                            updateQuantity(item.id, 1)
-                                          }
-                                          className="p-1 hover:text-blue-600 transition-colors"
-                                        >
-                                          <Plus size={12} />
-                                        </button>
-                                      </div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex justify-between items-start mb-1">
+                                    <h4 className="text-xs font-black text-slate-900 truncate pr-4 italic leading-tight">
+                                      {item.name}
+                                    </h4>
+                                    <span className="text-xs font-black text-slate-900 whitespace-nowrap">
+                                      {(
+                                        item.price * item.cartQuantity
+                                      ).toLocaleString()}{" "}
+                                      FCFA
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3 mt-3">
+                                    <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-1 px-3 border border-slate-100">
                                       <button
-                                        onClick={() => {
-                                          setSelectedProduct(item);
-                                          setShowCart(false);
-                                        }}
-                                        className="text-[9px] font-black text-blue-600 uppercase tracking-widest underline decoration-2 underline-offset-4"
+                                        onClick={() =>
+                                          updateQuantity(item.id, -1)
+                                        }
+                                        className="p-1 hover:text-red-600 transition-colors"
                                       >
-                                        Détails
+                                        <Minus size={12} />
+                                      </button>
+                                      <span className="text-xs font-black min-w-[20px] text-center">
+                                        {item.cartQuantity}
+                                      </span>
+                                      <button
+                                        onClick={() =>
+                                          updateQuantity(item.id, 1)
+                                        }
+                                        className="p-1 hover:text-blue-600 transition-colors"
+                                      >
+                                        <Plus size={12} />
                                       </button>
                                     </div>
+                                    <button
+                                      onClick={() => {
+                                        setSelectedProduct(item);
+                                        setShowCart(false);
+                                      }}
+                                      className="text-[9px] font-black text-blue-600 uppercase tracking-widest underline decoration-2 underline-offset-4"
+                                    >
+                                      Fiche
+                                    </button>
+                                    <div className="h-4 w-px bg-slate-200" />
+                                    <button
+                                      onClick={() => removeFromCart(item.id)}
+                                      className="text-[9px] font-black text-red-400 uppercase tracking-widest"
+                                    >
+                                      Enlever
+                                    </button>
                                   </div>
                                 </div>
-                              ))}
-                            </div>
+                              </div>
+                            ))}
                           </div>
-                        );
-                      },
-                    )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -2252,154 +2320,127 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                       <p className="text-[10px] font-medium text-slate-500 max-w-[200px]">Passez une commande pour commencer le suivi en temps réel.</p>
                     </div>
                   ) : (
-                    guestOrders.map((order) => (
-                      <div key={order.id} className="bg-slate-50 rounded-[2rem] p-6 border border-slate-100 space-y-6">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">N° COMMANDE</span>
-                            <h3 className="text-sm font-black text-slate-900 uppercase">CMD-{order.id.slice(0, 8)}</h3>
+                    (Object.entries(
+                      guestOrders.reduce((acc, order) => {
+                        const gid = order.globalOrderId || `solo-${order.id}`;
+                        if (!acc[gid]) acc[gid] = [];
+                        acc[gid].push(order);
+                        return acc;
+                      }, {} as Record<string, any[]>)
+                    ) as [string, any[]][]).map(([gid, subOrders]) => {
+                      const isMultiVendor = subOrders.length > 1;
+                      const firstSub = subOrders[0];
+                      const globalTotal = subOrders.reduce((sum, o) => sum + o.total, 0);
+                      
+                      return (
+                        <div key={gid} className={cn(
+                          "rounded-[2rem] p-6 border space-y-6 transition-all",
+                          isMultiVendor ? "bg-slate-900 text-white border-slate-800 shadow-2xl" : "bg-slate-50 text-slate-900 border-slate-100"
+                        )}>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <span className={cn("text-[8px] font-black uppercase tracking-widest", isMultiVendor ? "text-slate-500" : "text-slate-400")}>
+                                {isMultiVendor ? "COMMANDE MULTI-BOUTIQUES" : "N° COMMANDE"}
+                              </span>
+                              <h3 className="text-sm font-black uppercase">
+                                {isMultiVendor ? `GRP-${gid.slice(0, 8)}` : `CMD-${firstSub.id.slice(0, 8)}`}
+                              </h3>
+                            </div>
+                            {isMultiVendor ? (
+                              <div className="px-3 py-1 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-full text-[9px] font-black uppercase tracking-widest">
+                                {subOrders.length} Expéditions
+                              </div>
+                            ) : (
+                              <div className={cn(
+                                "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm",
+                                firstSub.status === 'PENDING' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                                firstSub.status === 'PROCESSING' ? "bg-blue-50 text-blue-600 border-blue-100" :
+                                firstSub.status === 'SHIPPED' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
+                                firstSub.status === 'CANCELLED_BY_CUSTOMER' ? "bg-red-50 text-red-600 border-red-100" :
+                                "bg-emerald-50 text-emerald-600 border-emerald-100"
+                              )}>
+                                {firstSub.status === 'PENDING' ? 'Attente' : 
+                                 firstSub.status === 'PROCESSING' ? 'En cours' :
+                                 firstSub.status === 'SHIPPED' ? 'Expédiée' : 
+                                 firstSub.status === 'CANCELLED_BY_CUSTOMER' ? 'Annulée' : 'Livrée'}
+                              </div>
+                            )}
                           </div>
-                          <div className={cn(
-                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm",
-                            order.status === 'PENDING' ? "bg-amber-50 text-amber-600 border-amber-100" :
-                            order.status === 'PROCESSING' ? "bg-blue-50 text-blue-600 border-blue-100" :
-                            order.status === 'SHIPPED' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
-                            order.status === 'CANCELLED_BY_CUSTOMER' ? "bg-red-50 text-red-600 border-red-100" :
-                            "bg-emerald-50 text-emerald-600 border-emerald-100"
-                          )}>
-                            {order.status === 'PENDING' ? 'Attente' : 
-                             order.status === 'PROCESSING' ? 'En cours' :
-                             order.status === 'SHIPPED' ? 'Expédiée' : 
-                             order.status === 'CANCELLED_BY_CUSTOMER' ? 'Annulée' : 'Livrée'}
-                          </div>
-                        </div>
 
-                        {order.status !== 'CANCELLED_BY_CUSTOMER' && (
-                          <div className="relative pt-2 px-1">
-                             <div className="absolute top-6 left-0 right-0 h-1 bg-slate-200 rounded-full" />
-                             <div 
-                               className="absolute top-6 left-0 h-1 bg-blue-600 rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(37,99,235,0.4)]" 
-                               style={{ 
-                                 width: order.status === 'PENDING' ? '5%' : 
-                                        order.status === 'PROCESSING' ? '38%' : 
-                                        order.status === 'SHIPPED' ? '72%' : '100%' 
-                                }}
-                             />
-                             <div className="flex justify-between relative">
-                                {[
-                                  { id: 'PENDING', icon: <Clock size={12} /> },
-                                  { id: 'PROCESSING', icon: <Package size={12} /> },
-                                  { id: 'SHIPPED', icon: <Truck size={12} /> },
-                                  { id: 'DELIVERED', icon: <CheckCircle2 size={12} /> }
-                                ].map((step, idx) => {
-                                  const statuses = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
-                                  const currentIdx = statuses.indexOf(order.status);
-                                  const isPast = idx <= currentIdx;
-                                  
-                                  return (
-                                    <div key={step.id} className="flex flex-col items-center">
-                                      <div className={cn(
-                                        "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 z-10 border-4 border-white shadow-sm",
-                                        isPast ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-400"
-                                      )}>
-                                        {step.icon}
-                                      </div>
+                          <div className="space-y-4">
+                            {subOrders.map(order => (
+                              <div key={order.id} className={cn(
+                                "p-4 rounded-2xl relative",
+                                isMultiVendor ? "bg-white/5 border border-white/10" : "bg-white border border-slate-100"
+                              )}>
+                                <div className="flex justify-between items-center mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[8px] font-black">
+                                       {companies.find(c => c.id === order.companyId)?.name.charAt(0) || "B"}
                                     </div>
-                                  );
-                                })}
-                             </div>
+                                    <span className="text-[10px] font-black uppercase truncate max-w-[120px]">
+                                      {companies.find(c => c.id === order.companyId)?.name || "Boutique"}
+                                    </span>
+                                  </div>
+                                  <span className={cn(
+                                    "text-[9px] font-black uppercase px-2 py-0.5 rounded-md",
+                                    order.status === 'CANCELLED_BY_CUSTOMER' ? "bg-red-500/20 text-red-400" : "bg-blue-500/20 text-blue-400"
+                                  )}>
+                                    {order.status}
+                                  </span>
+                                </div>
+                                
+                                {order.status !== 'CANCELLED_BY_CUSTOMER' && (
+                                  <div className="relative h-1 bg-slate-200/20 rounded-full overflow-hidden mb-3">
+                                    <div 
+                                      className="absolute inset-y-0 left-0 bg-blue-500 transition-all duration-1000"
+                                      style={{ 
+                                        width: order.status === 'PENDING' ? '5%' : 
+                                               order.status === 'PROCESSING' ? '38%' : 
+                                               order.status === 'SHIPPED' ? '72%' : '100%' 
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                                
+                                <div className="flex justify-between items-center text-[9px] font-bold">
+                                  <span className={isMultiVendor ? "text-slate-400" : "text-slate-500"}>
+                                    {order.items?.length || 0} articles • {order.total.toLocaleString()} FCFA
+                                  </span>
+                                  <button 
+                                    onClick={() => {
+                                      const message = `Bonjour, je souhaite des infos sur ma commande ${order.id.slice(0,8)} chez ${companies.find(c => c.id === order.companyId)?.name}`;
+                                      window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
+                                    }}
+                                    className="text-blue-400 hover:underline"
+                                  >
+                                    Assistance
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        )}
 
-                        {/* Activity Log (Timeline) */}
-                        {orderHistories[order.id]?.length > 0 && (
-                          <div className="space-y-4 pt-2">
-                             <div className="flex items-center gap-2">
-                                <History size={12} className="text-slate-400" />
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Journal d'activité</span>
-                             </div>
-                             <div className="space-y-3 pl-2 border-l border-slate-200 ml-1.5">
-                               {orderHistories[order.id].map((log, idx) => (
-                                 <div key={log.id} className="relative pl-6 pb-2">
-                                   <div className={cn(
-                                     "absolute left-[-5px] top-1 w-2 h-2 rounded-full",
-                                     idx === 0 ? "bg-blue-600 scale-125" : "bg-slate-300"
-                                   )} />
-                                   <div className="space-y-1">
-                                      <div className="flex items-center justify-between">
-                                        <p className={cn("text-[10px] font-black uppercase tracking-tight leading-none", idx === 0 ? "text-slate-900" : "text-slate-500")}>
-                                          {log.newStatus === 'DELIVERY_FAILED' ? "⚠️ Échec de livraison" : log.newStatus}
-                                        </p>
-                                        <span className="text-[8px] font-bold text-slate-400">
-                                          {log.timestamp?.toDate()?.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                      </div>
-                                      {log.reason && (
-                                        <p className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded inline-block">
-                                          {log.reason}
-                                        </p>
-                                      )}
-                                      {log.comment && (
-                                        <p className="text-[9px] font-medium text-slate-500 italic">"{log.comment}"</p>
-                                      )}
-                                   </div>
-                                 </div>
-                               ))}
-                             </div>
-                             
-                             {/* Context Action Button */}
-                             {orderHistories[order.id][0]?.reason === "Client absent / Injoignable" && (
-                               <button 
-                                 onClick={() => {
-                                   const message = `Bonjour Nexus Support, mon livreur n'a pas pu me joindre pour ma commande CMD-${order.id.slice(0,8).toUpperCase()}. Voici mon numéro de secours : `;
-                                   window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
-                                 }}
-                                 className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2"
-                               >
-                                 <Smartphone size={14} /> Mettre à jour mon numéro
-                               </button>
-                             )}
-                          </div>
-                        )}
-
-                        <div className="space-y-3 pt-2">
-                          <div className="flex justify-between items-center text-[10px] font-black">
-                            <span className="text-slate-400 uppercase tracking-widest">Date</span>
-                            <span className="text-slate-900">{order.date?.toDate()?.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) || 'Récent'}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-[10px] font-black">
-                            <span className="text-slate-400 uppercase tracking-widest">Boutique</span>
-                            <span className="text-slate-900 uppercase italic">{companies.find(c => c.id === order.companyId)?.name || 'Nexus Shop'}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-[10px] font-black border-t border-slate-100 pt-3">
-                            <span className="text-slate-400 uppercase tracking-widest">Total</span>
-                            <span className="text-sm font-black text-blue-600">{order.total.toLocaleString()} FCFA</span>
+                          <div className={cn(
+                            "pt-4 border-t flex justify-between items-center",
+                            isMultiVendor ? "border-white/10" : "border-slate-100"
+                          )}>
+                            <div>
+                               <span className={cn("text-[9px] font-black uppercase block tracking-widest leading-none mb-1", isMultiVendor ? "text-slate-500" : "text-slate-400")}>Total Global</span>
+                               <span className={cn("text-lg font-black", isMultiVendor ? "text-emerald-400" : "text-blue-600")}>{globalTotal.toLocaleString()} FCFA</span>
+                            </div>
+                            {!isMultiVendor && firstSub.status === 'PENDING' && (
+                              <button 
+                                onClick={() => setCancellingOrderId(firstSub.id)}
+                                className="px-4 py-2 bg-red-50 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest border border-red-100"
+                              >
+                                Annuler
+                              </button>
+                            )}
                           </div>
                         </div>
-
-                        <div className={cn("grid gap-3 pt-2", order.status === 'PENDING' ? "grid-cols-2" : "grid-cols-1")}>
-                          <button 
-                            onClick={() => {
-                              const message = `Bonjour, je souhaiterais avoir des informations sur ma commande CMD-${order.id.slice(0, 8).toUpperCase()} sur Nexus Marketplace. Merci !`;
-                              window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
-                            }}
-                            className="py-4 bg-white border border-slate-200 rounded-2xl text-[9px] font-black text-slate-600 uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2 group/btn"
-                          >
-                            <MessageCircle size={14} className="group-hover/btn:scale-110 transition-transform" /> 
-                            {order.status === 'PENDING' ? "WhatsApp" : "Aide WhatsApp"}
-                          </button>
-
-                          {order.status === 'PENDING' && (
-                             <button 
-                               onClick={() => setCancellingOrderId(order.id)}
-                               className="py-4 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
-                             >
-                               Annuler
-                             </button>
-                          )}
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                </div>
             </motion.div>
