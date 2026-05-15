@@ -21,6 +21,7 @@ import {
   AlertCircle,
   Building2,
   Shield,
+  ShieldAlert,
   Calculator,
   Layers,
   FileText,
@@ -816,10 +817,20 @@ export default function App() {
 
   if (loading || (user && companyLoading)) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="h-12 w-12 bg-blue-600 rounded-xl mb-4 shadow-lg shadow-blue-600/20" />
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Chargement...</p>
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center">
+          <div className="relative">
+            <NexusLogo className="w-16 h-16 animate-pulse opacity-20" />
+            <div className="absolute inset-0 flex items-center justify-center">
+               <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-lg shadow-blue-600/20" />
+            </div>
+          </div>
+          <p className="mt-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Symphonie Nexus en cours...</p>
+        </div>
+        
+        {/* Simple timeout fallback to prevent infinite loading */}
+        <div className="mt-12 text-[10px] text-slate-300 font-medium">
+          Démarrage de l'écosystème sécurisé
         </div>
       </div>
     );
@@ -899,23 +910,35 @@ export default function App() {
 
   if (isBlocked) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
-        <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6">
-          <AlertCircle size={32} />
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-950 p-6 text-center">
+        <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-8 border border-red-500/20">
+          <ShieldAlert size={40} className="text-red-500 animate-pulse" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Compte Bloqué</h2>
-        <p className="text-slate-500 max-w-md mx-auto mb-8">
-          Votre accès à l'espace de travail "{currentCompany.name}" a été suspendu par l'administrateur. Veuillez contacter votre responsable ou le service des ressources humaines.
+        <h1 className="text-3xl font-black text-white uppercase tracking-tight mb-4">Accès Interrompu</h1>
+        <p className="text-slate-400 max-w-sm font-medium leading-relaxed mb-10">
+          Votre compte fait l'objet d'une suspension temporaire ou votre accès à cet espace de travail a été révoqué par la direction. 
+          Veuillez contacter votre administrateur système.
         </p>
-        <button 
-          onClick={() => {
-            setCurrentCompany(null);
-            setIsBlocked(false);
-          }}
-          className="px-6 py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition-colors"
-        >
-          Retour aux espaces de travail
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button 
+            onClick={() => {
+              setCurrentCompany(null);
+              setIsBlocked(false);
+            }}
+            className="px-8 py-4 bg-slate-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all font-sans"
+          >
+            Changer d'Espace
+          </button>
+          <button 
+            onClick={() => auth.signOut()}
+            className="px-8 py-4 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl shadow-white/5 font-sans"
+          >
+            Déconnexion
+          </button>
+        </div>
+        <div className="mt-12 text-[10px] text-slate-600 font-bold uppercase tracking-widest">
+          Nexus Security Architecture v5.0
+        </div>
       </div>
     );
   }

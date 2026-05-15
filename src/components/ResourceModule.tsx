@@ -202,6 +202,12 @@ export default function ResourceModule({ user }: { user: any }) {
     lowStock: resources.filter(r => r.status === 'Low' || (r.quantity > 0 && r.quantity < 10)).length
   };
 
+  const movementsStats = {
+    totalIn: movementLogs.filter(m => m.type === 'IN').reduce((acc, m) => acc + Number(m.quantity), 0),
+    totalOut: movementLogs.filter(m => m.type === 'OUT').reduce((acc, m) => acc + Number(m.quantity), 0),
+  };
+
+  const fluxBalance = movementsStats.totalIn - movementsStats.totalOut;
   const availabilityRate = stats.total > 0 ? Math.round((stats.available / stats.total) * 100) : 0;
   const stockoutRate = stats.total > 0 ? Math.round((stats.outOfStock / stats.total) * 100) : 0;
 
@@ -631,39 +637,79 @@ export default function ResourceModule({ user }: { user: any }) {
           </Table>
         </div>
       ) : (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { label: 'Indice de Rotation', value: '84%', trend: '+12%', color: 'blue' },
-              { label: 'Précision Inventaire', value: '99.2%', trend: '+0.5%', color: 'green' },
-              { label: 'Risque de Rupture', value: 'BAS', trend: '-5%', color: 'emerald' }
-            ].map((stat, i) => (
-              <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">{stat.label}</p>
-                <div className="flex items-end gap-3">
-                  <span className="text-3xl font-black text-slate-900">{stat.value}</span>
-                  <span className={`text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg mb-1`}>{stat.trend}</span>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-sans">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full translate-x-12 -translate-y-12 transition-transform group-hover:scale-110" />
+              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 relative">Volume Entrant (IN)</p>
+              <div className="flex items-center gap-3 relative">
+                <span className="text-3xl font-black text-emerald-600">{movementsStats.totalIn}</span>
+                <span className="text-[10px] font-bold text-emerald-100 bg-emerald-600 px-2 py-0.5 rounded-full uppercase tracking-tighter">Total</span>
+              </div>
+            </div>
+            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full translate-x-12 -translate-y-12 transition-transform group-hover:scale-110" />
+              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 relative">Volume Sortant (OUT)</p>
+              <div className="flex items-center gap-3 relative">
+                <span className="text-3xl font-black text-red-600">{movementsStats.totalOut}</span>
+                <span className="text-[10px] font-bold text-red-100 bg-red-600 px-2 py-0.5 rounded-full uppercase tracking-tighter">Total</span>
+              </div>
+            </div>
+            <div className="bg-slate-900 p-8 rounded-[2rem] border border-slate-800 shadow-xl relative overflow-hidden col-span-1 md:col-span-2 group">
+              <div className="absolute bottom-0 right-0 w-48 h-48 bg-blue-600/10 rounded-full translate-x-16 translate-y-16 transition-transform group-hover:scale-110" />
+              <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-3 relative">Balance des Flux (Net)</p>
+              <div className="flex items-center gap-4 relative">
+                <span className={cn(
+                  "text-4xl font-black italic tracking-tighter",
+                  fluxBalance >= 0 ? "text-blue-500" : "text-amber-500"
+                )}>
+                  {fluxBalance > 0 ? '+' : ''}{fluxBalance} <span className="text-sm font-black uppercase not-italic text-slate-600">Unités</span>
+                </span>
+                <div className="p-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
+                   <TrendingUp size={24} className={fluxBalance >= 0 ? "text-blue-400" : "text-amber-400"} />
                 </div>
               </div>
-            ))}
+            </div>
           </div>
 
-          <div className="bg-slate-900 rounded-[3rem] p-12 text-center border border-white/5 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(37,99,235,0.1),transparent)]" />
-            <div className="relative z-10 max-w-xl mx-auto space-y-6">
-              <div className="w-20 h-20 bg-blue-600/20 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-blue-500/30">
-                <Activity size={40} className="text-blue-500 animate-pulse" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="bg-white border border-slate-200 p-10 rounded-[2.5rem] shadow-sm flex flex-col items-center justify-center text-center space-y-6">
+              <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-300">
+                <Activity size={40} />
               </div>
-              <h3 className="text-3xl font-black text-white italic">Nexus <span className="text-blue-500 underline decoration-4 underline-offset-8">Insight</span> Analytics</h3>
-              <p className="text-slate-400 text-lg leading-relaxed font-medium">
-                Nos modèles prédictifs SI-CORE sont actuellement en phase de calibration finale sur vos flux de données. 
-                L'IA analysera bientôt vos cycles de consommation pour optimiser vos points de commande automatiquement.
+              <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Analyse de Performance</h3>
+              <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-sm">
+                Une fois que vous aurez enregistré plus de 10 mouvements IN/OUT, Nexus affichera ici une courbe de tendance prédictive pour anticiper vos besoins de réapprovisionnement.
               </p>
-              <div className="pt-8 flex justify-center gap-4">
-                <div className="flex -space-x-2">
-                  {[1,2,3,4].map(i => <div key={i} className="w-8 h-8 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-[10px] font-black text-slate-500">{i}</div>)}
-                </div>
-                <span className="text-xs font-bold text-slate-500 self-center">Calibration en cours (87%)</span>
+            </div>
+            <div className="bg-white border border-slate-200 p-10 rounded-[2.5rem] shadow-sm space-y-8">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Mouvements Récents</h3>
+              <div className="space-y-4">
+                {movementLogs.slice(0, 5).map((log, i) => (
+                   <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-all group">
+                     <div className="flex items-center gap-4">
+                       <div className={cn(
+                         "w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:rotate-12",
+                         log.type === 'IN' ? "bg-emerald-100 text-emerald-600 uppercase font-black text-[10px]" : "bg-red-100 text-red-600 uppercase font-black text-[10px]"
+                       )}>
+                         {log.type}
+                       </div>
+                       <div>
+                         <p className="font-bold text-slate-900 text-sm">{log.resourceName}</p>
+                         <p className="text-[10px] font-medium text-slate-400">{log.performedBy}</p>
+                       </div>
+                     </div>
+                     <span className="font-black text-slate-900">
+                       {log.type === 'IN' ? '+' : '-'}{log.quantity}
+                     </span>
+                   </div>
+                ))}
+                {movementLogs.length === 0 && (
+                  <div className="flex flex-col items-center justify-center p-12 text-slate-300 space-y-4">
+                    <Package size={48} className="opacity-20" />
+                    <p className="text-xs font-bold uppercase tracking-widest">Aucun flux détecté</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

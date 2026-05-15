@@ -215,6 +215,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
 
   // Determine if it's a newly created enterprise (< 1 day)
   const isNewEnterprise = currentCompany?.createdAt && (Date.now() - new Date(currentCompany.createdAt).getTime()) < 24 * 60 * 60 * 1000;
+  const isEmptyState = products.length === 0 && orders.length === 0;
 
   const welcomeMessages: Record<string, string> = {
     'owner': 'Bienvenue dans votre poste de commande global.',
@@ -450,7 +451,87 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       </div>
 
       {/* Main Bento Grid */}
-      <div className="grid grid-cols-12 gap-8">
+      {isEmptyState ? (
+        <div className="grid grid-cols-12 gap-8">
+          {/* Onboarding Guide - Spans 12 cols */}
+          <div className="col-span-12 bg-white rounded-[2.5rem] p-10 border-2 border-dashed border-slate-200 flex flex-col items-center text-center group hover:border-blue-300 transition-all">
+            <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center text-blue-600 mb-8 animate-bounce transition-transform group-hover:scale-110">
+              <Plus size={40} />
+            </div>
+            <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight mb-4 italic">Lancez votre premier Flux</h2>
+            <p className="text-slate-500 max-w-lg font-medium leading-relaxed mb-10">
+              Votre tableau de bord est prêt, mais il manque le cœur de l'entreprise : vos données. 
+              Suivez ces <span className="text-blue-600 font-bold">3 étapes clés</span> pour activer Nexus ERP.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
+              {[
+                { 
+                  step: '01', 
+                  title: 'Stocks & Logistique', 
+                  desc: 'Ajoutez vos premiers produits pour commencer à gérer vos commandes.',
+                  tab: 'resources',
+                  icon: Package
+                },
+                { 
+                  step: '02', 
+                  title: 'Équipe & RH', 
+                  desc: 'Enregistrez vos collaborateurs pour déléguer les tâches.',
+                  tab: 'personnel',
+                  icon: Users
+                },
+                { 
+                  step: '03', 
+                  title: 'Configuration Ventes', 
+                  desc: 'Paramétrez vos modes de paiement et services.',
+                  tab: 'sales',
+                  icon: Settings
+                }
+              ].map((s) => (
+                <button 
+                  key={s.step}
+                  onClick={() => window.dispatchEvent(new CustomEvent('NAVIGATE_TAB', { detail: s.tab }))}
+                  className="bg-slate-50 p-8 rounded-3xl border border-slate-100 hover:bg-slate-900 hover:text-white transition-all text-left flex flex-col h-full group/card"
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-1 rounded group-hover/card:bg-blue-600 group-hover/card:text-white">{s.step}</span>
+                    <s.icon size={20} className="text-slate-300 group-hover/card:text-blue-400" />
+                  </div>
+                  <h3 className="text-lg font-black uppercase tracking-tight mb-2">{s.title}</h3>
+                  <p className="text-[11px] font-medium opacity-60 leading-relaxed mb-6 flex-1">{s.desc}</p>
+                  <div className="flex items-center gap-2 text-blue-600 group-hover/card:text-white text-[9px] font-black uppercase tracking-widest">
+                    Commencer <ArrowLeft size={12} className="rotate-180" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Flux Balance Placeholder */}
+          <div className="col-span-12 lg:col-span-6 bg-slate-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden flex flex-col justify-center items-center text-center">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
+            <Activity size={48} className="text-emerald-400 mb-6 opacity-40" />
+            <h3 className="text-2xl font-black uppercase tracking-tight mb-2">Balance des Flux</h3>
+            <p className="text-slate-400 text-xs font-medium max-w-xs">
+              Une fois vos premières ventes effectuées, vous visualiserez ici l'équilibre entre vos entrées et sorties de marchandises.
+            </p>
+          </div>
+
+          {/* Performance Placeholder */}
+          <div className="col-span-12 lg:col-span-6 bg-white rounded-[2.5rem] p-10 border border-slate-100 flex flex-col justify-center items-center text-center">
+             <div className="w-full h-32 flex items-end gap-2 mb-8 px-10">
+               {[20, 40, 15, 50, 30, 45, 25].map((v, i) => (
+                 <div key={i} className="flex-1 bg-slate-50 rounded-t-lg transition-all animate-pulse" style={{ height: `${v}%` }} />
+               ))}
+             </div>
+             <h3 className="text-2xl font-black uppercase tracking-tight text-slate-900 mb-2">Insights Prédictifs</h3>
+             <p className="text-slate-400 text-xs font-medium max-w-xs">
+               Nexus AI analysera vos performances après 7 jours d'activité pour vous suggérer des optimisations de stock.
+             </p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-12 gap-8">
         
         {/* KPI Row - Top 4 cards */}
         {stats.map((stat, i) => (
@@ -740,6 +821,8 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
            </div>
         </div>
       </div>
+
+      )}
 
       {/* Simplified Advantages with ERP Benefits */}
       <div className="py-12 bg-slate-50 border-y border-slate-100">
