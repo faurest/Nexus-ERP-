@@ -548,6 +548,41 @@ export default function App() {
       
       const normalizedEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
 
+      // AUTO-PROVISIONING for JET 7 INFO
+      if (isMaster) {
+        try {
+          const jet7Query = query(collection(db, 'companies'), where('name', '==', 'JET 7 INFO'));
+          const jet7Snap = await getDocs(jet7Query);
+          if (jet7Snap.empty) {
+            console.log("Nexus Provisioning: Création de JET 7 INFO...");
+            const newCompanyRef = await addDoc(collection(db, 'companies'), {
+              name: 'JET 7 INFO',
+              ownerEmail: 'yaoubaboubakary43@gmail.com',
+              joinCode: 'JET7-2026',
+              memberEmails: ['yaoubaboubakary43@gmail.com', 'ousmailambangl1@gmail.com', 'dangafelicite@gmail.com', 'hackeurfaurest@gmail.com', 'yaoubaboubakary43@gmail.com'],
+              employees: [],
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            });
+            
+            // Add collaborator to personnel
+            await setDoc(doc(db, 'personnel', 'ousmailambangl1@gmail.com'), {
+              companyId: newCompanyRef.id,
+              firstName: 'Collaborateur',
+              lastName: 'JET 7',
+              email: 'ousmailambangl1@gmail.com',
+              name: 'Collaborateur JET 7',
+              role: 'Collaborateur',
+              status: 'active',
+              createdAt: serverTimestamp()
+            });
+            console.log("Nexus Provisioning: JET 7 INFO créé avec succès.");
+          }
+        } catch (e) {
+          console.error("Nexus Provisioning Error:", e);
+        }
+      }
+
       try {
         console.log("Nexus Security: Analyse des accès pour", normalizedEmail);
         
