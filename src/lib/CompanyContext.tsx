@@ -54,14 +54,19 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    let unsubscribeSnap: () => void = () => {};
+    let unsubscribeSnap: any = null;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      // Cleanup previous snapshot if exists
+      if (typeof unsubscribeSnap === 'function') {
+        unsubscribeSnap();
+        unsubscribeSnap = null;
+      }
+
       if (!user) {
         setCompanies([]);
         handleSetCurrentCompany(null);
         setLoading(false);
-        unsubscribeSnap();
         return;
       }
 
@@ -70,65 +75,63 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const cleanEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
       const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
       
-      // Si c'est un maître, on ne filtre pas par ownerId pour voir TOUTES les entreprises (La Pause 237, etc.)
-      const q = isMaster 
-        ? collection(db, 'companies') 
-        : query(
+      const load = async () => {
+        try {
+          if (isMaster) {
+            return onSnapshot(collection(db, 'companies'), (snap) => {
+              setCompanies(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
+              setLoading(false);
+            });
+          }
+
+          const qMain = query(
             collection(db, 'companies'), 
             or(
               where('ownerId', '==', user.uid),
               where('memberEmails', 'array-contains', cleanEmail)
             )
           );
-      
-      const timer = setTimeout(() => {
-        setLoading(currentLoading => {
-          if (currentLoading) {
-            console.warn("Nexus : Chargement trop long. Vérifiez la connexion Firebase ou les régles de sécurité.");
-            return false;
-          }
-          return currentLoading;
-        });
-      }, 10000);
 
-      unsubscribeSnap = onSnapshot(q, (snap) => {
-        const fetchedCompanies = snap.docs ? snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)) : [];
-        
-        setCompanies(fetchedCompanies);
+          const qPersonnel = query(collection(db, 'personnel'), where('email', '==', cleanEmail));
+          const personnelSnap = await getDocs(qPersonnel);
+          const personnelCompanyIds = personnelSnap.docs.map(d => d.data().companyId).filter(Boolean);
 
-        if (fetchedCompanies.length > 0) {
-          setCurrentCompany(prev => {
-            // Si on est déjà sur la console maître, on n'y bouge pas
-            if (prev?.id === 'comp_nexus_master') return prev;
-
-            const savedId = localStorage.getItem('nexus_company_id');
-            if (prev && fetchedCompanies.find(c => c.id === prev.id)) {
-              return prev;
+          return onSnapshot(qMain, (snap) => {
+            const mainCompanies = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
+            
+            if (personnelCompanyIds.length > 0) {
+              personnelCompanyIds.forEach(async (cid) => {
+                if (!mainCompanies.find(c => c.id === cid)) {
+                  try {
+                    await updateDoc(doc(db, 'companies', cid), {
+                      memberEmails: arrayUnion(cleanEmail),
+                      employees: arrayUnion(user.uid),
+                      updatedAt: serverTimestamp()
+                    });
+                  } catch (e) {
+                    console.warn("Auto-sync failed for company", cid, e);
+                  }
+                }
+              });
             }
-            if (savedId) {
-              const saved = fetchedCompanies.find(c => c.id === savedId);
-              if (saved) return saved;
-            }
-            // Retrait de l'auto-switch vers la seule entreprise pour éviter les surprises
-            return prev;
+
+            setCompanies(mainCompanies);
+            setLoading(false);
           });
-        } else {
-          setCurrentCompany(prev => prev?.id === 'comp_nexus_master' ? prev : null);
+        } catch (error) {
+          console.error("Load companies error:", error);
+          setLoading(false);
         }
-        
-        // CRITICAL: Always stop loading once we have an answer from Firebase
-        setLoading(false);
-        clearTimeout(timer);
-      }, (error) => {
-        console.error("Erreur onSnapshot companies:", error);
-        setLoading(false);
-        clearTimeout(timer);
-      });
+      };
+
+      unsubscribeSnap = await load();
     });
 
     return () => {
       unsubscribeAuth();
-      unsubscribeSnap();
+      if (typeof unsubscribeSnap === 'function') {
+        unsubscribeSnap();
+      }
     };
   }, []);
 

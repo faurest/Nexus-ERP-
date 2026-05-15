@@ -174,32 +174,32 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
       if (!snap.empty) {
         const companyDoc = snap.docs[0];
         const company = { id: companyDoc.id, ...companyDoc.data() } as any;
+        const cleanEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
         
         // Ensure user is in personnel, block if not registered
+        // FIX: Query ONLY for this specific user's email to avoid permission errors on listing full personnel
         const personnelQ = query(
           collection(db, 'personnel'), 
-          where('companyId', '==', company.id)
+          where('companyId', '==', company.id),
+          where('email', '==', cleanEmail)
         );
         const personnelSnap = await getDocs(personnelQ);
-        const isRegistered = personnelSnap.docs.some(doc => {
-           const data = doc.data();
-           return data.email && data.email.trim().toLowerCase() === user.email?.trim().toLowerCase();
-        });
-        const isMaster = user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com';
+        const isRegistered = !personnelSnap.empty;
+
+        const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
         if (!isRegistered && user.uid !== company.ownerId && user.email !== company.ownerEmail && !isMaster) {
-           setErrorMsg('Accès refusé. Vous devez être enregistré dans le personnel de cette entreprise.');
+           setErrorMsg('Accès refusé. Vous devez être enregistré dans le personnel de cette entreprise (vérifiez l\'email utilisé).');
            setCreatingLocally(false);
            return;
         }
         
-        const cleanEmail = user.email.trim().toLowerCase();
         const companyEmployees = Array.isArray(company.employees) ? company.employees : [];
         if (!companyEmployees.includes(user.uid) || !(company.memberEmails || []).includes(cleanEmail)) {
-          await setDoc(doc(db, 'companies', company.id), {
+          await updateDoc(doc(db, 'companies', company.id), {
             employees: arrayUnion(user.uid),
             memberEmails: arrayUnion(cleanEmail),
             updatedAt: serverTimestamp()
-          }, { merge: true });
+          });
         }
         
         onSelect({ ...company, employees: [...companyEmployees, user.uid] });

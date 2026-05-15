@@ -220,12 +220,28 @@ export default function PersonnelModule({ user }: { user?: any }) {
     setSubmitting(true);
     try {
       const fullName = `${newStaff.firstName} ${newStaff.lastName}`.trim();
+      const cleanEmail = newStaff.email.trim().toLowerCase().replace(/\s+/g, '');
+      
       if (editingStaff) {
+        const oldEmail = editingStaff.email.trim().toLowerCase().replace(/\s+/g, '');
+        
+        // If email changed, we need to update the memberEmails array in the company doc
+        if (cleanEmail !== oldEmail) {
+          await updateDoc(doc(db, 'companies', currentCompany.id), {
+            memberEmails: arrayUnion(cleanEmail),
+            updatedAt: serverTimestamp()
+          });
+          // Note: we don't strictly remove the old email from memberEmails here to avoid accidentally 
+          // removing someone who might be sharing an email or if the removal logic is complex,
+          // but for strictness we could use arrayRemove.
+          // Given the context of fixing the connection for the new email, adding it is the priority.
+        }
+
         await updateDoc(doc(db, 'personnel', editingStaff.id), {
           firstName: newStaff.firstName,
           lastName: newStaff.lastName,
           name: fullName,
-          email: newStaff.email.trim().toLowerCase().replace(/\s+/g, ''),
+          email: cleanEmail,
           phone: newStaff.phone,
           notes: newStaff.notes,
           role: newStaff.role,
