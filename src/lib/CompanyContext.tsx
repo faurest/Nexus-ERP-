@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, or } from '../lib/firebase';
+import { collection, query, where, onSnapshot, or, getDocs, updateDoc, doc, arrayUnion, serverTimestamp } from '../lib/firebase';
 import { db, auth, onAuthStateChanged } from './firebase';
 
 export interface CompanyCategory {
@@ -81,6 +81,9 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
             return onSnapshot(collection(db, 'companies'), (snap) => {
               setCompanies(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
               setLoading(false);
+            }, (err) => {
+              console.error("Master onSnapshot error:", err);
+              setLoading(false);
             });
           }
 
@@ -92,8 +95,9 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
             )
           );
 
+          // Get personnel IDs once to assist with auto-sync
           const qPersonnel = query(collection(db, 'personnel'), where('email', '==', cleanEmail));
-          const personnelSnap = await getDocs(qPersonnel);
+          const personnelSnap = await getDocs(qPersonnel).catch(() => ({ docs: [], empty: true }));
           const personnelCompanyIds = personnelSnap.docs.map(d => d.data().companyId).filter(Boolean);
 
           return onSnapshot(qMain, (snap) => {
@@ -109,13 +113,16 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
                       updatedAt: serverTimestamp()
                     });
                   } catch (e) {
-                    console.warn("Auto-sync failed for company", cid, e);
+                    // Silently fail if we can't update, maybe the rules don't allow it yet
                   }
                 }
               });
             }
 
             setCompanies(mainCompanies);
+            setLoading(false);
+          }, (err) => {
+            console.error("Main onSnapshot error:", err);
             setLoading(false);
           });
         } catch (error) {
@@ -124,7 +131,12 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         }
       };
 
+      const timer = setTimeout(() => {
+        setLoading(false);
+      }, 8000);
+
       unsubscribeSnap = await load();
+      clearTimeout(timer);
     });
 
     return () => {

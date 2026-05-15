@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, doc, updateDoc, arrayUnion, setDoc, serverTimestamp, limit } from './lib/firebase';
+import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion, setDoc, serverTimestamp, limit } from './lib/firebase';
 type User = any;
 import { 
   LayoutDashboard, 
@@ -551,76 +551,47 @@ export default function App() {
       try {
         console.log("Nexus Security: Analyse des accès pour", normalizedEmail);
         
-        // 1. First find ALL companies to check if user should be owner/member
-        const [compSnap, personnelSnap, clientSnap] = await Promise.all([
-          getDocs(collection(db, 'companies')),
-          getDocs(collection(db, 'personnel')),
-          getDocs(collection(db, 'clients'))
+        // Use targeted lookups instead of gathering all collections (prevents permission errors)
+        const [personnelDocSnap, clientDocSnap] = await Promise.all([
+          getDoc(doc(db, 'personnel', normalizedEmail)).catch(() => null),
+          getDoc(doc(db, 'clients', normalizedEmail)).catch(() => null)
         ]);
 
-        let foundAccess = false;
+        let hasSpecificAccess = false;
         
-        // Check Master status
-        if (isMaster) foundAccess = true;
-
-        // Check ownership/membership by scanning instead of literal query (more resilient if DB not normalized yet)
-        for (const docSnap of compSnap.docs) {
-          const data = docSnap.data();
-          const cOwnerEmail = data.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
-          const isMember = data.memberEmails?.some((e: string) => typeof e === 'string' && e.trim().toLowerCase().replace(/\s+/g, '') === normalizedEmail);
-          
-          if (cOwnerEmail === normalizedEmail || isMember) {
-            foundAccess = true;
-            const updates: any = {};
-            if (cOwnerEmail === normalizedEmail && data.ownerId !== user.uid) updates.ownerId = user.uid;
-            if (!data.employees?.includes(user.uid)) updates.employees = arrayUnion(user.uid);
-            if (!data.memberEmails?.includes(normalizedEmail)) updates.memberEmails = arrayUnion(normalizedEmail);
-            
-            if (Object.keys(updates).length > 0) {
-              updates.updatedAt = serverTimestamp();
-              await updateDoc(docSnap.ref, updates).catch(e => console.warn("Owner auto-sync failed", e));
-            }
+        if (personnelDocSnap?.exists()) {
+          hasSpecificAccess = true;
+          const pData = personnelDocSnap.data();
+          if (pData.uid !== user.uid || pData.status === 'invited') {
+            await updateDoc(doc(db, 'personnel', normalizedEmail), { 
+              uid: user.uid, 
+              status: 'active', 
+              updatedAt: serverTimestamp() 
+            }).catch(() => {});
           }
         }
 
-        // Sync Personnel
-        for (const docSnap of personnelSnap.docs) {
-           const pData = docSnap.data();
-           const pEmail = pData.email?.trim().toLowerCase().replace(/\s+/g, '');
-           if (pEmail === normalizedEmail) {
-             foundAccess = true;
-             if (pData.uid !== user.uid || pData.status === 'invited') {
-               await updateDoc(docSnap.ref, { 
-                 uid: user.uid, 
-                 status: 'active', 
-                 updatedAt: serverTimestamp() 
-               }).catch(e => console.warn("Personnel Sync failed", e));
-             }
-           }
-        }
-
-        // Sync Clients
-        for (const docSnap of clientSnap.docs) {
-           const cData = docSnap.data();
-           const cEmail = cData.email?.trim().toLowerCase().replace(/\s+/g, '');
-           if (cEmail === normalizedEmail) {
-             foundAccess = true;
-             if (cData.uid !== user.uid || cData.status === 'invited') {
-               await updateDoc(docSnap.ref, { 
-                 uid: user.uid, 
-                 status: 'active', 
-                 updatedAt: serverTimestamp() 
-               }).catch(e => console.warn("Client Sync failed", e));
-             }
-           }
+        if (clientDocSnap?.exists()) {
+          hasSpecificAccess = true;
+          const cData = clientDocSnap.data();
+          if (cData.uid !== user.uid || cData.status === 'invited') {
+            await updateDoc(doc(db, 'clients', normalizedEmail), { 
+              uid: user.uid, 
+              status: 'active', 
+              updatedAt: serverTimestamp() 
+            }).catch(() => {});
+          }
         }
 
         // Final decision logic
-        console.log("Nexus Security: Analyse terminée. foundAccess:", foundAccess, "isMaster:", isMaster, "companies:", companies.length);
-        if (isMaster || foundAccess || (companies && companies.length > 0)) {
+        const hasCompanies = companies && companies.length > 0;
+        console.log("Nexus Security: Analyse terminée. Access:", hasSpecificAccess || isMaster || hasCompanies);
+        
+        if (isMaster || hasSpecificAccess || hasCompanies) {
           setIsWhitelisted(true);
         } else {
-          console.log("Nexus Security: Aucun accès trouvé pour", normalizedEmail);
+          // One final check: maybe they are in memberEmails of a company but it hasn't loaded yet
+          // CompanyContext handles this, so we rely on context
           setIsWhitelisted(false);
         }
       } catch (err) {
