@@ -146,6 +146,17 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /global_orders/{orderId} {
+      allow read: if true;
+      allow create: if true;
+      // Allow updates for sub-order splitting and status updates from marketplace
+      allow update: if isAdmin() || (
+        (incoming().diff(existing()).affectedKeys().hasOnly(['subOrderIds', 'paymentStatus'])) &&
+        (existing().status == 'PENDING')
+      );
+      allow delete: if isAdmin();
+    }
+
     match /{collectionName}/{docId} {
       function isCompanyCollection() {
         return collectionName in [
@@ -155,7 +166,7 @@ service cloud.firestore {
           'sales_invoices', 'invoices', 'payments', 'collaborations',
           'messages', 'project_discussions', 'leave_requests', 'time_entries', 'salary_advances',
           'ecommerce_orders', 'resource_movements', 'products', 'order_messages', 'compagnie', 'notification_configs', 'order_history',
-          'internal_resources', 'stock_history'
+          'internal_resources', 'stock_history', 'global_orders'
         ];
       }
 
@@ -181,8 +192,10 @@ service cloud.firestore {
       }
 
       function isValidEntity(data) {
-        return data.companyId is string && isValidId(data.companyId) && 
-               (isAdmin() || isMemberOfCompany(data.companyId));
+        return (collectionName == 'global_orders') || (
+          data.companyId is string && isValidId(data.companyId) && 
+          (isAdmin() || isMemberOfCompany(data.companyId))
+        );
       }
 
       function isSelf(data) {
@@ -199,7 +212,7 @@ service cloud.firestore {
       // Read access: Admin, Company Member, or the User themselves (self-access)
       // Products, Services and guest Orders are public for the Marketplace
       allow get: if isCompanyCollection() && (
-        collectionName in ['products', 'services', 'ecommerce_orders', 'order_history'] ||
+        collectionName in ['products', 'services', 'ecommerce_orders', 'order_history', 'global_orders'] ||
         (isSignedIn() && (
           isAdmin() || 
           isSelf(resource.data) ||
@@ -208,7 +221,7 @@ service cloud.firestore {
       );
       
       allow list: if isCompanyCollection() && (
-        collectionName in ['products', 'services'] ||
+        collectionName in ['products', 'services', 'ecommerce_orders', 'order_history', 'global_orders'] ||
         (isSignedIn() && (
           isAdmin() || 
           isSelf(resource.data) ||
@@ -219,7 +232,7 @@ service cloud.firestore {
       allow create: if isCompanyCollection() && 
                     isValidEntity(incoming()) && 
                     (isAdmin() || (
-                      collectionName in ['ecommerce_orders', 'order_history'] || 
+                      collectionName in ['ecommerce_orders', 'order_history', 'global_orders'] || 
                       (isSignedIn() && (
                         isMemberOfCompany(incoming().companyId) ||
                         isSelf(incoming())
