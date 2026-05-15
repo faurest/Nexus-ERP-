@@ -100,18 +100,6 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   
-  // Alert the user with a friendly message
-  if (typeof window !== 'undefined') {
-    let friendlyMessage = "Une erreur est survenue lors de l'opération.";
-    if (errorMessage.includes('not found') || errorMessage.includes('relation') || errorMessage.includes('does not exist')) {
-      friendlyMessage = `Erreur : La collection ou le champ pour '${path}' semble manquant ou mal configuré dans Firebase.`;
-    } else if (errorMessage.includes('permission') || errorMessage.includes('denied')) {
-      friendlyMessage = "Erreur : Vous n'avez pas les permissions nécessaires pour effectuer cette action.";
-    }
-    const pathDisplay = path ? ` (Chemin: ${path})` : "";
-    alert(friendlyMessage + pathDisplay + "\n\nDétails : " + errorMessage);
-  }
-
   throw new Error(JSON.stringify(errInfo));
 }
 

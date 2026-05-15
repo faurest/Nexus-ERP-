@@ -151,7 +151,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
                       updatedAt: serverTimestamp()
                     });
                   } catch (e) {
-                    // Silently fail if we can't update, maybe the rules don't allow it yet
+                    // Silently fail if we can't update
                   }
                 }
               });
@@ -169,11 +169,13 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         }
       };
 
+      // Faster timeout for loading state to reveal selection screen even if Firestore is slow
       const timer = setTimeout(() => {
         setLoading(false);
-      }, 8000);
+      }, 4000);
 
-      unsubscribeSnap = await load();
+      const unsubscribe = await load();
+      unsubscribeSnap = unsubscribe;
       clearTimeout(timer);
     });
 

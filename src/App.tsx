@@ -528,66 +528,20 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (isMaster) {
+      setIsWhitelisted(true);
+      return;
+    }
+
     const checkWhitelist = async () => {
       if (!user?.email || !user?.uid) return;
       
       const normalizedEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
 
-      // AUTO-PROVISIONING
-      if (isMaster) {
-        try {
-          // JET 7 INFO
-          const jet7Query = query(collection(db, 'companies'), where('name', '==', 'JET 7 INFO'));
-          const jet7Snap = await getDocs(jet7Query);
-          if (jet7Snap.empty) {
-            console.log("Nexus Provisioning: Création de JET 7 INFO...");
-            const newCompanyRef = await addDoc(collection(db, 'companies'), {
-              name: 'JET 7 INFO',
-              ownerEmail: 'yaoubaboubakary43@gmail.com',
-              joinCode: 'JET7-2026',
-              memberEmails: ['yaoubaboubakary43@gmail.com', 'ousmailambangl1@gmail.com', 'dangafelicite@gmail.com', 'hackeurfaurest@gmail.com'],
-              employees: [],
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp()
-            });
-            
-            await setDoc(doc(db, 'personnel', 'ousmailambangl1@gmail.com'), {
-              companyId: newCompanyRef.id,
-              firstName: 'Collaborateur',
-              lastName: 'JET 7',
-              email: 'ousmailambangl1@gmail.com',
-              name: 'Collaborateur JET 7',
-              role: 'Collaborateur',
-              status: 'active',
-              createdAt: serverTimestamp()
-            });
-          }
-
-          // TEST Company
-          const testQuery = query(collection(db, 'companies'), where('name', '==', 'TEST'));
-          const testSnap = await getDocs(testQuery);
-          if (testSnap.empty) {
-            console.log("Nexus Provisioning: Création de TEST...");
-            await addDoc(collection(db, 'companies'), {
-              name: 'TEST',
-              ownerEmail: 'ousmailambangl1@gmail.com',
-              joinCode: 'TEST-2026',
-              memberEmails: ['ousmailambangl1@gmail.com', 'yaoubaboubakary43@gmail.com', 'dangafelicite@gmail.com', 'hackeurfaurest@gmail.com'],
-              employees: [],
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp()
-            });
-            console.log("Nexus Provisioning: TEST créé avec succès.");
-          }
-        } catch (e) {
-          console.error("Nexus Provisioning Error:", e);
-        }
-      }
-
       try {
         console.log("Nexus Security: Analyse des accès pour", normalizedEmail);
         
-        // Use targeted lookups instead of gathering all collections (prevents permission errors)
+        // Use targeted lookups
         const [personnelDocSnap, clientDocSnap] = await Promise.all([
           getDoc(doc(db, 'personnel', normalizedEmail)).catch(() => null),
           getDoc(doc(db, 'clients', normalizedEmail)).catch(() => null)
@@ -599,11 +553,13 @@ export default function App() {
           hasSpecificAccess = true;
           const pData = personnelDocSnap.data();
           if (pData.uid !== user.uid || pData.status === 'invited') {
-            await updateDoc(doc(db, 'personnel', normalizedEmail), { 
-              uid: user.uid, 
-              status: 'active', 
-              updatedAt: serverTimestamp() 
-            }).catch(() => {});
+            try {
+              await updateDoc(doc(db, 'personnel', normalizedEmail), { 
+                uid: user.uid, 
+                status: 'active', 
+                updatedAt: serverTimestamp() 
+              });
+            } catch (e) { /* Ignore background update fail */ }
           }
         }
 
@@ -611,28 +567,28 @@ export default function App() {
           hasSpecificAccess = true;
           const cData = clientDocSnap.data();
           if (cData.uid !== user.uid || cData.status === 'invited') {
-            await updateDoc(doc(db, 'clients', normalizedEmail), { 
-              uid: user.uid, 
-              status: 'active', 
-              updatedAt: serverTimestamp() 
-            }).catch(() => {});
+            try {
+              await updateDoc(doc(db, 'clients', normalizedEmail), { 
+                uid: user.uid, 
+                status: 'active', 
+                updatedAt: serverTimestamp() 
+              });
+            } catch (e) { /* Ignore background update fail */ }
           }
         }
 
         // Final decision logic
         const hasCompanies = companies && companies.length > 0;
-        console.log("Nexus Security: Analyse terminée. Access:", hasSpecificAccess || isMaster || hasCompanies);
+        console.log("Nexus Security: Analyse terminée. Access:", hasSpecificAccess || hasCompanies);
         
-        if (isMaster || hasSpecificAccess || hasCompanies) {
+        if (hasSpecificAccess || hasCompanies) {
           setIsWhitelisted(true);
         } else {
-          // One final check: maybe they are in memberEmails of a company but it hasn't loaded yet
-          // CompanyContext handles this, so we rely on context
           setIsWhitelisted(false);
         }
       } catch (err) {
         console.error("Whitelist check failed:", err);
-        setIsWhitelisted(isMaster);
+        setIsWhitelisted(false);
       }
     };
     checkWhitelist();
@@ -867,10 +823,6 @@ export default function App() {
 
   if (!user) {
     return <LoginScreen onMarketplace={() => setShowMarketplace(true)} />;
-  }
-
-  if (isWhitelisted === false && !isMaster && companies.length === 0) {
-    return <WorkspaceSelector companies={companies} user={user} onSelect={setCurrentCompany} />;
   }
 
   if (!currentCompany) {
