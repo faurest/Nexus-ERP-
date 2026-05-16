@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, addDoc, setDoc, serverTimestamp, doc, updateDoc, deleteDoc } from '../lib/firebase';
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { collection, onSnapshot, query, where, addDoc, setDoc, serverTimestamp, doc, updateDoc, deleteDoc, auth } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { Search, Plus, TrendingUp, Filter, ShoppingCart, Receipt, CreditCard, DollarSign, Edit2, Trash2, CheckCircle2, ArrowRight, HelpCircle } from 'lucide-react';
+import { Search, Plus, TrendingUp, Filter, ShoppingCart, Receipt, CreditCard, DollarSign, Edit2, Trash2, CheckCircle2, ArrowRight, HelpCircle, FileText, Package } from 'lucide-react';
 import { HelpTrigger } from './ContextualHelp';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
@@ -33,8 +34,18 @@ interface Invoice {
   items?: any[];
 }
 
-export default function SalesModule() {
+export default function SalesModule({ user }: { user: any }) {
   const { currentCompany } = useCompany();
+  
+  const userRole = useMemo(() => {
+    if (!user || user.role === 'admin') return 'admin';
+    const role = user.role || 'Personnel';
+    if (['owner', 'Directeur', 'Administrateur'].includes(role)) return 'admin';
+    if (['Comptable', 'Gérant'].includes(role)) return 'manager';
+    if (['Agent Commercial', 'Personnel'].includes(role)) return 'staff';
+    return 'staff';
+  }, [user]);
+
   const [sales, setSales] = useState<Sale[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -60,6 +71,30 @@ export default function SalesModule() {
   const [isAddingCatalogItem, setIsAddingCatalogItem] = useState(false);
   const [catalogFormData, setCatalogFormData] = useState<any>({ name: '', price: 0, quantity: 0, type: 'Stock' });
   const [submitting, setSubmitting] = useState(false);
+
+  const availableTabs = useMemo(() => {
+    const allTabs = [
+      { id: 'pos', label: 'Caisse/POS', icon: ShoppingCart },
+      { id: 'orders', label: 'Commandes', icon: Receipt },
+      { id: 'sales', label: 'Historique', icon: DollarSign },
+      { id: 'invoices', label: 'Facturation', icon: FileText },
+      { id: 'payments', label: 'Paiements', icon: CreditCard },
+      { id: 'catalog', label: 'Services/Produits', icon: Package },
+      { id: 'reports', label: 'Analyses', icon: TrendingUp },
+    ];
+    
+    if (userRole === 'admin') return allTabs;
+    if (userRole === 'manager') return allTabs;
+    if (userRole === 'staff') return allTabs.filter(t => ['pos', 'orders', 'sales', 'invoices'].includes(t.id));
+    return [allTabs[0]]; // Fallback to POS
+  }, [userRole]);
+
+  useEffect(() => {
+    // If current tab is not allowed, switch to the first allowed one
+    if (!availableTabs.find(t => t.id === activeTab)) {
+      setActiveTab(availableTabs[0]?.id as any || 'pos');
+    }
+  }, [availableTabs, activeTab]);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -359,31 +394,36 @@ export default function SalesModule() {
         {clients.slice().sort((a,b) => a.name.localeCompare(b.name)).map(c => <option key={c.id} value={c.name} />)}
       </datalist>
 
-      <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
+      <div className="relative overflow-hidden bg-nexus-surface rounded-[2rem] p-8 sm:p-12 text-nexus-text shadow-2xl border border-white/5 group">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/10 via-nexus-bg to-nexus-bg z-0 opacity-80" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-nexus-accent/5 rounded-full blur-[120px] -mr-48 -mt-48 transition-transform duration-1000 group-hover:scale-110" />
+
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
-              Nexus <span className="text-blue-500">Growth</span>
-            </h1>
-            <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
-              Supervisez vos cycles de vente, gérez les factures et analysez vos performances.
-            </p>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-white/5 border border-white/10 rounded-full mb-6">
+                <div className="w-2 h-2 bg-nexus-success rounded-full shadow-[0_0_8px_rgba(0,200,150,0.4)] animate-pulse" />
+                <span className="text-[9px] font-black uppercase tracking-[0.25em] text-nexus-success">Nexus OS • Growth Intelligence</span>
+              </div>
+              <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
+                Nexus <span className="nexus-gradient-text">Growth</span>
+              </h1>
+              <p className="text-nexus-text-muted text-sm font-medium leading-relaxed max-w-lg">
+                Supervisez vos cycles de vente, gérez les factures et analysez vos performances financières avec précision.
+              </p>
+            </motion.div>
           </div>
-          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-white/10 shrink-0 gap-1 overflow-x-auto scrollbar-hide max-w-full">
-             {[
-               { id: 'pos', label: 'POS' },
-               { id: 'orders', label: 'Commandes' },
-               { id: 'invoices', label: 'Facturation' },
-               { id: 'payments', label: 'Paiements' },
-               { id: 'catalog', label: 'Catalogue' },
-               { id: 'reports', label: 'Bilan' }
-             ].map(item => (
+          <div className="flex bg-white/5 backdrop-blur-md p-1.5 rounded-[1.5rem] border border-white/10 shrink-0 gap-1 overflow-x-auto scrollbar-hide max-w-full">
+             {availableTabs.map(item => (
                <button 
                  key={item.id}
                  onClick={() => setActiveTab(item.id as any)}
                  className={cn(
-                   "px-6 py-2.5 rounded-lg text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap", 
-                   activeTab === item.id ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white"
+                   "px-6 py-3 rounded-xl text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap", 
+                   activeTab === item.id ? "bg-nexus-accent text-white shadow-[0_10px_20px_rgba(91,140,255,0.2)]" : "text-nexus-text-muted hover:text-nexus-text hover:bg-white/5"
                  )}
                >
                  {item.label}
@@ -394,126 +434,176 @@ export default function SalesModule() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
-           <div className="flex justify-between items-center mb-2"><div className="p-2 bg-green-50 text-green-600 rounded-lg"><DollarSign size={18}/></div></div>
-           <p className="text-xs font-bold text-slate-400 uppercase">Chiffre d'Affaires Encaissé</p>
-           <p className="text-2xl font-black text-slate-900">{calculateTotalRevenue().toLocaleString()} FCFA</p>
-        </div>
-        <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
-           <div className="flex justify-between items-center mb-2"><div className="p-2 bg-amber-50 text-amber-600 rounded-lg"><Receipt size={18}/></div></div>
-           <p className="text-xs font-bold text-slate-400 uppercase">Facturation en attente</p>
-           <p className="text-2xl font-black text-slate-900">{calculatePendingRevenue().toLocaleString()} FCFA</p>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-nexus-surface p-6 border border-white/5 rounded-[2rem] shadow-2xl group hover:border-nexus-success/30 transition-all"
+        >
+           <div className="flex justify-between items-center mb-4">
+              <div className="p-3 bg-nexus-success/10 text-nexus-success rounded-2xl group-hover:scale-110 transition-transform">
+                <DollarSign size={20}/>
+              </div>
+              <div className="text-[10px] font-black text-nexus-success bg-nexus-success/10 px-2 py-1 rounded-full uppercase tracking-widest animate-pulse">Live</div>
+           </div>
+           <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.2em] mb-1">Impact Encaissé</p>
+           <p className="text-2xl font-black text-nexus-text">{calculateTotalRevenue().toLocaleString()} FCFA</p>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-nexus-surface p-6 border border-white/5 rounded-[2rem] shadow-2xl group hover:border-nexus-warning/30 transition-all"
+        >
+           <div className="flex justify-between items-center mb-4">
+              <div className="p-3 bg-nexus-warning/10 text-nexus-warning rounded-2xl group-hover:scale-110 transition-transform">
+                <Receipt size={20}/>
+              </div>
+           </div>
+           <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.2em] mb-1">Encours Facturation</p>
+           <p className="text-2xl font-black text-nexus-text">{calculatePendingRevenue().toLocaleString()} FCFA</p>
+        </motion.div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-          <div className="flex items-center gap-3">
-             <div className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 flex items-center gap-2">
-                <Search size={14} className="text-slate-400"/>
-                <input type="text" placeholder="Recherche..." className="bg-transparent outline-none text-xs w-48"/>
+      <div className="bg-nexus-surface border border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden">
+        <div className="p-6 border-b border-white/5 flex flex-col sm:flex-row justify-between items-center bg-white/5 backdrop-blur-sm gap-4">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+             <div className="bg-nexus-bg border border-white/10 rounded-2xl px-5 py-3 flex items-center gap-3 w-full sm:w-64 focus-within:border-nexus-accent transition-colors group">
+                <Search size={16} className="text-nexus-text-muted group-focus-within:text-nexus-accent"/>
+                <input type="text" placeholder="Filtre ID, Client..." className="bg-transparent outline-none text-[11px] font-bold text-nexus-text w-full placeholder:text-nexus-text-muted/50"/>
              </div>
           </div>
-          <button onClick={() => setIsAdding(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-blue-100">
-             <Plus size={14} /> Nouvelle Vente
-             <HelpTrigger topic="SALES" className="text-white/60 hover:text-white" />
+          <button 
+            onClick={() => setIsAdding(true)} 
+            className="w-full sm:w-auto bg-nexus-accent text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 shadow-[0_15px_30px_rgba(91,140,255,0.2)] hover:bg-blue-500 transition-all active:scale-95 group"
+          >
+             <Plus size={16} className="group-hover:rotate-90 transition-transform" /> 
+             Action Vente
+             <HelpTrigger topic="SALES" className="text-white/40 hover:text-white" />
           </button>
         </div>
 
         {activeTab === 'orders' && (
-          <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-slate-50">
+          <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-white/5">
             {openOrders.map(order => (
-              <div key={order.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
-                <div className="flex justify-between items-start mb-4">
+              <motion.div 
+                key={order.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-nexus-surface p-7 rounded-[2.5rem] border border-white/5 shadow-2xl hover:border-nexus-accent/30 transition-all group relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-nexus-accent/5 rounded-full blur-2xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
+                
+                <div className="relative z-10 flex justify-between items-start mb-6">
                   <div>
-                    <h4 className="font-black text-slate-900 text-sm">{order.clientName || 'Client Inconnu'}</h4>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{order.tableNumber ? `Table ${order.tableNumber}` : 'Sans table'}</p>
+                    <h4 className="font-black text-nexus-text text-lg italic tracking-tight">{order.clientName || 'Anonyme'}</h4>
+                    <p className="text-[10px] text-nexus-text-muted font-black uppercase tracking-[0.2em] mt-1">{order.tableNumber ? `Poste ${order.tableNumber}` : 'Flux Direct'}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-1 bg-amber-50 text-amber-600 rounded-lg text-[8px] font-black uppercase tracking-tighter">En cours</span>
-                    <button onClick={(e) => handleDeleteOrder(order.id, e)} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button>
+                    <span className="px-2.5 py-1 bg-nexus-warning/10 text-nexus-warning rounded-xl text-[8px] font-black uppercase tracking-widest border border-nexus-warning/20">Protocole Ouvert</span>
+                    <button onClick={(e) => handleDeleteOrder(order.id, e)} className="p-2 text-nexus-text-muted hover:text-nexus-danger hover:bg-nexus-danger/10 rounded-xl transition-all"><Trash2 size={14} /></button>
                   </div>
                 </div>
                 
-                <div className="space-y-2 mb-6">
+                <div className="relative z-10 space-y-3 mb-8 max-h-[140px] overflow-y-auto pr-2 custom-scrollbar">
                   {order.items?.map((item: any, i: number) => (
-                    <div key={i} className="flex justify-between items-center text-[11px]">
-                      <span className="text-slate-600 font-medium">{item.quantity}x {item.name}</span>
-                      <span className="text-slate-900 font-bold">{((item.price || 0) * item.quantity).toLocaleString()} F</span>
+                    <div key={i} className="flex justify-between items-center text-[11px] group/item">
+                      <span className="text-nexus-text-muted font-bold flex items-center gap-2">
+                        <span className="w-5 h-5 bg-white/5 rounded-lg flex items-center justify-center text-[9px] font-black text-nexus-accent">{item.quantity}</span>
+                        {item.name}
+                      </span>
+                      <span className="text-nexus-text font-black tracking-tight">{((item.price || 0) * item.quantity).toLocaleString()} F</span>
                     </div>
                   ))}
-                  {(!order.items || order.items.length === 0) && <p className="text-[10px] text-slate-400 italic">Aucun article dans cette commande.</p>}
+                  {(!order.items || order.items.length === 0) && (
+                    <div className="py-4 flex flex-col items-center gap-2 opacity-30 italic">
+                      <ShoppingCart size={24} />
+                      <p className="text-[10px] font-bold text-nexus-text-muted tracking-widest">VIDE</p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</div>
-                  <div className="text-lg font-black text-slate-900">{order.items?.reduce((sum: number, i: any) => sum + (i.price * i.quantity), 0).toLocaleString()} FCFA</div>
+                <div className="relative z-10 pt-6 border-t border-white/5 flex justify-between items-center mb-6">
+                  <div className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Valence Totale</div>
+                  <div className="text-xl font-black text-nexus-text nexus-gradient-text">{order.items?.reduce((sum: number, i: any) => sum + (i.price * i.quantity), 0).toLocaleString()} FCFA</div>
                 </div>
 
                 <button 
                   onClick={() => { setActiveOrderId(order.id); setActiveTab('pos'); }}
-                  className="w-full mt-4 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-slate-200"
+                  className="relative z-10 w-full py-4 bg-white/5 hover:bg-nexus-accent text-nexus-text hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10 hover:border-nexus-accent shadow-xl active:scale-95 flex items-center justify-center gap-2 group-hover:bg-nexus-accent group-hover:text-white"
                 >
-                  Ouvrir dans POS
+                  <ArrowRight size={14} />
+                  Injecter dans POS
                 </button>
-              </div>
+              </motion.div>
             ))}
             <button 
               onClick={() => setIsAddingOrder(true)}
-              className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-all group"
+              className="bg-white/5 border-2 border-dashed border-white/10 rounded-[2.5rem] p-10 flex flex-col items-center justify-center gap-4 text-nexus-text-muted hover:text-nexus-accent hover:border-nexus-accent/50 transition-all group"
             >
-              <div className="p-3 bg-white rounded-full shadow-sm group-hover:scale-110 transition-transform"><Plus size={24} /></div>
-              <span className="text-[10px] font-black uppercase tracking-widest">Nouvelle Commande</span>
+              <div className="p-4 bg-nexus-surface rounded-3xl shadow-2xl group-hover:scale-110 transition-transform border border-white/5"><Plus size={32} /></div>
+              <span className="text-[11px] font-black uppercase tracking-[0.2em]">Initialiser Flux</span>
             </button>
           </div>
         )}
 
         {activeTab === 'sales' && (
-          <Table headers={['Date', 'Type', 'Article/Service', 'Qté', 'Prix U.', 'Total', 'Statut', 'Actions']}>
-            {sales.map(sale => (
-              <TableRow key={sale.id}>
-                <span className="text-[10px] font-bold text-slate-400">{sale.date ? new Date((sale.date.seconds || sale.date / 1000) * 1000).toLocaleDateString() : 'Auj'}</span>
-                <div className="flex flex-col">
-                  <button 
-                    onClick={() => setSelectedClientName(sale.clientName || null)}
-                    className="font-bold text-slate-800 text-left hover:text-blue-600 hover:underline outline-none"
-                  >
-                    {sale.itemName}
-                  </button>
-                  {sale.clientName && <span className="text-[8px] text-slate-400 font-bold uppercase">{sale.clientName}</span>}
-                </div>
-                <span className={cn("px-2 py-0.5 rounded text-[10px] uppercase font-bold", sale.type === 'product' ? "bg-amber-100 text-amber-700" : "bg-purple-100 text-purple-700")}>{sale.type === 'product' ? 'Produit' : 'Service'}</span>
-                <span className="text-slate-600 font-mono">{sale.quantity}</span>
-                <span className="text-slate-600 font-mono">{sale.price.toLocaleString()} FCFA</span>
-                <span className="font-black text-slate-900 font-mono">{sale.total.toLocaleString()} FCFA</span>
-                <span className={cn("px-2 py-0.5 rounded text-[9px] uppercase font-bold border", sale.status === 'completed' ? "bg-green-50 text-green-700 border-green-200" : "bg-slate-50 text-slate-600 border-slate-200")}>
-                  {sale.status === 'completed' ? 'PAYÉ' : 'EN ATTENTE'}
-                </span>
-                <div className="flex items-center gap-2">
-                   {sale.status !== 'completed' && (
-                     <button 
-                       onClick={async () => {
-                         try {
-                           await updateDoc(doc(db, 'sales', sale.id), { 
-                             status: 'completed',
-                             updatedAt: serverTimestamp()
-                           });
-                         } catch (err) {
-                           handleFirestoreError(err, OperationType.UPDATE, 'sales');
-                         }
-                       }}
-                       className="p-1 text-green-500 hover:text-green-700 hover:bg-green-50 rounded"
-                       title="Marquer comme payé"
-                     >
-                       <CheckCircle2 size={14} />
-                     </button>
-                   )}
-                   <button onClick={() => { setEditingSale(sale); setFormData(sale); setIsAdding(true); }} className="p-1 text-slate-400 hover:text-blue-600"><Edit2 size={14}/></button>
-                   <button onClick={() => handleDeleteSale(sale.id)} className="p-1 text-slate-400 hover:text-red-600"><Trash2 size={14}/></button>
-                </div>
-              </TableRow>
-            ))}
-          </Table>
+          <div className="p-4">
+            <Table headers={['Date', 'Type', 'Désignation', 'Qté', 'Prix U.', 'Total', 'Statut', 'Actions']}>
+              {sales.map(sale => (
+                <TableRow key={sale.id}>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-nexus-text tracking-tight italic">
+                      {sale.date ? new Date((sale.date.seconds || sale.date / 1000) * 1000).toLocaleDateString() : 'Auj'}
+                    </span>
+                    <span className="text-[8px] font-bold text-nexus-text-muted uppercase tracking-widest mt-1">
+                      {sale.date ? new Date((sale.date.seconds || sale.date / 1000) * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) : '--:--'}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <button 
+                      onClick={() => setSelectedClientName(sale.clientName || null)}
+                      className="font-black text-nexus-text text-left hover:text-nexus-accent hover:underline outline-none uppercase italic tracking-tight"
+                    >
+                      {sale.itemName}
+                    </button>
+                    {sale.clientName && <span className="text-[8px] text-nexus-text-muted font-bold uppercase tracking-widest mt-1">{sale.clientName}</span>}
+                  </div>
+                  <span className={cn("px-2.5 py-1 rounded-xl text-[9px] uppercase font-black tracking-widest border", sale.type === 'product' ? "bg-nexus-warning/10 text-nexus-warning border-nexus-warning/20" : "bg-purple-500/10 text-purple-400 border-purple-500/20")}>{sale.type === 'product' ? 'Stock' : 'Service'}</span>
+                  <span className="text-nexus-text font-black italic">{sale.quantity}</span>
+                  <span className="text-nexus-text-muted font-black tracking-tighter">{sale.price.toLocaleString()} F</span>
+                  <span className="font-black text-nexus-accent nexus-gradient-text italic tracking-tighter">{sale.total.toLocaleString()} F</span>
+                  <span className={cn("px-2.5 py-1 rounded-xl text-[8px] uppercase font-black border", sale.status === 'completed' ? "bg-nexus-success/10 text-nexus-success border-nexus-success/20" : "bg-white/5 text-nexus-text-muted border-white/10")}>
+                    {sale.status === 'completed' ? 'VALIDÉ' : 'ATTENTE'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                     {sale.status !== 'completed' && (
+                       <button 
+                         onClick={async () => {
+                           try {
+                             await updateDoc(doc(db, 'sales', sale.id), { 
+                               status: 'completed',
+                               updatedAt: serverTimestamp()
+                             });
+                           } catch (err) {
+                             handleFirestoreError(err, OperationType.UPDATE, 'sales');
+                           }
+                         }}
+                         className="p-2 text-nexus-success hover:bg-nexus-success/10 rounded-xl transition-all"
+                         title="Valider"
+                       >
+                         <CheckCircle2 size={16} />
+                       </button>
+                     )}
+                     <button onClick={() => { setEditingSale(sale); setFormData(sale); setIsAdding(true); }} className="p-2 text-nexus-text-muted hover:text-nexus-accent hover:bg-nexus-accent/10 rounded-xl transition-all"><Edit2 size={16}/></button>
+                     {userRole === 'admin' && (
+                       <button onClick={() => handleDeleteSale(sale.id)} className="p-2 text-nexus-text-muted hover:text-nexus-danger hover:bg-nexus-danger/10 rounded-xl transition-all"><Trash2 size={16}/></button>
+                     )}
+                  </div>
+                </TableRow>
+              ))}
+            </Table>
+          </div>
         )}
 
         {activeTab === 'pos' && (
@@ -736,167 +826,212 @@ export default function SalesModule() {
         )}
 
         {activeTab === 'invoices' && (
-          <Table headers={['N° Facture', 'Client / Table', 'Articles', 'Date', 'Montant', 'Statut', 'Actions']}>
-            {invoices.map(inv => {
-              const paidAmount = payments.filter(p => p.invoiceId === inv.id).reduce((sum, p) => sum + p.amount, 0);
-              const remaining = inv.amount - paidAmount;
-              
-              return (
-                <TableRow key={inv.id}>
-                  <span className="font-mono font-bold text-blue-600">{inv.invoiceNumber}</span>
-                  <div className="flex flex-col">
-                     <button 
-                       onClick={() => setSelectedClientName(inv.clientName || null)}
-                       className="font-bold text-slate-800 text-xs hover:text-blue-600 hover:underline text-left outline-none"
-                     >
-                       {inv.clientName || 'Générique'}
-                     </button>
-                     {inv.tableNumber && <span className="text-[10px] text-slate-500 font-bold uppercase">Table: {inv.tableNumber}</span>}
-                  </div>
-                  <div className="text-[10px] text-slate-600 max-w-[200px] truncate" title={inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ')}>
-                     {inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ') || 'Détails non dispo'}
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-500">
-                    {inv.date ? new Date(inv.date.seconds * 1000).toLocaleString() : 'Auj'}
-                  </span>
-                  <span className="font-black text-slate-900 font-mono">{inv.amount.toLocaleString()} F</span>
-                  <span className={cn("px-2 py-0.5 rounded text-[9px] uppercase font-black border", inv.status === 'paid' ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-red-50 text-red-700 border-red-200")}>
-                    {inv.status === 'paid' ? 'Payée' : `À payer (${remaining.toLocaleString()} F)`}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {inv.status !== 'paid' && (
-                      <button 
-                        onClick={() => { setSelectedInvoice(inv); setPaymentForm({...paymentForm, amount: remaining}); setIsAddingPayment(true); }}
-                        className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100"
-                      >
-                        Encaisser
-                      </button>
-                    )}
-                  </div>
-                </TableRow>
-              );
-            })}
-          </Table>
+          <div className="p-4">
+            <Table headers={['N° Facture', 'Entité / Source', 'Contenu Vecteur', 'Date', 'Valence', 'Statut', 'Actions']}>
+              {invoices.map(inv => {
+                const paidAmount = payments.filter(p => p.invoiceId === inv.id).reduce((sum, p) => sum + p.amount, 0);
+                const remaining = inv.amount - paidAmount;
+                
+                return (
+                  <TableRow key={inv.id}>
+                    <span className="font-black text-nexus-accent italic tracking-tight">{inv.invoiceNumber}</span>
+                    <div className="flex flex-col">
+                       <button 
+                         onClick={() => setSelectedClientName(inv.clientName || null)}
+                         className="font-black text-nexus-text text-xs hover:text-nexus-accent hover:underline text-left outline-none uppercase italic"
+                       >
+                         {inv.clientName || 'Flux Direct'}
+                       </button>
+                       {inv.tableNumber && <span className="text-[9px] text-nexus-text-muted font-black uppercase tracking-widest mt-1">Poste: {inv.tableNumber}</span>}
+                    </div>
+                    <div className="text-[10px] text-nexus-text-muted max-w-[200px] truncate italic" title={inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ')}>
+                       {inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ') || 'Injection directe'}
+                    </div>
+                    <span className="text-[10px] font-black text-nexus-text tracking-tighter">
+                      {inv.date ? new Date(inv.date.seconds * 1000).toLocaleDateString() : 'Auj'}
+                    </span>
+                    <span className="font-black text-nexus-text italic tracking-tighter">{inv.amount.toLocaleString()} F</span>
+                    <span className={cn("px-2.5 py-1 rounded-xl text-[8px] uppercase font-black border tracking-widest", inv.status === 'paid' ? "bg-nexus-success/10 text-nexus-success border-nexus-success/20" : "bg-nexus-danger/10 text-nexus-danger border-nexus-danger/20")}>
+                      {inv.status === 'paid' ? 'Soldée' : `Reliquat: ${remaining.toLocaleString()} F`}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {inv.status !== 'paid' && (
+                        <button 
+                          onClick={() => { setSelectedInvoice(inv); setPaymentForm({...paymentForm, amount: remaining}); setIsAddingPayment(true); }}
+                          className="px-4 py-2 bg-nexus-success text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-[0_10px_20px_rgba(0,200,150,0.2)] active:scale-95"
+                        >
+                          Encaisser
+                        </button>
+                      )}
+                    </div>
+                  </TableRow>
+                );
+              })}
+            </Table>
+          </div>
         )}
 
         {activeTab === 'payments' && (
-          <Table headers={['Référence', 'Facture', 'Méthode', 'Date', 'Montant']}>
-            {payments.map(pay => (
-              <TableRow key={pay.id}>
-                  <span className="font-mono font-bold text-blue-600">{pay.reference || 'Aucune réf.'}</span>
-                <button 
-                  onClick={() => setSelectedClientName(invoices.find(i => i.id === pay.invoiceId)?.clientName || null)}
-                  className="font-mono font-bold text-blue-600 hover:underline text-left"
-                >
-                  {invoices.find(i => i.id === pay.invoiceId)?.invoiceNumber || 'Facture indisp.'}
-                </button>
-                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] uppercase font-black">{pay.method}</span>
-                <span className="text-[10px] font-bold text-slate-500">
-                  {pay.date ? new Date(pay.date.seconds * 1000).toLocaleString() : 'Auj'}
-                </span>
-                <span className="font-black text-emerald-600 font-mono">+{pay.amount.toLocaleString()} FCFA</span>
-              </TableRow>
-            ))}
-          </Table>
+          <div className="p-4">
+            <Table headers={['Référence Flux', 'Vecteur Source', 'Protocole', 'Date', 'Valence Apportée']}>
+              {payments.map(pay => (
+                <TableRow key={pay.id}>
+                  <span className="font-black text-nexus-accent italic tracking-tight">{pay.reference || 'REF_AUTO'}</span>
+                  <button 
+                    onClick={() => setSelectedClientName(invoices.find(i => i.id === pay.invoiceId)?.clientName || null)}
+                    className="font-black text-nexus-text hover:text-nexus-accent hover:underline text-left italic border-b border-white/10"
+                  >
+                    {invoices.find(i => i.id === pay.invoiceId)?.invoiceNumber || 'FLUX_EXT'}
+                  </button>
+                  <span className="px-2.5 py-1 bg-white/5 text-nexus-text-muted rounded-xl text-[9px] uppercase font-black tracking-widest border border-white/10">{pay.method}</span>
+                  <span className="text-[10px] font-black text-nexus-text tracking-tighter">
+                    {pay.date ? new Date(pay.date.seconds * 1000).toLocaleDateString() : 'Auj'}
+                  </span>
+                  <span className="font-black text-nexus-success italic">+{pay.amount.toLocaleString()} FCFA</span>
+                </TableRow>
+              ))}
+            </Table>
+          </div>
         )}
 
         {activeTab === 'catalog' && (
-          <div className="p-6 space-y-8 bg-slate-50">
-            <div className="flex gap-4 border-b border-slate-200">
+          <div className="p-8 space-y-8 bg-white/5">
+            <div className="flex gap-8 border-b border-white/5">
               <button 
                 onClick={() => setCatalogType('product')}
-                className={cn("pb-4 text-xs font-black uppercase tracking-widest transition-all", catalogType === 'product' ? "text-slate-900 border-b-2 border-slate-900" : "text-slate-400")}
+                className={cn("pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative group", catalogType === 'product' ? "text-nexus-accent" : "text-nexus-text-muted hover:text-nexus-text")}
               >
-                Stock (Produits)
+                Stock (Actifs Physiques)
+                {catalogType === 'product' && <motion.div layoutId="activeCat" className="absolute bottom-0 left-0 right-0 h-1 bg-nexus-accent rounded-full shadow-[0_0_10px_rgba(91,140,255,0.5)]" />}
               </button>
               <button 
                 onClick={() => setCatalogType('service')}
-                className={cn("pb-4 text-xs font-black uppercase tracking-widest transition-all", catalogType === 'service' ? "text-slate-900 border-b-2 border-slate-900" : "text-slate-400")}
+                className={cn("pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative group", catalogType === 'service' ? "text-nexus-accent" : "text-nexus-text-muted hover:text-nexus-text")}
               >
-                Services (Prestations)
+                Services (Immatériels)
+                {catalogType === 'service' && <motion.div layoutId="activeCat" className="absolute bottom-0 left-0 right-0 h-1 bg-nexus-accent rounded-full shadow-[0_0_10px_rgba(91,140,255,0.5)]" />}
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <button 
                 onClick={() => { setCatalogFormData({ name: '', price: 0, quantity: 0, type: 'Stock' }); setIsAddingCatalogItem(true); }}
-                className="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-6 flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-blue-600 hover:border-blue-300 transition-all"
+                className="bg-white/5 border-2 border-dashed border-white/10 rounded-[2.5rem] p-10 flex flex-col items-center justify-center gap-4 text-nexus-text-muted hover:text-nexus-accent hover:border-nexus-accent/50 transition-all group"
               >
-                <Plus size={24} />
-                <span className="text-[10px] font-black uppercase tracking-widest">Nouveau {catalogType === 'product' ? 'Produit' : 'Service'}</span>
+                <div className="p-4 bg-nexus-surface rounded-3xl shadow-xl group-hover:scale-110 transition-transform"><Plus size={32} /></div>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Inspirer {catalogType === 'product' ? 'Produit' : 'Service'}</span>
               </button>
 
               {(catalogType === 'product' ? resources : services).map((item: any) => (
-                <div key={item.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm group relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-all flex gap-1">
-                    <button onClick={() => { setCatalogFormData(item); setIsAddingCatalogItem(true); }} className="p-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-900 hover:text-white transition-all"><Edit2 size={12} /></button>
-                  </div>
-                  <h4 className="font-bold text-slate-800 text-sm mb-2">{item.name}</h4>
-                  <div className="flex justify-between items-end">
+                <motion.div 
+                  key={item.id} 
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-nexus-surface p-7 rounded-[2.5rem] border border-white/5 shadow-2xl group relative overflow-hidden hover:border-nexus-accent/30 transition-all"
+                >
+                  {userRole === 'admin' && (
+                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-all flex gap-2 z-20">
+                      <button onClick={() => { setCatalogFormData(item); setIsAddingCatalogItem(true); }} className="p-2.5 bg-white/5 text-nexus-text hover:bg-nexus-accent hover:text-white rounded-xl transition-all backdrop-blur-sm border border-white/10 shadow-xl"><Edit2 size={14} /></button>
+                    </div>
+                  )}
+                  <div className="absolute top-0 left-0 w-32 h-32 bg-nexus-accent/5 rounded-full blur-2xl -ml-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
+                  
+                  <h4 className="font-black text-nexus-text text-lg italic tracking-tight mb-6 line-clamp-2 relative z-10">{item.name}</h4>
+                  <div className="flex justify-between items-end relative z-10">
                     <div>
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Prix</p>
-                      <p className="text-sm font-black text-slate-900">{item.price ? `${item.price.toLocaleString()} F` : '0 F'}</p>
+                      <p className="text-[9px] font-black text-nexus-text-muted uppercase tracking-[0.2em] mb-1">Valence Unitaire</p>
+                      <p className="text-xl font-black text-nexus-text nexus-gradient-text italic tracking-tighter">{item.price ? `${item.price.toLocaleString()} F` : '0 F'}</p>
                     </div>
                     {catalogType === 'product' && (
                       <div className="text-right">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Quantité</p>
-                        <p className={cn("text-sm font-black", (item.quantity < 5) ? "text-red-500" : "text-slate-900")}>{item.quantity}</p>
+                        <p className="text-[9px] font-black text-nexus-text-muted uppercase tracking-[0.2em] mb-1">Entropie Stock</p>
+                        <p className={cn("text-xl font-black italic tracking-tighter", (item.quantity < 5) ? "text-nexus-danger animate-pulse" : "text-nexus-text")}>{item.quantity}</p>
                       </div>
                     )}
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
         )}
 
         {activeTab === 'reports' && (
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 border-t border-slate-200">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center">
-              <TrendingUp size={32} className="text-green-500 mb-4" />
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Total Entrées</h3>
-              <p className="text-4xl font-black text-slate-900 mt-2">{calculateTotalRevenue().toLocaleString()} FCFA</p>
-            </div>
+          <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-8 bg-white/5 border-t border-white/5">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-nexus-surface p-10 rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col items-center justify-center text-center group hover:border-nexus-success/30 transition-all relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-nexus-success/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <TrendingUp size={48} className="text-nexus-success mb-6 group-hover:scale-110 transition-transform" />
+              <h3 className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.3em]">Afflux Entrant (Gains)</h3>
+              <p className="text-5xl font-black text-nexus-text mt-4 tracking-tighter italic nexus-gradient-text">{calculateTotalRevenue().toLocaleString()} FCFA</p>
+            </motion.div>
             
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center">
-              <TrendingUp size={32} className="text-red-500 mb-4 rotate-180" />
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Total Sorties (Dépenses)</h3>
-              <p className="text-4xl font-black text-slate-900 mt-2">{calculateTotalExpenses().toLocaleString()} FCFA</p>
-            </div>
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-nexus-surface p-10 rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col items-center justify-center text-center group hover:border-nexus-danger/30 transition-all relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-nexus-danger/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <TrendingUp size={48} className="text-nexus-danger mb-6 rotate-180 group-hover:scale-110 transition-transform" />
+              <h3 className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.3em]">Sortie Entropy (Pertes)</h3>
+              <p className="text-5xl font-black text-nexus-text mt-4 tracking-tighter italic">{calculateTotalExpenses().toLocaleString()} FCFA</p>
+            </motion.div>
 
-            <div className="md:col-span-2 bg-slate-900 p-8 rounded-2xl shadow-xl flex flex-col sm:flex-row justify-between items-center gap-6">
-              <div>
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Rapport Global (Balance)</h3>
-                <p className="text-5xl font-black text-white">{(calculateTotalRevenue() - calculateTotalExpenses()).toLocaleString()} FCFA</p>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="md:col-span-2 bg-nexus-surface border border-white/5 p-12 rounded-[3.5rem] shadow-2xl flex flex-col sm:flex-row justify-between items-center gap-8 relative overflow-hidden group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-nexus-accent/5 via-transparent to-transparent pointer-events-none" />
+              <div className="relative z-10">
+                <h3 className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.4em] mb-4">Balance de Croissance Nexus</h3>
+                <p className="text-7xl font-black text-nexus-text tracking-tighter italic nexus-gradient-text">{(calculateTotalRevenue() - calculateTotalExpenses()).toLocaleString()} FCFA</p>
               </div>
-              <div className="text-right">
-                <span className={cn("px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest", (calculateTotalRevenue() - calculateTotalExpenses()) >= 0 ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400")}>
-                  {(calculateTotalRevenue() - calculateTotalExpenses()) >= 0 ? 'Balance Positive' : 'Balance Négative'}
+              <div className="relative z-10 text-right">
+                <span className={cn(
+                  "px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] border shadow-2xl", 
+                  (calculateTotalRevenue() - calculateTotalExpenses()) >= 0 
+                  ? "bg-nexus-success/10 text-nexus-success border-nexus-success/30 shadow-nexus-success/10" 
+                  : "bg-nexus-danger/10 text-nexus-danger border-nexus-danger/30 shadow-nexus-danger/10"
+                )}>
+                  {(calculateTotalRevenue() - calculateTotalExpenses()) >= 0 ? 'Expansion Positive' : 'Contraction Risquée'}
                 </span>
               </div>
-            </div>
+            </motion.div>
           </div>
         )}
       </div>
 
       {selectedClientName && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-          <div className="bg-white rounded-[2.5rem] p-10 max-w-2xl w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-start mb-8">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center font-black text-2xl border border-blue-100">
+        <div className="fixed inset-0 bg-nexus-bg/80 backdrop-blur-xl z-[100] flex items-center justify-center p-6 overflow-hidden">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-nexus-surface rounded-[3.5rem] p-12 max-w-3xl w-full shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/5 max-h-[90vh] overflow-y-auto custom-scrollbar relative"
+          >
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-nexus-accent/5 rounded-full blur-[100px] -mr-48 -mt-48 transition-transform duration-1000" />
+
+            <div className="relative z-10 flex justify-between items-start mb-12">
+              <div className="flex items-center gap-8">
+                <div className="w-24 h-24 bg-gradient-to-br from-nexus-accent to-blue-600 text-white rounded-[2rem] flex items-center justify-center font-black text-4xl shadow-[0_20px_40px_rgba(91,140,255,0.3)] italic">
                   {selectedClientName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black text-slate-900 leading-none">{selectedClientName}</h3>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Historique des transactions & Paiements</p>
+                  <h3 className="text-4xl font-black text-nexus-text leading-none italic tracking-tighter nexus-gradient-text">{selectedClientName}</h3>
+                  <p className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] mt-4 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-nexus-success rounded-full animate-pulse" />
+                    Historique Vectoriel & Flux de Valeur
+                  </p>
                 </div>
               </div>
               <button 
                 onClick={() => setSelectedClientName(null)}
-                className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 transition-all"
+                className="p-4 hover:bg-white/5 rounded-2xl text-nexus-text-muted hover:text-white transition-all border border-transparent hover:border-white/10 shadow-2xl"
               >
-                <Plus className="rotate-45" size={24} />
+                <Plus className="rotate-45" size={32} />
               </button>
             </div>
 
@@ -908,27 +1043,30 @@ export default function SalesModule() {
               const balance = totalInvoiced - totalPaid;
 
               return (
-                <div className="space-y-8">
+                <div className="space-y-12 relative z-10">
                   {/* Summary Cards */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Facturé</p>
-                      <p className="text-lg font-black text-slate-900">{totalInvoiced.toLocaleString()} F</p>
+                  <div className="grid grid-cols-3 gap-6">
+                    <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/10 group hover:border-nexus-accent/30 transition-all">
+                      <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.2em] mb-2">Total Injecté</p>
+                      <p className="text-2xl font-black text-nexus-text italic tracking-tighter">{totalInvoiced.toLocaleString()} F</p>
                     </div>
-                    <div className="bg-emerald-50 p-5 rounded-3xl border border-emerald-100">
-                      <p className="text-[9px] font-black text-emerald-600/60 uppercase tracking-widest mb-1">Total Encaissé</p>
-                      <p className="text-lg font-black text-emerald-900">{totalPaid.toLocaleString()} F</p>
+                    <div className="bg-nexus-success/5 p-8 rounded-[2.5rem] border border-nexus-success/20 group hover:border-nexus-success/50 transition-all">
+                      <p className="text-[10px] font-black text-nexus-success uppercase tracking-[0.2em] mb-2">Total Recouvré</p>
+                      <p className="text-2xl font-black text-nexus-success italic tracking-tighter">{totalPaid.toLocaleString()} F</p>
                     </div>
-                    <div className={cn("p-5 rounded-3xl border", balance > 0 ? "bg-red-50 border-red-100" : "bg-blue-50 border-blue-100")}>
-                      <p className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-60">Solde Dû</p>
-                      <p className="text-lg font-black text-slate-900">{balance.toLocaleString()} F</p>
+                    <div className={cn("p-8 rounded-[2.5rem] border transition-all", balance > 0 ? "bg-nexus-danger/5 border-nexus-danger/20 hover:border-nexus-danger/50" : "bg-nexus-accent/5 border-nexus-accent/20 hover:border-nexus-accent/50")}>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-2 opacity-60">Indice de Dette</p>
+                      <p className="text-2xl font-black text-nexus-text italic tracking-tighter">{balance.toLocaleString()} F</p>
                     </div>
                   </div>
 
                   {/* Combined Timeline */}
-                  <div className="space-y-6">
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Chronologie des évènements</h4>
-                    <div className="space-y-4">
+                  <div className="space-y-8">
+                    <div className="flex items-center gap-4 mb-4">
+                       <h4 className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.4em] ml-1">Ligne Temporelle Nexus</h4>
+                       <div className="flex-1 h-px bg-white/5" />
+                    </div>
+                    <div className="space-y-6">
                       {[...clientInvoices.map(i => ({...i, type: 'invoice'})), ...clientPayments.map(p => ({...p, type: 'payment'}))]
                         .sort((a, b) => {
                           const dateA = a.date?.seconds || (a.date instanceof Date ? (a.date as any).getTime() / 1000 : 0);
@@ -936,45 +1074,51 @@ export default function SalesModule() {
                           return dateB - dateA;
                         })
                         .map((item: any, idx) => (
-                          <div key={idx} className="flex gap-4 items-start relative pb-4 last:pb-0">
+                          <motion.div 
+                            key={idx} 
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.05 }}
+                            className="flex gap-6 items-start relative group/item"
+                          >
                             <div className={cn(
-                              "w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10",
-                              item.type === 'invoice' ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-emerald-600 text-white shadow-lg shadow-emerald-200"
+                              "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 z-10 border transition-all shadow-2xl group-hover/item:scale-110",
+                              item.type === 'invoice' ? "bg-nexus-accent/10 text-nexus-accent border-nexus-accent/20" : "bg-nexus-success/10 text-nexus-success border-nexus-success/20"
                             )}>
-                              {item.type === 'invoice' ? <Receipt size={14} /> : <CreditCard size={14} />}
+                              {item.type === 'invoice' ? <Receipt size={20} /> : <CreditCard size={20} />}
                             </div>
-                            <div className="flex-1 bg-white border border-slate-100 p-4 rounded-3xl shadow-sm">
-                              <div className="flex justify-between items-start mb-1">
-                                <span className={cn("text-[10px] font-black uppercase tracking-widest", item.type === 'invoice' ? "text-blue-600" : "text-emerald-600")}>
-                                  {item.type === 'invoice' ? 'Nouvelle Facture' : 'Règlement Reçu'}
+                            <div className="flex-1 bg-white/5 border border-white/5 p-6 rounded-[2rem] shadow-2xl hover:border-white/20 transition-all">
+                              <div className="flex justify-between items-start mb-2">
+                                <span className={cn("text-[10px] font-black uppercase tracking-[0.2em]", item.type === 'invoice' ? "text-nexus-accent" : "text-nexus-success")}>
+                                  {item.type === 'invoice' ? 'Émission Facture' : 'Validation Flux'}
                                 </span>
-                                <span className="text-[9px] font-bold text-slate-400 underline decoration-slate-200 underline-offset-2">
-                                  {item.date ? new Date(item.date.seconds * 1000).toLocaleString() : 'Date indisp.'}
+                                <span className="text-[10px] font-black text-nexus-text-muted tracking-widest italic">
+                                  {item.date ? new Date(item.date.seconds * 1000).toLocaleString() : 'INSTANT_SYNC'}
                                 </span>
                               </div>
                               <div className="flex justify-between items-end">
                                 <div>
-                                  <p className="text-sm font-bold text-slate-800">
-                                    {item.type === 'invoice' ? `Facture ${item.invoiceNumber}` : `Paiement ${item.method}`}
+                                  <p className="text-lg font-black text-nexus-text italic tracking-tighter">
+                                    {item.type === 'invoice' ? `Protocol ${item.invoiceNumber}` : `Transfert ${item.method}`}
                                   </p>
-                                  {item.reference && <p className="text-[10px] text-slate-400 italic">Réf: {item.reference}</p>}
+                                  {item.reference && <p className="text-[10px] text-nexus-text-muted italic mt-1 uppercase tracking-widest">Réf: {item.reference}</p>}
                                   {item.items && (
-                                    <p className="text-[9px] text-slate-500 mt-1 truncate max-w-[300px]">
+                                    <p className="text-[10px] text-nexus-text-muted mt-2 truncate max-w-[400px] italic">
                                       {typeof item.items === 'string' ? JSON.parse(item.items).map((i: any) => `${i.quantity}x ${i.name}`).join(', ') : item.items.map((i: any) => `${i.quantity}x ${i.name}`).join(', ')}
                                     </p>
                                   )}
                                 </div>
-                                <p className={cn("font-black text-sm font-mono", item.type === 'invoice' ? "text-slate-900" : "text-emerald-600")}>
+                                <p className={cn("font-black text-2xl italic tracking-tighter", item.type === 'invoice' ? "text-nexus-text" : "text-nexus-success nexus-gradient-text")}>
                                   {item.type === 'invoice' ? '-' : '+'}{item.amount.toLocaleString()} F
                                 </p>
                               </div>
                             </div>
-                          </div>
+                          </motion.div>
                         ))
                       }
                       {clientInvoices.length === 0 && (
-                        <div className="text-center py-10">
-                          <p className="text-sm text-slate-400 italic">Aucune transaction trouvée pour ce client.</p>
+                        <div className="text-center py-20 bg-white/5 rounded-[3rem] border-2 border-dashed border-white/10 opacity-30 italic">
+                          <p className="text-sm font-black uppercase tracking-widest">Aucune donnée vectorielle détectée.</p>
                         </div>
                       )}
                     </div>
@@ -985,225 +1129,255 @@ export default function SalesModule() {
 
             <button 
               onClick={() => setSelectedClientName(null)}
-              className="w-full mt-10 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-200"
+              className="w-full mt-12 py-5 bg-nexus-accent text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.3em] hover:bg-blue-500 transition-all shadow-[0_20px_50px_rgba(91,140,255,0.3)] active:scale-95"
             >
-              Fermer l'historique
+              Fermer l'Analyse Client
             </button>
-          </div>
+          </motion.div>
         </div>
       )}
 
       {isAddingCatalogItem && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl border border-slate-100">
-            <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
-              <Plus className="text-blue-600" />
-              {catalogFormData.id ? 'Modifier' : 'Ajouter'} {catalogType === 'product' ? 'un produit' : 'un service'}
+        <div className="fixed inset-0 bg-nexus-bg/80 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-nexus-surface rounded-[3.5rem] p-12 max-w-xl w-full shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/5 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-nexus-accent/5 rounded-full blur-[80px] -mr-32 -mt-32" />
+            
+            <h3 className="text-3xl font-black text-nexus-text mb-10 flex items-center gap-4 italic tracking-tighter">
+              <div className="p-3 bg-nexus-accent/10 rounded-2xl text-nexus-accent"><Plus size={32} /></div>
+              {catalogFormData.id ? 'Refactoring' : 'Injection'} {catalogType === 'product' ? 'Produit' : 'Service'}
             </h3>
-            <form onSubmit={handleUpdateCatalogItem} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Désignation</label>
+            
+            <form onSubmit={handleUpdateCatalogItem} className="space-y-8 relative z-10">
+              <div className="space-y-3">
+                <label className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] ml-2 italic">Désignation du Vecteur</label>
                 <input 
                   type="text" 
                   value={catalogFormData.name} 
                   onChange={e => setCatalogFormData({...catalogFormData, name: e.target.value})} 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm" 
+                  placeholder="Ex: Architecture IA ..."
+                  className="w-full bg-white/5 border border-white/10 rounded-2x p-6 outline-none focus:ring-2 focus:ring-nexus-accent font-black text-nexus-text placeholder:text-nexus-text-muted/30 transition-all italic text-lg tracking-tight" 
                   required 
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Prix Unitaire (F)</label>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <label className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] ml-2 italic">Valence (F)</label>
                   <input 
                     type="number" 
                     value={catalogFormData.price} 
                     onChange={e => setCatalogFormData({...catalogFormData, price: e.target.value})} 
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm" 
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 outline-none focus:ring-2 focus:ring-nexus-accent font-black text-nexus-text transition-all italic text-lg" 
                     required 
                   />
                 </div>
                 {catalogType === 'product' && (
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Quantité en Stock</label>
+                  <div className="space-y-3">
+                    <label className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] ml-2 italic">Stock (Unités)</label>
                     <input 
                       type="number" 
                       value={catalogFormData.quantity} 
                       onChange={e => setCatalogFormData({...catalogFormData, quantity: e.target.value})} 
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm" 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 outline-none focus:ring-2 focus:ring-nexus-accent font-black text-nexus-text transition-all italic text-lg" 
                       required 
                     />
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-10">
-                <button type="button" onClick={() => setIsAddingCatalogItem(false)} className="py-4 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all">Annuler</button>
-                <button type="submit" disabled={submitting} className="py-4 bg-slate-900 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-200 disabled:opacity-50">
-                  {submitting ? 'Traitement...' : 'Enregistrer'}
+              <div className="grid grid-cols-2 gap-6 mt-12 pt-8 border-t border-white/5">
+                <button type="button" onClick={() => setIsAddingCatalogItem(false)} className="py-5 bg-white/5 text-nexus-text-muted font-black rounded-2xl text-[11px] uppercase tracking-[0.3em] hover:bg-white/10 transition-all border border-white/10 italic">Annuler</button>
+                <button type="submit" disabled={submitting} className="py-5 bg-nexus-accent text-white font-black rounded-2xl text-[11px] uppercase tracking-[0.3em] hover:bg-blue-500 transition-all shadow-[0_20px_40px_rgba(91,140,255,0.3)] disabled:opacity-50 active:scale-95 italic">
+                  {submitting ? 'Traitement...' : 'Synchroniser'}
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
 
       {isAddingPayment && selectedInvoice && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl border border-slate-100">
-            <h3 className="text-xl font-black text-slate-900 mb-2 flex items-center gap-3">
-              <CreditCard className="text-emerald-600" />
-              Règlement Client
-            </h3>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">Paiement pour la facture {selectedInvoice.invoiceNumber}</p>
+        <div className="fixed inset-0 bg-nexus-bg/80 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-nexus-surface rounded-[3.5rem] p-12 max-w-lg w-full shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/5 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-nexus-success/5 rounded-full blur-[80px] -mr-32 -mt-32" />
             
-            <form onSubmit={handleCreatePayment} className="space-y-6">
-              <div className="bg-emerald-50 p-6 rounded-3xl border border-emerald-100 flex justify-between items-center mb-6">
+            <h3 className="text-3xl font-black text-nexus-text mb-2 flex items-center gap-4 italic tracking-tighter">
+              <div className="p-3 bg-nexus-success/10 rounded-2xl text-nexus-success"><CreditCard size={32} /></div>
+              Règlement Entrant
+            </h3>
+            <p className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] mb-10 italic">Validation du flux pour {selectedInvoice.invoiceNumber}</p>
+            
+            <form onSubmit={handleCreatePayment} className="space-y-8 relative z-10">
+              <div className="bg-nexus-success/5 p-8 rounded-[2.5rem] border border-nexus-success/20 flex justify-between items-center mb-6 shadow-2xl">
                 <div>
-                   <p className="text-[9px] font-black text-emerald-700/60 uppercase tracking-widest mb-1">Total Facturé</p>
-                   <p className="text-lg font-black text-emerald-900">{selectedInvoice.amount.toLocaleString()} F</p>
+                   <p className="text-[10px] font-black text-nexus-success/60 uppercase tracking-[0.2em] mb-2">Valence Facturée</p>
+                   <p className="text-xl font-black text-nexus-text italic tracking-tighter">{selectedInvoice.amount.toLocaleString()} F</p>
                 </div>
-                <ArrowRight className="text-emerald-300" />
+                <div className="p-2 bg-nexus-success/20 rounded-full animate-pulse"><ArrowRight className="text-nexus-success" size={20} /></div>
                 <div className="text-right">
-                   <p className="text-[9px] font-black text-emerald-700/60 uppercase tracking-widest mb-1">Reste à payer</p>
-                   <p className="text-lg font-black text-emerald-900">{(selectedInvoice.amount - payments.filter(p => p.invoiceId === selectedInvoice.id).reduce((sum, p) => sum + p.amount, 0)).toLocaleString()} F</p>
+                   <p className="text-[10px] font-black text-nexus-success/60 uppercase tracking-[0.2em] mb-2">Reliquat Actif</p>
+                   <p className="text-xl font-black text-nexus-success italic tracking-tighter">{(selectedInvoice.amount - payments.filter(p => p.invoiceId === selectedInvoice.id).reduce((sum, p) => sum + p.amount, 0)).toLocaleString()} F</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mode de Paiement</label>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <label className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] ml-2 italic">Protocole</label>
                   <select 
                     value={paymentForm.method} 
                     onChange={e => setPaymentForm({...paymentForm, method: e.target.value})} 
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-emerald-600 font-bold text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 outline-none focus:ring-2 focus:ring-nexus-success font-black text-nexus-text transition-all italic text-lg"
                   >
                     <option value="Espèces">Espèces</option>
-                    <option value="Orange Money">Orange Money</option>
-                    <option value="Mobile Money">Mtn Money</option>
-                    <option value="Virement">Virement</option>
-                    <option value="Chèque">Chèque</option>
+                    <option value="Orange Money">OM</option>
+                    <option value="Mobile Money">Momo</option>
+                    <option value="Virement">Bank</option>
+                    <option value="Chèque">Check</option>
                   </select>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Montant perçu (F)</label>
+                <div className="space-y-3">
+                  <label className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] ml-2 italic">Valence Reçue</label>
                   <input 
                     type="number" 
                     value={paymentForm.amount} 
                     onChange={e => setPaymentForm({...paymentForm, amount: Number(e.target.value)})} 
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-emerald-600 font-bold text-sm" 
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 outline-none focus:ring-2 focus:ring-nexus-success font-black text-nexus-text transition-all italic text-lg" 
                     required 
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Référence / Notes</label>
+              <div className="space-y-3">
+                <label className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] ml-2 italic">Référence Systémique</label>
                 <input 
                   type="text" 
-                  placeholder="Ex: Ref Orange Money #12345" 
+                  placeholder="ID Transaction, Ref Mobile..." 
                   value={paymentForm.reference} 
                   onChange={e => setPaymentForm({...paymentForm, reference: e.target.value})} 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-emerald-600 font-bold text-sm" 
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 outline-none focus:ring-2 focus:ring-nexus-success font-black text-nexus-text placeholder:text-nexus-text-muted/30 transition-all italic" 
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-10">
-                <button type="button" onClick={() => { setIsAddingPayment(false); setSelectedInvoice(null); }} className="py-4 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all">Annuler</button>
-                <button type="submit" disabled={submitting} className="py-4 bg-emerald-600 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 disabled:opacity-50">
-                  {submitting ? 'Traitement...' : 'Enregistrer Paiement'}
+              <div className="grid grid-cols-2 gap-6 mt-12 pt-8 border-t border-white/5">
+                <button type="button" onClick={() => { setIsAddingPayment(false); setSelectedInvoice(null); }} className="py-5 bg-white/5 text-nexus-text-muted font-black rounded-2xl text-[11px] uppercase tracking-[0.3em] hover:bg-white/10 transition-all border border-white/10 italic">Annuler</button>
+                <button type="submit" disabled={submitting} className="py-5 bg-nexus-success text-white font-black rounded-2xl text-[11px] uppercase tracking-[0.3em] hover:bg-emerald-500 transition-all shadow-[0_20px_40px_rgba(0,200,150,0.3)] disabled:opacity-50 active:scale-95 italic">
+                  {submitting ? 'Traitement...' : 'Valider Flux'}
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
-
       {isAdding && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
-            <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-              <ShoppingCart size={24} className="text-blue-600" />
-              {editingSale ? 'Modifier la vente' : 'Enregistrer une vente'}
+        <div className="fixed inset-0 bg-nexus-bg/80 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-nexus-surface rounded-[3.5rem] p-12 max-w-lg w-full shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/5 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-nexus-accent/5 rounded-full blur-[80px] -mr-32 -mt-32" />
+            
+            <h3 className="text-3xl font-black text-nexus-text mb-10 flex items-center gap-4 italic tracking-tighter">
+              <div className="p-3 bg-nexus-accent/10 rounded-2xl text-nexus-accent"><ShoppingCart size={32} /></div>
+              {editingSale ? 'Refactor Sale' : 'Injection Directe'}
             </h3>
-            <form onSubmit={handleCreateSale} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-1.5">
-                   <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Type de Vente</label>
-                   <select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
-                     <option value="product">Produit Matériel</option>
-                     <option value="service">Service (Prestation)</option>
+            
+            <form onSubmit={handleCreateSale} className="space-y-6 relative z-10">
+              <div className="grid grid-cols-2 gap-6">
+                 <div className="space-y-2">
+                   <label className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] ml-2 italic">Nature Flux</label>
+                   <select className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-[13px] font-black text-nexus-text outline-none focus:ring-2 focus:ring-nexus-accent transition-all italic" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+                     <option value="product">Stock</option>
+                     <option value="service">Service</option>
                    </select>
                  </div>
-                 <div className="space-y-1.5">
-                   <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Client/Partenaire</label>
-                   <input type="text" list="clients-list" placeholder="Nom du client" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900" value={formData.clientName || ''} onChange={e => setFormData({...formData, clientName: e.target.value})} />
+                 <div className="space-y-2">
+                   <label className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] ml-2 italic">Cible Client</label>
+                   <input type="text" list="clients-list" placeholder="Anonyme..." className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-[13px] font-black text-nexus-text outline-none focus:ring-2 focus:ring-nexus-accent transition-all italic" value={formData.clientName || ''} onChange={e => setFormData({...formData, clientName: e.target.value})} />
                  </div>
               </div>
 
-              <div className="space-y-1.5">
-                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nom de l'article / service</label>
-                 <input type="text" placeholder="Design Web, Ordinateur, etc." className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900" value={formData.itemName || ''} onChange={e => setFormData({...formData, itemName: e.target.value})} required/>
+              <div className="space-y-2">
+                 <label className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] ml-2 italic">Désignation Actif</label>
+                 <input type="text" placeholder="Design Web, Ordinateur..." className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-lg font-black text-nexus-text outline-none focus:ring-2 focus:ring-nexus-accent transition-all italic tracking-tight" value={formData.itemName || ''} onChange={e => setFormData({...formData, itemName: e.target.value})} required/>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-1.5">
-                   <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Quantité</label>
-                   <input type="number" step="0.5" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900" value={formData.quantity || ''} onChange={e => setFormData({...formData, quantity: e.target.value})} required/>
+              <div className="grid grid-cols-2 gap-6">
+                 <div className="space-y-2">
+                   <label className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] ml-2 italic">Fréquence/Qté</label>
+                   <input type="number" step="0.5" className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-lg font-black text-nexus-text outline-none focus:ring-2 focus:ring-nexus-accent transition-all italic" value={formData.quantity || ''} onChange={e => setFormData({...formData, quantity: e.target.value})} required/>
                  </div>
-                 <div className="space-y-1.5">
-                   <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Prix Unitaire (FCFA)</label>
-                   <input type="number" step="0.01" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900" value={formData.price || ''} onChange={e => setFormData({...formData, price: e.target.value})} required/>
+                 <div className="space-y-2">
+                   <label className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] ml-2 italic">Valence Unit. (F)</label>
+                   <input type="number" step="0.01" className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-lg font-black text-nexus-text outline-none focus:ring-2 focus:ring-nexus-accent transition-all italic text-nexus-accent" value={formData.price || ''} onChange={e => setFormData({...formData, price: e.target.value})} required/>
                  </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-slate-800">
-                 <span className="text-xs font-bold uppercase text-slate-400">Total</span>
-                 <span className="text-xl font-black">{(Number(formData.quantity || 0) * Number(formData.price || 0)).toLocaleString()} FCFA</span>
+              <div className="pt-8 border-t border-white/5 flex justify-between items-center text-nexus-text">
+                 <span className="text-[11px] font-black uppercase tracking-[0.3em] text-nexus-text-muted italic">Total Valence</span>
+                 <span className="text-3xl font-black italic nexus-gradient-text tracking-tighter">{(Number(formData.quantity || 0) * Number(formData.price || 0)).toLocaleString()} FCFA</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-8">
-                <button type="button" onClick={() => { setIsAdding(false); setEditingSale(null); setFormData({ type: 'product', quantity: 1, price: 0 }); }} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
+              <div className="grid grid-cols-2 gap-6 mt-10">
+                <button type="button" onClick={() => { setIsAdding(false); setEditingSale(null); setFormData({ type: 'product', quantity: 1, price: 0 }); }} className="py-5 bg-white/5 text-nexus-text-muted font-black rounded-2xl text-[11px] uppercase tracking-[0.3em] hover:bg-white/10 border border-white/10 italic">Annuler</button>
                 <button 
                   type="submit" 
                   disabled={submitting}
-                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
+                  className="py-5 bg-nexus-accent text-white font-black rounded-2xl text-[11px] uppercase tracking-[0.3em] hover:bg-blue-500 transition-all shadow-[0_20px_40px_rgba(91,140,255,0.3)] disabled:opacity-50 active:scale-95 italic"
                 >
-                  {submitting ? 'Traitement...' : (editingSale ? 'Mettre à jour' : 'Facturer')}
+                  {submitting ? 'Traitement...' : (editingSale ? 'Update' : 'Facturer')}
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
 
       {isAddingOrder && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-slate-100">
-            <h3 className="text-xl font-bold text-slate-900 mb-6">Nouvelle Commande</h3>
-            <form onSubmit={handleCreateOrder} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nom du client</label>
-                <input type="text" list="clients-list" placeholder="Ex: Jean" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900" value={newOrderName} onChange={e => setNewOrderName(e.target.value)} required/>
+        <div className="fixed inset-0 bg-nexus-bg/80 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-nexus-surface rounded-[3.5rem] p-12 max-w-sm w-full shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/5 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-48 h-48 bg-nexus-accent/5 rounded-full blur-[60px] -mr-24 -mt-24" />
+            
+            <h3 className="text-2xl font-black text-nexus-text mb-10 italic tracking-tighter uppercase flex items-center gap-3">
+              <div className="p-2 bg-nexus-accent/10 rounded-xl text-nexus-accent"><Plus size={24} /></div>
+              Nouveau Flux
+            </h3>
+            
+            <form onSubmit={handleCreateOrder} className="space-y-8 relative z-10">
+              <div className="space-y-3">
+                <label className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] ml-2 italic">Cible Client/Poste</label>
+                <input type="text" list="clients-list" placeholder="Nom ou ID..." className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-lg font-black text-nexus-text outline-none focus:ring-2 focus:ring-nexus-accent transition-all italic tracking-tight" value={newOrderName} onChange={e => setNewOrderName(e.target.value)} required/>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Numéro de table</label>
-                <input type="text" placeholder="Ex: 3" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900" value={newOrderTable} onChange={e => setNewOrderTable(e.target.value)} />
+              <div className="space-y-3">
+                <label className="text-[11px] font-black text-nexus-text-muted uppercase tracking-[0.3em] ml-2 italic">Ancrage Physique (Table)</label>
+                <input type="text" placeholder="Ex: Poste 7 ..." className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-lg font-black text-nexus-text outline-none focus:ring-2 focus:ring-nexus-accent transition-all italic" value={newOrderTable} onChange={e => setNewOrderTable(e.target.value)} />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-8">
-                <button type="button" onClick={() => setIsAddingOrder(false)} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
+              <div className="grid grid-cols-2 gap-6 mt-12 pt-8 border-t border-white/5">
+                <button type="button" onClick={() => setIsAddingOrder(false)} className="py-5 bg-white/5 text-nexus-text-muted font-black rounded-2xl text-[11px] uppercase tracking-[0.3em] hover:bg-white/10 border border-white/10 italic">Annuler</button>
                 <button 
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
+                  className="py-5 bg-nexus-accent text-white font-black rounded-2xl text-[11px] uppercase tracking-[0.3em] hover:bg-blue-500 transition-all shadow-[0_20px_40px_rgba(91,140,255,0.3)] disabled:opacity-50 active:scale-95 italic"
                 >
-                  {submitting ? 'Traitement...' : 'Créer'}
+                  {submitting ? 'Traitement...' : 'Déployer'}
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
     </div>

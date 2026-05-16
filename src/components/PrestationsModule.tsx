@@ -14,6 +14,38 @@ export default function PrestationsModule() {
   const [serviceForm, setServiceForm] = useState({ name: '', price: '', description: '', image: '' });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  // AI Growth States
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<any>(null);
+
+  const generateAI = async (type: 'product_doc' | 'seo' | 'marketing', context: any) => {
+    setAiGenerating(true);
+    try {
+      const resp = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, context })
+      });
+      if (!resp.ok) throw new Error('AI Engine failed');
+      const data = await resp.json();
+      setAiSuggestion(data);
+      
+      // Auto-apply if it's product_doc and we're editing
+      if (type === 'product_doc') {
+        setServiceForm(prev => ({
+          ...prev,
+          description: data.longDescription || prev.description
+        }));
+      }
+      return data;
+    } catch (err) {
+      console.error(err);
+      alert("Nexus AI indisponible temporairement.");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -210,7 +242,18 @@ export default function PrestationsModule() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Description courte</label>
+                <div className="flex justify-between items-center ml-1">
+                   <label className="text-[10px] font-bold text-slate-400 uppercase">Description courte</label>
+                   <button 
+                    type="button"
+                    onClick={() => generateAI('product_doc', serviceForm)}
+                    disabled={aiGenerating}
+                    className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[8px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                  >
+                    {aiGenerating ? <Activity size={10} className="animate-spin" /> : <PenTool size={10} />}
+                    Magie IA
+                  </button>
+                </div>
                 <input 
                   type="text" 
                   value={serviceForm.description}

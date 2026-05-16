@@ -3,9 +3,14 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import Database from 'better-sqlite3';
 import cors from 'cors';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const PORT = 3000;
 const db = new Database('database.sqlite');
+
+// Initialize AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 // Initialize Schema
 db.exec(`
@@ -506,6 +511,85 @@ async function startServer() {
       res.json({ success: true });
     } catch (err: any) {
       console.error(err);
+      res.status(500).send(err.message);
+    }
+  });
+
+  // --- AI ENDPOINTS ---
+
+  app.post('/api/ai/generate', async (req, res) => {
+    try {
+      const { type, context } = req.body;
+      
+      let prompt = '';
+      
+      switch (type) {
+        case 'product_doc':
+          prompt = `Génère une fiche produit professionnelle complète pour le produit suivant :
+            Nom: ${context.name}
+            Catégorie: ${context.category}
+            Prix: ${context.price} FCFA
+            Description de base: ${context.description || 'N/A'}
+            
+            Format de réponse attendu (JSON uniquement) :
+            {
+              "shortDescription": "Une phrase accrocheuse",
+              "longDescription": "Description détaillée et persuasive",
+              "benefits": ["Avantage 1", "Avantage 2", "Avantage 3"],
+              "technicalSpecs": {"Caractéristique": "Valeur"},
+              "faq": [{"q": "Question?", "a": "Réponse."}],
+              "usageTips": "Conseils d'utilisation",
+              "qualityScore": 0-100
+            }`;
+          break;
+          
+        case 'seo':
+          prompt = `Génère des métadonnées SEO pour ce produit Marketplace :
+            Nom: ${context.name}
+            Catégorie: ${context.category}
+            Description: ${context.description}
+            
+            Format de réponse (JSON uniquement) :
+            {
+              "metaTitle": "Titre optimisé",
+              "metaDescription": "Description meta 160 chars",
+              "keywords": ["keyword1", "keyword2"],
+              "tags": ["tag1", "tag2"]
+            }`;
+          break;
+          
+        case 'marketing':
+          prompt = `Génère du contenu marketing pour ce produit :
+            Nom: ${context.name}
+            
+            Format de réponse (JSON uniquement) :
+            {
+              "facebookPost": "Texte engageant avec emojis",
+              "instagramCaption": "Caption courte avec hashtags",
+              "adCopy": "Texte publicitaire percutant",
+              "smsPromo": "SMS court de 160 chars"
+            }`;
+          break;
+          
+        default:
+          return res.status(400).send('Invalid generation type');
+      }
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      let text = response.text();
+      
+      // Clean JSON string if model adds markdown blocks
+      text = text.replace(/```json|```/g, '').trim();
+      
+      try {
+        const jsonResponse = JSON.parse(text);
+        res.json(jsonResponse);
+      } catch (e) {
+        res.json({ raw: text });
+      }
+    } catch (err: any) {
+      console.error('AI Error:', err);
       res.status(500).send(err.message);
     }
   });

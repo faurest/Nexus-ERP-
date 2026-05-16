@@ -9,17 +9,17 @@ interface TableProps {
 
 export default function Table({ headers, children, className }: TableProps) {
   return (
-    <div className={cn("bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden", className)}>
-      <div className="overflow-x-auto">
+    <div className={cn("bg-nexus-surface border border-white/5 rounded-[2rem] shadow-2xl overflow-hidden", className)}>
+      <div className="overflow-x-auto custom-scrollbar">
         <div className="min-w-[800px] md:min-w-full">
-          <div className="flex items-center bg-slate-50 border-b border-slate-100">
+          <div className="flex items-center bg-white/5 border-b border-white/5">
             {headers.map((header, i) => (
-              <div key={i} className="flex-1 px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">
+              <div key={i} className="flex-1 px-8 py-5 text-[9px] font-black text-nexus-text-muted uppercase tracking-[0.25em] text-left">
                 {header}
               </div>
             ))}
           </div>
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-white/5">
             {children}
           </div>
         </div>
@@ -40,12 +40,12 @@ export function TableRow({ children, onClick, className }: TableRowProps) {
     <div 
       onClick={onClick}
       className={cn(
-        "flex items-center transition-all cursor-pointer hover:bg-slate-50/80 group",
+        "flex items-center transition-all cursor-pointer hover:bg-white/5 group bg-transparent",
         className
       )}
     >
       {React.Children.map(children, (child, i) => (
-        <div key={i} className="flex-1 px-6 py-4 text-xs font-medium text-slate-700">
+        <div key={i} className="flex-1 px-8 py-5 text-[11px] font-bold text-nexus-text">
           {child}
         </div>
       ))}

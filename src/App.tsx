@@ -52,6 +52,7 @@ import GuideModule from './components/GuideModule';
 import ContextualHelp from './components/ContextualHelp';
 import NotificationBell from './components/NotificationBell';
 import CriticalNotificationOverlay from './components/CriticalNotificationOverlay';
+import CommandPalette from './components/CommandPalette';
 
 import { bootstrapDemoData } from './lib/bootstrap';
 import { useCompany } from './lib/CompanyContext';
@@ -108,15 +109,30 @@ export const DEFAULT_ROLES: Record<string, string[]> = {
   'Client': ['dashboard', 'ecommerce'],
 };
 
+function SkeletonCard() {
+  return (
+    <div className="w-full flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-white animate-pulse">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 bg-slate-100 rounded-2xl" />
+        <div className="space-y-2">
+          <div className="h-4 w-32 bg-slate-100 rounded" />
+          <div className="h-3 w-16 bg-slate-50 rounded" />
+        </div>
+      </div>
+      <div className="w-4 h-4 bg-slate-50 rounded" />
+    </div>
+  );
+}
+
 function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], user: User, onSelect: any }) {
   const [mode, setMode] = useState<'select' | 'create' | 'join'>('select');
   const [newCompanyName, setNewCompanyName] = useState('');
   const [joinCodeInput, setJoinCodeInput] = useState('');
-  const [creatingLocally, setCreatingLocally] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
-  const { joinCompany } = useCompany();
+  const { joinCompany, loading: companyLoading } = useCompany();
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
   const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
@@ -141,7 +157,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
     setErrorMsg('');
     if (!newCompanyName.trim()) return;
 
-    setCreatingLocally(true);
+    setSubmitting(true);
     try {
       // Logic for 6 uppercase letters/numbers join code
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -165,7 +181,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
     } catch(err: any) {
       console.error("Create Company Error:", err);
       setErrorMsg(`Erreur : ${err.message || 'Problème de connexion'}`);
-      setCreatingLocally(false);
+      setSubmitting(false);
     }
   };
 
@@ -175,9 +191,9 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
     setSuccessMsg('');
     if (!joinCodeInput.trim()) return;
     
-    setCreatingLocally(true);
+    setSubmitting(true);
     const result = await joinCompany(joinCodeInput);
-    setCreatingLocally(false);
+    setSubmitting(false);
 
     if (result.success) {
       setSuccessMsg(result.message);
@@ -229,7 +245,13 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         {mode === 'select' && (
           <div className="space-y-8 relative z-10">
             {/* Scénario A: Entreprises existantes */}
-            {(ownedCompanies.length > 0 || joinedCompanies.length > 0) ? (
+            {companyLoading ? (
+              <div className="space-y-4">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Synchronisation de vos accès...</h3>
+                <SkeletonCard />
+                <SkeletonCard />
+              </div>
+            ) : (ownedCompanies.length > 0 || joinedCompanies.length > 0) ? (
               <div className="space-y-4">
                 <div className="flex justify-between items-end px-1">
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Mes Espaces de Travail</h3>
@@ -320,8 +342,8 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
               />
             </div>
             <div className="flex flex-col gap-3">
-              <button type="submit" disabled={creatingLocally || !newCompanyName.trim()} className="w-full py-5 bg-blue-600 text-white shadow-xl shadow-blue-600/20 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all active:scale-95">
-                {creatingLocally ? 'Symphonie en cours...' : 'Initialiser mon Espace'}
+              <button type="submit" disabled={submitting || !newCompanyName.trim()} className="w-full py-5 bg-blue-600 text-white shadow-xl shadow-blue-600/20 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all active:scale-95">
+                {submitting ? 'Symphonie en cours...' : 'Initialiser mon Espace'}
               </button>
               <button type="button" onClick={() => setMode('select')} className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-colors">Retour</button>
             </div>
@@ -350,8 +372,8 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
               <p className="mt-4 text-center text-[10px] text-slate-400 font-medium">Demandez le code à 6 caractères à votre administrateur.</p>
             </div>
             <div className="flex flex-col gap-3 pt-4">
-              <button type="submit" disabled={creatingLocally || !joinCodeInput.trim()} className="w-full py-5 bg-indigo-600 text-white shadow-xl shadow-indigo-600/20 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95">
-                {creatingLocally ? 'Vérification...' : 'Fusionner avec cet Espace'}
+              <button type="submit" disabled={submitting || !joinCodeInput.trim()} className="w-full py-5 bg-indigo-600 text-white shadow-xl shadow-indigo-600/20 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95">
+                {submitting ? 'Vérification...' : 'Fusionner avec cet Espace'}
               </button>
               <button type="button" onClick={() => setMode('select')} className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-colors">Retour</button>
             </div>
@@ -505,6 +527,7 @@ export default function App() {
   const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth > 1024);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { currentCompany, companies, setCurrentCompany, loading: companyLoading } = useCompany();
 
@@ -637,6 +660,17 @@ export default function App() {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   useEffect(() => {
@@ -937,7 +971,15 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-600 selection:text-white flex overflow-hidden">
+    <div className="min-h-screen bg-nexus-bg text-nexus-text font-sans selection:bg-nexus-accent selection:text-white flex overflow-hidden">
+      {/* Command Cockpit */}
+      <CommandPalette 
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigate={(tab) => setActiveTab(tab)}
+        user={user}
+      />
+
       {/* Sidebar - Mobile Overlay */}
       {isSidebarOpen && (
         <div 
@@ -1103,55 +1145,57 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col h-screen bg-slate-50">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col h-screen bg-nexus-bg">
         {/* Top Header */}
-        <header className="h-24 px-6 sm:px-12 border-b border-slate-100 bg-white sticky top-0 z-20 flex items-center justify-between">
+        <header className="h-24 px-6 sm:px-12 border-b border-white/5 bg-nexus-surface sticky top-0 z-20 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <button 
               onClick={() => setSidebarOpen(!isSidebarOpen)} 
-              className="lg:hidden p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-600/20 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
+              className="lg:hidden p-3 bg-nexus-accent text-white rounded-2xl shadow-lg shadow-blue-600/20 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
             >
               <Menu size={20} />
             </button>
             <div className="flex flex-col">
-              <h2 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-1">Nexus Operational</h2>
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-none">
+              <h2 className="text-[10px] font-black text-nexus-accent uppercase tracking-[0.3em] mb-1">Nexus Cockpit</h2>
+              <h1 className="text-xl font-bold text-nexus-text tracking-tight leading-none">
                 {activeTab === 'admin' ? "Console Maître" : navItems.find(n => n.id === activeTab)?.label}
               </h1>
             </div>
           </div>
           
           <div className="flex items-center gap-8">
-            <div className="hidden lg:flex items-center px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 group transition-all">
-              <Search className="text-slate-300 group-hover:text-blue-500 transition-colors" size={18} />
-              <input 
-                type="text" 
-                placeholder="Scanner l'écosystème..." 
-                className="bg-transparent border-none outline-none text-[11px] font-bold text-slate-700 w-48 ml-3 placeholder:text-slate-300"
-              />
+            <div 
+              onClick={() => setIsCommandPaletteOpen(true)}
+              className="hidden lg:flex items-center px-4 py-2 bg-white/5 rounded-2xl border border-white/10 group transition-all cursor-pointer hover:border-nexus-accent/50"
+            >
+              <Search className="text-nexus-text-muted group-hover:text-nexus-accent transition-colors" size={18} />
+              <div className="text-[11px] font-bold text-nexus-text-muted w-48 ml-3 flex justify-between items-center">
+                <span>Scanner l'écosystème...</span>
+                <span className="text-[9px] px-1.5 py-0.5 bg-white/10 rounded border border-white/10">⌘K</span>
+              </div>
             </div>
             
-            <div className="flex items-center gap-2 sm:gap-4 lg:border-l border-slate-100 lg:pl-8">
+            <div className="flex items-center gap-2 sm:gap-4 lg:border-l border-white/5 lg:pl-8">
               <NotificationBell user={user} />
               
               <div className="flex items-center gap-2 sm:gap-4">
                 <div className="hidden xs:flex flex-col items-end">
-                  <span className="text-[9px] sm:text-[10px] font-black text-slate-900 uppercase tracking-tighter truncate max-w-[80px] sm:max-w-none">
+                  <span className="text-[9px] sm:text-[10px] font-black text-nexus-text uppercase tracking-tighter truncate max-w-[80px] sm:max-w-none">
                     {user?.displayName || user?.email?.split('@')[0] || 'Utilisateur'}
                   </span>
-                  <span className="text-[7px] sm:text-[8px] font-black text-blue-500 uppercase tracking-[0.1em] px-1.5 sm:px-2 py-0.5 bg-blue-50 rounded-full border border-blue-100 mt-0.5">
+                  <span className="text-[7px] sm:text-[8px] font-black text-nexus-accent uppercase tracking-[0.1em] px-1.5 sm:px-2 py-0.5 bg-nexus-accent/10 rounded-full border border-nexus-accent/20 mt-0.5">
                     {user?.role}
                   </span>
                 </div>
                 <div className="relative group cursor-pointer">
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt="User" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white shadow-xl shadow-slate-200 object-cover" />
+                    <img src={user.photoURL} alt="User" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white/10 shadow-xl shadow-slate-950/20 object-cover" />
                   ) : (
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white shadow-xl shadow-slate-200 bg-slate-100 flex items-center justify-center text-slate-500 font-black text-base sm:text-lg">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white/10 shadow-xl shadow-slate-950/20 bg-nexus-surface flex items-center justify-center text-nexus-text-muted font-black text-base sm:text-lg">
                       {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
                     </div>
                   )}
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-[3px] border-white shadow-sm" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-nexus-success rounded-full border-[3px] border-nexus-surface shadow-sm" />
                 </div>
               </div>
             </div>
@@ -1167,7 +1211,7 @@ export default function App() {
             {activeTab === 'dashboard' && <DashboardModule user={user} companies={companies} />}
             {activeTab === 'marketplace' && <Marketplace onBack={() => setActiveTab('dashboard')} />}
             {activeTab === 'services' && <PrestationsModule />}
-            {activeTab === 'sales' && <SalesModule />}
+            {activeTab === 'sales' && <SalesModule user={user} />}
             {activeTab === 'ecommerce' && <EcommerceModule user={user} />}
             {activeTab === 'clients' && <ClientModule />}
             {activeTab === 'personnel' && <PersonnelModule user={user} />}
@@ -1187,18 +1231,18 @@ export default function App() {
         />
 
         {/* Global Footer */}
-        <footer className="mt-auto px-4 sm:px-8 py-6 border-t border-slate-200 bg-white flex flex-col md:flex-row justify-between items-center gap-4">
+        <footer className="mt-auto px-4 sm:px-8 py-6 border-t border-white/5 bg-nexus-surface flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-6">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">NexusERP v4.2.0-STABLE</p>
+            <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest">Nexus Cockpit v5.0-LEGENDARY</p>
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-[10px] font-bold text-slate-600 uppercase">Serveur France-Nord (Live)</span>
+              <div className="w-1.5 h-1.5 bg-nexus-success rounded-full animate-pulse" />
+              <span className="text-[10px] font-bold text-nexus-text uppercase">Sync Intelligence Active</span>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button className="text-[10px] font-bold text-slate-400 hover:text-slate-900 uppercase">Support</button>
-            <span className="text-slate-200">|</span>
-            <button className="text-[10px] font-bold text-slate-400 hover:text-slate-900 uppercase">Sécurité</button>
+            <button className="text-[10px] font-bold text-nexus-text-muted hover:text-nexus-text uppercase transition-colors">Support Principal</button>
+            <span className="text-white/5">|</span>
+            <button className="text-[10px] font-bold text-nexus-text-muted hover:text-nexus-text uppercase transition-colors">Protocole Sécurité</button>
           </div>
         </footer>
       </main>

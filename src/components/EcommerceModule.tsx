@@ -171,6 +171,39 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [replenishmentQty, setReplenishmentQty] = useState('');
   const [replenishmentPurchasePrice, setReplenishmentPurchasePrice] = useState('');
 
+  // AI Growth States
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<any>(null);
+
+  const generateAI = async (type: 'product_doc' | 'seo' | 'marketing', context: any) => {
+    setAiGenerating(true);
+    try {
+      const resp = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, context })
+      });
+      if (!resp.ok) throw new Error('AI Engine failed');
+      const data = await resp.json();
+      setAiSuggestion(data);
+      
+      // Auto-apply if it's product_doc and we're editing
+      if (type === 'product_doc' && editingProduct) {
+        setEditingProduct(prev => prev ? {
+          ...prev,
+          description: data.longDescription || prev.description,
+          // We could add more hidden fields like benefits/specs if the model supported it
+        } : null);
+      }
+      return data;
+    } catch (err) {
+      console.error(err);
+      alert("Nexus AI indisponible temporairement.");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   const canManage = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
   const isAdmin = canManage;
   const isSuperAdmin = ['owner', 'Administrateur', 'Directeur'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
@@ -2896,9 +2929,29 @@ export default function EcommerceModule({ user }: { user: any }) {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Nom de la solution</label>
                 <input name="name" defaultValue={editingProduct.name} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none" required />
               </div>
-              <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Description opérationnelle</label>
-                <textarea name="description" defaultValue={editingProduct.description} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none h-24" required />
+              <div className="relative group">
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Description opérationnelle</label>
+                  <button 
+                    type="button"
+                    onClick={() => generateAI('product_doc', editingProduct)}
+                    disabled={aiGenerating}
+                    className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                  >
+                    {aiGenerating ? <RefreshCw size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                    Magie IA
+                  </button>
+                </div>
+                <textarea 
+                  name="description" 
+                  value={editingProduct.description}
+                  onChange={e => setEditingProduct({...editingProduct, description: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none h-32 resize-none leading-relaxed italic" 
+                  required 
+                />
+                <div className="absolute bottom-3 right-3 text-[9px] font-black text-slate-400 uppercase tracking-widest opacity-0 group-focus-within:opacity-100 transition-opacity">
+                  Assistant Nexus Actif
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -2941,6 +2994,64 @@ export default function EcommerceModule({ user }: { user: any }) {
                   <input name="points" type="number" defaultValue={editingProduct.points} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
                 </div>
               </div>
+
+              {/* AI Insights Panel */}
+              <AnimatePresence>
+                {aiSuggestion && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="p-6 bg-slate-950 rounded-2xl border border-white/10 space-y-4"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <Sparkles size={16} className="text-amber-400" />
+                        <h4 className="text-[10px] font-black text-white uppercase tracking-widest">Nexus AI Insights</h4>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Score Qualité</span>
+                        <div className="w-12 h-2 bg-slate-800 rounded-full overflow-hidden">
+                          <div 
+                            className={cn(
+                              "h-full transition-all duration-1000",
+                              (aiSuggestion.qualityScore || 0) > 80 ? "bg-green-500" : "bg-amber-500"
+                            )} 
+                            style={{ width: `${aiSuggestion.qualityScore || 0}%` }} 
+                          />
+                        </div>
+                        <span className="text-[10px] font-black text-white">{aiSuggestion.qualityScore || 0}%</span>
+                      </div>
+                    </div>
+                    
+                    {aiSuggestion.facebookPost && (
+                      <div className="space-y-2">
+                        <label className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] block italic">Proposition Social Media</label>
+                        <div className="bg-white/5 border border-white/5 p-4 rounded-xl text-[11px] text-slate-300 leading-relaxed italic">
+                          {aiSuggestion.facebookPost}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button 
+                        type="button" 
+                        onClick={() => generateAI('marketing', editingProduct)}
+                        className="flex-1 py-2 bg-white/10 text-[9px] font-black text-white uppercase tracking-widest rounded-lg hover:bg-white/20 transition-all border border-white/5"
+                      >
+                        Actualiser Marketing
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => generateAI('seo', editingProduct)}
+                        className="flex-1 py-2 bg-white/10 text-[9px] font-black text-white uppercase tracking-widest rounded-lg hover:bg-white/20 transition-all border border-white/5"
+                      >
+                        Générer SEO
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <div className="flex gap-4 pt-4">
                 <button type="button" onClick={() => setEditingProduct(null)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all">Annuler</button>
                 <button type="submit" className="flex-[2] py-4 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest hover:bg-slate-900 shadow-xl shadow-blue-100 transition-all">Mettre à jour Nexus</button>
