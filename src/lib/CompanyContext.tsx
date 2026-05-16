@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, or, getDocs, updateDoc, doc, arrayUnion, serverTimestamp } from '../lib/firebase';
 import { db, auth, onAuthStateChanged } from './firebase';
+import { getSupabase } from './supabase';
 
 export interface CompanyCategory {
   name: string;
@@ -23,6 +24,7 @@ export interface Company {
   nairaRate?: number;
   totalProfit?: number;
   categories?: CompanyCategory[];
+  company_members?: { role: string; status: string }[];
 }
 
 interface CompanyContextType {
@@ -31,6 +33,7 @@ interface CompanyContextType {
   setCurrentCompany: (company: Company | null) => void;
   joinCompany: (code: string) => Promise<{ success: boolean; message: string }>;
   loading: boolean;
+  refreshCompanies: () => Promise<void>;
 }
 
 const CompanyContext = createContext<CompanyContextType>({
@@ -39,6 +42,7 @@ const CompanyContext = createContext<CompanyContextType>({
   setCurrentCompany: () => {},
   joinCompany: async () => ({ success: false, message: 'Not implemented' }),
   loading: true,
+  refreshCompanies: async () => {},
 });
 
 export function CompanyProvider({ children }: { children: React.ReactNode }) {
@@ -52,6 +56,119 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('nexus_company_id', company.id);
     } else {
       localStorage.removeItem('nexus_company_id');
+    }
+  };
+
+  const refreshCompanies = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    setLoading(true);
+    await loadCompanies(user);
+    setLoading(false);
+  };
+
+  const loadCompanies = async (user: any) => {
+    const cleanEmail = user.email ? user.email.trim().toLowerCase().replace(/\s+/g, '') : null;
+    if (!cleanEmail) return;
+
+    const sb = getSupabase();
+    let supabaseCompanies: Company[] = [];
+
+    // 1. SUPABASE FLOW (Primary if configured)
+    if (sb) {
+      try {
+        console.log("Nexus Sync: Initialisation Supabase Link pour", user.uid);
+        const { data: membershipData, error: sbError } = await sb
+          .from('company_members')
+          .select(`
+            id,
+            role,
+            status,
+            companies (
+              id,
+              name,
+              ownerId:owner_id,
+              ownerEmail:owner_email,
+              logoUrl:logo_url,
+              sector
+            )
+          `)
+          .eq('firebase_uid', user.uid)
+          .eq('status', 'active');
+
+        if (membershipData && !sbError) {
+          supabaseCompanies = membershipData.map((m: any) => ({
+            ...m.companies,
+            id: m.companies.id,
+            company_members: [{ role: m.role, status: m.status }]
+          }));
+          console.log("Nexus Sync: Supabase Success -", supabaseCompanies.length, "entités.");
+        }
+      } catch (err) {
+        console.error("Supabase load error:", err);
+      }
+    }
+
+    // 2. FIRESTORE FLOW (Support / Fallback)
+    const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
+    
+    try {
+      let firestoreCompanies: Company[] = [];
+      
+      if (isMaster) {
+        const masterSnap = await getDocs(collection(db, 'companies'));
+        firestoreCompanies = masterSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
+      } else {
+        const qMain = query(
+          collection(db, 'companies'), 
+          or(
+            where('ownerId', '==', user.uid),
+            where('memberEmails', 'array-contains', cleanEmail)
+          )
+        );
+        const mainSnap = await getDocs(qMain);
+        firestoreCompanies = mainSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
+
+        // Auto-sync from personnel collection
+        const qPersonnel = query(collection(db, 'personnel'), where('email', '==', cleanEmail));
+        const personnelSnap = await getDocs(qPersonnel);
+        const personnelCompanyIds = personnelSnap.docs.map(d => d.data().companyId).filter(Boolean);
+
+        for (const cid of personnelCompanyIds) {
+          if (!firestoreCompanies.find(c => c.id === cid)) {
+             try {
+               const cDoc = await getDocs(query(collection(db, 'companies'), where('id', '==', cid)));
+               if (!cDoc.empty) {
+                 await updateDoc(doc(db, 'companies', cid), {
+                   memberEmails: arrayUnion(cleanEmail),
+                   employees: arrayUnion(user.uid)
+                 });
+                 // Re-add to list
+                 firestoreCompanies.push({ id: cid, ...cDoc.docs[0].data() } as Company);
+               }
+             } catch (e) { /* ignore */ }
+          }
+        }
+      }
+
+      // Merge and deduplicate
+      const allCompaniesMap = new Map();
+      [...supabaseCompanies, ...firestoreCompanies].forEach(c => {
+        allCompaniesMap.set(c.id, c);
+      });
+      
+      const finalCompanies = Array.from(allCompaniesMap.values());
+      setCompanies(finalCompanies);
+      
+      // Auto-restore current company
+      const savedId = localStorage.getItem('nexus_company_id');
+      if (savedId) {
+        const found = finalCompanies.find(c => c.id === savedId);
+        if (found) setCurrentCompany(found);
+      }
+    } catch (error) {
+      console.error("Firestore loading error:", error);
     }
   };
 
@@ -71,20 +188,15 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       }
 
       const companyDoc = snap.docs[0];
-      const companyId = companyDoc.id;
       const data = companyDoc.data();
 
-      if (data.memberEmails?.includes(cleanEmail)) {
-        return { success: true, message: "Vous êtes déjà membre de cette entreprise." };
-      }
-
-      await updateDoc(doc(db, 'companies', companyId), {
+      await updateDoc(doc(db, 'companies', companyDoc.id), {
         memberEmails: arrayUnion(cleanEmail),
         employees: arrayUnion(user.uid),
-        joinCode: cleanCode, // Required by security rules for self-enrollment sync
         updatedAt: serverTimestamp()
       });
 
+      await refreshCompanies();
       return { success: true, message: `Bienvenue chez ${data.name} !` };
     } catch (error) {
       console.error("Join company error:", error);
@@ -93,123 +205,27 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    let unsubscribeSnap: any = null;
-
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      // Cleanup previous snapshot if exists
-      if (typeof unsubscribeSnap === 'function') {
-        unsubscribeSnap();
-        unsubscribeSnap = null;
-      }
-
       if (!user) {
         setCompanies([]);
-        handleSetCurrentCompany(null);
+        setCurrentCompany(null);
         setLoading(false);
         return;
       }
-
       setLoading(true);
-      
-      const cleanEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
-      const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
-      
-      const load = async () => {
-        try {
-          console.log("Nexus Sync: Initialisation du flux pour", cleanEmail);
-          
-          if (isMaster) {
-            return onSnapshot(collection(db, 'companies'), (snap) => {
-              const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
-              console.log("Nexus Sync: Master Access -", data.length, "entités détectées.");
-              setCompanies(data);
-              setLoading(false);
-            }, (err) => {
-              console.error("Master onSnapshot error:", err);
-              setLoading(false);
-            });
-          }
-
-          const qMain = query(
-            collection(db, 'companies'), 
-            or(
-              where('ownerId', '==', user.uid),
-              where('memberEmails', 'array-contains', cleanEmail)
-            )
-          );
-
-          // Get personnel IDs once to assist with auto-sync
-          const qPersonnel = query(collection(db, 'personnel'), where('email', '==', cleanEmail));
-          const personnelSnap = await getDocs(qPersonnel).catch(() => ({ docs: [], empty: true }));
-          const personnelCompanyIds = personnelSnap.docs.map(d => d.data().companyId).filter(Boolean);
-
-          if (personnelCompanyIds.length > 0) {
-             console.log("Nexus Sync: Synchronisation des affiliations RH...", personnelCompanyIds.length);
-          }
-
-          return onSnapshot(qMain, (snap) => {
-            const mainCompanies = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
-            
-            if (personnelCompanyIds.length > 0) {
-              personnelCompanyIds.forEach(async (cid) => {
-                if (!mainCompanies.find(c => c.id === cid)) {
-                  try {
-                    await updateDoc(doc(db, 'companies', cid), {
-                      memberEmails: arrayUnion(cleanEmail),
-                      employees: arrayUnion(user.uid),
-                      updatedAt: serverTimestamp()
-                    });
-                  } catch (e) {
-                    // Silently fail if we can't update due to RLS
-                  }
-                }
-              });
-            }
-
-            console.log("Nexus Sync: Infrastructure synchronisée -", mainCompanies.length, "entités.");
-            setCompanies(mainCompanies);
-            setLoading(false);
-          }, (err) => {
-            console.error("Main onSnapshot error:", err);
-            setLoading(false);
-          });
-        } catch (error) {
-          console.error("Load companies error:", error);
-          setLoading(false);
-        }
-      };
-
-      // Faster timeout for loading state to reveal selection screen even if Firestore is slow
-      const timer = setTimeout(() => {
-        setLoading(false);
-      }, 5000);
-
-      try {
-        const unsubscribe = await load();
-        unsubscribeSnap = unsubscribe;
-      } catch (e) {
-        console.error("Critical failure during company load:", e);
-        setLoading(false);
-      }
-      
-      // We don't clear the timeout immediately if we want to ensure at least some visual feedback time, 
-      // but if load finishes, we can clear it. Actually, clearing it is fine.
-      clearTimeout(timer);
+      await loadCompanies(user);
+      setLoading(false);
     });
 
-    return () => {
-      unsubscribeAuth();
-      if (typeof unsubscribeSnap === 'function') {
-        unsubscribeSnap();
-      }
-    };
+    return () => unsubscribeAuth();
   }, []);
 
   return (
-    <CompanyContext.Provider value={{ currentCompany, companies, setCurrentCompany: handleSetCurrentCompany, joinCompany, loading }}>
+    <CompanyContext.Provider value={{ currentCompany, companies, setCurrentCompany: handleSetCurrentCompany, joinCompany, loading, refreshCompanies }}>
       {children}
     </CompanyContext.Provider>
   );
 }
 
 export const useCompany = () => useContext(CompanyContext);
+

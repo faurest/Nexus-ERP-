@@ -1,6 +1,6 @@
 {
-  "name": "Nexus ERP - Solution de Gestion Intelligente",
-  "description": "ERP complet avec gestion des clients, personnel, projets et comptabilité avancée. Inclut des analyses de flux monétaires par Intelligence Artificielle et exports de rapports.",
+  "name": "Nexus ERP - Hub Opérationnel",
+  "description": "Système de gestion ERP multi-entreprises avec architecture unifiée Firebase/Supabase. Lanceur opérationnel pour la gestion des pôles métiers : RH, Ventes, Projets et Comptabilité.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

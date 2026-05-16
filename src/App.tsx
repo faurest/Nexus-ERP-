@@ -133,7 +133,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
-  const { joinCompany, loading: companyLoading } = useCompany();
+  const { joinCompany, refreshCompanies, loading: companyLoading } = useCompany();
   const [lastSession, setLastSession] = useState<{ company: any, tab: string } | null>(null);
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
@@ -218,7 +218,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
     }
   };
 
-  const allWorkspaces = [...ownedCompanies, ...joinedCompanies];
+  const allWorkspaces = companies;
 
   return (
     <div className="min-h-screen w-screen flex bg-[#020617] text-white font-sans overflow-hidden">
