@@ -133,9 +133,9 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
   const [successMsg, setSuccessMsg] = useState('');
   const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
   const { joinCompany, loading: companyLoading } = useCompany();
+  const [lastSession, setLastSession] = useState<{ company: any, tab: string } | null>(null);
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
-  const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
   
   const ownedCompanies = companies.filter(c => {
     const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
@@ -150,7 +150,18 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
     import('./lib/firebase').then(({ testFirestoreConnection }) => {
       testFirestoreConnection().then(ok => setConnStatus(ok ? 'ok' : 'fail'));
     });
-  }, []);
+    
+    // Load last session
+    const lastCompId = localStorage.getItem('nexus_last_company_id');
+    const lastTab = localStorage.getItem('nexus_last_tab') || 'dashboard';
+    
+    if (lastCompId && companies.length > 0) {
+      const comp = companies.find(c => c.id === lastCompId);
+      if (comp) {
+        setLastSession({ company: comp, tab: lastTab });
+      }
+    }
+  }, [companies]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,7 +170,6 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
 
     setSubmitting(true);
     try {
-      // Logic for 6 uppercase letters/numbers join code
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       let generatedJoinCode = '';
       for (let i = 0; i < 6; i++) {
@@ -197,7 +207,6 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
 
     if (result.success) {
       setSuccessMsg(result.message);
-      // Wait a bit to show success before switching to selection mode
       setTimeout(() => {
         setMode('select');
         setSuccessMsg('');
@@ -208,209 +217,331 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
     }
   };
 
+  const allWorkspaces = [...ownedCompanies, ...joinedCompanies];
+
   return (
-    <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-slate-900 font-sans relative">
-      <div className="max-w-md w-full bg-white rounded-3xl p-10 shadow-xl border border-slate-200 relative overflow-hidden">
+    <div className="min-h-screen w-screen flex bg-[#020617] text-white font-sans overflow-hidden">
+      {/* Sidebar - Desktop */}
+      <aside className="hidden lg:flex w-80 flex-col border-r border-white/5 bg-slate-950/40 p-8 backdrop-blur-3xl relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none opacity-20">
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-blue-600/20 rounded-full blur-[100px]" />
+          <div className="absolute bottom-48 -right-12 w-40 h-40 bg-indigo-600/10 rounded-full blur-[80px]" />
+        </div>
         
-        <div className="text-center mb-8 relative z-10">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl mx-auto flex items-center justify-center mb-6 text-white shadow-xl shadow-blue-500/20 rotate-3">
-            <Building2 size={40} />
-          </div>
-          <h2 className="text-3xl font-black tracking-tighter text-slate-900 mb-2 italic">ESPACE NEXUS</h2>
-          <p className="text-slate-500 text-sm font-medium tracking-tight">Accédez à votre intelligence industrielle.</p>
-        </div>
-
-        {errorMsg && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-red-50 text-red-600 text-[11px] font-black uppercase tracking-widest rounded-2xl border border-red-100 flex items-center gap-3"
-          >
-            <ShieldAlert size={18} />
-            {errorMsg}
-          </motion.div>
-        )}
-
-        {successMsg && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-green-50 text-green-600 text-[11px] font-black uppercase tracking-widest rounded-2xl border border-green-100 flex items-center gap-3"
-          >
-            <AlertCircle size={18} />
-            {successMsg}
-          </motion.div>
-        )}
-
-        {mode === 'select' && (
-          <div className="space-y-8 relative z-10">
-            {/* Scénario A: Entreprises existantes */}
-            {companyLoading ? (
-              <div className="space-y-4">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Synchronisation de vos accès...</h3>
-                <SkeletonCard />
-                <SkeletonCard />
+        <div className="relative z-10 flex flex-col h-full">
+           <div className="flex items-center gap-3 mb-12">
+              <NexusLogo className="w-10 h-10" />
+              <div className="flex flex-col">
+                <span className="font-black text-xl tracking-tighter leading-none italic text-white uppercase">NEXUS <span className="text-blue-500 not-italic">HUB</span></span>
+                <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">Enterprise Unified Launcher</span>
               </div>
-            ) : (ownedCompanies.length > 0 || joinedCompanies.length > 0) ? (
-              <div className="space-y-4">
-                <div className="flex justify-between items-end px-1">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Mes Espaces de Travail</h3>
-                  <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">{ownedCompanies.length + joinedCompanies.length} actif(s)</span>
-                </div>
-                <div className="space-y-3">
-                  {[...ownedCompanies, ...joinedCompanies].map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => onSelect(c)}
-                      className="w-full flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-white hover:border-blue-600 hover:bg-blue-50/50 transition-all group relative overflow-hidden active:scale-[0.98]"
-                    >
-                      <div className="flex items-center gap-4 relative z-10">
-                        <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-900 text-xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-                          {c.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="text-left">
-                          <span className="block font-black text-slate-900 text-base tracking-tight group-hover:text-blue-700 transition-colors">{c.name}</span>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 uppercase tracking-[0.1em]">{c.joinCode}</span>
-                            {c.ownerEmail === cleanEmail && (
-                              <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 uppercase tracking-[0.1em]">Propriétaire</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <ChevronRight size={18} className="text-slate-300 group-hover:translate-x-1 group-hover:text-blue-500 transition-all" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="py-8 px-4 text-center space-y-4 border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/50">
-                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-sm text-blue-500">
-                  <Layers size={32} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-slate-900 tracking-tight">Bienvenue sur Nexus ERP</h3>
-                  <p className="text-xs font-medium text-slate-400 mt-1 max-w-[220px] mx-auto">Vous n'êtes rattaché à aucun espace sécurisé pour le moment.</p>
-                </div>
-              </div>
-            )}
+           </div>
 
-            {/* Scénario B: Rejoindre ou Créer */}
-            <div className="pt-4 space-y-4 text-center">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-                <div className="relative flex justify-center text-[9px] uppercase font-black tracking-widest"><span className="bg-white px-4 text-slate-300 italic">Actions d'Infrastructure</span></div>
-              </div>
-
-              <div className="space-y-3">
-                <button
+           <div className="space-y-6 flex-1">
+              <div className="space-y-2">
+                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">Commandes Globales</h3>
+                 <button 
+                  onClick={() => setMode('select')}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-4 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest",
+                    mode === 'select' ? "bg-white/10 text-white border border-white/10" : "text-slate-400 hover:text-white hover:bg-white/5"
+                  )}
+                 >
+                    <Layers size={16} />
+                    Mes Espaces
+                 </button>
+                 <button 
                   onClick={() => setMode('join')}
-                  className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-indigo-600 text-white font-black text-[11px] uppercase tracking-widest hover:bg-slate-900 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
-                >
-                  <Users size={16} />
-                  Rejoindre avec un Code
-                </button>
-                <button
+                  className={cn(
+                    "w-full flex items-center gap-3 p-4 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest",
+                    mode === 'join' ? "bg-white/10 text-white border border-white/10" : "text-slate-400 hover:text-white hover:bg-white/5"
+                  )}
+                 >
+                    <Users size={16} />
+                    Fusionner Espace
+                 </button>
+                 <button 
                   onClick={() => setMode('create')}
-                  className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-white border border-slate-200 text-slate-600 font-black text-[11px] uppercase tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all active:scale-95"
-                >
-                  <Plus size={16} />
-                  Initialiser un Nouvel Espace
-                </button>
+                  className={cn(
+                    "w-full flex items-center gap-3 p-4 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest",
+                    mode === 'create' ? "bg-white/10 text-white border border-white/10" : "text-slate-400 hover:text-white hover:bg-white/5"
+                  )}
+                 >
+                    <Plus size={16} />
+                    Nouvel Espace
+                 </button>
               </div>
-            </div>
-          </div>
-        )}
+           </div>
 
-        {mode === 'create' && (
-          <motion.form 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onSubmit={handleCreate} 
-            className="space-y-6"
-          >
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 text-center">Nom de votre Entreprise</label>
-              <input 
-                type="text" 
-                value={newCompanyName}
-                onChange={e => setNewCompanyName(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-black text-center text-xl tracking-tight placeholder:opacity-20 translate-y-0 focus:-translate-y-1 transition-all"
-                placeholder="Ex: JET 7 INFO"
-                required
-                autoFocus
-              />
-            </div>
-            <div className="flex flex-col gap-3">
-              <button type="submit" disabled={submitting || !newCompanyName.trim()} className="w-full py-5 bg-blue-600 text-white shadow-xl shadow-blue-600/20 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all active:scale-95">
-                {submitting ? 'Symphonie en cours...' : 'Initialiser mon Espace'}
+           <div className="pt-8 border-t border-white/5 flex flex-col gap-4">
+              <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
+                 <div className="w-10 h-10 rounded-full bg-slate-800 border-2 border-white/10 flex items-center justify-center font-black text-slate-400 overflow-hidden shrink-0">
+                    {user.photoURL ? <img src={user.photoURL} alt="User" /> : user.email?.charAt(0).toUpperCase()}
+                 </div>
+                 <div className="overflow-hidden">
+                    <p className="text-[10px] font-black uppercase truncate text-white">{user.displayName || user.email?.split('@')[0]}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                       <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                       <p className="text-[8px] font-black text-slate-500 uppercase">Synchronisé</p>
+                    </div>
+                 </div>
+              </div>
+              <button 
+                onClick={() => logout()}
+                className="w-full py-4 text-[9px] font-black text-slate-500 hover:text-red-400 uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+              >
+                <LogOut size={12} />
+                Quitter Session
               </button>
-              <button type="button" onClick={() => setMode('select')} className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-colors">Retour</button>
-            </div>
-          </motion.form>
-        )}
-
-        {mode === 'join' && (
-          <motion.form 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onSubmit={handleJoin} 
-            className="space-y-6"
-          >
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 text-center">Code d'Espace de Travail</label>
-              <input 
-                type="text" 
-                value={joinCodeInput}
-                onChange={e => setJoinCodeInput(e.target.value.toUpperCase())}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent font-black text-center tracking-[0.4em] uppercase text-2xl shadow-inner italic"
-                placeholder="XXXXXX"
-                maxLength={6}
-                required
-                autoFocus
-              />
-              <p className="mt-4 text-center text-[10px] text-slate-400 font-medium">Demandez le code à 6 caractères à votre administrateur.</p>
-            </div>
-            <div className="flex flex-col gap-3 pt-4">
-              <button type="submit" disabled={submitting || !joinCodeInput.trim()} className="w-full py-5 bg-indigo-600 text-white shadow-xl shadow-indigo-600/20 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95">
-                {submitting ? 'Vérification...' : 'Fusionner avec cet Espace'}
-              </button>
-              <button type="button" onClick={() => setMode('select')} className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-colors">Retour</button>
-            </div>
-          </motion.form>
-        )}
-
-        <div className="mt-12 pt-8 border-t border-slate-50 flex flex-col items-center gap-6">
-          {isMaster && (
-            <button 
-              onClick={() => onSelect({ id: 'comp_nexus_master', name: 'Nexus Enterprise Global', ownerId: 'master_nexus_01', joinCode: 'NEXUS-ADMIN' })}
-              className="flex items-center gap-3 px-6 py-3 bg-slate-900 text-blue-400 rounded-full text-[9px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 hover:text-white transition-all shadow-lg active:scale-95"
-            >
-              <Shield size={14} />
-              Console Maître Active
-            </button>
-          )}
-
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => logout()}
-              className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500 transition-colors flex items-center gap-2 group p-2"
-            >
-              <LogOut size={12} className="group-hover:-translate-x-1 transition-transform" />
-              Quitter Nexus
-            </button>
-            <div className="w-1 h-1 bg-slate-200 rounded-full" />
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 rounded-full border border-slate-100">
-              <div className={`w-1.5 h-1.5 rounded-full ${connStatus === 'ok' ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-slate-300 animate-pulse'}`} />
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider">{connStatus === 'ok' ? 'Cloud Sync active' : 'Syncing...'}</span>
-            </div>
-          </div>
+           </div>
         </div>
+      </aside>
 
-        {/* Dynamic Background */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-50 rounded-full blur-3xl opacity-60 pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-50 rounded-full blur-3xl opacity-60 pointer-events-none" />
-      </div>
+      {/* Main Launcher Content */}
+      <main className="flex-1 overflow-y-auto p-6 lg:p-12 relative flex flex-col">
+         {/* Background Glows */}
+         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none" />
+         
+         <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col relative z-10">
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-16">
+               <div className="space-y-2">
+                  <h1 className="text-4xl lg:text-5xl font-black tracking-tighter italic text-white">LANCEUR <span className="text-blue-500 not-italic">OPÉRATIONNEL</span></h1>
+                  <p className="text-slate-400 font-medium text-sm lg:text-base">Choisissez un pôle d&apos;intelligence pour commencer votre journée.</p>
+               </div>
+               
+               <AnimatePresence>
+                {lastSession && (
+                  <motion.button
+                    key="quick-resume"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    onClick={() => {
+                      onSelect(lastSession.company);
+                      localStorage.setItem('nexus_navigate_to', lastSession.tab);
+                    }}
+                    className="flex items-center gap-4 bg-blue-600/10 border border-blue-500/20 p-5 rounded-3xl hover:bg-blue-600 hover:border-transparent transition-all group shadow-2xl relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-400/10 rounded-full blur-2xl -mr-12 -mt-12" />
+                    <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:bg-white group-hover:text-blue-600 transition-all shrink-0">
+                      <TrendingUp size={24} className="animate-pulse" />
+                    </div>
+                    <div className="text-left pr-4">
+                      <span className="block text-[10px] font-black text-blue-400 uppercase tracking-widest group-hover:text-blue-50 transition-colors">Reprendre ma session</span>
+                      <span className="block text-xl font-black text-white italic tracking-tight">{lastSession.company.name}</span>
+                    </div>
+                  </motion.button>
+                )}
+               </AnimatePresence>
+            </div>
+
+            {/* Error/Success Feedbacks */}
+            <AnimatePresence mode="wait">
+              {(errorMsg || successMsg) && (
+                <motion.div 
+                  key="feedback"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className={cn(
+                    "mb-12 p-6 rounded-3xl border flex items-center gap-4 shadow-2xl backdrop-blur-md",
+                    errorMsg ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-green-500/10 border-green-500/20 text-green-400"
+                  )}
+                >
+                  <div className={cn("p-2 rounded-xl", errorMsg ? "bg-red-500/20" : "bg-green-500/20")}>
+                    {errorMsg ? <ShieldAlert size={20} /> : <AlertCircle size={20} />}
+                  </div>
+                  <span className="text-xs font-black uppercase tracking-widest">{errorMsg || successMsg}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* View Switching */}
+            <div className="flex-1">
+              {mode === 'select' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {companyLoading ? (
+                    [1,2,3].map(i => (
+                      <div key={i} className="h-64 bg-white/5 border border-white/5 rounded-[3rem] animate-pulse" />
+                    ))
+                  ) : allWorkspaces.length > 0 ? (
+                    allWorkspaces.map((c) => (
+                      <motion.button
+                        key={c.id}
+                        whileHover={{ y: -8, scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => onSelect(c)}
+                        className="group relative p-8 rounded-[3rem] border border-white/5 bg-gradient-to-br from-slate-900 to-slate-950 text-left overflow-hidden shadow-2xl transition-all hover:border-blue-500/30 ring-0 hover:ring-8 hover:ring-blue-500/5"
+                      >
+                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 rounded-full blur-[40px] -mr-16 -mt-16 group-hover:bg-blue-600/10 transition-all duration-700" />
+                         
+                         <div className="flex items-center justify-between mb-10 relative z-10">
+                            <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center font-black text-white text-3xl group-hover:bg-blue-600 group-hover:border-transparent group-hover:shadow-[0_15px_30px_rgba(37,99,235,0.3)] transition-all duration-500 rotate-6 group-hover:rotate-0">
+                              {c.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                               <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/5">
+                                  <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" />
+                                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{c.joinCode}</span>
+                               </div>
+                            </div>
+                         </div>
+
+                         <div className="relative z-10">
+                            <h3 className="text-2xl font-black text-white italic tracking-tighter mb-2 group-hover:text-blue-400 transition-colors uppercase">{c.name}</h3>
+                            <div className="inline-flex items-center gap-2 text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-8">
+                               <div className="p-1 bg-slate-800 rounded-md"><Building2 size={10} /></div>
+                               Nexus Enterprise Cloud
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mt-auto">
+                               <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                                  <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Membres</span>
+                                  <span className="block text-sm font-black text-white">{(c.memberEmails?.length || 0) + (c.employees?.length || 0)}</span>
+                               </div>
+                               <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                                  <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Activité</span>
+                                  <span className="block text-sm font-black text-blue-500 italic">Optimal</span>
+                               </div>
+                            </div>
+                         </div>
+                         
+                         <div className="absolute bottom-8 right-8 p-3 bg-white/5 border border-white/10 rounded-full opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-500">
+                            <ChevronRight size={20} className="text-blue-500" />
+                         </div>
+                      </motion.button>
+                    ))
+                  ) : (
+                    <div className="col-span-full py-24 text-center space-y-8 bg-slate-900/50 rounded-[4rem] border-2 border-dashed border-white/5 flex flex-col items-center justify-center backdrop-blur-sm">
+                       <div className="w-24 h-24 bg-white/5 rounded-[2rem] flex items-center justify-center text-blue-500 shadow-2xl relative">
+                          <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full animate-pulse" />
+                          <Layers size={48} className="relative z-10" />
+                       </div>
+                       <div className="space-y-2">
+                          <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase">Initialisation Nexus</h3>
+                          <p className="text-slate-400 font-medium max-w-sm mx-auto leading-relaxed">Aucun écosystème n&apos;est rattaché à votre signature numérique. Créez-en un ou rejoignez une infrastructure existante.</p>
+                       </div>
+                       <div className="flex gap-4">
+                          <button onClick={() => setMode('create')} className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-white hover:text-blue-600 transition-all shadow-xl shadow-blue-600/20">Initialiser Espace</button>
+                          <button onClick={() => setMode('join')} className="px-8 py-4 bg-white/5 text-white border border-white/10 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-white/10 transition-all">Saisir un Code</button>
+                       </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {mode === 'create' && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="max-w-2xl mx-auto py-12"
+                >
+                  <form onSubmit={handleCreate} className="space-y-12">
+                    <div className="text-center space-y-4 mb-16">
+                      <div className="w-20 h-20 bg-blue-600 text-white rounded-3xl mx-auto flex items-center justify-center shadow-2xl rotate-6"><Plus size={40} /></div>
+                      <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white">Architecture Industrielle</h2>
+                      <p className="text-slate-400 font-medium">Déployez une nouvelle instance Nexus sécurisée pour votre entreprise.</p>
+                    </div>
+
+                    <div className="space-y-8 bg-slate-900/50 p-12 rounded-[3.5rem] border border-white/5 backdrop-blur-xl">
+                      <div className="space-y-4">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] block ml-4 italic">Nom de l&apos;Entité Opérationnelle</label>
+                        <input 
+                          type="text" 
+                          value={newCompanyName}
+                          onChange={e => setNewCompanyName(e.target.value)}
+                          placeholder="Ex: NEXUS LOGISTICS HUB"
+                          className="w-full bg-white/5 border border-white/5 rounded-3xl p-8 outline-none focus:ring-4 focus:ring-blue-600/20 focus:border-blue-600 font-black text-2xl tracking-tight transition-all placeholder:text-slate-700 italic text-white uppercase"
+                          required
+                          autoFocus
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-4">
+                        <button type="submit" disabled={submitting || !newCompanyName.trim()} className="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 transition-all shadow-2xl shadow-blue-600/20 active:scale-95">
+                          {submitting ? 'Déploiement Nexus...' : "Initialiser l'Infrastructure"}
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={() => setMode('select')} 
+                          className="w-full py-4 text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+                        >
+                          <ChevronLeft size={16} /> Retour au Terminal
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </motion.div>
+              )}
+
+              {mode === 'join' && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="max-w-2xl mx-auto py-12"
+                >
+                  <form onSubmit={handleJoin} className="space-y-12">
+                    <div className="text-center space-y-4 mb-16">
+                      <div className="w-20 h-20 bg-indigo-600 text-white rounded-3xl mx-auto flex items-center justify-center shadow-2xl -rotate-6"><Users size={40} /></div>
+                      <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white">Intégration Systémique</h2>
+                      <p className="text-slate-400 font-medium">Rejoignez un espace de travail existant grâce à votre protocole d'accès.</p>
+                    </div>
+
+                    <div className="space-y-8 bg-slate-900/50 p-12 rounded-[3.5rem] border border-white/5 backdrop-blur-xl">
+                      <div className="space-y-4">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] block ml-4 italic">Clé d&apos;Accès Nexus (6 Caractères)</label>
+                        <input 
+                          type="text" 
+                          value={joinCodeInput}
+                          onChange={e => setJoinCodeInput(e.target.value.toUpperCase())}
+                          placeholder="XXXXXX"
+                          maxLength={6}
+                          className="w-full bg-white/5 border border-white/5 rounded-3xl p-10 outline-none focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 font-black text-5xl text-center tracking-[0.5em] uppercase transition-all shadow-inner italic text-white"
+                          required
+                          autoFocus
+                        />
+                        <p className="text-center text-[10px] text-slate-600 font-bold uppercase tracking-widest mt-4">Demandez cette clé à votre agent d&apos;administration.</p>
+                      </div>
+
+                      <div className="flex flex-col gap-4">
+                        <button type="submit" disabled={submitting || !joinCodeInput.trim()} className="w-full py-6 bg-indigo-600 text-white rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-600/20 active:scale-95">
+                          {submitting ? 'Authentification...' : 'Synchroniser mon Accès'}
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={() => setMode('select')} 
+                          className="w-full py-4 text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+                        >
+                          <ChevronLeft size={16} /> Retour au Terminal
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Global Footer Launcher */}
+            <div className="mt-auto py-12 flex flex-col md:flex-row items-center justify-between gap-8 border-t border-white/5 px-4 lg:px-0">
+               <div className="flex items-center gap-8">
+                  <div className="flex items-center gap-2">
+                     <div className={cn("w-2 h-2 rounded-full", connStatus === 'ok' ? "bg-green-500 shadow-[0_0_10px_#22c55e]" : "bg-amber-500 animate-pulse")} />
+                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{connStatus === 'ok' ? 'Cloud Infrastructure Secured' : 'Connecting to Core...'}</span>
+                  </div>
+                  <div className="hidden lg:flex items-center gap-2 text-slate-600">
+                     <Shield size={14} />
+                     <span className="text-[10px] font-bold uppercase tracking-widest">Architectural v5.0-LEGENDARY</span>
+                  </div>
+               </div>
+
+               <div className="flex items-center gap-6">
+                  <a href="#" className="text-[10px] font-black text-slate-500 hover:text-white transition-colors uppercase tracking-widest">Protocoles</a>
+                  <a href="#" className="text-[10px] font-black text-slate-500 hover:text-white transition-colors uppercase tracking-widest">Support Global</a>
+                  <button onClick={() => logout()} className="px-5 py-2.5 bg-white/5 hover:bg-red-500/10 text-[10px] font-black text-slate-400 hover:text-red-400 uppercase tracking-widest rounded-xl border border-white/5 transition-all">Déconnexion</button>
+               </div>
+            </div>
+         </div>
+      </main>
     </div>
   );
 }
@@ -530,6 +661,72 @@ export default function App() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { currentCompany, companies, setCurrentCompany, loading: companyLoading } = useCompany();
+
+  const [backClickCount, setBackClickCount] = useState(0);
+
+  // Navigation Stack Management for Back Button
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state) {
+        const { companyId, tab } = e.state;
+        if (companyId) {
+          const comp = companies.find(c => c.id === companyId);
+          if (comp) {
+            setCurrentCompany(comp);
+            if (tab) setActiveTab(tab);
+          }
+        } else {
+          setCurrentCompany(null);
+        }
+      } else {
+        // We are at root (selection screen)
+        if (!currentCompany) {
+          setBackClickCount(prev => prev + 1);
+          setTimeout(() => setBackClickCount(0), 2000);
+          
+          if (backClickCount === 0) {
+            // Push state back once to "prevent" immediate exit and show message
+            window.history.pushState(null, '');
+            // You could show a toast here
+            console.log("Appuyez encore pour quitter Nexus");
+          }
+        } else {
+          setCurrentCompany(null);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [companies, setCurrentCompany, currentCompany, backClickCount]);
+
+  useEffect(() => {
+    // Pulse state to browser history
+    const state = { 
+      companyId: currentCompany?.id || null, 
+      tab: activeTab 
+    };
+    
+    const currentState = window.history.state;
+    if (!currentState || currentState.companyId !== state.companyId || currentState.tab !== state.tab) {
+      window.history.pushState(state, '');
+    }
+
+    // Save for Quick Resume
+    if (currentCompany?.id) {
+      localStorage.setItem('nexus_last_company_id', currentCompany.id);
+      localStorage.setItem('nexus_last_tab', activeTab);
+    }
+  }, [currentCompany?.id, activeTab]);
+
+  useEffect(() => {
+    // Check for auto-navigation from Quick Resume
+    const navTo = localStorage.getItem('nexus_navigate_to');
+    if (navTo && currentCompany) {
+      setActiveTab(navTo);
+      localStorage.removeItem('nexus_navigate_to');
+    }
+  }, [currentCompany]);
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
   const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
@@ -1239,12 +1436,35 @@ export default function App() {
               <span className="text-[10px] font-bold text-nexus-text uppercase">Sync Intelligence Active</span>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 pb-20 md:pb-0">
             <button className="text-[10px] font-bold text-nexus-text-muted hover:text-nexus-text uppercase transition-colors">Support Principal</button>
             <span className="text-white/5">|</span>
             <button className="text-[10px] font-bold text-nexus-text-muted hover:text-nexus-text uppercase transition-colors">Protocole Sécurité</button>
           </div>
         </footer>
+
+        {/* Mobile Bottom Bar */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-slate-950/80 backdrop-blur-xl border-t border-white/5 flex items-center justify-around px-4 z-50">
+           {[
+             { id: 'dashboard', icon: LayoutDashboard, label: 'Dash' },
+             { id: 'sales', icon: TrendingUp, label: 'Ventes' },
+             { id: 'resources', icon: Package, label: 'Stock' },
+             { id: 'projects', icon: FolderKanban, label: 'Projets' },
+             { id: 'marketplace', icon: Store, label: 'Nexus' }
+           ].map(item => (
+             <button
+               key={item.id}
+               onClick={() => setActiveTab(item.id)}
+               className={cn(
+                 "flex flex-col items-center gap-1 transition-all",
+                 activeTab === item.id ? "text-blue-500 scale-110" : "text-slate-500"
+               )}
+             >
+               <item.icon size={20} strokeWidth={activeTab === item.id ? 2.5 : 2} />
+               <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
+             </button>
+           ))}
+        </div>
       </main>
     </div>
   );
