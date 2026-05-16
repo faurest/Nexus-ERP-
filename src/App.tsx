@@ -23,6 +23,7 @@ import {
   Shield,
   ShieldAlert,
   Calculator,
+  Activity,
   Layers,
   FileText,
   Database,
@@ -377,7 +378,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
                          
                          <div className="flex items-center justify-between mb-10 relative z-10">
                             <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center font-black text-white text-3xl group-hover:bg-blue-600 group-hover:border-transparent group-hover:shadow-[0_15px_30px_rgba(37,99,235,0.3)] transition-all duration-500 rotate-6 group-hover:rotate-0">
-                              {c.name.charAt(0).toUpperCase()}
+                               {c.name.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex flex-col items-end gap-2">
                                <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/5">
@@ -412,18 +413,65 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
                       </motion.button>
                     ))
                   ) : (
-                    <div className="col-span-full py-24 text-center space-y-8 bg-slate-900/50 rounded-[4rem] border-2 border-dashed border-white/5 flex flex-col items-center justify-center backdrop-blur-sm">
-                       <div className="w-24 h-24 bg-white/5 rounded-[2rem] flex items-center justify-center text-blue-500 shadow-2xl relative">
-                          <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full animate-pulse" />
+                    <div className="col-span-full py-24 text-center space-y-8 bg-slate-900/50 rounded-[4rem] border-2 border-dashed border-white/5 flex flex-col items-center justify-center backdrop-blur-sm relative overflow-hidden">
+                       <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 rounded-full blur-[80px] -mr-32 -mt-32" />
+                       <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-600/5 rounded-full blur-[80px] -ml-32 -mb-32" />
+
+                       <div className="w-24 h-24 bg-white/5 rounded-[2rem] flex items-center justify-center text-blue-500 shadow-2xl relative group">
+                          <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full group-hover:animate-pulse" />
                           <Layers size={48} className="relative z-10" />
                        </div>
-                       <div className="space-y-2">
-                          <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase">Initialisation Nexus</h3>
-                          <p className="text-slate-400 font-medium max-w-sm mx-auto leading-relaxed">Aucun écosystème n&apos;est rattaché à votre signature numérique. Créez-en un ou rejoignez une infrastructure existante.</p>
+                       <div className="space-y-4 relative z-10 px-8">
+                          <div className="space-y-2">
+                             <h3 className="text-3xl lg:text-4xl font-black text-white italic tracking-tighter uppercase">Initialisation de votre signature</h3>
+                             <p className="text-slate-400 font-medium max-w-sm mx-auto leading-relaxed text-sm">
+                                Nous n'avons détecté aucune infrastructure opérationnelle rattachée à votre profil numérique 
+                                <span className="text-blue-400 font-black ml-1 uppercase">{user.email}</span>.
+                             </p>
+                          </div>
+                          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-2xl inline-flex items-center gap-2">
+                             <AlertCircle size={14} className="text-red-400" />
+                             <span className="text-[9px] font-black text-red-400 uppercase tracking-widest text-left">S'il s'agit d'une erreur, contactez votre administrateur pour vérification de l'accès.</span>
+                          </div>
                        </div>
-                       <div className="flex gap-4">
-                          <button onClick={() => setMode('create')} className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-white hover:text-blue-600 transition-all shadow-xl shadow-blue-600/20">Initialiser Espace</button>
-                          <button onClick={() => setMode('join')} className="px-8 py-4 bg-white/5 text-white border border-white/10 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-white/10 transition-all">Saisir un Code</button>
+                       
+                       <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md relative z-10">
+                          <button onClick={() => setMode('create')} className="flex-1 px-8 py-5 bg-blue-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-white hover:text-blue-600 transition-all shadow-xl shadow-blue-600/20 active:scale-95">Déployer Espace</button>
+                          <button onClick={() => setMode('join')} className="flex-1 px-8 py-5 bg-white/5 text-white border border-white/10 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95">Rejoindre avec Clé</button>
+                       </div>
+
+                       <div className="pt-12 border-t border-white/5 w-full max-w-md relative z-10">
+                          <div className="p-6 bg-slate-950/60 rounded-3xl border border-white/5 text-left backdrop-blur-md">
+                             <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                   <Shield size={16} className="text-blue-500" />
+                                   <span className="text-[10px] font-black text-white uppercase tracking-widest leading-none">Diagnostic Opérationnel</span>
+                                </div>
+                                <div className={cn("px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest", connStatus === 'ok' ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-amber-500/10 text-amber-500 border border-amber-500/20")}>
+                                   {connStatus === 'ok' ? 'Lien Stable' : 'Sync Active'}
+                                </div>
+                             </div>
+                             <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                   <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                      <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Nexus ID</span>
+                                      <span className="block text-[9px] font-black text-slate-300 truncate">{user.uid.slice(0, 8)}...</span>
+                                   </div>
+                                   <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                      <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Autorisation</span>
+                                      <span className="block text-[9px] font-black text-slate-300 truncate">Vérifié</span>
+                                   </div>
+                                </div>
+                                <button 
+                                  onClick={() => window.location.reload()}
+                                  className="w-full py-4 bg-blue-600/10 hover:bg-blue-600/20 text-[10px] font-black uppercase tracking-[0.25em] text-blue-400 hover:text-white rounded-2xl transition-all border border-blue-500/20 mt-2 flex items-center justify-center gap-3 active:scale-[0.98]"
+                                >
+                                   <Activity size={14} />
+                                   Forcer le rafraîchissement global
+                                </button>
+                                <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-widest px-4">Tentez un rafraîchissement si une affiliation vient d'être créée.</p>
+                             </div>
+                          </div>
                        </div>
                     </div>
                   )}
@@ -1037,39 +1085,89 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-950 p-6 relative overflow-hidden">
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#020617] p-8 relative overflow-hidden font-sans">
         {/* Cinematic Background */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute top-1/4 left-1/4 w-[50vh] h-[50vh] bg-blue-600/10 rounded-full blur-[120px] animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-[40vh] h-[40vh] bg-indigo-600/10 rounded-full blur-[100px] animate-pulse [animation-delay:2s]" />
+          <div className="absolute top-1/4 left-1/4 w-[60vh] h-[60vh] bg-blue-600/10 rounded-full blur-[140px] animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-[50vh] h-[50vh] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse [animation-delay:2s]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none" />
         </div>
 
-        <div className="relative z-10 flex flex-col items-center text-center">
-          <div className="relative mb-12">
-            <NexusLogo className="w-24 h-24" />
+        <div className="relative z-10 flex flex-col items-center max-w-sm w-full">
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="relative mb-16"
+          >
+            <NexusLogo className="w-28 h-28" />
             <motion.div 
               animate={{ rotate: 360 }}
-              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-              className="absolute -inset-4 border-2 border-dashed border-blue-500/20 rounded-full"
+              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+              className="absolute -inset-6 border border-dashed border-blue-500/30 rounded-full"
             />
-          </div>
+            <motion.div 
+              animate={{ rotate: -360 }}
+              transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+              className="absolute -inset-10 border border-dotted border-indigo-500/20 rounded-full"
+            />
+          </motion.div>
           
-          <h2 className="text-3xl font-black text-white tracking-tighter mb-4 italic uppercase">Nexus <span className="text-blue-500 not-italic">OS</span></h2>
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mb-8">Architecture de Données en Cours...</p>
-            <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
-               <motion.div 
-                 initial={{ width: "0%" }}
-                 animate={{ width: "100%" }}
-                 transition={{ duration: 2, repeat: Infinity }}
-                 className="h-full bg-blue-600 shadow-[0_0_10px_#2563eb]"
-               />
+          <div className="space-y-6 w-full">
+            <div className="text-center">
+              <h2 className="text-4xl font-black text-white tracking-tighter mb-2 italic uppercase">Nexus <span className="text-blue-500 not-italic">OS</span></h2>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">INITIALISATION DE L'ÉCOSYSTÈME SÉCURISÉ</p>
             </div>
+
+            <div className="space-y-4 w-full">
+              <div className="flex justify-between items-end px-1">
+                <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest animate-pulse">Sync avec l'Intelligence Hub...</span>
+                <span className="text-[10px] font-black text-slate-600 uppercase">Crypté</span>
+              </div>
+              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                 <motion.div 
+                   initial={{ width: "0%" }}
+                   animate={{ width: "100%" }}
+                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                   className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 shadow-[0_0_15px_#2563eb]"
+                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-1">
+                    <div className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">Auth Engine</div>
+                    <div className="text-[9px] font-black text-blue-500 uppercase truncate">Synchronisé</div>
+                 </div>
+                 <div className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-1">
+                    <div className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">Data Stream</div>
+                    <div className="text-[9px] font-black text-emerald-500 uppercase truncate">Sécurisé</div>
+                 </div>
+              </div>
+            </div>
+            
+            {slowLoading && (
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }}
+                className="pt-4 flex flex-col gap-3"
+              >
+                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+                   <p className="text-[10px] text-amber-400 font-medium leading-relaxed">La synchronisation prend plus de temps que prévu. Vérifiez votre connexion Nexus.</p>
+                </div>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="w-full py-3 bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-white rounded-xl transition-all border border-white/5"
+                >
+                   Forcer la Synchronisation
+                </button>
+              </motion.div>
+            )}
           </div>
         </div>
         
-        <div className="absolute bottom-12 text-[9px] text-slate-600 font-bold uppercase tracking-[0.3em]">
-          Operational Infrastructure v5.0
+        <div className="absolute bottom-12 flex flex-col items-center gap-4">
+           <div className="flex items-center gap-2">
+              <Shield size={12} className="text-blue-500" />
+              <span className="text-[8px] text-slate-500 font-black uppercase tracking-[0.2em]">End-to-End Encryption v5.0 Active</span>
+           </div>
         </div>
       </div>
     );
@@ -1342,55 +1440,55 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col h-screen bg-nexus-bg">
         {/* Top Header */}
-        <header className="h-20 px-6 sm:px-12 border-b border-white/5 bg-slate-950 sticky top-0 z-20 flex items-center justify-between backdrop-blur-md bg-opacity-95">
-          <div className="flex items-center gap-6">
+        <header className="h-16 px-4 md:px-10 border-b border-white/5 bg-[#020617]/80 sticky top-0 z-20 flex items-center justify-between backdrop-blur-xl">
+          <div className="flex items-center gap-4">
             <button 
               onClick={() => setSidebarOpen(!isSidebarOpen)} 
-              className="lg:hidden p-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
+              className="lg:hidden p-2 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
             >
               <Menu size={18} />
             </button>
             <div className="flex flex-col">
-              <h2 className="text-[9px] font-black text-blue-500 uppercase tracking-[0.3em] mb-0.5">Navigation</h2>
-              <h1 className="text-lg font-black text-white tracking-tight leading-none uppercase italic">
+              <h2 className="text-[8px] font-black text-blue-500/60 uppercase tracking-[0.4em] mb-0.5 leading-none">Nexus Protocol</h2>
+              <h1 className="text-sm md:text-base font-black text-white tracking-tight leading-none uppercase italic">
                 {activeTab === 'admin' ? "Console Maître" : navItems.find(n => n.id === activeTab)?.label}
               </h1>
             </div>
           </div>
           
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 md:gap-6">
             <div 
               onClick={() => setIsCommandPaletteOpen(true)}
               className="hidden xl:flex items-center px-4 py-1.5 bg-white/5 rounded-xl border border-white/5 group transition-all cursor-pointer hover:border-blue-500/30"
             >
-              <Search className="text-slate-500 group-hover:text-blue-500 transition-colors" size={16} />
-              <div className="text-[10px] font-bold text-slate-500 w-32 ml-3 flex justify-between items-center">
-                <span>Scanner...</span>
-                <span className="text-[8px] px-1.5 py-0.5 bg-white/5 rounded border border-white/5">⌘K</span>
+              <Search className="text-slate-500 group-hover:text-blue-500 transition-colors" size={14} />
+              <div className="text-[9px] font-bold text-slate-500 w-28 ml-3 flex justify-between items-center">
+                <span className="uppercase tracking-widest">Scanner</span>
+                <span className="text-[7px] px-1.5 py-0.5 bg-white/5 rounded border border-white/5">⌘K</span>
               </div>
             </div>
             
-            <div className="flex items-center gap-4 border-white/5">
+            <div className="flex items-center gap-3">
               <NotificationBell user={user} />
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5 pl-2 md:pl-4 border-l border-white/5">
                 <div className="hidden sm:flex flex-col items-end">
                   <span className="text-[10px] font-black text-white uppercase tracking-tight truncate max-w-[100px]">
-                    {user?.displayName || user?.email?.split('@')[0] || 'Utilisateur'}
+                    {user?.displayName || user?.email?.split('@')[0] || 'User'}
                   </span>
-                  <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/10 mt-0.5">
+                  <span className="text-[7px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-1.5 py-0.5 rounded-md border border-blue-500/10">
                     {user?.role}
                   </span>
                 </div>
-                <div className="relative group cursor-pointer active:scale-95 transition-transform">
+                <div className="relative group cursor-pointer active:scale-90 transition-transform">
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt="User" className="w-10 h-10 rounded-xl border border-white/10 shadow-2xl object-cover" />
+                    <img src={user.photoURL} alt="User" className="w-8 h-8 md:w-9 md:h-9 rounded-xl border border-white/10 shadow-xl object-cover" />
                   ) : (
-                    <div className="w-10 h-10 rounded-xl border border-white/10 shadow-2xl bg-slate-900 flex items-center justify-center text-slate-400 font-black text-sm">
-                      {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
+                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl border border-white/10 shadow-xl bg-slate-900 flex items-center justify-center text-slate-400 font-black text-xs">
+                      {user.displayName?.charAt(0)?.toUpperCase()}
                     </div>
                   )}
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950 shadow-sm" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-950 shadow-sm" />
                 </div>
               </div>
             </div>
@@ -1399,7 +1497,7 @@ export default function App() {
 
         {/* Dynamic View */}
         {user && currentCompany && <CriticalNotificationOverlay user={user} />}
-        <div className="flex-1 p-4 md:p-10 pb-32">
+        <div className="flex-1 p-3 md:p-8 pb-32">
           <div
             className="max-w-[1400px] mx-auto"
           >
@@ -1466,7 +1564,7 @@ export default function App() {
         </footer>
 
         {/* Mobile Bottom Bar */}
-        <div className="lg:hidden fixed bottom-6 left-6 right-6 h-16 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-3xl flex items-center justify-around px-2 z-50 shadow-2xl">
+        <div className="lg:hidden fixed bottom-6 left-6 right-6 h-14 bg-slate-900/40 backdrop-blur-2xl border border-white/5 rounded-2xl flex items-center justify-around px-2 z-50 shadow-[0_15px_40px_rgba(0,0,0,0.4)]">
            {[
              { id: 'dashboard', icon: LayoutDashboard, label: 'Dash' },
              { id: 'sales', icon: TrendingUp, label: 'Ventes' },
@@ -1478,16 +1576,16 @@ export default function App() {
                key={item.id}
                onClick={() => setActiveTab(item.id)}
                className={cn(
-                 "flex flex-col items-center gap-0.5 transition-all w-14",
-                 activeTab === item.id ? "text-blue-500 scale-110" : "text-slate-500"
+                 "flex flex-col items-center gap-0.5 transition-all w-12 py-1 rounded-xl",
+                 activeTab === item.id ? "text-blue-400 bg-white/5" : "text-slate-500"
                )}
              >
-               <item.icon size={18} strokeWidth={activeTab === item.id ? 2.5 : 2} />
-               <span className="text-[7px] font-black uppercase tracking-widest">{item.label}</span>
+               <item.icon size={16} strokeWidth={activeTab === item.id ? 2.5 : 2} />
+               <span className="text-[6px] font-black uppercase tracking-[0.2em]">{item.label}</span>
                {activeTab === item.id && (
                  <motion.div 
                    layoutId="activeTabIndicator"
-                   className="w-1 h-1 bg-blue-500 rounded-full mt-0.5"
+                   className="w-1 h-1 bg-blue-500 rounded-full mt-0.5 shadow-[0_0_8px_#3b82f6]"
                  />
                )}
              </button>

@@ -116,9 +116,13 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       
       const load = async () => {
         try {
+          console.log("Nexus Sync: Initialisation du flux pour", cleanEmail);
+          
           if (isMaster) {
             return onSnapshot(collection(db, 'companies'), (snap) => {
-              setCompanies(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
+              const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
+              console.log("Nexus Sync: Master Access -", data.length, "entités détectées.");
+              setCompanies(data);
               setLoading(false);
             }, (err) => {
               console.error("Master onSnapshot error:", err);
@@ -139,6 +143,10 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
           const personnelSnap = await getDocs(qPersonnel).catch(() => ({ docs: [], empty: true }));
           const personnelCompanyIds = personnelSnap.docs.map(d => d.data().companyId).filter(Boolean);
 
+          if (personnelCompanyIds.length > 0) {
+             console.log("Nexus Sync: Synchronisation des affiliations RH...", personnelCompanyIds.length);
+          }
+
           return onSnapshot(qMain, (snap) => {
             const mainCompanies = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
             
@@ -152,12 +160,13 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
                       updatedAt: serverTimestamp()
                     });
                   } catch (e) {
-                    // Silently fail if we can't update
+                    // Silently fail if we can't update due to RLS
                   }
                 }
               });
             }
 
+            console.log("Nexus Sync: Infrastructure synchronisée -", mainCompanies.length, "entités.");
             setCompanies(mainCompanies);
             setLoading(false);
           }, (err) => {

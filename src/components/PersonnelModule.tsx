@@ -569,71 +569,74 @@ export default function PersonnelModule({ user }: { user?: any }) {
             </div>
 
             {/* Mobile Card View */}
-            <div className="md:hidden grid grid-cols-1 gap-4">
-              {filteredStaff.length === 0 ? (
-                <div className="py-20 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200">
-                   <User size={48} className="mx-auto text-slate-200 mb-4" />
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aucun collaborateur</p>
-                </div>
-              ) : filteredStaff.map((staff) => (
-                <motion.div 
-                  layout
-                  key={staff.id}
-                  className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-xl relative overflow-hidden"
-                >
-                   <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                         <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black text-lg shadow-lg shadow-blue-600/20 uppercase">
-                            {staff.name.split(' ').map(n => n[0]).join('')}
-                         </div>
-                         <div>
-                            <h3 className="font-black text-slate-900 leading-none mb-1">{staff.name}</h3>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{staff.department}</p>
-                         </div>
-                      </div>
-                      <span className={cn(
-                         "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest",
-                         staff.status === 'active' ? "bg-emerald-100 text-emerald-700" :
-                         staff.status === 'on_leave' ? "bg-amber-100 text-amber-700" :
-                         "bg-red-100 text-red-700"
-                       )}>
-                         {staff.status === 'active' ? 'Actif' : staff.status === 'on_leave' ? 'Congé' : 'Bloqué'}
-                      </span>
-                   </div>
+             <div className="md:hidden grid grid-cols-1 gap-6">
+               {filteredStaff.length === 0 ? (
+                 <div className="py-24 text-center bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100">
+                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                       <User size={24} className="text-slate-300" />
+                    </div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-8 leading-relaxed">Aucun écho cryptographique de collaborateur détecté dans cette strate.</p>
+                 </div>
+               ) : filteredStaff.map((staff) => (
+                 <motion.div 
+                   layout
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   key={staff.id}
+                   className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden group"
+                 >
+                    <div className="flex items-center justify-between mb-6">
+                       <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-lg shadow-blue-500/20 uppercase relative">
+                             {staff.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                             <div className={cn(
+                                "absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white",
+                                staff.status === 'active' ? "bg-emerald-500" :
+                                staff.status === 'on_leave' ? "bg-amber-500" : "bg-red-500"
+                             )} />
+                          </div>
+                          <div>
+                             <h3 className="font-black text-slate-900 leading-none mb-1.5 text-base">{staff.name}</h3>
+                             <div className="flex items-center gap-2">
+                                <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-lg">{staff.department}</span>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
 
-                   <div className="grid grid-cols-2 gap-2 mb-6">
-                      <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                         <span className="block text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Poste</span>
-                         <span className="block text-[10px] font-black text-slate-700 truncate">{staff.role}</span>
-                      </div>
-                      <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                         <span className="block text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Charge</span>
-                         <div className="flex items-center gap-1.5">
-                            <div className="w-1 h-1 bg-blue-500 rounded-full" />
-                            <span className="text-[10px] font-black text-slate-700">{staff.tasksAssignedCount} Tâches</span>
-                         </div>
-                      </div>
-                   </div>
+                    <div className="grid grid-cols-2 gap-3 mb-6">
+                       <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+                          <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5 opacity-60">Matricule</span>
+                          <span className="block text-[11px] font-bold text-slate-700 truncate">{staff.role}</span>
+                       </div>
+                       <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+                          <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5 opacity-60">Flux Actions</span>
+                          <div className="flex items-center gap-1.5">
+                             <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                             <span className="text-[11px] font-bold text-slate-700">{staff.tasksAssignedCount} Actives</span>
+                          </div>
+                       </div>
+                    </div>
 
-                   <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                      <div className="flex -space-x-1">
-                         <button onClick={() => setViewingStaff(staff)} className="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center border-2 border-white hover:bg-blue-50 hover:text-blue-600 transition-all"><User size={14} /></button>
-                         <button onClick={() => setEditingPermissionsStaff(staff)} className="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center border-2 border-white hover:bg-indigo-50 hover:text-indigo-600 transition-all"><Shield size={14} /></button>
-                         <button onClick={() => {
-                           setEditingStaff(staff);
-                           setNewStaff({ firstName: staff.firstName||'', lastName: staff.lastName||'', phone: staff.phone||'', notes: staff.notes||'', email: staff.email, role: staff.role, department: staff.department });
-                           setIsAdding(true);
-                         }} className="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center border-2 border-white hover:bg-blue-50 hover:text-blue-600 transition-all"><Edit2 size={14} /></button>
-                      </div>
-                      <div className="flex gap-2">
-                         <button onClick={() => handleToggleBlockStaff(staff.id, staff.status)} className="p-2 text-amber-500 hover:bg-amber-50 rounded-xl transition-all"><Ban size={16} /></button>
-                         <button onClick={() => handleDeleteStaff(staff.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
-                      </div>
-                   </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
+                    <div className="flex items-center justify-between pt-5 border-t border-slate-50">
+                       <div className="flex gap-2">
+                          <button onClick={() => setViewingStaff(staff)} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all active:scale-90"><User size={18} /></button>
+                          <button onClick={() => setEditingPermissionsStaff(staff)} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all active:scale-90"><Shield size={18} /></button>
+                          <button onClick={() => {
+                            setEditingStaff(staff);
+                            setNewStaff({ firstName: staff.firstName||'', lastName: staff.lastName||'', phone: staff.phone||'', notes: staff.notes||'', email: staff.email, role: staff.role, department: staff.department });
+                            setIsAdding(true);
+                          }} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all active:scale-90"><Edit2 size={18} /></button>
+                       </div>
+                       <div className="flex gap-2">
+                          <button onClick={() => handleToggleBlockStaff(staff.id, staff.status)} className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90", staff.status === 'blocked' ? "bg-red-50 text-red-500" : "bg-slate-50 text-slate-400 hover:text-amber-500 hover:bg-amber-50")}><Ban size={18} /></button>
+                          <button onClick={() => handleDeleteStaff(staff.id)} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all active:scale-90"><Trash2 size={18} /></button>
+                       </div>
+                    </div>
+                 </motion.div>
+               ))}
+             </div>
+           </div>
 
         <div className="space-y-6">
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
@@ -689,7 +692,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
             </div>
           </div>
         </div>
-        </div>
+      </div>
       ) : activeTab === 'time' ? (
         <div className="space-y-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
