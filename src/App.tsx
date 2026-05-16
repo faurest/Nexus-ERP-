@@ -1035,56 +1035,49 @@ export default function App() {
     }
   }, [user, currentCompany, activeTab]);
 
-  if (loading || (user && companyLoading)) {
+  if (loading) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6">
-        <div className="flex flex-col items-center max-w-sm w-full text-center">
-          <div className="relative mb-8">
-            <NexusLogo className="w-20 h-20 animate-pulse opacity-20" />
-            <div className="absolute inset-0 flex items-center justify-center">
-               <div className="h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-lg shadow-blue-600/20" />
-            </div>
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-950 p-6 relative overflow-hidden">
+        {/* Cinematic Background */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-1/4 left-1/4 w-[50vh] h-[50vh] bg-blue-600/10 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-[40vh] h-[40vh] bg-indigo-600/10 rounded-full blur-[100px] animate-pulse [animation-delay:2s]" />
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center text-center">
+          <div className="relative mb-12">
+            <NexusLogo className="w-24 h-24" />
+            <motion.div 
+              animate={{ rotate: 360 }}
+              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              className="absolute -inset-4 border-2 border-dashed border-blue-500/20 rounded-full"
+            />
           </div>
           
-          <h2 className="text-xl font-black text-slate-900 tracking-tight mb-2 italic uppercase">Symphonie Nexus</h2>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Initialisation de l'écosystème sécurisé...</p>
-          
-          <AnimatePresence>
-            {slowLoading && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-12 space-y-4 w-full"
-              >
-                <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
-                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest leading-loose">
-                    La connexion au Cloud prend plus de temps que prévu. 
-                    Cela peut être dû à votre connexion réseau.
-                  </p>
-                </div>
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl"
-                >
-                  Forcer le Redémarrage
-                </button>
-                <button 
-                  onClick={() => auth.signOut()}
-                  className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
-                >
-                  Changer de Compte
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <h2 className="text-3xl font-black text-white tracking-tighter mb-4 italic uppercase">Nexus <span className="text-blue-500 not-italic">OS</span></h2>
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mb-8">Architecture de Données en Cours...</p>
+            <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
+               <motion.div 
+                 initial={{ width: "0%" }}
+                 animate={{ width: "100%" }}
+                 transition={{ duration: 2, repeat: Infinity }}
+                 className="h-full bg-blue-600 shadow-[0_0_10px_#2563eb]"
+               />
+            </div>
+          </div>
         </div>
         
-        <div className="absolute bottom-10 text-[9px] text-slate-300 font-bold uppercase tracking-[0.2em]">
-          Nexus ERP Architectural Sync v4.2
+        <div className="absolute bottom-12 text-[9px] text-slate-600 font-bold uppercase tracking-[0.3em]">
+          Operational Infrastructure v5.0
         </div>
       </div>
     );
   }
+
+  // If user is logged in but company data is loading, we can show a partial launcher 
+  // with a loading state inside it rather than a full screen blocker.
+  // This allows the user to see the "Launcher" environment immediately.
 
   if (showMarketplace) {
     return (
@@ -1349,55 +1342,55 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col h-screen bg-nexus-bg">
         {/* Top Header */}
-        <header className="h-24 px-6 sm:px-12 border-b border-white/5 bg-nexus-surface sticky top-0 z-20 flex items-center justify-between">
+        <header className="h-20 px-6 sm:px-12 border-b border-white/5 bg-slate-950 sticky top-0 z-20 flex items-center justify-between backdrop-blur-md bg-opacity-95">
           <div className="flex items-center gap-6">
             <button 
               onClick={() => setSidebarOpen(!isSidebarOpen)} 
-              className="lg:hidden p-3 bg-nexus-accent text-white rounded-2xl shadow-lg shadow-blue-600/20 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
+              className="lg:hidden p-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
             >
-              <Menu size={20} />
+              <Menu size={18} />
             </button>
             <div className="flex flex-col">
-              <h2 className="text-[10px] font-black text-nexus-accent uppercase tracking-[0.3em] mb-1">Nexus Cockpit</h2>
-              <h1 className="text-xl font-bold text-nexus-text tracking-tight leading-none">
+              <h2 className="text-[9px] font-black text-blue-500 uppercase tracking-[0.3em] mb-0.5">Navigation</h2>
+              <h1 className="text-lg font-black text-white tracking-tight leading-none uppercase italic">
                 {activeTab === 'admin' ? "Console Maître" : navItems.find(n => n.id === activeTab)?.label}
               </h1>
             </div>
           </div>
           
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-6">
             <div 
               onClick={() => setIsCommandPaletteOpen(true)}
-              className="hidden lg:flex items-center px-4 py-2 bg-white/5 rounded-2xl border border-white/10 group transition-all cursor-pointer hover:border-nexus-accent/50"
+              className="hidden xl:flex items-center px-4 py-1.5 bg-white/5 rounded-xl border border-white/5 group transition-all cursor-pointer hover:border-blue-500/30"
             >
-              <Search className="text-nexus-text-muted group-hover:text-nexus-accent transition-colors" size={18} />
-              <div className="text-[11px] font-bold text-nexus-text-muted w-48 ml-3 flex justify-between items-center">
-                <span>Scanner l'écosystème...</span>
-                <span className="text-[9px] px-1.5 py-0.5 bg-white/10 rounded border border-white/10">⌘K</span>
+              <Search className="text-slate-500 group-hover:text-blue-500 transition-colors" size={16} />
+              <div className="text-[10px] font-bold text-slate-500 w-32 ml-3 flex justify-between items-center">
+                <span>Scanner...</span>
+                <span className="text-[8px] px-1.5 py-0.5 bg-white/5 rounded border border-white/5">⌘K</span>
               </div>
             </div>
             
-            <div className="flex items-center gap-2 sm:gap-4 lg:border-l border-white/5 lg:pl-8">
+            <div className="flex items-center gap-4 border-white/5">
               <NotificationBell user={user} />
               
-              <div className="flex items-center gap-2 sm:gap-4">
-                <div className="hidden xs:flex flex-col items-end">
-                  <span className="text-[9px] sm:text-[10px] font-black text-nexus-text uppercase tracking-tighter truncate max-w-[80px] sm:max-w-none">
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex flex-col items-end">
+                  <span className="text-[10px] font-black text-white uppercase tracking-tight truncate max-w-[100px]">
                     {user?.displayName || user?.email?.split('@')[0] || 'Utilisateur'}
                   </span>
-                  <span className="text-[7px] sm:text-[8px] font-black text-nexus-accent uppercase tracking-[0.1em] px-1.5 sm:px-2 py-0.5 bg-nexus-accent/10 rounded-full border border-nexus-accent/20 mt-0.5">
+                  <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/10 mt-0.5">
                     {user?.role}
                   </span>
                 </div>
-                <div className="relative group cursor-pointer">
+                <div className="relative group cursor-pointer active:scale-95 transition-transform">
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt="User" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white/10 shadow-xl shadow-slate-950/20 object-cover" />
+                    <img src={user.photoURL} alt="User" className="w-10 h-10 rounded-xl border border-white/10 shadow-2xl object-cover" />
                   ) : (
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white/10 shadow-xl shadow-slate-950/20 bg-nexus-surface flex items-center justify-center text-nexus-text-muted font-black text-base sm:text-lg">
+                    <div className="w-10 h-10 rounded-xl border border-white/10 shadow-2xl bg-slate-900 flex items-center justify-center text-slate-400 font-black text-sm">
                       {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
                     </div>
                   )}
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-nexus-success rounded-full border-[3px] border-nexus-surface shadow-sm" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950 shadow-sm" />
                 </div>
               </div>
             </div>
@@ -1406,7 +1399,7 @@ export default function App() {
 
         {/* Dynamic View */}
         {user && currentCompany && <CriticalNotificationOverlay user={user} />}
-        <div className="flex-1 p-4 sm:p-8 pb-32">
+        <div className="flex-1 p-4 md:p-10 pb-32">
           <div
             className="max-w-[1400px] mx-auto"
           >
@@ -1473,7 +1466,7 @@ export default function App() {
         </footer>
 
         {/* Mobile Bottom Bar */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-slate-950/80 backdrop-blur-xl border-t border-white/5 flex items-center justify-around px-4 z-50">
+        <div className="lg:hidden fixed bottom-6 left-6 right-6 h-16 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-3xl flex items-center justify-around px-2 z-50 shadow-2xl">
            {[
              { id: 'dashboard', icon: LayoutDashboard, label: 'Dash' },
              { id: 'sales', icon: TrendingUp, label: 'Ventes' },
@@ -1485,12 +1478,18 @@ export default function App() {
                key={item.id}
                onClick={() => setActiveTab(item.id)}
                className={cn(
-                 "flex flex-col items-center gap-1 transition-all",
+                 "flex flex-col items-center gap-0.5 transition-all w-14",
                  activeTab === item.id ? "text-blue-500 scale-110" : "text-slate-500"
                )}
              >
-               <item.icon size={20} strokeWidth={activeTab === item.id ? 2.5 : 2} />
-               <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
+               <item.icon size={18} strokeWidth={activeTab === item.id ? 2.5 : 2} />
+               <span className="text-[7px] font-black uppercase tracking-widest">{item.label}</span>
+               {activeTab === item.id && (
+                 <motion.div 
+                   layoutId="activeTabIndicator"
+                   className="w-1 h-1 bg-blue-500 rounded-full mt-0.5"
+                 />
+               )}
              </button>
            ))}
         </div>
