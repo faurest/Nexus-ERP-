@@ -229,15 +229,18 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         {mode === 'select' && (
           <div className="space-y-8 relative z-10">
             {/* Scénario A: Entreprises existantes */}
-            {(ownedCompanies.length > 0 || joinedCompanies.length > 0) && (
+            {(ownedCompanies.length > 0 || joinedCompanies.length > 0) ? (
               <div className="space-y-4">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] pl-1">Mes Espaces de Travail</h3>
+                <div className="flex justify-between items-end px-1">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Mes Espaces de Travail</h3>
+                  <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">{ownedCompanies.length + joinedCompanies.length} actif(s)</span>
+                </div>
                 <div className="space-y-3">
                   {[...ownedCompanies, ...joinedCompanies].map((c) => (
                     <button
                       key={c.id}
                       onClick={() => onSelect(c)}
-                      className="w-full flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-white hover:border-blue-600 hover:bg-blue-50/50 transition-all group relative overflow-hidden"
+                      className="w-full flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-white hover:border-blue-600 hover:bg-blue-50/50 transition-all group relative overflow-hidden active:scale-[0.98]"
                     >
                       <div className="flex items-center gap-4 relative z-10">
                         <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-900 text-xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
@@ -253,38 +256,44 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
                           </div>
                         </div>
                       </div>
-                      <ChevronRight size={20} className="text-slate-300 group-hover:translate-x-1 group-hover:text-blue-500 transition-all" />
+                      <ChevronRight size={18} className="text-slate-300 group-hover:translate-x-1 group-hover:text-blue-500 transition-all" />
                     </button>
                   ))}
+                </div>
+              </div>
+            ) : (
+              <div className="py-8 px-4 text-center space-y-4 border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/50">
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-sm text-blue-500">
+                  <Layers size={32} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight">Bienvenue sur Nexus ERP</h3>
+                  <p className="text-xs font-medium text-slate-400 mt-1 max-w-[220px] mx-auto">Vous n'êtes rattaché à aucun espace sécurisé pour le moment.</p>
                 </div>
               </div>
             )}
 
             {/* Scénario B: Rejoindre ou Créer */}
-            <div className="pt-4 space-y-4">
+            <div className="pt-4 space-y-4 text-center">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-                <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest"><span className="bg-white px-4 text-slate-300 italic">Actions Nexus</span></div>
+                <div className="relative flex justify-center text-[9px] uppercase font-black tracking-widest"><span className="bg-white px-4 text-slate-300 italic">Actions d'Infrastructure</span></div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
                 <button
                   onClick={() => setMode('join')}
-                  className="flex flex-col items-center justify-center gap-3 p-5 rounded-3xl border border-slate-100 bg-slate-50 hover:border-indigo-400 hover:bg-indigo-50 transition-all group"
+                  className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-indigo-600 text-white font-black text-[11px] uppercase tracking-widest hover:bg-slate-900 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
                 >
-                  <div className="p-3 bg-white rounded-2xl text-indigo-600 shadow-sm group-hover:scale-110 transition-transform">
-                    <Users size={24} />
-                  </div>
-                  <span className="text-[10px] font-black tracking-[0.2em] uppercase text-slate-500 group-hover:text-indigo-600">Rejoindre</span>
+                  <Users size={16} />
+                  Rejoindre avec un Code
                 </button>
                 <button
                   onClick={() => setMode('create')}
-                  className="flex flex-col items-center justify-center gap-3 p-5 rounded-3xl border border-slate-100 bg-slate-50 hover:border-blue-400 hover:bg-blue-50 transition-all group"
+                  className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-white border border-slate-200 text-slate-600 font-black text-[11px] uppercase tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all active:scale-95"
                 >
-                  <div className="p-3 bg-white rounded-2xl text-blue-600 shadow-sm group-hover:scale-110 transition-transform">
-                    <Plus size={24} />
-                  </div>
-                  <span className="text-[10px] font-black tracking-[0.2em] uppercase text-slate-500 group-hover:text-blue-600">Nouveau</span>
+                  <Plus size={16} />
+                  Initialiser un Nouvel Espace
                 </button>
               </div>
             </div>
@@ -488,6 +497,7 @@ function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [slowLoading, setSlowLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [helpTopic, setHelpTopic] = useState<string | undefined>(undefined);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -510,6 +520,17 @@ export default function App() {
     return c.ownerId !== user?.uid && cOwnerEmail !== cleanEmail;
   });
   const [isWhitelisted, setIsWhitelisted] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (loading || (user && companyLoading)) {
+      const timer = setTimeout(() => {
+        setSlowLoading(true);
+      }, 6000);
+      return () => clearTimeout(timer);
+    } else {
+      setSlowLoading(false);
+    }
+  }, [loading, user, companyLoading]);
 
   useEffect(() => {
     const handleOpenHelp = (e: any) => {
@@ -780,20 +801,50 @@ export default function App() {
 
   if (loading || (user && companyLoading)) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center">
-          <div className="relative">
-            <NexusLogo className="w-16 h-16 animate-pulse opacity-20" />
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6">
+        <div className="flex flex-col items-center max-w-sm w-full text-center">
+          <div className="relative mb-8">
+            <NexusLogo className="w-20 h-20 animate-pulse opacity-20" />
             <div className="absolute inset-0 flex items-center justify-center">
-               <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-lg shadow-blue-600/20" />
+               <div className="h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-lg shadow-blue-600/20" />
             </div>
           </div>
-          <p className="mt-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Symphonie Nexus en cours...</p>
+          
+          <h2 className="text-xl font-black text-slate-900 tracking-tight mb-2 italic uppercase">Symphonie Nexus</h2>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Initialisation de l'écosystème sécurisé...</p>
+          
+          <AnimatePresence>
+            {slowLoading && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-12 space-y-4 w-full"
+              >
+                <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest leading-loose">
+                    La connexion au Cloud prend plus de temps que prévu. 
+                    Cela peut être dû à votre connexion réseau.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl"
+                >
+                  Forcer le Redémarrage
+                </button>
+                <button 
+                  onClick={() => auth.signOut()}
+                  className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
+                >
+                  Changer de Compte
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
         
-        {/* Simple timeout fallback to prevent infinite loading */}
-        <div className="mt-12 text-[10px] text-slate-300 font-medium">
-          Démarrage de l'écosystème sécurisé
+        <div className="absolute bottom-10 text-[9px] text-slate-300 font-bold uppercase tracking-[0.2em]">
+          Nexus ERP Architectural Sync v4.2
         </div>
       </div>
     );

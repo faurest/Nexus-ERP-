@@ -81,6 +81,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       await updateDoc(doc(db, 'companies', companyId), {
         memberEmails: arrayUnion(cleanEmail),
         employees: arrayUnion(user.uid),
+        joinCode: cleanCode, // Required by security rules for self-enrollment sync
         updatedAt: serverTimestamp()
       });
 
@@ -172,10 +173,18 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       // Faster timeout for loading state to reveal selection screen even if Firestore is slow
       const timer = setTimeout(() => {
         setLoading(false);
-      }, 4000);
+      }, 5000);
 
-      const unsubscribe = await load();
-      unsubscribeSnap = unsubscribe;
+      try {
+        const unsubscribe = await load();
+        unsubscribeSnap = unsubscribe;
+      } catch (e) {
+        console.error("Critical failure during company load:", e);
+        setLoading(false);
+      }
+      
+      // We don't clear the timeout immediately if we want to ensure at least some visual feedback time, 
+      // but if load finishes, we can clear it. Actually, clearing it is fine.
       clearTimeout(timer);
     });
 
