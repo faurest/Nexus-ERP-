@@ -34,8 +34,11 @@ import {
   Hammer,
   Monitor,
   FolderKanban,
+  Sparkles,
+  RefreshCw,
+  ChevronRight,
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
 import { cn } from '../lib/utils';
 import { useCompany } from '../lib/CompanyContext';
@@ -69,6 +72,42 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
   const [orders, setOrders] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [orderHistory, setOrderHistory] = useState<any[]>([]);
+
+  // AI Insights State
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiInsight, setAiInsight] = useState<any>(null);
+
+  const generateAIInsights = async () => {
+    setAiLoading(true);
+    try {
+      const context = {
+        companyName: currentCompany?.name,
+        totalRevenue,
+        totalOrders: orders.length,
+        stockAlerts: products.filter(p => p.stock <= (p.stockThreshold || 5)).length,
+        topProducts: products.sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 3).map(p => p.name)
+      };
+
+      const resp = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'product_doc', context }) // Reusing product_doc prompt for general summary or I can add a specific case if needed
+      });
+      if (!resp.ok) throw new Error('AI Engine failed');
+      const data = await resp.json();
+      setAiInsight(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (orders.length > 0 && !aiInsight && !aiLoading) {
+      generateAIInsights();
+    }
+  }, [orders.length]);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -489,6 +528,45 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
           </motion.button>
         ))}
       </div>
+
+      {/* AI AI Strategy Header */}
+      <AnimatePresence>
+        {aiInsight && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="col-span-12 bg-slate-950 border border-white/10 rounded-[3rem] p-8 shadow-2xl relative overflow-hidden group mb-6"
+          >
+            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-[100px] -mr-48 -mt-48" />
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+               <div className="w-16 h-16 bg-blue-600/20 rounded-3xl flex items-center justify-center text-blue-400 shrink-0 border border-blue-500/20">
+                  <Sparkles size={32} className="animate-pulse" />
+               </div>
+               <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em] italic">Nexus AI • Analyse Stratégique</h3>
+                    <motion.button 
+                      onClick={generateAIInsights}
+                      disabled={aiLoading}
+                      whileTap={{ rotate: 180 }}
+                      className="p-1 hover:bg-white/5 rounded-full transition-colors"
+                    >
+                      <RefreshCw size={12} className={cn("text-slate-500", aiLoading && "animate-spin")} />
+                    </motion.button>
+                  </div>
+                  <p className="text-sm font-medium text-slate-300 leading-relaxed italic">
+                    "{aiInsight.shortDescription || aiInsight.longDescription?.slice(0, 150) + '...'}"
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {aiInsight.benefits?.slice(0, 3).map((tip: string, i: number) => (
+                      <span key={i} className="px-3 py-1 bg-white/5 border border-white/5 rounded-full text-[8px] font-black text-slate-400 uppercase tracking-widest">{tip}</span>
+                    ))}
+                  </div>
+               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Bento Grid */}
       {isEmptyState ? (

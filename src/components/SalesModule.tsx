@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, onSnapshot, query, where, addDoc, setDoc, serverTimestamp, doc, updateDoc, deleteDoc, auth } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { Search, Plus, TrendingUp, Filter, ShoppingCart, Receipt, CreditCard, DollarSign, Edit2, Trash2, CheckCircle2, ArrowRight, HelpCircle, FileText, Package } from 'lucide-react';
+import { Search, Plus, TrendingUp, Filter, ShoppingCart, Receipt, CreditCard, DollarSign, Edit2, Trash2, CheckCircle2, ArrowRight, HelpCircle, FileText, Package, Sparkles, Wand2, RefreshCw } from 'lucide-react';
 import { HelpTrigger } from './ContextualHelp';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
@@ -71,6 +71,42 @@ export default function SalesModule({ user }: { user: any }) {
   const [isAddingCatalogItem, setIsAddingCatalogItem] = useState(false);
   const [catalogFormData, setCatalogFormData] = useState<any>({ name: '', price: 0, quantity: 0, type: 'Stock' });
   const [submitting, setSubmitting] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+
+  const generateSalesAnalysis = async () => {
+    setAiLoading(true);
+    try {
+      const topClients = clients.sort((a,b) => (b.salesTotal||0) - (a.salesTotal||0)).slice(0, 3).map(c => c.name);
+      const pendingTotal = calculatePendingRevenue();
+      
+      const resp = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          type: 'product_doc', 
+          context: { 
+            module: 'Sales', 
+            topClients, 
+            pendingTotal, 
+            totalSales: sales.length 
+          } 
+        })
+      });
+      const data = await resp.json();
+      setAiAnalysis(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (sales.length > 5 && !aiAnalysis && !aiLoading) {
+      generateSalesAnalysis();
+    }
+  }, [sales.length]);
 
   const availableTabs = useMemo(() => {
     const allTabs = [
@@ -463,6 +499,42 @@ export default function SalesModule({ user }: { user: any }) {
            <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.2em] mb-1">Encours Facturation</p>
            <p className="text-2xl font-black text-nexus-text">{calculatePendingRevenue().toLocaleString()} FCFA</p>
         </motion.div>
+
+        <AnimatePresence>
+          {aiAnalysis && (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="md:col-span-2 bg-nexus-surface border border-blue-500/10 p-6 rounded-[2rem] shadow-2xl relative overflow-hidden group flex items-start gap-4"
+            >
+               <div className="absolute inset-0 bg-blue-600/5 pointer-events-none" />
+               <div className="w-12 h-12 bg-blue-600/20 text-blue-400 rounded-2xl flex items-center justify-center shrink-0 border border-blue-500/20 shadow-lg">
+                 <Sparkles size={24} className="animate-pulse" />
+               </div>
+               <div className="flex-1 space-y-2 relative z-10">
+                 <div className="flex items-center gap-2">
+                   <h3 className="text-[9px] font-black text-blue-400 uppercase tracking-widest italic">Nexus Intelligence • Sales Focus</h3>
+                   <motion.button 
+                     onClick={generateSalesAnalysis}
+                     disabled={aiLoading}
+                     whileTap={{ rotate: 180 }}
+                     className="p-1 hover:bg-white/5 rounded-full transition-colors"
+                   >
+                     <RefreshCw size={10} className={cn("text-slate-500", aiLoading && "animate-spin")} />
+                   </motion.button>
+                 </div>
+                 <p className="text-xs font-medium text-slate-300 leading-relaxed italic pr-4">
+                   "{aiAnalysis.shortDescription}"
+                 </p>
+                 <div className="flex gap-2">
+                   {aiAnalysis.benefits?.slice(0, 2).map((tip: string, i: number) => (
+                     <span key={i} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/10 rounded-md text-[7px] font-black text-blue-300 uppercase tracking-widest">{tip}</span>
+                   ))}
+                 </div>
+               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="bg-nexus-surface border border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden">

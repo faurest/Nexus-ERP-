@@ -663,6 +663,12 @@ export default function App() {
   const { currentCompany, companies, setCurrentCompany, loading: companyLoading } = useCompany();
 
   const [backClickCount, setBackClickCount] = useState(0);
+  const [toast, setToast] = useState<{ message: string, type: 'info' | 'success' | 'warn' } | null>(null);
+
+  const showToast = (message: string, type: 'info' | 'success' | 'warn' = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   // Navigation Stack Management for Back Button
   useEffect(() => {
@@ -687,8 +693,7 @@ export default function App() {
           if (backClickCount === 0) {
             // Push state back once to "prevent" immediate exit and show message
             window.history.pushState(null, '');
-            // You could show a toast here
-            console.log("Appuyez encore pour quitter Nexus");
+            showToast("Appuyez encore pour quitter Nexus ERP", 'info');
           }
         } else {
           setCurrentCompany(null);
@@ -1426,6 +1431,30 @@ export default function App() {
           onClose={() => setIsHelpOpen(false)} 
           topic={helpTopic}
         />
+
+        {/* Global Toast System */}
+        <AnimatePresence>
+          {toast && (
+            <motion.div 
+              initial={{ opacity: 0, y: 100, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+              className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] pointer-events-none"
+            >
+              <div className={cn(
+                "px-8 py-4 rounded-3xl border shadow-2xl backdrop-blur-xl flex items-center gap-4",
+                toast.type === 'info' ? "bg-slate-900/90 border-white/10 text-white" : "",
+                toast.type === 'success' ? "bg-emerald-950/90 border-emerald-500/20 text-emerald-400" : "",
+                toast.type === 'warn' ? "bg-amber-950/90 border-amber-500/20 text-amber-400" : ""
+              )}>
+                 <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
+                    <NexusLogo className="w-5 h-5" />
+                 </div>
+                 <span className="text-[10px] font-black uppercase tracking-[0.2em]">{toast.message}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Global Footer */}
         <footer className="mt-auto px-4 sm:px-8 py-6 border-t border-white/5 bg-nexus-surface flex flex-col md:flex-row justify-between items-center gap-4">
