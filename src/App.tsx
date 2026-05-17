@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion, setDoc, serverTimestamp, limit } from './lib/firebase';
 type User = any;
+import { syncUserProfile, type UserProfile } from './lib/userService';
 import { 
   LayoutDashboard, 
   Users, 
@@ -125,7 +126,7 @@ function SkeletonCard() {
   );
 }
 
-function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], user: User, onSelect: any }) {
+function WorkspaceSelector({ companies, user, userProfile, onSelect }: { companies: any[], user: User, userProfile: any, onSelect: any }) {
   const [mode, setMode] = useState<'select' | 'create' | 'join'>('select');
   const [newCompanyName, setNewCompanyName] = useState('');
   const [joinCodeInput, setJoinCodeInput] = useState('');
@@ -133,7 +134,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
-  const { joinCompany, refreshCompanies, loading: companyLoading } = useCompany();
+  const { joinCompany, createCompany, refreshCompanies, loading: companyLoading } = useCompany();
   const [lastSession, setLastSession] = useState<{ company: any, tab: string } | null>(null);
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
@@ -177,18 +178,12 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         generatedJoinCode += chars.charAt(Math.floor(Math.random() * chars.length));
       }
 
-      const cleanEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
-      const docRef = await addDoc(collection(db, 'companies'), {
-        name: newCompanyName,
-        ownerId: user.uid,
-        ownerEmail: cleanEmail,
-        memberEmails: [cleanEmail],
-        employees: [user.uid],
-        joinCode: generatedJoinCode,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-      onSelect({ id: docRef.id, name: newCompanyName, ownerId: user.uid, joinCode: generatedJoinCode });
+      const result = await createCompany(newCompanyName, generatedJoinCode);
+      if (result.success && result.id) {
+        onSelect({ id: result.id, name: newCompanyName, ownerId: user.uid, joinCode: generatedJoinCode });
+      } else {
+        throw new Error("Erreur lors de la création de l'entreprise");
+      }
     } catch(err: any) {
       console.error("Create Company Error:", err);
       setErrorMsg(`Erreur : ${err.message || 'Problème de connexion'}`);
@@ -280,7 +275,7 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
                     {user.photoURL ? <img src={user.photoURL} alt="User" /> : user.email?.charAt(0).toUpperCase()}
                  </div>
                  <div className="overflow-hidden">
-                    <p className="text-[10px] font-black uppercase truncate text-white">{user.displayName || user.email?.split('@')[0]}</p>
+                    <p className="text-[10px] font-black uppercase truncate text-white">{userProfile?.fullName || user.displayName || user.email?.split('@')[0] || 'Utilisateur'}</p>
                     <div className="flex items-center gap-1.5 mt-1">
                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
                        <p className="text-[8px] font-black text-slate-500 uppercase">Synchronisé</p>
@@ -397,8 +392,10 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
 
                             <div className="grid grid-cols-2 gap-4 mt-auto">
                                <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
-                                  <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Membres</span>
-                                  <span className="block text-sm font-black text-white">{(c.memberEmails?.length || 0) + (c.employees?.length || 0)}</span>
+                                  <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Rôle / Statut</span>
+                                  <span className="block text-sm font-black text-white truncate">
+                                    {c.company_members?.[0]?.role || (c.ownerId === user.uid ? 'Propriétaire' : 'Directeur')}
+                                  </span>
                                </div>
                                <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
                                   <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Activité</span>
@@ -454,8 +451,8 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
                              <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-3">
                                    <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-                                      <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Nexus ID</span>
-                                      <span className="block text-[9px] font-black text-slate-300 truncate">{user.uid.slice(0, 8)}...</span>
+                                      <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Identité Profil</span>
+                                      <span className="block text-[9px] font-black text-slate-300 truncate">{userProfile?.fullName || user.email || 'Utilisateur'}</span>
                                    </div>
                                    <div className="bg-white/5 p-3 rounded-xl border border-white/5">
                                       <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Autorisation</span>
@@ -697,6 +694,7 @@ function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [slowLoading, setSlowLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -1035,33 +1033,11 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
         setUser(u);
-        // Sync user profile to Firestore for notification lookups
-        try {
-          const rawEmail = u.email || u.providerData?.find(p => p?.email)?.email;
-          const cleanEmail = rawEmail ? rawEmail.trim().toLowerCase().replace(/\s+/g, '') : null;
-          
-          const userId = cleanEmail || u.uid;
-          const userRef = doc(db, 'users', userId);
-          const userData = {
-            uid: u.uid,
-            email: cleanEmail,
-            displayName: u.displayName || (cleanEmail ? cleanEmail.split('@')[0] : 'Utilisateur Nexus'),
-            photoURL: u.photoURL || null,
-            lastLogin: serverTimestamp(),
-            status: 'active'
-          };
-          
-          await setDoc(userRef, userData, { merge: true });
-          
-          // Double indexing to avoid duplicates in Admin list when email is discovered later
-          if (cleanEmail && userId !== cleanEmail) {
-            await setDoc(doc(db, 'users', cleanEmail), userData, { merge: true });
-          }
-        } catch (err) {
-          console.error("Nexus Sync: User profile sync failed", err);
-        }
+        const profile = await syncUserProfile(u);
+        setUserProfile(profile);
       } else {
         setUser(null);
+        setUserProfile(null);
       }
       setLoading(false);
     });
@@ -1204,7 +1180,7 @@ export default function App() {
   }
 
   if (!currentCompany) {
-    return <WorkspaceSelector companies={companies} user={user} onSelect={setCurrentCompany} />;
+    return <WorkspaceSelector companies={companies} user={user} userProfile={userProfile} onSelect={setCurrentCompany} />;
   }
 
   if (isBlocked) {
@@ -1474,10 +1450,10 @@ export default function App() {
               <div className="flex items-center gap-2.5 pl-2 md:pl-4 border-l border-white/5">
                 <div className="hidden sm:flex flex-col items-end">
                   <span className="text-[10px] font-black text-white uppercase tracking-tight truncate max-w-[100px]">
-                    {user?.displayName || user?.email?.split('@')[0] || 'User'}
+                    {userProfile?.fullName || 'Utilisateur Nexus'}
                   </span>
                   <span className="text-[7px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-1.5 py-0.5 rounded-md border border-blue-500/10">
-                    {user?.role}
+                    ID: {userProfile?.id?.slice(0, 8)}
                   </span>
                 </div>
                 <div className="relative group cursor-pointer active:scale-90 transition-transform">

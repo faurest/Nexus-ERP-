@@ -32,6 +32,7 @@ interface CompanyContextType {
   companies: Company[];
   setCurrentCompany: (company: Company | null) => void;
   joinCompany: (code: string) => Promise<{ success: boolean; message: string }>;
+  createCompany: (name: string, joinCode: string) => Promise<{ success: boolean; id?: string }>;
   loading: boolean;
   refreshCompanies: () => Promise<void>;
 }
@@ -41,6 +42,7 @@ const CompanyContext = createContext<CompanyContextType>({
   companies: [],
   setCurrentCompany: () => {},
   joinCompany: async () => ({ success: false, message: 'Not implemented' }),
+  createCompany: async () => ({ success: false }),
   loading: true,
   refreshCompanies: async () => {},
 });
@@ -75,42 +77,59 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     const sb = getSupabase();
     let supabaseCompanies: Company[] = [];
 
-    // 1. SUPABASE FLOW (Primary if configured)
+    // 1. SUPABASE FLOW (Primary Enterprise Logic)
     if (sb) {
       try {
-        console.log("Nexus Sync: Initialisation Supabase Link pour", user.uid);
-        const { data: membershipData, error: sbError } = await sb
-          .from('company_members')
-          .select(`
-            id,
-            role,
-            status,
-            companies (
-              id,
-              name,
-              ownerId:owner_id,
-              ownerEmail:owner_email,
-              logoUrl:logo_url,
-              sector
-            )
-          `)
+        console.log("Nexus Hub: Fetching active memberships for", user.uid);
+        // Step A: Get User internal ID
+        const { data: userData } = await sb
+          .from('users')
+          .select('id')
           .eq('firebase_uid', user.uid)
-          .eq('status', 'active');
+          .single();
 
-        if (membershipData && !sbError) {
-          supabaseCompanies = membershipData.map((m: any) => ({
-            ...m.companies,
-            id: m.companies.id,
-            company_members: [{ role: m.role, status: m.status }]
-          }));
-          console.log("Nexus Sync: Supabase Success -", supabaseCompanies.length, "entités.");
+        if (userData) {
+          // Step B: Get companies via membership table with role details
+          const { data: membershipData, error: sbError } = await sb
+            .from('company_members')
+            .select(`
+              id,
+              status,
+              roles (name, hierarchy_level),
+              companies (
+                id,
+                name,
+                owner_id,
+                owner_email,
+                logo_url,
+                sector
+              )
+            `)
+            .eq('user_id', userData.id)
+            .eq('status', 'active');
+
+          if (membershipData && !sbError) {
+            supabaseCompanies = membershipData.map((m: any) => ({
+              ...m.companies,
+              id: m.companies.id,
+              ownerId: m.companies.owner_id,
+              ownerEmail: m.companies.owner_email,
+              logoUrl: m.companies.logo_url,
+              company_members: [{ 
+                role: m.roles?.name || 'Personnel', 
+                status: m.status,
+                hierarchy: m.roles?.hierarchy_level 
+              }]
+            }));
+            console.log("Nexus Hub: Supabase detected", supabaseCompanies.length, "tenants.");
+          }
         }
       } catch (err) {
-        console.error("Supabase load error:", err);
+        console.error("Supabase hub fetch failed:", err);
       }
     }
 
-    // 2. FIRESTORE FLOW (Support / Fallback)
+    // 2. FIRESTORE FLOW (Legacy / Real-time Support)
     const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
     
     try {
@@ -129,46 +148,91 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         );
         const mainSnap = await getDocs(qMain);
         firestoreCompanies = mainSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
-
-        // Auto-sync from personnel collection
-        const qPersonnel = query(collection(db, 'personnel'), where('email', '==', cleanEmail));
-        const personnelSnap = await getDocs(qPersonnel);
-        const personnelCompanyIds = personnelSnap.docs.map(d => d.data().companyId).filter(Boolean);
-
-        for (const cid of personnelCompanyIds) {
-          if (!firestoreCompanies.find(c => c.id === cid)) {
-             try {
-               const cDoc = await getDocs(query(collection(db, 'companies'), where('id', '==', cid)));
-               if (!cDoc.empty) {
-                 await updateDoc(doc(db, 'companies', cid), {
-                   memberEmails: arrayUnion(cleanEmail),
-                   employees: arrayUnion(user.uid)
-                 });
-                 // Re-add to list
-                 firestoreCompanies.push({ id: cid, ...cDoc.docs[0].data() } as Company);
-               }
-             } catch (e) { /* ignore */ }
-          }
-        }
       }
 
-      // Merge and deduplicate
+      // 3. MERGE & UNIFIED IDENTITY ENGINE
       const allCompaniesMap = new Map();
-      [...supabaseCompanies, ...firestoreCompanies].forEach(c => {
-        allCompaniesMap.set(c.id, c);
+
+      // Priority 1: Supabase (Enterprise Data)
+      supabaseCompanies.forEach(c => allCompaniesMap.set(c.id, c));
+      
+      // Priority 2: Firestore (Metadata Merge)
+      firestoreCompanies.forEach(c => {
+        if (allCompaniesMap.has(c.id)) {
+           // Merge Firestore metadata (like categories/nairaRate) if not in Supabase
+           const existing = allCompaniesMap.get(c.id);
+           allCompaniesMap.set(c.id, { ...c, ...existing });
+        } else {
+           allCompaniesMap.set(c.id, c);
+        }
       });
       
       const finalCompanies = Array.from(allCompaniesMap.values());
+      
+      // Sort by active/membership status
       setCompanies(finalCompanies);
       
-      // Auto-restore current company
       const savedId = localStorage.getItem('nexus_company_id');
       if (savedId) {
         const found = finalCompanies.find(c => c.id === savedId);
         if (found) setCurrentCompany(found);
       }
     } catch (error) {
-      console.error("Firestore loading error:", error);
+      console.error("Core Engine loading error:", error);
+    }
+  };
+
+  const createCompany = async (name: string, joinCode: string): Promise<{ success: boolean; id?: string }> => {
+    const user = auth.currentUser;
+    if (!user) return { success: false };
+
+    try {
+      const cleanEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
+      
+      // 1. Create in Firestore
+      const { addDoc, collection, serverTimestamp } = await import('../lib/firebase');
+      const docRef = await addDoc(collection(db, 'companies'), {
+        name,
+        ownerId: user.uid,
+        ownerEmail: cleanEmail,
+        memberEmails: [cleanEmail],
+        employees: [user.uid],
+        joinCode,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      // 2. Sync to Supabase
+      const sb = getSupabase();
+      if (sb) {
+        // Get user internal ID
+        const { data: userData } = await sb.from('users').select('id').eq('firebase_uid', user.uid).single();
+        const { data: ownerRole } = await sb.from('roles').select('id').eq('name', 'OWNER').single();
+        
+        if (userData && ownerRole) {
+          const { data: compData } = await sb.from('companies').insert({
+            id: docRef.id, // Keep IDs synced
+            name,
+            owner_id: userData.id,
+            owner_email: cleanEmail
+          }).select().single();
+
+          if (compData) {
+            await sb.from('company_members').insert({
+              user_id: userData.id,
+              company_id: compData.id,
+              role_id: ownerRole.id,
+              status: 'active'
+            });
+          }
+        }
+      }
+
+      await refreshCompanies();
+      return { success: true, id: docRef.id };
+    } catch (err) {
+      console.error("Create company engine error:", err);
+      return { success: false };
     }
   };
 
@@ -190,11 +254,28 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const companyDoc = snap.docs[0];
       const data = companyDoc.data();
 
+      // 1. Update Firestore
       await updateDoc(doc(db, 'companies', companyDoc.id), {
         memberEmails: arrayUnion(cleanEmail),
         employees: arrayUnion(user.uid),
         updatedAt: serverTimestamp()
       });
+
+      // 2. Sync to Supabase
+      const sb = getSupabase();
+      if (sb) {
+        const { data: userData } = await sb.from('users').select('id').eq('firebase_uid', user.uid).single();
+        const { data: empRole } = await sb.from('roles').select('id').eq('name', 'EMPLOYEE').single();
+        
+        if (userData && empRole) {
+          await sb.from('company_members').upsert({
+            user_id: userData.id,
+            company_id: companyDoc.id,
+            role_id: empRole.id,
+            status: 'active'
+          }, { onConflict: 'user_id, company_id' });
+        }
+      }
 
       await refreshCompanies();
       return { success: true, message: `Bienvenue chez ${data.name} !` };
@@ -221,7 +302,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <CompanyContext.Provider value={{ currentCompany, companies, setCurrentCompany: handleSetCurrentCompany, joinCompany, loading, refreshCompanies }}>
+    <CompanyContext.Provider value={{ currentCompany, companies, setCurrentCompany: handleSetCurrentCompany, joinCompany, createCompany, loading, refreshCompanies }}>
       {children}
     </CompanyContext.Provider>
   );

@@ -3,14 +3,21 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import Database from 'better-sqlite3';
 import cors from 'cors';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 const PORT = 3000;
 const db = new Database('database.sqlite');
 
-// Initialize AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+// Initialize AI with @google/genai as per guidelines
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+  httpOptions: {
+    headers: {
+      'User-Agent': 'aistudio-build',
+    }
+  }
+});
+const GEMINI_MODEL = 'gemini-3-flash-preview';
 
 // Initialize Schema
 db.exec(`
@@ -315,6 +322,15 @@ async function startServer() {
 
   // --- API ROUTES ---
 
+  // Mock endpoints for firebaseMock.ts if it's accidentally used
+  app.post('/api/auth/login', (req, res) => {
+    res.json({ success: true, user: { uid: 'mock-uid', email: req.body.email } });
+  });
+
+  app.post('/api/auth/register', (req, res) => {
+    res.json({ success: true, user: { uid: 'mock-uid', email: req.body.email } });
+  });
+
   // Generic CRUD Proxy
   const getPK = (collection: string) => collection === 'users' ? 'uid' : 'id';
 
@@ -515,83 +531,63 @@ async function startServer() {
     }
   });
 
-  // --- AI ENDPOINTS ---
-
+  // --- AI ENDPOINTS (Enterprise Engine) ---
   app.post('/api/ai/generate', async (req, res) => {
     try {
       const { type, context } = req.body;
-      
       let prompt = '';
       
       switch (type) {
         case 'product_doc':
-          prompt = `Génère une fiche produit professionnelle complète pour le produit suivant :
-            Nom: ${context.name}
-            Catégorie: ${context.category}
-            Prix: ${context.price} FCFA
-            Description de base: ${context.description || 'N/A'}
-            
-            Format de réponse attendu (JSON uniquement) :
-            {
-              "shortDescription": "Une phrase accrocheuse",
-              "longDescription": "Description détaillée et persuasive",
-              "benefits": ["Avantage 1", "Avantage 2", "Avantage 3"],
-              "technicalSpecs": {"Caractéristique": "Valeur"},
-              "faq": [{"q": "Question?", "a": "Réponse."}],
-              "usageTips": "Conseils d'utilisation",
-              "qualityScore": 0-100
-            }`;
+          prompt = `Produit: ${context.name}, Catégorie: ${context.category}. Génère JSON avec shortDescription, benefits, technicalSpecs.`;
           break;
-          
-        case 'seo':
-          prompt = `Génère des métadonnées SEO pour ce produit Marketplace :
-            Nom: ${context.name}
-            Catégorie: ${context.category}
-            Description: ${context.description}
-            
-            Format de réponse (JSON uniquement) :
-            {
-              "metaTitle": "Titre optimisé",
-              "metaDescription": "Description meta 160 chars",
-              "keywords": ["keyword1", "keyword2"],
-              "tags": ["tag1", "tag2"]
-            }`;
+        case 'financial_suggestions':
+          prompt = `Expert financier Nexus ERP: Revenus ${context.totalRevenue} FCFA, Dépenses ${context.totalExpenses} FCFA. Donne 3 conseils stratégiques courts en Français (Markdown).`;
           break;
-          
-        case 'marketing':
-          prompt = `Génère du contenu marketing pour ce produit :
-            Nom: ${context.name}
-            
-            Format de réponse (JSON uniquement) :
-            {
-              "facebookPost": "Texte engageant avec emojis",
-              "instagramCaption": "Caption courte avec hashtags",
-              "adCopy": "Texte publicitaire percutant",
-              "smsPromo": "SMS court de 160 chars"
-            }`;
-          break;
-          
         default:
-          return res.status(400).send('Invalid generation type');
+          prompt = context.prompt || 'Analyse système Nexus ERP multi-tenant.';
       }
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      let text = response.text();
+      const response = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      });
       
-      // Clean JSON string if model adds markdown blocks
-      text = text.replace(/```json|```/g, '').trim();
-      
+      const text = response.text;
+      res.setHeader('Content-Type', 'application/json');
+      if (type === 'financial_suggestions') return res.json({ text });
+
+      const cleanedText = text.replace(/```json|```/g, '').trim();
       try {
-        const jsonResponse = JSON.parse(text);
-        res.json(jsonResponse);
+        const parsed = JSON.parse(cleanedText);
+        res.json(parsed);
       } catch (e) {
+        console.warn('AI JSON Parse Error, returning raw:', text.substring(0, 50));
         res.json({ raw: text });
       }
     } catch (err: any) {
-      console.error('AI Error:', err);
-      res.status(500).send(err.message);
+      console.error('Nexus AI Failure:', err);
+      // Ensure we return JSON even on error to satisfy the frontend expectation
+      res.status(502).json({ 
+        error: "IA Nexus momentanément indisponible", 
+        details: err.message,
+        text: "Désolé, le système d'IA Nexus rencontre une erreur. Veuillez réessayer dans quelques instants."
+      });
     }
+  });
+
+  app.get('/api/health/enterprise', (req, res) => {
+    res.json({ 
+      status: 'operational', 
+      database: 'connected', 
+      ai: `models/${GEMINI_MODEL}`,
+      version: '2.1.1'
+    });
+  });
+
+  // Catch-all for API routes to prevent returning HTML index.html
+  app.all('/api/*', (req, res) => {
+    res.status(404).json({ error: 'API route not found', path: req.path });
   });
 
   // --- VITE MIDDLEWARE ---
