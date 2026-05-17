@@ -536,42 +536,79 @@ async function startServer() {
     try {
       const { type, context } = req.body;
       let prompt = '';
+      let systemInstruction = "Tu es l'expert Nexus ERP, un assistant IA pour les entreprises africaines. Réponds de manière concise et professionnelle.";
       
       switch (type) {
         case 'product_doc':
-          prompt = `Produit: ${context.name}, Catégorie: ${context.category}. Génère JSON avec shortDescription, benefits, technicalSpecs.`;
+          prompt = `Produit: ${context.name}, Catégorie: ${context.category}. 
+          Génère un objet JSON STRICT avec les clés suivantes: 
+          - shortDescription: description marketing courte
+          - benefits: liste de 3 avantages
+          - technicalSpecs: objet avec 3 spécifications techniques.
+          IMPORTANT: Renvoie UNIQUEMENT le JSON, sans texte avant ou après.`;
           break;
         case 'financial_suggestions':
-          prompt = `Expert financier Nexus ERP: Revenus ${context.totalRevenue} FCFA, Dépenses ${context.totalExpenses} FCFA. Donne 3 conseils stratégiques courts en Français (Markdown).`;
+          prompt = `Expert financier Nexus ERP: Revenus ${context.totalRevenue} FCFA, Dépenses ${context.totalExpenses} FCFA. 
+          Donne 3 conseils stratégiques courts en Français (Format Markdown).`;
+          break;
+        case 'inventory_forecast':
+          prompt = `Analyse de stock pour le produit ID ${context.productId}. Historique récent: ${JSON.stringify(context.history)}.
+          Prédit la demande pour les 30 prochains jours. Renvoie un objet JSON avec 'forecast' (string) et 'confidence' (number 0-1).`;
+          break;
+        case 'fraud_detection':
+          prompt = `Analyse de sécurité pour la transaction: ${JSON.stringify(context.transaction)}.
+          Évalue le risque de fraude. Renvoie un objet JSON avec 'risk_level' (low, medium, high) et 'reason' (string).`;
           break;
         default:
           prompt = context.prompt || 'Analyse système Nexus ERP multi-tenant.';
       }
 
-      const response = await ai.models.generateContent({
-        model: GEMINI_MODEL,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      });
-      
-      const text = response.text;
-      res.setHeader('Content-Type', 'application/json');
-      if (type === 'financial_suggestions') return res.json({ text });
+      const response = await Promise.race([
+        ai.models.generateContent({ 
+          model: GEMINI_MODEL,
+          contents: prompt,
+          config: {
+            systemInstruction: systemInstruction 
+          }
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('AI Request Timeout')), 15000))
+      ]) as any;
 
-      const cleanedText = text.replace(/```json|```/g, '').trim();
+      const text = response.text;
+      
+      if (type === 'financial_suggestions') {
+        return res.json({ text });
+      }
+
+      // Robust JSON extraction
+      let jsonMatch = text.match(/\{[\s\S]*\}/);
+      let cleanedText = jsonMatch ? jsonMatch[0] : text.trim();
+      
+      // Secondary attempt if first fails (sometimes AI wraps in ```json ... ```)
+      if (!cleanedText.startsWith('{')) {
+        const blockMatch = text.match(/```json\s*(\{[\s\S]*\})\s*```/);
+        if (blockMatch) cleanedText = blockMatch[1];
+      }
+
       try {
         const parsed = JSON.parse(cleanedText);
         res.json(parsed);
       } catch (e) {
-        console.warn('AI JSON Parse Error, returning raw:', text.substring(0, 50));
-        res.json({ raw: text });
+        console.warn('AI JSON Parse Error, returning raw:', text.substring(0, 100));
+        res.json({ 
+          shortDescription: text.split('\n')[0].substring(0, 100),
+          benefits: ["Analyse automatique", "Performance", "Nexus AI"],
+          technicalSpecs: { info: "Données générées" },
+          raw: text, 
+          error: "Format JSON non détecté" 
+        });
       }
     } catch (err: any) {
       console.error('Nexus AI Failure:', err);
-      // Ensure we return JSON even on error to satisfy the frontend expectation
       res.status(502).json({ 
         error: "IA Nexus momentanément indisponible", 
         details: err.message,
-        text: "Désolé, le système d'IA Nexus rencontre une erreur. Veuillez réessayer dans quelques instants."
+        text: "Désolé, le système d'IA Nexus rencontre une erreur."
       });
     }
   });
@@ -587,7 +624,11 @@ async function startServer() {
 
   // Catch-all for API routes to prevent returning HTML index.html
   app.all('/api/*', (req, res) => {
-    res.status(404).json({ error: 'API route not found', path: req.path });
+    res.status(404).json({ 
+      error: 'API route not found', 
+      path: req.path,
+      hint: "Vérifiez l'URL ou le serveur de développement"
+    });
   });
 
   // --- VITE MIDDLEWARE ---

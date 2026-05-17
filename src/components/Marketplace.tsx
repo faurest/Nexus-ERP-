@@ -47,11 +47,15 @@ import {
   Zap,
   LayoutGrid,
   Award,
+  BrainCircuit,
+  MessageSquare,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { HelpTrigger } from "./ContextualHelp";
 import { cn } from "../lib/utils";
 import { createNotification } from "../lib/notifications";
+import { AIService } from "../services/aiService";
+import AIAssistant from "./AIAssistant";
 
 interface Product {
   id: string;
@@ -119,6 +123,25 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     phone: "",
     quartier: "",
   });
+  const [isAiSearching, setIsAiSearching] = useState(false);
+  const [aiReasoning, setAiReasoning] = useState("");
+
+  const handleAiSearch = async () => {
+    if (!searchTerm.trim()) return;
+    setIsAiSearching(true);
+    try {
+      const result = await AIService.intelligentSearch(searchTerm, categories);
+      setSearchTerm(result.searchTerm);
+      setActiveCategory(result.category);
+      setAiReasoning(result.reasoning);
+      setTimeout(() => setAiReasoning(""), 5000); // Clear after 5s
+    } catch (err) {
+      console.error("AI Search failed", err);
+    } finally {
+      setIsAiSearching(false);
+    }
+  };
+
   const [paymentStep, setPaymentStep] = useState<'INFO' | 'PAYING' | 'SUCCESS'>('INFO');
   const [paymentOperator, setPaymentOperator] = useState<'MTN' | 'ORANGE' | 'CASH' | 'UNKNOWN'>('UNKNOWN');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'MOMO' | 'CASH'>('CASH');
@@ -705,29 +728,47 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             </div>
           </div>
 
-          <div className="flex-1 w-full relative group">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors pointer-events-none"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Riz, ciment, matériel informatique..."
-              className="w-full bg-slate-100/80 border-2 border-transparent rounded-2xl py-3.5 pl-12 pr-12 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              <button 
-                onClick={() => {
-                  const message = "Bonjour, j'ai une question sur Nexus Marketplace.";
-                  window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
-                }}
-                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-              >
-                <MessageCircle size={18} />
-              </button>
+          <div className="flex-1 w-full relative group flex gap-2">
+            <div className="relative flex-1 group">
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors pointer-events-none"
+                size={18}
+              />
+              <input
+                type="text"
+                placeholder="Riz, ciment, matériel informatique..."
+                className="w-full bg-slate-100/80 border-2 border-transparent rounded-2xl py-3.5 pl-12 pr-12 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAiSearch()}
+              />
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-900 rounded-full bg-slate-200/50"
+                >
+                  <X size={12} />
+                </button>
+              )}
             </div>
+            
+            <button
+              onClick={handleAiSearch}
+              disabled={isAiSearching || !searchTerm}
+              className={cn(
+                "p-3 rounded-2xl border-2 transition-all flex items-center justify-center gap-2 px-6",
+                isAiSearching 
+                  ? "bg-slate-100 border-slate-200 text-slate-400" 
+                  : "bg-slate-900 border-slate-900 text-white hover:bg-blue-600 hover:border-blue-600 shadow-lg shadow-blue-900/10 active:scale-95"
+              )}
+            >
+              {isAiSearching ? (
+                <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <BrainCircuit size={18} />
+              )}
+              <span className="hidden md:inline font-black text-[9px] uppercase tracking-widest italic">AI Search</span>
+            </button>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -793,6 +834,35 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
       </div>
 
       <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* AI Insight Overlay */}
+        <AnimatePresence>
+          {aiReasoning && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              className="mt-4 p-4 bg-blue-600 text-white rounded-[2rem] shadow-xl shadow-blue-200 border border-blue-400/30 flex items-center gap-4 relative overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                <BrainCircuit size={40} />
+              </div>
+              <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0">
+                <Sparkles size={20} className="text-white" />
+              </div>
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-60">Nexus AI Insight</p>
+                <p className="text-[11px] font-bold leading-relaxed">{aiReasoning}</p>
+              </div>
+              <button 
+                onClick={() => setAiReasoning("")}
+                className="ml-auto p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all"
+              >
+                <X size={14} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Welcome Back Banner */}
         <AnimatePresence>
           {showWelcomeBack && (
@@ -2054,6 +2124,39 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                               ))}
                            </div>
                         </div>
+
+                        {/* AI Recommendations in Drawer */}
+                        <div className="pt-8 mt-8 border-t border-slate-100 space-y-6">
+                           <div className="flex items-center justify-between">
+                             <div className="flex items-center gap-3">
+                               <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shadow-sm border border-blue-100">
+                                 <BrainCircuit size={20} />
+                               </div>
+                               <div>
+                                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest italic leading-none">Suggestions Intelligentes</h3>
+                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Basé sur votre intérêt pour {selectedProduct.name}</p>
+                               </div>
+                             </div>
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                             {products
+                               .filter(p => p.category === selectedProduct.category && p.id !== selectedProduct.id)
+                               .slice(0, 2)
+                               .map(rec => (
+                                 <button
+                                   key={rec.id}
+                                   onClick={() => setSelectedProduct(rec)}
+                                   className="p-3 bg-white border border-slate-100 rounded-3xl group hover:border-blue-400 transition-all text-left"
+                                 >
+                                   <div className="aspect-square rounded-2xl overflow-hidden mb-3 bg-slate-50">
+                                     <img src={rec.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                   </div>
+                                   <h4 className="text-[10px] font-black text-slate-900 uppercase italic truncate">{rec.name}</h4>
+                                   <p className="text-[11px] font-black text-blue-600 tracking-tighter mt-1">{rec.price.toLocaleString()} FCFA</p>
+                                 </button>
+                               ))}
+                           </div>
+                        </div>
                      </div>
                   </div>
                 </div>
@@ -2540,6 +2643,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           </>
         )}
       </AnimatePresence>
+
+      <AIAssistant context={`Boutique: ${activeCompanyId === 'all' ? 'Toutes' : activeCompanyId}, Catégorie: ${activeCategory}`} />
     </div>
   );
 }

@@ -38,9 +38,19 @@ export async function syncUserProfile(firebaseUser: any): Promise<UserProfile | 
       if (error) {
         console.warn("Supabase sync issue, attempting limited fallback:", error.message);
         
-        // Try without avatar_url if that was the issue
-        if (error.message.includes('avatar_url') || error.message.includes('column')) {
-           const { avatar_url, ...safePayload } = profilePayload;
+        // Dynamic column stripping for common missing columns in older schemas
+        if (error.message.includes('column') || error.code === 'PGRST204') {
+           const commonMissingColumns = ['avatar_url', 'fullname', 'last_login', 'kyc_status', 'is_active'];
+           let safePayload = { ...profilePayload } as any;
+           
+           // If error specifies a column, remove it. Otherwise try without non-essential ones
+           const missingColMatch = error.message.match(/column "(.*)"/);
+           if (missingColMatch) {
+             delete safePayload[missingColMatch[1]];
+           } else {
+             commonMissingColumns.forEach(col => delete safePayload[col]);
+           }
+
            const { data: retryData, error: retryError } = await supabase
              .from('users')
              .upsert(safePayload, { onConflict: 'firebase_uid' })
@@ -52,9 +62,9 @@ export async function syncUserProfile(firebaseUser: any): Promise<UserProfile | 
                id: retryData.id,
                firebase_uid: retryData.firebase_uid,
                email: retryData.email,
-               fullName: retryData.fullname,
-               photoURL: profilePayload.avatar_url,
-               lastLogin: retryData.last_login
+               fullName: retryData.fullname || profilePayload.fullname,
+               photoURL: retryData.avatar_url || profilePayload.avatar_url,
+               lastLogin: retryData.last_login || profilePayload.last_login
              };
            }
         }
