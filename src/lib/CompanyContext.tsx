@@ -28,6 +28,7 @@ interface CompanyContextType {
   createCompany: (name: string, joinCode: string) => Promise<{ success: boolean; id?: string }>;
   loading: boolean;
   refreshCompanies: () => Promise<void>;
+  isMaster: boolean;
 }
 
 const CompanyContext = createContext<CompanyContextType>({
@@ -38,6 +39,7 @@ const CompanyContext = createContext<CompanyContextType>({
   createCompany: async () => ({ success: false }),
   loading: true,
   refreshCompanies: async () => {},
+  isMaster: false,
 });
 
 export function CompanyProvider({ children }: { children: React.ReactNode }) {
@@ -47,7 +49,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     setCurrentCompany, 
     refreshAffiliations, 
     loading, 
-    clearSession 
+    clearSession,
+    isMaster
   } = useNexusStore();
 
   useEffect(() => {
@@ -132,7 +135,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       joinCompany, 
       createCompany, 
       loading, 
-      refreshCompanies: refreshAffiliations 
+      refreshCompanies: refreshAffiliations,
+      isMaster
     }}>
       {children}
     </CompanyContext.Provider>

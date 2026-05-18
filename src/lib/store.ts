@@ -25,6 +25,7 @@ interface NexusState {
   currentCompany: Company | null;
   companies: Company[];
   userProfile: any | null;
+  isMaster: boolean;
   loading: boolean;
   initialized: boolean;
   
@@ -39,12 +40,20 @@ interface NexusState {
   clearSession: () => void;
 }
 
+export const MASTER_EMAILS = [
+  'hackeurfaurest@gmail.com',
+  'dangafelicite@gmail.com',
+  'yaoubaboubakary43@gmail.com',
+  'nexus.erp.admin@gmail.com'
+];
+
 export const useNexusStore = create<NexusState>()(
   persist(
     (set, get) => ({
       currentCompany: null,
       companies: [],
       userProfile: null,
+      isMaster: false,
       loading: false,
       initialized: false,
 
@@ -80,6 +89,9 @@ export const useNexusStore = create<NexusState>()(
         set({ loading: true });
         const cleanEmail = firebaseUser.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
         const sb = getSupabase();
+        
+        const isMaster = MASTER_EMAILS.includes(cleanEmail);
+        set({ isMaster });
         
         let attempts = 0;
         const maxAttempts = 3;
@@ -117,27 +129,44 @@ export const useNexusStore = create<NexusState>()(
                 userData = newProfile;
               }
 
-              // 2. Fetch Relational Affiliations (Supabase company_members)
-              const { data: memberships, error: memError } = await sb
-                .from('company_members')
-                .select(`
-                  id,
-                  status,
-                  permissions,
-                  roles (name, hierarchy_level),
-                  companies (*)
-                `)
-                .eq('user_id', userData?.id)
-                .eq('status', 'active');
+              if (isMaster) {
+                // MASTER BYPASS: Fetch ALL companies
+                const { data: allCompanies, error: allErr } = await sb
+                  .from('companies')
+                  .select('*');
+                
+                if (!allErr && allCompanies) {
+                  mappedCompanies = allCompanies.map((c: any) => ({
+                    ...c,
+                    role: 'OWNER',
+                    permissions: ['*'],
+                    hierarchy: 100,
+                    status: 'active'
+                  }));
+                }
+              } else {
+                // 2. Fetch Relational Affiliations (Supabase company_members)
+                const { data: memberships, error: memError } = await sb
+                  .from('company_members')
+                  .select(`
+                    id,
+                    status,
+                    permissions,
+                    roles (name, hierarchy_level),
+                    companies (*)
+                  `)
+                  .eq('user_id', userData?.id)
+                  .eq('status', 'active');
 
-              if (!memError && memberships) {
-                mappedCompanies = memberships.map((m: any) => ({
-                  ...m.companies,
-                  role: m.roles?.name || 'Personnel',
-                  permissions: m.permissions || [],
-                  hierarchy: m.roles?.hierarchy_level,
-                  status: m.status
-                }));
+                if (!memError && memberships) {
+                  mappedCompanies = memberships.map((m: any) => ({
+                    ...m.companies,
+                    role: m.roles?.name || 'Personnel',
+                    permissions: m.permissions || [],
+                    hierarchy: m.roles?.hierarchy_level,
+                    status: m.status
+                  }));
+                }
               }
             } else {
               // FIREBASE FALLBACK ENGINE
@@ -152,29 +181,39 @@ export const useNexusStore = create<NexusState>()(
                 userData.id = userSnap.docs[0].id;
               }
 
-              // 2. Fetch Memberships from 'personnel'
-              const personnelRef = query(collection(db, 'personnel'), where('email', '==', cleanEmail));
-              const personnelSnap = await getDocs(personnelRef);
-              
-              if (!personnelSnap.empty) {
-                const companyIds = personnelSnap.docs.map(d => d.data().companyId);
-                const roleMap = new Map();
-                personnelSnap.docs.forEach(d => roleMap.set(d.data().companyId, d.data().role));
+              if (isMaster) {
+                 const companiesSnap = await getDocs(collection(db, 'companies'));
+                 mappedCompanies = companiesSnap.docs.map(d => ({
+                   ...d.data(),
+                   id: d.id,
+                   role: 'OWNER',
+                   permissions: ['*']
+                 })) as any;
+              } else {
+                // 2. Fetch Memberships from 'personnel'
+                const personnelRef = query(collection(db, 'personnel'), where('email', '==', cleanEmail));
+                const personnelSnap = await getDocs(personnelRef);
+                
+                if (!personnelSnap.empty) {
+                  const companyIds = personnelSnap.docs.map(d => d.data().companyId);
+                  const roleMap = new Map();
+                  personnelSnap.docs.forEach(d => roleMap.set(d.data().companyId, d.data().role));
 
-                // 3. Fetch Company Details
-                const companiesPromises = companyIds.map(id => getDocs(query(collection(db, 'companies'), where('id', '==', id))).catch(() => null));
-                const companiesSnaps = await Promise.all(companiesPromises);
+                  // 3. Fetch Company Details
+                  const companiesPromises = companyIds.map(id => getDocs(query(collection(db, 'companies'), where('id', '==', id))).catch(() => null));
+                  const companiesSnaps = await Promise.all(companiesPromises);
 
-                mappedCompanies = companiesSnaps
-                  .filter(s => s && !s.empty)
-                  .map((s: any) => {
-                    const data = s.docs[0].data();
-                    return {
-                      id: data.id || s.docs[0].id,
-                      name: data.name,
-                      role: roleMap.get(data.id || s.docs[0].id) || 'Personnel'
-                    };
-                  });
+                  mappedCompanies = companiesSnaps
+                    .filter(s => s && !s.empty)
+                    .map((s: any) => {
+                      const data = s.docs[0].data();
+                      return {
+                        id: data.id || s.docs[0].id,
+                        name: data.name,
+                        role: roleMap.get(data.id || s.docs[0].id) || 'Personnel'
+                      };
+                    });
+                }
               }
             }
 
@@ -203,9 +242,14 @@ export const useNexusStore = create<NexusState>()(
                console.warn("Nexus Store: Metadata enrichment skip", e);
             }
 
+            if (isMaster) {
+              set({ userProfile: { ...userData, role: 'owner', isMaster: true } });
+            } else {
+              set({ userProfile: userData });
+            }
+
             set({ 
               companies: mappedCompanies, 
-              userProfile: userData,
               initialized: true 
             });
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion, setDoc, serverTimestamp, limit } from './lib/firebase';
 type User = any;
 import { syncUserProfile, type UserProfile } from './lib/userService';
+import { MASTER_EMAILS } from './lib/store';
 import { 
   LayoutDashboard, 
   Users, 
@@ -339,7 +340,7 @@ export default function App() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const { currentCompany, companies, setCurrentCompany, loading: companyLoading } = useCompany();
+  const { currentCompany, companies, setCurrentCompany, loading: companyLoading, isMaster } = useCompany();
 
   const [backClickCount, setBackClickCount] = useState(0);
   const [toast, setToast] = useState<{ message: string, type: 'info' | 'success' | 'warn' } | null>(null);
@@ -413,7 +414,6 @@ export default function App() {
   }, [currentCompany]);
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
-  const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
   
   const allAffiliatedCompanies = companies;
   
@@ -549,7 +549,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (user && currentCompany && !user.role) {
+    if (user && currentCompany) {
       // 1. Check if Master/Owner
       const userEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
       const isOwner = currentCompany.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '') === userEmail || 
@@ -563,7 +563,7 @@ export default function App() {
         // 2. Check cached membership (Faster, especially for multi-tenant)
         if (currentCompany.company_members && currentCompany.company_members.length > 0) {
            const member = currentCompany.company_members[0];
-           if (member.status === 'blocked') {
+           if (member.status === 'blocked' && !isMaster) {
              setIsBlocked(true);
            } else {
              setUser((prev: any) => prev ? { 
@@ -825,6 +825,10 @@ export default function App() {
   }
 
   const allowedModules = (currentCompany.roles || DEFAULT_ROLES)[user.role || 'Personnel'] || ['dashboard'];
+  if (isMaster && !allowedModules.includes('admin')) {
+    allowedModules.push('admin');
+  }
+  
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
     { id: 'sales', icon: TrendingUp, label: 'Ventes & CRM' },
@@ -838,6 +842,7 @@ export default function App() {
     { id: 'collaboration', icon: MessageSquare, label: 'Collaboration' },
     { id: 'marketplace', icon: Store, label: 'Nexus Store' },
     { id: 'guide', icon: BookOpen, label: 'Guide & Protocoles' },
+    ...(isMaster ? [{ id: 'admin', icon: Shield, label: 'Administration' }] : []),
   ].filter(item => allowedModules.includes(item.id) || item.id === 'dashboard');
 
   return (
@@ -991,7 +996,7 @@ export default function App() {
               {activeTab === 'accounting' && <AccountingModule />}
               {activeTab === 'collaboration' && <CollaborationModule />}
               {activeTab === 'guide' && <GuideModule />}
-              {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') && <AdminModule />}
+              {activeTab === 'admin' && isMaster && <AdminModule />}
             </motion.div>
           </div>
         </div>
