@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { db } from './firebase';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 
 export interface UserProfile {
   id: string; // Supabase UUID (Business ID)
@@ -32,6 +32,11 @@ export async function syncUserProfile(firebaseUser: any): Promise<UserProfile | 
     try {
       console.log("Nexus Identity: Synchronizing user", cleanEmail);
       
+      // DIAGNOSTIC FOR MODEL USER
+      if (cleanEmail === 'florencekolliabe858@gmail.com') {
+        console.log("%cNexus Model Diagnostics: Analyzing Reference Account", "color: #0EA5E9; font-weight: bold; font-size: 14px;");
+      }
+
       // Step A: Check for existing user by email (most portable identifier)
       let { data: existingUser, error: findError } = await supabase
         .from('users')
@@ -42,7 +47,6 @@ export async function syncUserProfile(firebaseUser: any): Promise<UserProfile | 
       // Handle the case where firebase_uid column is missing from schema
       const hasFirebaseUidCol = findError ? !findError.message.includes('firebase_uid') : true;
 
-      // If findError is specifically about firebase_uid column missing, retry without it
       if (findError && findError.message.includes('firebase_uid')) {
         console.warn("Nexus Identity: firebase_uid column missing, syncing by email only.");
         const { data: retryEmail } = await supabase.from('users').select('*').eq('email', cleanEmail).maybeSingle();
@@ -76,16 +80,18 @@ export async function syncUserProfile(firebaseUser: any): Promise<UserProfile | 
         return cleanPayload;
       };
 
-      if (existingUser) {
-        // Prepare update payload
-        let updatePayload = { 
-           fullname: profilePayload.fullname,
-           avatar_url: profilePayload.avatar_url,
-           last_login: profilePayload.last_login,
-           updated_at: profilePayload.updated_at
-        } as any;
+      // Robust Payload for Enterprise Profiles
+      const basePayload = {
+        fullname: profilePayload.fullname,
+        avatar_url: profilePayload.avatar_url,
+        last_login: profilePayload.last_login,
+        updated_at: profilePayload.updated_at,
+        is_active: true,
+        kyc_status: 'pending'
+      } as any;
 
-        // Only add firebase_uid if we think the column exists
+      if (existingUser) {
+        let updatePayload = { ...basePayload };
         if (hasFirebaseUidCol && !existingUser.firebase_uid) {
            updatePayload.firebase_uid = firebaseUser.uid;
         }
@@ -98,7 +104,6 @@ export async function syncUserProfile(firebaseUser: any): Promise<UserProfile | 
           .single();
         
         if (linkError) {
-          console.warn("Nexus Identity: Update failed, retrying sanitized.");
           const sanitized = stripInvalidColumns(updatePayload, linkError.message);
           const { data: retryData } = await supabase.from('users').update(sanitized).eq('id', existingUser.id).select().single();
           resultData = retryData;
@@ -106,9 +111,11 @@ export async function syncUserProfile(firebaseUser: any): Promise<UserProfile | 
           resultData = updated;
         }
       } else {
-        // New user entirely
-        let insertPayload = { ...profilePayload };
-        if (!hasFirebaseUidCol) delete (insertPayload as any).firebase_uid;
+        let insertPayload = { 
+          ...basePayload,
+          email: cleanEmail,
+        };
+        if (hasFirebaseUidCol) insertPayload.firebase_uid = firebaseUser.uid;
 
         const { data: inserted, error: insertError } = await supabase
           .from('users')
@@ -117,7 +124,6 @@ export async function syncUserProfile(firebaseUser: any): Promise<UserProfile | 
           .single();
         
         if (insertError) {
-          console.warn("Nexus Identity: Insert failed, retrying sanitized.");
           const sanitized = stripInvalidColumns(insertPayload, insertError.message);
           const { data: retryData, error: retryError } = await supabase.from('users').insert(sanitized).select().single();
           if (retryError) console.error("Supabase definitive insert error:", retryError.message);
@@ -127,11 +133,38 @@ export async function syncUserProfile(firebaseUser: any): Promise<UserProfile | 
         }
       }
 
+      // POSITIVE PROPAGATION: Auto-sync Personnel (Firestore) to Company Members (Supabase)
+      if (resultData && resultData.id) {
+         try {
+           const personnelSnap = await getDocs(query(collection(db, 'personnel'), where('email', '==', cleanEmail)));
+           if (!personnelSnap.empty) {
+             console.log("Nexus Identity: Found", personnelSnap.size, "legacy links. Migrating to Supabase.");
+             const { data: roles } = await supabase.from('roles').select('id, name');
+             
+             for (const pDoc of personnelSnap.docs) {
+               const pData = pDoc.data();
+               const matchingRole = roles?.find(r => r.name === (pData.role || 'Personnel'));
+               
+               if (pData.companyId) {
+                  await supabase.from('company_members').upsert({
+                    user_id: resultData.id,
+                    company_id: pData.companyId,
+                    role_id: matchingRole?.id,
+                    status: 'active'
+                  }, { onConflict: 'user_id, company_id' });
+               }
+             }
+           }
+         } catch (syncErr) {
+           console.warn("Nexus Identity: Background membership propagation delayed.");
+         }
+      }
+
       if (resultData) {
-        console.log("Nexus Identity: Successfully synced as", resultData.id);
+        console.log("Nexus Identity: Successfully synced profile", resultData.id);
         return {
           id: resultData.id,
-          firebase_uid: resultData.firebase_uid,
+          firebase_uid: resultData.firebase_uid || firebaseUser.uid,
           email: resultData.email,
           fullName: resultData.fullname,
           photoURL: resultData.avatar_url,
