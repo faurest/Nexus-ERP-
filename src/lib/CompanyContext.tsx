@@ -287,20 +287,23 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         
         if (userData && ownerRole) {
           try {
-            const { data: compData } = await sb.from('companies').insert({
-              id: docRef.id, // Keep IDs synced
+            const { data: compData, error: compError } = await sb.from('companies').insert({
               name,
               owner_id: userData.id,
-              owner_email: cleanEmail
+              owner_email: cleanEmail,
+              settings: { firestore_id: docRef.id } // Store Firestore link in settings or custom col
             }).select().single();
   
-            if (compData) {
+            if (compData && !compError) {
               await sb.from('company_members').insert({
                 user_id: userData.id,
                 company_id: compData.id,
                 role_id: ownerRole.id,
                 status: 'active'
               });
+              console.log("Nexus Hub: Supabase tenant infrastructure initialized.");
+            } else if (compError) {
+              console.error("Supabase company creation error:", compError.message);
             }
           } catch (syncErr) {
             console.warn("Supabase background sync partial failure:", syncErr);

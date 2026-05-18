@@ -47,14 +47,19 @@ CREATE TABLE IF NOT EXISTS public.companies (
 
 CREATE TABLE IF NOT EXISTS public.company_members (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-    company_id UUID REFERENCES public.companies(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
+    company_id UUID NOT NULL,
     role_id UUID REFERENCES public.roles(id),
     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'pending')),
     permissions JSONB DEFAULT '[]',
     joined_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT company_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE,
+    CONSTRAINT company_members_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id) ON DELETE CASCADE,
     UNIQUE(user_id, company_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_membership_user ON public.company_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_membership_company ON public.company_members(company_id);
 
 -- 3. INVENTORY & WAREHOUSING (African Logistics ready)
 CREATE TABLE IF NOT EXISTS public.warehouses (
