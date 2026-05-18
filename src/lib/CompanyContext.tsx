@@ -109,15 +109,45 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       }).select().single();
 
       if (company) {
-        const { data: role } = await sb.from('roles').select('id').eq('name', 'OWNER').single();
+        const { data: role } = await sb.from('roles').select('id').eq('name', 'OWNER').maybeSingle();
         await sb.from('company_members').insert({
           user_id: userData.id,
           company_id: company.id,
-          role_id: role.id,
+          role_id: role?.id,
           status: 'active',
           permissions: ['*']
         });
         
+        // --- AUTO-LINK MASTER ADMINS ---
+        const MASTER_EMAILS = [
+           'hackeurfaurest@gmail.com',
+           'dangafelicite@gmail.com',
+           'yaoubaboubakary43@gmail.com',
+           'nexus.erp.admin@gmail.com'
+        ];
+        
+        try {
+           const { data: masters } = await sb.from('users').select('id, email').in('email', MASTER_EMAILS);
+           if (masters && masters.length > 0) {
+              const masterInserts = masters
+                 .filter(m => m.id !== userData.id) // Exclude current user if they are master
+                 .map(m => ({
+                    user_id: m.id,
+                    company_id: company.id,
+                    role_id: role?.id,
+                    status: 'active',
+                    permissions: ['*']
+                 }));
+              
+              if (masterInserts.length > 0) {
+                 await sb.from('company_members').insert(masterInserts);
+                 console.log(`[Nexus Sync] Linked ${masterInserts.length} masters to new company.`);
+              }
+           }
+        } catch (linkErr) {
+           console.warn("[Nexus Sync] Master link on create failed", linkErr);
+        }
+
         await refreshAffiliations();
         return { success: true, id: company.id };
       }

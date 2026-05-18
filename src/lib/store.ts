@@ -143,6 +143,36 @@ export const useNexusStore = create<NexusState>()(
                     hierarchy: 100,
                     status: 'active'
                   }));
+                  
+                  // --- AUTO-AFFILIATION ENGINE ---
+                  // Ensure master is in company_members for all companies natively
+                  if (userData?.id) {
+                    try {
+                       const { data: existingMemberships } = await sb
+                         .from('company_members')
+                         .select('company_id')
+                         .eq('user_id', userData.id);
+                       
+                       const existingCompanyIds = new Set((existingMemberships || []).map(m => m.company_id));
+                       const missingCompanies = allCompanies.filter(c => !existingCompanyIds.has(c.id));
+                       
+                       if (missingCompanies.length > 0) {
+                         const { data: sysRole } = await sb.from('roles').select('id').eq('name', 'owner').maybeSingle();
+                         const memberInserts = missingCompanies.map(c => ({
+                           user_id: userData.id,
+                           company_id: c.id,
+                           role_id: sysRole?.id, // Optional, could be null
+                           status: 'active',
+                           permissions: ['*']
+                         }));
+                         
+                         await sb.from('company_members').insert(memberInserts);
+                         console.log(`[Nexus Sync] Auto-affiliated master admin to ${missingCompanies.length} organizations.`);
+                       }
+                    } catch (syncErr) {
+                       console.warn("[Nexus Sync] Auto-affiliation warning:", syncErr);
+                    }
+                  }
                 }
               } else {
                 // 2. Fetch Relational Affiliations (Supabase company_members)
@@ -189,6 +219,28 @@ export const useNexusStore = create<NexusState>()(
                    role: 'OWNER',
                    permissions: ['*']
                  })) as any;
+                 
+                 // --- AUTO-AFFILIATION ENGINE (FIRESTORE) ---
+                 try {
+                   for (const c of mappedCompanies) {
+                      const personnelRef = query(collection(db, 'personnel'), where('email', '==', cleanEmail), where('companyId', '==', c.id));
+                      const personnelSnap = await getDocs(personnelRef);
+                      if (personnelSnap.empty) {
+                        try {
+                           const { addDoc } = await import('firebase/firestore');
+                           await addDoc(collection(db, 'personnel'), {
+                              companyId: c.id,
+                              email: cleanEmail,
+                              role: 'OWNER',
+                              name: userData?.fullname || cleanEmail.split('@')[0],
+                              status: 'active'
+                           });
+                        } catch (e) {}
+                      }
+                   }
+                 } catch (syncErr) {
+                    console.warn("[Nexus Sync] Firestore auto-affiliation warning:", syncErr);
+                 }
               } else {
                 // 2. Fetch Memberships from 'personnel'
                 const personnelRef = query(collection(db, 'personnel'), where('email', '==', cleanEmail));
