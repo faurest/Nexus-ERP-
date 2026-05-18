@@ -234,10 +234,15 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       // Sort by active/membership status
       setCompanies(finalCompanies);
       
-      const savedId = localStorage.getItem('nexus_company_id');
+      const savedId = localStorage.getItem('nexus_company_id') || localStorage.getItem('nexus_last_company_id');
       if (savedId) {
         const found = finalCompanies.find(c => c.id === savedId);
-        if (found) setCurrentCompany(found);
+        if (found) {
+          setCurrentCompany(found);
+          // Sync both keys for safety
+          localStorage.setItem('nexus_company_id', found.id);
+          localStorage.setItem('nexus_last_company_id', found.id);
+        }
       }
     } catch (error) {
       console.error("Core Engine loading error:", error);

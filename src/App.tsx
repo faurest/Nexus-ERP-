@@ -134,7 +134,7 @@ function WorkspaceSelector({ companies, user, userProfile, onSelect }: { compani
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
-  const { joinCompany, createCompany, refreshCompanies, loading: companyLoading } = useCompany();
+  const { currentCompany, joinCompany, createCompany, refreshCompanies, loading: companyLoading } = useCompany();
   const [lastSession, setLastSession] = useState<{ company: any, tab: string } | null>(null);
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
@@ -224,6 +224,31 @@ function WorkspaceSelector({ companies, user, userProfile, onSelect }: { compani
   };
 
   const allWorkspaces = companies;
+
+  // AUTO-SELECTION ENGINE (Critical for multi-tenant flow)
+  useEffect(() => {
+    // 1. Skip if already selected or still loading
+    if (companyLoading || !user || !companies.length || currentCompany) return; 
+    
+    const savedId = localStorage.getItem('nexus_company_id') || localStorage.getItem('nexus_last_company_id');
+    const isNavigating = localStorage.getItem('nexus_navigate_to');
+    
+    // 2. Case: Single company -> Auto-Select
+    if (companies.length === 1 && !isNavigating) {
+      console.log("Nexus Hub: Auto-routing single tenant configuration.");
+      onSelect(companies[0]);
+      return;
+    }
+
+    // 3. Case: Restore last session
+    if (savedId && !isNavigating) {
+      const found = companies.find(c => c.id === savedId);
+      if (found) {
+        console.log("Nexus Hub: Restoring session to", found.name);
+        onSelect(found);
+      }
+    }
+  }, [companies, companyLoading, user, currentCompany]);
 
   return (
     <div className="min-h-screen w-screen flex bg-[#020617] text-white font-sans overflow-hidden">
@@ -395,27 +420,35 @@ function WorkspaceSelector({ companies, user, userProfile, onSelect }: { compani
                                <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/5">
                                   <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" />
                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{c.joinCode}</span>
-                               </div>
+                                </div>
                             </div>
                          </div>
 
                          <div className="relative z-10">
-                            <h3 className="text-2xl font-black text-white italic tracking-tighter mb-2 group-hover:text-blue-400 transition-colors uppercase">{c.name}</h3>
+                            <div className="flex items-center gap-2 mb-2">
+                               <h3 className="text-2xl font-black text-white italic tracking-tighter group-hover:text-blue-400 transition-colors uppercase truncate">{c.name}</h3>
+                               {c.ownerId === user.uid || (c.ownerEmail && c.ownerEmail === cleanEmail) ? (
+                                 <span className="shrink-0 px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded-md text-[7px] font-black text-blue-400 uppercase tracking-widest">Master</span>
+                               ) : (
+                                 <span className="shrink-0 px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded-md text-[7px] font-black text-emerald-400 uppercase tracking-widest">Staff</span>
+                               )}
+                            </div>
+                            
                             <div className="inline-flex items-center gap-2 text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-8">
                                <div className="p-1 bg-slate-800 rounded-md"><Building2 size={10} /></div>
                                Nexus Enterprise Cloud
                             </div>
 
                             <div className="grid grid-cols-2 gap-4 mt-auto">
-                               <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
-                                  <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Rôle / Statut</span>
-                                  <span className="block text-sm font-black text-white truncate">
-                                    {c.company_members?.[0]?.role || (c.ownerId === user.uid ? 'Propriétaire' : 'Directeur')}
+                               <div className="bg-white/5 p-3 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
+                                  <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Privilèges</span>
+                                  <span className="block text-sm font-black text-white truncate italic">
+                                    {c.company_members?.[0]?.role || (c.ownerId === user.uid ? 'Propriétaire' : 'Collaborateur')}
                                   </span>
                                </div>
-                               <div className="bg-white/5 p-3 rounded-2xl border border-white/5">
-                                  <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Activité</span>
-                                  <span className="block text-sm font-black text-blue-500 italic">Optimal</span>
+                               <div className="bg-white/5 p-3 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
+                                  <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Réseau</span>
+                                  <span className="block text-sm font-black text-blue-500 italic">Distant (SSL)</span>
                                </div>
                             </div>
                          </div>
@@ -804,14 +837,8 @@ export default function App() {
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
   const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
   
-  const ownedCompanies = companies.filter(c => {
-    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
-    return c.ownerId === user?.uid || (cOwnerEmail && cOwnerEmail === cleanEmail);
-  });
-  const joinedCompanies = companies.filter(c => {
-    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
-    return c.ownerId !== user?.uid && cOwnerEmail !== cleanEmail;
-  });
+  const allAffiliatedCompanies = companies;
+  
   const [isWhitelisted, setIsWhitelisted] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -945,22 +972,45 @@ export default function App() {
 
   useEffect(() => {
     if (user && currentCompany && !user.role) {
-      if (currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid || user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') {
-        setUser(prev => prev ? { ...prev, role: 'owner' } : null);
+      // 1. Check if Master/Owner
+      const userEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
+      const isOwner = currentCompany.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '') === userEmail || 
+                      currentCompany.ownerId === user.uid || 
+                      isMaster;
+
+      if (isOwner) {
+        setUser((prev: any) => prev ? { ...prev, role: 'owner' } : null);
         setIsBlocked(false);
       } else {
-        // Try to find the user in the personnel collection for this company
+        // 2. Check cached membership (Faster, especially for multi-tenant)
+        if (currentCompany.company_members && currentCompany.company_members.length > 0) {
+           const member = currentCompany.company_members[0];
+           if (member.status === 'blocked') {
+             setIsBlocked(true);
+           } else {
+             setUser((prev: any) => prev ? { 
+               ...prev, 
+               role: member.role || 'Personnel',
+               isCollaborator: true 
+             } : null);
+             setIsBlocked(false);
+             return;
+           }
+        }
+
+        // 3. Fallback: Robust recovery via DB
         const findRole = async () => {
           try {
-            const cleanEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '');
-            if (!cleanEmail) {
+            if (!userEmail) {
               setIsBlocked(true);
               return;
             }
+            
+            // Try Personnel first
             const q = query(
               collection(db, 'personnel'), 
               where('companyId', '==', currentCompany.id),
-              where('email', '==', cleanEmail),
+              where('email', '==', userEmail),
               limit(1)
             );
             const snap = await getDocs(q);
@@ -970,71 +1020,47 @@ export default function App() {
               if (memberData.status === 'blocked') {
                 setIsBlocked(true);
               } else {
-                // Sync the UID and status if not present
-                if (memberData.uid !== user.uid || memberData.status !== 'active') {
-                  await updateDoc(memberDoc.ref, { 
-                    uid: user.uid,
-                    status: 'active',
-                    updatedAt: serverTimestamp()
-                  });
+                // Auto-repair Firestore record with UID
+                if (memberData.uid !== user.uid) {
+                  await updateDoc(memberDoc.ref, { uid: user.uid, updatedAt: serverTimestamp() });
                 }
-
-                setUser(prev => prev ? { 
-                  ...prev, 
-                  role: memberData.role || 'Personnel',
-                  customPermissions: memberData.customPermissions || [],
-                  email: user.email || memberData.email,
-                  nexusId: memberData.id || memberDoc.id
-                } : null);
+                setUser((prev: any) => prev ? { ...prev, role: memberData.role || 'Personnel' } : null);
+                setIsBlocked(false);
               }
+              return;
+            }
+
+            // Then check Client record
+            const clientQ = query(
+              collection(db, 'clients'),
+              where('companyId', '==', currentCompany.id),
+              where('email', '==', userEmail),
+              limit(1)
+            );
+            const clientSnap = await getDocs(clientQ);
+            if (!clientSnap.empty) {
+              const clientData = clientSnap.docs[0].data();
+              setUser((prev: any) => prev ? { 
+                ...prev, 
+                role: 'Client',
+                email: user.email || clientData.email,
+                nexusId: clientData.id || clientSnap.docs[0].id
+              } : null);
+              setIsBlocked(false);
             } else {
-               // Match as client
-               const clientQ = query(
-                 collection(db, 'clients'),
-                 where('companyId', '==', currentCompany.id),
-                 where('email', '==', cleanEmail),
-                 limit(1)
-               );
-               const clientSnap = await getDocs(clientQ);
-               if (!clientSnap.empty) {
-                  // Important: Sync the UID and status if not present to ensure security rules work better
-                  const clientRef = clientSnap.docs[0].ref;
-                  const clientData = clientSnap.docs[0].data();
-                  if (clientData.uid !== user.uid || clientData.status !== 'active') {
-                    await updateDoc(clientRef, { 
-                      uid: user.uid,
-                      status: 'active',
-                      updatedAt: serverTimestamp()
-                    });
-                  }
-                  
-                  // Double check membership in the company document
-                  if (!(currentCompany.memberEmails || []).includes(cleanEmail)) {
-                    await setDoc(doc(db, 'companies', currentCompany.id), {
-                      memberEmails: arrayUnion(cleanEmail),
-                      employees: arrayUnion(user.uid),
-                      updatedAt: serverTimestamp()
-                    }, { merge: true }).catch(e => console.error("Client auto-enroll sync failed", e));
-                  }
-                  
-                  setUser(prev => prev ? { 
-                    ...prev, 
-                    role: 'Client',
-                    email: user.email || clientData.email,
-                    nexusId: clientData.id || clientSnap.docs[0].id
-                  } : null);
-               } else {
-                 setIsBlocked(true); // Treat as unauthorized
-               }
+              // If we reached here but companies list said they are members, trust the context but default role
+              setUser((prev: any) => prev ? { ...prev, role: 'Personnel' } : null);
+              setIsBlocked(false);
             }
           } catch (err) {
-            console.error("Role lookup failed:", err);
+            console.error("Nexus Role Recovery Error:", err);
+            setIsBlocked(true);
           }
         };
         findRole();
       }
     }
-  }, [user, currentCompany]);
+  }, [user?.uid, currentCompany?.id, isMaster]);
 
   useEffect(() => {
     // Handle master switch from AdminModule

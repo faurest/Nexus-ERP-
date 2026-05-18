@@ -942,12 +942,12 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       </div>
 
       {/* Cross-tenant Global Overview */}
-      {companies.filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email).length > 0 && (
+      {companies.length > 0 && (
         <div className="mt-12 bg-white rounded-3xl border border-blue-100 p-8 shadow-xl shadow-blue-900/5">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h3 className="text-xl font-black text-slate-900 tracking-tight">Vue d'ensemble de vos opérations</h3>
-              <p className="text-sm font-medium text-slate-500 mt-1">Status et performances des entités sous votre direction.</p>
+              <p className="text-sm font-medium text-slate-500 mt-1">Status et performances des entités associées à votre profil.</p>
             </div>
             <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
               <Briefcase size={24} />
@@ -956,7 +956,6 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
           
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {companies
-              .filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email)
               .map(c => (
               <div key={c.id} className="p-5 border border-slate-200 rounded-2xl flex flex-col gap-4 hover:border-blue-300 transition-colors bg-slate-50 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-blue-100/50 rounded-bl-full -mr-12 -mt-12 group-hover:bg-blue-200/50 transition-colors" />
