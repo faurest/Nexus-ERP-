@@ -139,6 +139,16 @@ function WorkspaceSelector({ companies, user, userProfile, onSelect }: { compani
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
   
+  useEffect(() => {
+    if (errorMsg || successMsg) {
+      const timer = setTimeout(() => {
+        setErrorMsg('');
+        setSuccessMsg('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMsg, successMsg]);
+
   const ownedCompanies = companies.filter(c => {
     const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
     return c.ownerId === user?.uid || (cOwnerEmail && cOwnerEmail === cleanEmail);
@@ -301,30 +311,36 @@ function WorkspaceSelector({ companies, user, userProfile, onSelect }: { compani
          <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col relative z-10">
             {/* Header Area */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-16">
-               <div className="space-y-2">
-                  <h1 className="text-4xl lg:text-5xl font-black tracking-tighter italic text-white">LANCEUR <span className="text-blue-500 not-italic">OPÉRATIONNEL</span></h1>
-                  <p className="text-slate-400 font-medium text-sm lg:text-base">Choisissez un pôle d&apos;intelligence pour commencer votre journée.</p>
+               <div className="space-y-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
+                     <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                     <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">Connecté en tant que {user.email}</span>
+                  </div>
+                  <h1 className="text-5xl lg:text-7xl font-black tracking-tighter italic text-white leading-none">NEXUS <span className="text-blue-600 not-italic">HUB</span></h1>
+                  <p className="text-slate-400 font-medium text-base lg:text-lg max-w-xl">
+                    Tableau de bord de lancement unifié. Accédez à vos infrastructures opérationnelles ou déployez de nouvelles strates de gestion.
+                  </p>
                </div>
                
                <AnimatePresence>
                 {lastSession && (
                   <motion.button
                     key="quick-resume"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     onClick={() => {
                       onSelect(lastSession.company);
                       localStorage.setItem('nexus_navigate_to', lastSession.tab);
                     }}
-                    className="flex items-center gap-4 bg-blue-600/10 border border-blue-500/20 p-5 rounded-3xl hover:bg-blue-600 hover:border-transparent transition-all group shadow-2xl relative overflow-hidden"
+                    className="flex items-center gap-5 bg-white/5 border border-white/10 p-6 rounded-[2.5rem] hover:bg-blue-600 hover:border-transparent transition-all group shadow-2xl relative overflow-hidden active:scale-95"
                   >
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-400/10 rounded-full blur-2xl -mr-12 -mt-12" />
-                    <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:bg-white group-hover:text-blue-600 transition-all shrink-0">
-                      <TrendingUp size={24} className="animate-pulse" />
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-white/20" />
+                    <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:bg-white group-hover:text-blue-600 transition-all shrink-0">
+                      <TrendingUp size={28} className="animate-pulse" />
                     </div>
                     <div className="text-left pr-4">
-                      <span className="block text-[10px] font-black text-blue-400 uppercase tracking-widest group-hover:text-blue-50 transition-colors">Reprendre ma session</span>
-                      <span className="block text-xl font-black text-white italic tracking-tight">{lastSession.company.name}</span>
+                      <span className="block text-[10px] font-black text-blue-400 uppercase tracking-widest group-hover:text-blue-50 transition-colors">Reprendre Session Active</span>
+                      <span className="block text-2xl font-black text-white italic tracking-tight">{lastSession.company.name}</span>
                     </div>
                   </motion.button>
                 )}
@@ -410,64 +426,70 @@ function WorkspaceSelector({ companies, user, userProfile, onSelect }: { compani
                       </motion.button>
                     ))
                   ) : (
-                    <div className="col-span-full py-24 text-center space-y-8 bg-slate-900/50 rounded-[4rem] border-2 border-dashed border-white/5 flex flex-col items-center justify-center backdrop-blur-sm relative overflow-hidden">
-                       <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 rounded-full blur-[80px] -mr-32 -mt-32" />
-                       <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-600/5 rounded-full blur-[80px] -ml-32 -mb-32" />
+    <div className="col-span-full py-24 px-8 text-center bg-slate-900/40 rounded-[4rem] border-2 border-dashed border-white/10 flex flex-col items-center justify-center backdrop-blur-xl relative overflow-hidden group">
+                       {/* Animated background elements */}
+                       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[100px] -mr-48 -mt-48 group-hover:bg-blue-600/20 transition-all duration-1000" />
+                       <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-600/10 rounded-full blur-[80px] -ml-24 -mb-24 group-hover:bg-indigo-600/20 transition-all duration-1000" />
 
-                       <div className="w-24 h-24 bg-white/5 rounded-[2rem] flex items-center justify-center text-blue-500 shadow-2xl relative group">
-                          <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full group-hover:animate-pulse" />
-                          <Layers size={48} className="relative z-10" />
-                       </div>
-                       <div className="space-y-4 relative z-10 px-8">
-                          <div className="space-y-2">
-                             <h3 className="text-3xl lg:text-4xl font-black text-white italic tracking-tighter uppercase">Initialisation de votre signature</h3>
-                             <p className="text-slate-400 font-medium max-w-sm mx-auto leading-relaxed text-sm">
-                                Nous n'avons détecté aucune infrastructure opérationnelle rattachée à votre profil numérique 
-                                <span className="text-blue-400 font-black ml-1 uppercase">{user.email}</span>.
-                             </p>
-                          </div>
-                          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-2xl inline-flex items-center gap-2">
-                             <AlertCircle size={14} className="text-red-400" />
-                             <span className="text-[9px] font-black text-red-400 uppercase tracking-widest text-left">S'il s'agit d'une erreur, contactez votre administrateur pour vérification de l'accès.</span>
-                          </div>
+                       <div className="w-24 h-24 bg-white/5 rounded-[2.5rem] flex items-center justify-center text-blue-500 shadow-2xl relative mb-10 ring-1 ring-white/10">
+                          <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full animate-pulse" />
+                          <Activity size={48} className="relative z-10" />
                        </div>
                        
-                       <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md relative z-10">
-                          <button onClick={() => setMode('create')} className="flex-1 px-8 py-5 bg-blue-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-white hover:text-blue-600 transition-all shadow-xl shadow-blue-600/20 active:scale-95">Déployer Espace</button>
-                          <button onClick={() => setMode('join')} className="flex-1 px-8 py-5 bg-white/5 text-white border border-white/10 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95">Rejoindre avec Clé</button>
-                       </div>
+                       <div className="space-y-6 relative z-10 max-w-lg mx-auto">
+                          <div className="space-y-3">
+                             <h3 className="text-3xl lg:text-4xl font-black text-white italic tracking-tighter uppercase leading-tight">Configuration en cours d&apos;analyse</h3>
+                             <p className="text-slate-400 font-medium leading-relaxed text-base">
+                                Votre compte <span className="text-blue-400 font-black uppercase text-sm">{user.email}</span> est authentifié, 
+                                mais <span className="text-white">aucune entreprise active</span> n&apos;est actuellement rattachée à votre profil.
+                             </p>
+                          </div>
+                          
+                          <div className="p-5 bg-blue-500/5 border border-blue-500/20 rounded-3xl text-left space-y-4">
+                             <div className="flex items-start gap-4">
+                                <div className="p-2 bg-blue-500/20 rounded-xl mt-1">
+                                   <ShieldAlert size={18} className="text-blue-400" />
+                                </div>
+                                <div className="space-y-1">
+                                   <p className="text-xs font-black text-white uppercase tracking-wider">Pourquoi ce message ?</p>
+                                   <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                                      Si vous êtes employé, votre administrateur doit vous ajouter dans le module **Ressources Humaines** avec votre email exact.
+                                   </p>
+                                </div>
+                             </div>
+                          </div>
 
-                       <div className="pt-12 border-t border-white/5 w-full max-w-md relative z-10">
-                          <div className="p-6 bg-slate-950/60 rounded-3xl border border-white/5 text-left backdrop-blur-md">
-                             <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-3">
-                                   <Shield size={16} className="text-blue-500" />
-                                   <span className="text-[10px] font-black text-white uppercase tracking-widest leading-none">Diagnostic Opérationnel</span>
-                                </div>
-                                <div className={cn("px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest", connStatus === 'ok' ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-amber-500/10 text-amber-500 border border-amber-500/20")}>
-                                   {connStatus === 'ok' ? 'Lien Stable' : 'Sync Active'}
-                                </div>
-                             </div>
-                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-3">
-                                   <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-                                      <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Identité Profil</span>
-                                      <span className="block text-[9px] font-black text-slate-300 truncate">{userProfile?.fullName || user.email || 'Utilisateur'}</span>
-                                   </div>
-                                   <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-                                      <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Autorisation</span>
-                                      <span className="block text-[9px] font-black text-slate-300 truncate">Vérifié</span>
-                                   </div>
-                                </div>
-                                <button 
-                                  onClick={() => window.location.reload()}
-                                  className="w-full py-4 bg-blue-600/10 hover:bg-blue-600/20 text-[10px] font-black uppercase tracking-[0.25em] text-blue-400 hover:text-white rounded-2xl transition-all border border-blue-500/20 mt-2 flex items-center justify-center gap-3 active:scale-[0.98]"
-                                >
-                                   <Activity size={14} />
-                                   Forcer le rafraîchissement global
-                                </button>
-                                <p className="text-[8px] text-center text-slate-600 font-bold uppercase tracking-widest px-4">Tentez un rafraîchissement si une affiliation vient d'être créée.</p>
-                             </div>
+                          <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                             <button 
+                               onClick={() => setMode('create')} 
+                               className="flex-1 py-5 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white hover:text-blue-600 transition-all shadow-xl shadow-blue-600/20 active:scale-95"
+                             >
+                                Créer une Entreprise
+                             </button>
+                             <button 
+                               onClick={() => setMode('join')} 
+                               className="flex-1 py-5 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl active:scale-95"
+                             >
+                                Utiliser un code
+                             </button>
+                          </div>
+                          
+                          <div className="pt-8 flex flex-col gap-3">
+                             <button 
+                                onClick={async () => {
+                                  setSubmitting(true);
+                                  await refreshCompanies();
+                                  setSubmitting(false);
+                                  setSuccessMsg("Synchronisation forcée effectuée");
+                                }}
+                                className="w-full py-4 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-white rounded-2xl transition-all border border-white/5 active:scale-95 flex items-center justify-center gap-2"
+                             >
+                                <Database size={14} />
+                                Lancer l&apos;auto-réparation intelligente
+                             </button>
+                             <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">
+                                Nexus ERP v5.0 • Récupération automatique activée
+                             </p>
                           </div>
                        </div>
                     </div>

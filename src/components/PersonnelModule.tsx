@@ -10,6 +10,7 @@ import { useCompany } from '../lib/CompanyContext';
 import { DEFAULT_ROLES } from '../App';
 
 import { createNotification } from '../lib/notifications';
+import { normalizePhoneNumber } from '../lib/userService';
 
 interface Staff {
   id: string;
@@ -220,8 +221,11 @@ export default function PersonnelModule({ user }: { user?: any }) {
     if (!currentCompany || (!newStaff.firstName.trim() && !newStaff.lastName.trim()) || !newStaff.email.trim() || submitting) return;
     setSubmitting(true);
     try {
-      const fullName = `${newStaff.firstName} ${newStaff.lastName}`.trim();
+      const firstName = newStaff.firstName.trim();
+      const lastName = newStaff.lastName.trim();
+      const fullName = `${firstName} ${lastName}`.trim();
       const cleanEmail = newStaff.email.trim().toLowerCase().replace(/\s+/g, '');
+      const cleanPhone = normalizePhoneNumber(newStaff.phone.trim());
       
       if (editingStaff) {
         const oldEmail = editingStaff.email.trim().toLowerCase().replace(/\s+/g, '');
@@ -232,18 +236,14 @@ export default function PersonnelModule({ user }: { user?: any }) {
             memberEmails: arrayUnion(cleanEmail),
             updatedAt: serverTimestamp()
           });
-          // Note: we don't strictly remove the old email from memberEmails here to avoid accidentally 
-          // removing someone who might be sharing an email or if the removal logic is complex,
-          // but for strictness we could use arrayRemove.
-          // Given the context of fixing the connection for the new email, adding it is the priority.
         }
 
         await updateDoc(doc(db, 'personnel', editingStaff.id), {
-          firstName: newStaff.firstName,
-          lastName: newStaff.lastName,
+          firstName,
+          lastName,
           name: fullName,
           email: cleanEmail,
-          phone: newStaff.phone,
+          phone: cleanPhone,
           notes: newStaff.notes,
           role: newStaff.role,
           department: newStaff.department,
@@ -256,13 +256,13 @@ export default function PersonnelModule({ user }: { user?: any }) {
           setCreationMessage('');
         }, 1500);
       } else {
-        const cleanEmail = newStaff.email.trim().toLowerCase().replace(/\s+/g, '');
-        await setDoc(doc(db, 'personnel', cleanEmail), {
-          firstName: newStaff.firstName,
-          lastName: newStaff.lastName,
+        const staffRef = doc(db, 'personnel', cleanEmail);
+        await setDoc(staffRef, {
+          firstName,
+          lastName,
           name: fullName,
           email: cleanEmail,
-          phone: newStaff.phone,
+          phone: cleanPhone,
           notes: newStaff.notes,
           role: newStaff.role,
           department: newStaff.department,
@@ -272,7 +272,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
           createdAt: serverTimestamp()
         });
 
-        // Create Ghost Profile for global visibility
+        // Create Ghost Profile for global visibility & Auto-Sync
         try {
           const ghostUserRef = doc(db, 'users', cleanEmail);
           await setDoc(ghostUserRef, {
@@ -280,16 +280,17 @@ export default function PersonnelModule({ user }: { user?: any }) {
             displayName: fullName,
             status: 'invited',
             invitationDate: serverTimestamp(),
-            role: newStaff.role
+            role: newStaff.role,
+            phone: cleanPhone
           }, { merge: true });
         } catch (ghostErr) {
           console.warn("Ghost profile creation skipped:", ghostErr);
         }
 
-        await setDoc(doc(db, 'companies', currentCompany.id), {
+        await updateDoc(doc(db, 'companies', currentCompany.id), {
           memberEmails: arrayUnion(cleanEmail)
-        }, { merge: true });
-        setCreationMessage(`Employé ajouté avec succès ! Il peut désormais se connecter avec Google via l'adresse : ${cleanEmail}`);
+        });
+        setCreationMessage(`Employé ajouté avec succès ! Il peut désormais se connecter avec l'adresse : ${cleanEmail}`);
         setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général' });
       }
     } catch (err: any) {

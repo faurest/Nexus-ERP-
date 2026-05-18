@@ -80,13 +80,37 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     // 1. SUPABASE FLOW (Primary Enterprise Logic)
     if (sb) {
       try {
-        console.log("Nexus Hub: Fetching active memberships for", user.uid);
-        // Step A: Get User internal ID
-        const { data: userData } = await sb
-          .from('users')
-          .select('id')
-          .eq('firebase_uid', user.uid)
-          .single();
+        console.log("Nexus Hub: Fetching active memberships for", cleanEmail);
+        
+        // Helper to get user internal ID mapping safely
+        const getInternalId = async () => {
+          // Attempt UID lookup first (if column exists)
+          try {
+            const { data, error } = await sb.from('users').select('id, firebase_uid').eq('firebase_uid', user.uid).maybeSingle();
+            if (!error && data) return data;
+            
+            // If column error or not found, try email
+            if (error?.message.includes('firebase_uid') || !data) {
+               const { data: emailData } = await sb.from('users').select('id, firebase_uid').eq('email', cleanEmail).maybeSingle();
+               return emailData;
+            }
+          } catch (e) {
+            return (await sb.from('users').select('id').eq('email', cleanEmail).maybeSingle()).data;
+          }
+          return null;
+        };
+
+        let userData = await getInternalId();
+
+        // AUTO-REPAIR: If found by email but missing UID link, try to fix it (if possible)
+        if (userData && !userData.firebase_uid && cleanEmail) {
+           console.log("Nexus Hub: Linking UID to existing email record.");
+           try {
+             await sb.from('users').update({ firebase_uid: user.uid }).eq('id', userData.id);
+           } catch (e) {
+             // ignore if column still missing
+           }
+        }
 
         if (userData) {
           // Step B: Get companies via membership table with role details
@@ -123,6 +147,10 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
             }));
             console.log("Nexus Hub: Supabase detected", supabaseCompanies.length, "tenants.");
           }
+
+          // AUTO-REPAIR: If user is in Personnel (Firestore) but NOT in Supabase memberships
+          // We can't easily do this from client without knowing all companies, 
+          // but we can check if the user is mentioned in any company's memberEmails in Firestore (Step 2 handles this).
         }
       } catch (err) {
         console.error("Supabase hub fetch failed:", err);
@@ -139,15 +167,22 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         const masterSnap = await getDocs(collection(db, 'companies'));
         firestoreCompanies = masterSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
       } else {
-        const qMain = query(
-          collection(db, 'companies'), 
-          or(
-            where('ownerId', '==', user.uid),
-            where('memberEmails', 'array-contains', cleanEmail)
-          )
-        );
-        const mainSnap = await getDocs(qMain);
-        firestoreCompanies = mainSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
+        // We also check for 'employees' array which sometimes holds UIDs
+        const qOwner = query(collection(db, 'companies'), where('ownerId', '==', user.uid));
+        const qMember = query(collection(db, 'companies'), where('memberEmails', 'array-contains', cleanEmail));
+        const qEmployee = query(collection(db, 'companies'), where('employees', 'array-contains', user.uid));
+        
+        const [ownerSnap, memberSnap, employeeSnap] = await Promise.all([
+          getDocs(qOwner),
+          getDocs(qMember),
+          getDocs(qEmployee)
+        ]);
+        
+        const combinedDocs = [...ownerSnap.docs, ...memberSnap.docs, ...employeeSnap.docs];
+        // Deduplicate by ID
+        const uniqueDocs = new Map();
+        combinedDocs.forEach(d => uniqueDocs.set(d.id, { id: d.id, ...d.data() }));
+        firestoreCompanies = Array.from(uniqueDocs.values()) as Company[];
       }
 
       // 3. MERGE & UNIFIED IDENTITY ENGINE
@@ -156,14 +191,41 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       // Priority 1: Supabase (Enterprise Data)
       supabaseCompanies.forEach(c => allCompaniesMap.set(c.id, c));
       
-      // Priority 2: Firestore (Metadata Merge)
+      // Priority 2: Firestore (Metadata Merge + Missing links repair)
       firestoreCompanies.forEach(c => {
-        if (allCompaniesMap.has(c.id)) {
-           // Merge Firestore metadata (like categories/nairaRate) if not in Supabase
+        if (!allCompaniesMap.has(c.id)) {
+           console.log("Nexus Hub: Found un-synced Firestore affiliation for", c.name, ". Repairing.");
+           allCompaniesMap.set(c.id, c);
+           
+           // AUTO-REPAIR: If found in Firestore but not Supabase, try to create standard Supabase membership
+           // (This happens in the background)
+           if (sb) {
+             const user_uid = user.uid;
+             const company_id = c.id;
+             const user_email = cleanEmail;
+             
+             (async () => {
+               try {
+                 const { data: uData } = await sb.from('users').select('id').eq('firebase_uid', user_uid).single();
+                 const { data: rData } = await sb.from('roles').select('id').eq('name', 'Personnel').single();
+                 if (uData && rData) {
+                    await sb.from('company_members').upsert({
+                      user_id: uData.id,
+                      company_id: company_id,
+                      role_id: rData.id,
+                      status: 'active'
+                    }, { onConflict: 'user_id, company_id' });
+                    console.log("Nexus Hub: Membership auto-repaired in Supabase for", c.name);
+                 }
+               } catch (e) {
+                 // ignore repair failures
+               }
+             })();
+           }
+        } else {
+           // Merge Firestore metadata
            const existing = allCompaniesMap.get(c.id);
            allCompaniesMap.set(c.id, { ...c, ...existing });
-        } else {
-           allCompaniesMap.set(c.id, c);
         }
       });
       
@@ -205,25 +267,38 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       // 2. Sync to Supabase
       const sb = getSupabase();
       if (sb) {
-        // Get user internal ID
-        const { data: userData } = await sb.from('users').select('id').eq('firebase_uid', user.uid).single();
-        const { data: ownerRole } = await sb.from('roles').select('id').eq('name', 'OWNER').single();
+        // Get user internal ID with fallback
+        const getInternalId = async () => {
+          try {
+            const { data } = await sb.from('users').select('id').eq('firebase_uid', user.uid).maybeSingle();
+            if (data) return data;
+          } catch(e) {}
+          const { data } = await sb.from('users').select('id').eq('email', cleanEmail).maybeSingle();
+          return data;
+        };
+
+        const userData = await getInternalId();
+        const { data: ownerRole } = await sb.from('roles').select('id').eq('name', 'OWNER').maybeSingle();
         
         if (userData && ownerRole) {
-          const { data: compData } = await sb.from('companies').insert({
-            id: docRef.id, // Keep IDs synced
-            name,
-            owner_id: userData.id,
-            owner_email: cleanEmail
-          }).select().single();
-
-          if (compData) {
-            await sb.from('company_members').insert({
-              user_id: userData.id,
-              company_id: compData.id,
-              role_id: ownerRole.id,
-              status: 'active'
-            });
+          try {
+            const { data: compData } = await sb.from('companies').insert({
+              id: docRef.id, // Keep IDs synced
+              name,
+              owner_id: userData.id,
+              owner_email: cleanEmail
+            }).select().single();
+  
+            if (compData) {
+              await sb.from('company_members').insert({
+                user_id: userData.id,
+                company_id: compData.id,
+                role_id: ownerRole.id,
+                status: 'active'
+              });
+            }
+          } catch (syncErr) {
+            console.warn("Supabase background sync partial failure:", syncErr);
           }
         }
       }
@@ -264,16 +339,29 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       // 2. Sync to Supabase
       const sb = getSupabase();
       if (sb) {
-        const { data: userData } = await sb.from('users').select('id').eq('firebase_uid', user.uid).single();
-        const { data: empRole } = await sb.from('roles').select('id').eq('name', 'EMPLOYEE').single();
+        const getInternalId = async () => {
+          try {
+            const { data } = await sb.from('users').select('id').eq('firebase_uid', user.uid).maybeSingle();
+            if (data) return data;
+          } catch(e) {}
+          const { data } = await sb.from('users').select('id').eq('email', cleanEmail).maybeSingle();
+          return data;
+        };
+
+        const userData = await getInternalId();
+        const { data: empRole } = await sb.from('roles').select('id').eq('name', 'EMPLOYEE').maybeSingle();
         
         if (userData && empRole) {
-          await sb.from('company_members').upsert({
-            user_id: userData.id,
-            company_id: companyDoc.id,
-            role_id: empRole.id,
-            status: 'active'
-          }, { onConflict: 'user_id, company_id' });
+          try {
+            await sb.from('company_members').upsert({
+              user_id: userData.id,
+              company_id: companyDoc.id,
+              role_id: empRole.id,
+              status: 'active'
+            }, { onConflict: 'user_id, company_id' });
+          } catch (syncErr) {
+             console.warn("Supabase background join sync failure:", syncErr);
+          }
         }
       }
 

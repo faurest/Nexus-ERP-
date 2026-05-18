@@ -20,13 +20,14 @@ export class AIService {
         body: JSON.stringify({ prompt }),
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+      const data = await response.json();
+      
+      if (!response.ok || data.success === false) {
+        throw new Error(data.error || data.details || `API error: ${response.status}`);
       }
 
-      const data = await response.json();
       return {
-        content: data.content,
+        content: data.content || data.text || JSON.stringify(data),
         success: true
       };
     } catch (error: any) {
