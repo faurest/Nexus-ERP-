@@ -1,83 +1,46 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Outfit", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  /* Premium Design Tokens */
-  --color-nexus-primary: #6366f1;
-  --color-nexus-accent: #38bdf8;
-  --color-nexus-success: #10b981;
-  --color-nexus-warning: #f59e0b;
-  --color-nexus-danger: #ef4444;
-
-  /* Theme-aware backgrounds */
-  --color-surface: var(--surface-bg);
-  --color-surface-hover: var(--surface-bg-hover);
-  --color-border: var(--border-color);
-  --color-text-main: var(--text-primary);
-  --color-text-muted: var(--text-secondary);
+  /* Nexus ERP Premium Dark Palette */
+  --color-nexus-bg: #0B1020;
+  --color-nexus-surface: #12182B;
+  --color-nexus-accent: #5B8CFF;
+  --color-nexus-success: #00C896;
+  --color-nexus-danger: #FF5C7A;
+  --color-nexus-warning: #FFB547;
+  --color-nexus-text: #F4F7FF;
+  --color-nexus-text-muted: #98A2B3;
 }
 
-@layer base {
-  :root {
-    --bg-main: #f8fafc;
-    --surface-bg: #ffffff;
-    --surface-bg-hover: #f1f5f9;
-    --border-color: #e2e8f0;
-    --text-primary: #0f172a;
-    --text-secondary: #64748b;
-  }
+@utility nexus-card {
+  @apply bg-nexus-surface border border-white/5 rounded-[2.5rem] shadow-2xl transition-all duration-300;
+}
 
-  .dark {
-    --bg-main: #0b1120;
-    --surface-bg: #1e293b;
-    --surface-bg-hover: #334155;
-    --border-color: #334155;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-  }
+@utility nexus-gradient-text {
+  @apply text-transparent bg-clip-text bg-gradient-to-r from-nexus-text to-nexus-text-muted;
+}
 
-  body {
-    background-color: var(--bg-main);
-    color: var(--text-primary);
-    font-family: var(--font-sans);
-    transition: background-color 0.3s ease, color 0.3s ease;
-    -webkit-tap-highlight-color: transparent;
-    @apply antialiased;
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
 
-@layer utilities {
-  .glass {
-    @apply backdrop-blur-md bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-white/10;
-  }
-
-  .nexus-gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-nexus-primary to-nexus-accent;
-  }
-
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-    &::-webkit-scrollbar {
-      display: none;
-    }
-  }
-
-  .nexus-card {
-    @apply bg-surface border border-border/50 rounded-[2.5rem] shadow-sm transition-all duration-300;
-  }
+@utility glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-/* Transitions */
-.page-transition-enter {
-  opacity: 0;
-  transform: translateY(10px);
-}
-.page-transition-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 300ms, transform 300ms;
+@utility glass-dark {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }

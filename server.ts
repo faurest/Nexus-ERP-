@@ -23,6 +23,8 @@ db.exec(`
     ownerId TEXT,
     ownerEmail TEXT NOT NULL,
     joinCode TEXT UNIQUE NOT NULL,
+    memberEmails TEXT,
+    employees TEXT,
     createdAt INTEGER
   );
 
@@ -206,6 +208,7 @@ db.exec(`
 
 // Try Schema Migrations
 try { db.prepare('UPDATE users SET email = LOWER(TRIM(email))').run(); } catch(e) {}
+try { db.exec('ALTER TABLE companies ADD COLUMN employees TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE companies ADD COLUMN roles TEXT'); } catch (e) {}
 
 try { db.exec('ALTER TABLE personnel ADD COLUMN firstName TEXT'); } catch (e) {}
@@ -344,8 +347,9 @@ async function startServer() {
         if (requestUserEmail === 'hackeurfaurest@gmail.com' || requestUserEmail === 'dangafelicite@gmail.com') {
           // All companies
         } else if (ownerId) {
-          conditions.push(`ownerId = ?`);
+          conditions.push(`(ownerId = ? OR memberEmails LIKE ?)`);
           params.push(ownerId);
+          params.push(`%${requestUserEmail}%`);
         }
       } else if (ownerId && validColumns.includes('ownerId')) {
         conditions.push(`ownerId = ?`);

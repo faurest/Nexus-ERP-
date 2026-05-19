@@ -145,40 +145,9 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
   useEffect(() => {
     if (!currentCompany) return;
-    
-    const fetchStaffFromSupabase = async () => {
-      const { getSupabase } = await import('../lib/supabase');
-      const sb = getSupabase();
-      if (!sb) return;
-
-      try {
-        const { data, error } = await sb
-          .from('company_members')
-          .select('*, users(*), roles(*)')
-          .eq('company_id', currentCompany.id);
-
-        if (data) {
-          const formattedStaff: Staff[] = data.map(m => ({
-            id: m.users.id,
-            name: m.users.fullname || m.users.email.split('@')[0],
-            email: m.users.email,
-            phone: m.users.phone,
-            role: m.roles?.name || 'Personnel',
-            status: m.status === 'active' ? 'active' : (m.status === 'inactive' ? 'resigned' : 'blocked'),
-            department: 'Général', // We could add a department column to company_members or users
-            tasksAssignedCount: 0,
-            customPermissions: m.permissions || []
-          }));
-          setStaffList(formattedStaff);
-        }
-      } catch (err) {
-        console.error("Nexus Talent: Fail to fetch staff from Supabase", err);
-      }
-    };
-
-    fetchStaffFromSupabase();
-
-    // Still use Firestore for real-time tasks, leave requests, etc. as they are "events"
+    const unsubStaff = onSnapshot(query(collection(db, 'personnel'), where('companyId', '==', currentCompany.id)), (snapshot) => {
+      setStaffList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff)));
+    });
     const unsubTasks = onSnapshot(query(collection(db, 'tasks'), where('companyId', '==', currentCompany.id)), (snapshot) => {
       setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
     });
@@ -195,6 +164,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
       setProjectsList(snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name })));
     });
     return () => { 
+      unsubStaff(); 
       unsubTasks(); 
       unsubLeave();
       unsubTime();
@@ -257,54 +227,28 @@ export default function PersonnelModule({ user }: { user?: any }) {
       const cleanEmail = newStaff.email.trim().toLowerCase().replace(/\s+/g, '');
       const cleanPhone = normalizePhoneNumber(newStaff.phone.trim());
       
-      // 1. SUPABASE RELATIONAL SYNC (Single Source of Truth for Affiliations)
-      const { getSupabase } = await import('../lib/supabase');
-      const sb = getSupabase();
-      if (sb) {
-        try {
-          // A. Ensure user exists in Supabase
-          const { data: uData, error: uError } = await sb.from('users').select('id').eq('email', cleanEmail).maybeSingle();
-          let finalUserId = uData?.id;
-
-          if (!finalUserId) {
-            const { data: newUser, error: createError } = await sb.from('users').insert({
-              email: cleanEmail,
-              full_name: fullName,
-              phone: cleanPhone,
-            }).select('id').single();
-            if (!createError) finalUserId = newUser.id;
-          }
-
-          // B. Get role ID
-          const { data: rData } = await sb.from('roles').select('id').eq('name', newStaff.role || 'Personnel').maybeSingle();
-          
-          // C. Upsert affiliation
-          if (finalUserId) {
-            await sb.from('company_members').upsert({
-              user_id: finalUserId,
-              company_id: currentCompany.id,
-              role_id: rData?.id,
-              status: 'active'
-            }, { onConflict: 'user_id, company_id' });
-            console.log("Nexus Talent: Relational affiliation synchronized.");
-          }
-        } catch (sbErr) {
-          console.warn("Supabase sync failed, continuing with Firestore:", sbErr);
-        }
-      }
-
-      // 2. FIRESTORE REAL-TIME SYNC (Optional, for notifications/chat metadata)
       if (editingStaff) {
-        // Just update real-time specific fields if needed
-        await updateDoc(doc(db, 'personnel', editingStaff.email), {
+        const oldEmail = editingStaff.email.trim().toLowerCase().replace(/\s+/g, '');
+        
+        // If email changed, we need to update the memberEmails array in the company doc
+        if (cleanEmail !== oldEmail) {
+          await updateDoc(doc(db, 'companies', currentCompany.id), {
+            memberEmails: arrayUnion(cleanEmail),
+            updatedAt: serverTimestamp()
+          });
+        }
+
+        await updateDoc(doc(db, 'personnel', editingStaff.id), {
           firstName,
           lastName,
           name: fullName,
           email: cleanEmail,
           phone: cleanPhone,
+          notes: newStaff.notes,
+          role: newStaff.role,
+          department: newStaff.department,
           updatedAt: serverTimestamp()
-        }).catch(() => {}); // If no document exists in Firestore, ignore
-        
+        });
         setCreationMessage('Profil mis à jour.');
         setTimeout(() => {
           setIsAdding(false);
@@ -312,17 +256,41 @@ export default function PersonnelModule({ user }: { user?: any }) {
           setCreationMessage('');
         }, 1500);
       } else {
-        // Optional: create a real-time entry in Firestore if you need it for chat/presence
         const staffRef = doc(db, 'personnel', cleanEmail);
         await setDoc(staffRef, {
+          firstName,
+          lastName,
           name: fullName,
           email: cleanEmail,
+          phone: cleanPhone,
+          notes: newStaff.notes,
+          role: newStaff.role,
+          department: newStaff.department,
           companyId: currentCompany.id,
           status: 'active',
+          tasksAssignedCount: 0,
           createdAt: serverTimestamp()
-        }, { merge: true }).catch(() => {});
+        });
 
-        setCreationMessage(`Employé ajouté avec succès via Nexus Cloud !`);
+        // Create Ghost Profile for global visibility & Auto-Sync
+        try {
+          const ghostUserRef = doc(db, 'users', cleanEmail);
+          await setDoc(ghostUserRef, {
+            email: cleanEmail,
+            displayName: fullName,
+            status: 'invited',
+            invitationDate: serverTimestamp(),
+            role: newStaff.role,
+            phone: cleanPhone
+          }, { merge: true });
+        } catch (ghostErr) {
+          console.warn("Ghost profile creation skipped:", ghostErr);
+        }
+
+        await updateDoc(doc(db, 'companies', currentCompany.id), {
+          memberEmails: arrayUnion(cleanEmail)
+        });
+        setCreationMessage(`Employé ajouté avec succès ! Il peut désormais se connecter avec l'adresse : ${cleanEmail}`);
         setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général' });
       }
     } catch (err: any) {
