@@ -130,6 +130,8 @@ function SkeletonCard() {
   );
 }
 
+import { useNexusStore } from './lib/store';
+
 function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], user: User, onSelect: any }) {
   const [mode, setMode] = useState<'select' | 'create' | 'join'>('select');
   const [newCompanyName, setNewCompanyName] = useState('');
@@ -138,14 +140,42 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
   const [errorMsg, setErrorMsg] = useState('');
   const { currentCompany, joinCompany, createCompany } = useCompany();
 
+  const handleSelect = async (company: any) => {
+    setSubmitting(true);
+    setErrorMsg('');
+    try {
+      const store = useNexusStore.getState();
+      const result = await store.validateCompanyAccess(company.id);
+      
+      if (result.authorized && result.company) {
+         // Update the store's companies list if this is a master admin switching dynamically
+         const isMissing = !store.companies.find(c => c.id === company.id);
+         if (isMissing) {
+            console.log('[ACCESS VALIDATION] Synchronizing missing company to local store cache.');
+            const newCompany = { ...result.company, role: result.role, permissions: result.permissions } as any;
+            store.setCompanies([...store.companies, newCompany]);
+         }
+         onSelect(company);
+      } else {
+         setErrorMsg(`Accès refusé pour ${company.name}`);
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("Erreur réseau de validation.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     if (!user || !companies.length || currentCompany) return; 
     const savedId = localStorage.getItem('nexus_company_id') || localStorage.getItem('nexus_last_company_id');
+    // For single company, auto-select
     if (companies.length === 1) {
-      onSelect(companies[0]);
+      handleSelect(companies[0]);
     } else if (savedId) {
       const found = companies.find(c => c.id === savedId);
-      if (found) onSelect(found);
+      if (found) handleSelect(found);
     }
   }, [companies, user, currentCompany]);
 
@@ -168,9 +198,19 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
         <AnimatePresence mode="wait">
           {mode === 'select' && (
             <motion.div key="select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+              {errorMsg && (
+                <div className="p-4 bg-nexus-danger/10 border border-nexus-danger/20 rounded-xl text-center">
+                  <p className="text-xs font-bold text-nexus-danger uppercase tracking-widest">{errorMsg}</p>
+                </div>
+              )}
+              {submitting && (
+                <div className="flex justify-center p-4">
+                  <div className="text-[10px] font-black text-nexus-primary uppercase tracking-widest animate-pulse">Validation Supabase en cours...</div>
+                </div>
+              )}
               <div className="grid gap-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
-                {companies.map((c) => (
-                  <Card key={c.id} className="p-6 cursor-pointer group flex items-center justify-between hover:border-nexus-primary transition-all bg-surface/50 backdrop-blur-md" onClick={() => onSelect(c)}>
+                {!submitting && companies.map((c) => (
+                  <Card key={c.id} className="p-6 cursor-pointer group flex items-center justify-between hover:border-nexus-primary transition-all bg-surface/50 backdrop-blur-md" onClick={() => handleSelect(c)}>
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 bg-nexus-primary/10 rounded-2xl flex items-center justify-center text-nexus-primary font-black text-xl group-hover:bg-nexus-primary group-hover:text-white transition-all shadow-inner">
                         {c.name.charAt(0).toUpperCase()}
@@ -185,17 +225,19 @@ function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], us
                     <ChevronRight className="text-text-muted group-hover:translate-x-1 transition-transform" />
                   </Card>
                 ))}
-                {companies.length === 0 && (
+                {!submitting && companies.length === 0 && (
                   <div className="py-12 text-center text-text-muted opacity-50 space-y-4">
                     <p className="font-black uppercase tracking-widest text-xs">Aucun espace rattaché</p>
                     <p className="text-[10px] italic">Utilisez un code ou créez votre entreprise pour commencer.</p>
                   </div>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <Button variant="secondary" onClick={() => setMode('join')} leftIcon={<Users size={16} />}>REJOINDRE</Button>
-                <Button onClick={() => setMode('create')} leftIcon={<Plus size={16} />}>CRÉER</Button>
-              </div>
+              {!submitting && (
+                <div className="grid grid-cols-2 gap-4 pt-4">
+                  <Button variant="secondary" onClick={() => setMode('join')} leftIcon={<Users size={16} />}>REJOINDRE</Button>
+                  <Button onClick={() => setMode('create')} leftIcon={<Plus size={16} />}>CRÉER</Button>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -755,7 +797,11 @@ export default function App() {
                    <p className="text-[10px] text-amber-400 font-medium leading-relaxed">La synchronisation prend plus de temps que prévu. Vérifiez votre connexion Nexus.</p>
                 </div>
                 <button 
-                  onClick={() => window.location.reload()}
+                  onClick={() => {
+                     const store = useNexusStore.getState();
+                     store.refreshAffiliations();
+                     setSlowLoading(false);
+                  }}
                   className="w-full py-3 bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-white rounded-xl transition-all border border-white/5"
                 >
                    Forcer la Synchronisation

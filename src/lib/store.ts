@@ -29,6 +29,11 @@ interface NexusState {
   loading: boolean;
   initialized: boolean;
   
+  // New States
+  authLoaded: boolean;
+  profileLoaded: boolean;
+  companiesLoaded: boolean;
+  
   // Actions
   setCurrentCompany: (company: Company | null) => Promise<void>;
   setCompanies: (companies: Company[]) => void;
@@ -38,6 +43,7 @@ interface NexusState {
   initNexus: () => Promise<void>;
   refreshAffiliations: () => Promise<void>;
   clearSession: () => void;
+  validateCompanyAccess: (companyId: string) => Promise<{ authorized: boolean, role?: string, permissions?: string[], company?: Company }>;
 }
 
 export const MASTER_EMAILS = [
@@ -56,9 +62,101 @@ export const useNexusStore = create<NexusState>()(
       isMaster: false,
       loading: false,
       initialized: false,
+      authLoaded: false,
+      profileLoaded: false,
+      companiesLoaded: false,
 
       setLoading: (loading) => set({ loading }),
       setCompanies: (companies) => set({ companies }),
+
+      validateCompanyAccess: async (companyId: string) => {
+        const { isMaster, userProfile } = get();
+        console.group('[ACCESS VALIDATION]');
+        console.log('User ID:', userProfile?.id || userProfile?.uid);
+        console.log('Company ID:', companyId);
+        console.log('Is Master:', isMaster);
+        
+        const sb = getSupabase();
+        let companyData = null;
+        
+        try {
+           // Get company details
+           if (sb) {
+             const { data: comp } = await sb.from('companies').select('*').eq('id', companyId).maybeSingle();
+             companyData = comp;
+           } else {
+             const compSnap = await getDocs(query(collection(db, 'companies'), where('id', '==', companyId)));
+             if (!compSnap.empty) {
+               companyData = { id: compSnap.docs[0].id, ...compSnap.docs[0].data() };
+             }
+           }
+
+           if (!companyData) {
+             console.log('Result: Company not found');
+             console.groupEnd();
+             return { authorized: false };
+           }
+
+           if (isMaster) {
+             console.log('Result: Authorized via Master Bypass');
+             console.groupEnd();
+             return { authorized: true, role: 'OWNER', permissions: ['*'], company: companyData as Company };
+           }
+
+           // Check Supabase first
+           if (sb && userProfile?.id) {
+             const { data: memberships } = await sb
+               .from('company_members')
+               .select(`
+                 status,
+                 permissions,
+                 roles (name)
+               `)
+               .eq('user_id', userProfile.id)
+               .eq('company_id', companyId)
+               .eq('status', 'active');
+
+             if (memberships && memberships.length > 0) {
+               const m = memberships[0];
+               console.log('Result: Authorized via company_members');
+               console.groupEnd();
+               return { 
+                 authorized: true, 
+                 role: (m.roles as any)?.name || 'Personnel', 
+                 permissions: m.permissions, 
+                 company: companyData as Company 
+               };
+             }
+           }
+
+           // Check Firebase fallback
+           const fbUser = auth.currentUser;
+           if (fbUser?.email) {
+             const personnelRef = query(collection(db, 'personnel'), where('email', '==', fbUser.email.trim().toLowerCase()), where('companyId', '==', companyId), where('status', '==', 'active'));
+             const personnelSnap = await getDocs(personnelRef);
+             
+             if (!personnelSnap.empty) {
+               const pData = personnelSnap.docs[0].data();
+               console.log('Result: Authorized via personnel (Firebase)');
+               console.groupEnd();
+               return { 
+                 authorized: true, 
+                 role: pData.role || 'Personnel', 
+                 permissions: pData.permissions || [], 
+                 company: companyData as Company 
+               };
+             }
+           }
+           
+           console.log('Result: Unauthorized');
+           console.groupEnd();
+           return { authorized: false };
+        } catch (err) {
+           console.error('Validation error:', err);
+           console.groupEnd();
+           return { authorized: false };
+        }
+      },
 
       setCurrentCompany: async (company) => {
         set({ currentCompany: company });
@@ -86,7 +184,7 @@ export const useNexusStore = create<NexusState>()(
         const firebaseUser = auth.currentUser;
         if (!firebaseUser) return;
         
-        set({ loading: true });
+        set({ loading: true, authLoaded: true });
         const cleanEmail = firebaseUser.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
         const sb = getSupabase();
         
@@ -128,6 +226,8 @@ export const useNexusStore = create<NexusState>()(
                 }).select().single();
                 userData = newProfile;
               }
+              
+              set({ profileLoaded: true });
 
               if (isMaster) {
                 // MASTER BYPASS: Fetch ALL companies
@@ -210,6 +310,8 @@ export const useNexusStore = create<NexusState>()(
                 userData = userSnap.docs[0].data();
                 userData.id = userSnap.docs[0].id;
               }
+              
+              set({ profileLoaded: true });
 
               if (isMaster) {
                  const companiesSnap = await getDocs(collection(db, 'companies'));
@@ -302,6 +404,7 @@ export const useNexusStore = create<NexusState>()(
 
             set({ 
               companies: mappedCompanies, 
+              companiesLoaded: true,
               initialized: true 
             });
 
@@ -334,6 +437,7 @@ export const useNexusStore = create<NexusState>()(
             console.warn(`Nexus Recovery: Attempt ${attempts} failed.`, err);
             if (attempts >= maxAttempts) {
                console.error("Nexus Recovery: Max retries reached. System in degraded mode.");
+               set({ companiesLoaded: true, initialized: true }); // Prevent infinite spinners on crash
             } else {
                await new Promise(resolve => setTimeout(resolve, 1000 * attempts)); // Backoff
             }
