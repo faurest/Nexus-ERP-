@@ -84,18 +84,22 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         
         // Helper to get user internal ID mapping safely
         const getInternalId = async () => {
-          // Attempt UID lookup first (if column exists)
-          try {
-            const { data, error } = await sb.from('users').select('id, firebase_uid').eq('firebase_uid', user.uid).maybeSingle();
-            if (!error && data) return data;
-            
-            // If column error or not found, try email
-            if (error?.message.includes('firebase_uid') || !data) {
-               const { data: emailData } = await sb.from('users').select('id, firebase_uid').eq('email', cleanEmail).maybeSingle();
-               return emailData;
+          let retries = 3;
+          while (retries > 0) {
+            try {
+              const { data, error } = await sb.from('users').select('id, firebase_uid').eq('firebase_uid', user.uid).maybeSingle();
+              if (!error && data) return data;
+              
+              if (error?.message.includes('firebase_uid') || !data) {
+                 const { data: emailData } = await sb.from('users').select('id, firebase_uid').eq('email', cleanEmail).maybeSingle();
+                 if (emailData) return emailData;
+              }
+            } catch (e) {
+              const { data: emailData } = await sb.from('users').select('id').eq('email', cleanEmail).maybeSingle();
+              if (emailData) return emailData;
             }
-          } catch (e) {
-            return (await sb.from('users').select('id').eq('email', cleanEmail).maybeSingle()).data;
+            await new Promise(res => setTimeout(res, 800)); // wait for syncUserProfile
+            retries--;
           }
           return null;
         };
@@ -133,18 +137,20 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
             .eq('status', 'active');
 
           if (membershipData && !sbError) {
-            supabaseCompanies = membershipData.map((m: any) => ({
-              ...m.companies,
-              id: m.companies.id,
-              ownerId: m.companies.owner_id,
-              ownerEmail: m.companies.owner_email,
-              logoUrl: m.companies.logo_url,
-              company_members: [{ 
-                role: m.roles?.name || 'Personnel', 
-                status: m.status,
-                hierarchy: m.roles?.hierarchy_level 
-              }]
-            }));
+            supabaseCompanies = membershipData
+              .filter((m: any) => m.companies)
+              .map((m: any) => ({
+                ...m.companies,
+                id: m.companies.id,
+                ownerId: m.companies.owner_id,
+                ownerEmail: m.companies.owner_email,
+                logoUrl: m.companies.logo_url,
+                company_members: [{ 
+                  role: m.roles?.name || 'Personnel', 
+                  status: m.status,
+                  hierarchy: m.roles?.hierarchy_level 
+                }]
+              }));
             console.log("Nexus Hub: Supabase detected", supabaseCompanies.length, "tenants.");
           }
 
