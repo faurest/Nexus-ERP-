@@ -50,6 +50,8 @@ const PrestationsModule = React.lazy(() => import('./components/PrestationsModul
 const EcommerceModule = React.lazy(() => import('./components/EcommerceModule'));
 const CollaborationModule = React.lazy(() => import('./components/CollaborationModule'));
 const GuideModule = React.lazy(() => import('./components/GuideModule'));
+const MarketplaceAdminModule = React.lazy(() => import('./components/MarketplaceAdminModule'));
+const Marketplace = React.lazy(() => import('./components/Marketplace'));
 import ContextualHelp from './components/ContextualHelp';
 import NotificationBell from './components/NotificationBell';
 import CriticalNotificationOverlay from './components/CriticalNotificationOverlay';
@@ -1206,9 +1208,10 @@ export default function App() {
     { id: 'collaboration', label: 'Collaboration & Comm', icon: Handshake },
     { id: 'accounting', label: 'Comptabilité & Finance', icon: Calculator },
     { id: 'guide', label: 'Guide & Performance', icon: BookOpen },
-    ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
+    ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield },
+      ...(isGlobalAdmin ? [{ id: 'market_admin', label: 'Admin Marketplace', icon: Shield }] : [])] : []),
   ].filter(item => {
-    if (item.id === 'admin') return isGlobalAdmin;
+    if (item.id === 'admin' || item.id === 'market_admin') return isGlobalAdmin;
     if (item.id === 'dashboard') return true;
     if (permissions.includes('*')) return true;
     
@@ -1483,6 +1486,7 @@ export default function App() {
               {activeTab === 'collaboration' && <CollaborationModule />}
               {activeTab === 'guide' && <GuideModule />}
               {activeTab === 'admin' && <AdminModule />}
+              {activeTab === 'market_admin' && <MarketplaceAdminModule />}
             </Suspense>
           </div>
         </div>

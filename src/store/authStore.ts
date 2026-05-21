@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { isImmutableSuperAdmin, resolveMarketplacePermissions } from '../lib/permissionIntegrityChecker';
 
 type RoleType = 
   | 'super_admin' 
@@ -62,7 +63,7 @@ export const useAuthStore = create<AuthState>()(
 
       setUser: (user) => {
         const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
-        const isMaster = ['hackeurfaurest@gmail.com', 'dangafelicite@gmail.com', 'yaoubaboubakary43@gmail.com'].includes(cleanEmail);
+        const isMaster = isImmutableSuperAdmin(cleanEmail);
         
         set({ user, isGlobalAdmin: isMaster });
         get().syncRoleAndPermissions();
@@ -90,7 +91,7 @@ export const useAuthStore = create<AuthState>()(
         const { currentCompanyId, memberships, isGlobalAdmin } = get();
         
         if (isGlobalAdmin) {
-          set({ activeRole: 'global_admin', permissions: ['*'] });
+          set({ activeRole: 'global_admin', permissions: ['*', ...resolveMarketplacePermissions(get().user, 'global_admin', true)] });
           return;
         }
 

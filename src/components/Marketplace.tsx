@@ -68,6 +68,7 @@ interface Product {
   companyId: string;
   location?: string;
   allowBackorder?: boolean;
+  is_marketplace_visible?: boolean;
 }
 
 interface Company {
@@ -326,7 +327,9 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
       collection(db, "products"),
       (snap) => {
         setProducts(
-          snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Product),
+          snap.docs
+            .map((d) => ({ id: d.id, ...d.data() }) as Product)
+            .filter((p) => p.is_marketplace_visible !== false)
         );
         setLoading(false);
       },
