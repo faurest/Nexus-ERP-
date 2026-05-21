@@ -251,7 +251,8 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
     }
   };
 
-  const role = user?.role || 'Directeur';
+  const { isGlobalAdmin, activeRole } = useAuthStore();
+  const role = isGlobalAdmin ? 'owner' : (activeRole || user?.role || 'Directeur');
 
   // Determine if it's a newly created enterprise (< 1 day)
   const isNewEnterprise = currentCompany?.createdAt && (Date.now() - new Date(currentCompany.createdAt).getTime()) < 24 * 60 * 60 * 1000;

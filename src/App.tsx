@@ -152,7 +152,7 @@ function WorkspaceSelector({ companies, user, profile, onSelect }: { companies: 
 
   const ownedCompanies = companies.filter(c => {
     const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
-    return c.ownerId === user?.uid || (cOwnerEmail && cOwnerEmail === cleanEmail);
+    return isGlobalAdmin || c.ownerId === user?.uid || (cOwnerEmail && cOwnerEmail === cleanEmail);
   });
   const joinedCompanies = companies.filter(c => {
     const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
@@ -434,7 +434,7 @@ function WorkspaceSelector({ companies, user, profile, onSelect }: { companies: 
                          <div className="relative z-10">
                             <div className="flex items-center gap-2 mb-2">
                                <h3 className="text-2xl font-black text-white italic tracking-tighter group-hover:text-blue-400 transition-colors uppercase truncate">{c.name}</h3>
-                               {c.ownerId === user.uid || (c.ownerEmail && c.ownerEmail === cleanEmail) ? (
+                               {isGlobalAdmin || c.ownerId === user.uid || (c.ownerEmail && c.ownerEmail === cleanEmail) ? (
                                  <span className="shrink-0 px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded-md text-[7px] font-black text-blue-400 uppercase tracking-widest">Master</span>
                                ) : (
                                  <span className="shrink-0 px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded-md text-[7px] font-black text-emerald-400 uppercase tracking-widest">Staff</span>
@@ -450,7 +450,7 @@ function WorkspaceSelector({ companies, user, profile, onSelect }: { companies: 
                                <div className="bg-white/5 p-3 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
                                   <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Privilèges</span>
                                   <span className="block text-sm font-black text-white truncate italic">
-                                    {c.company_members?.[0]?.role || (c.ownerId === user.uid ? 'Propriétaire' : 'Collaborateur')}
+                                    {isGlobalAdmin ? 'Global Admin' : (c.company_members?.[0]?.role || (c.ownerId === user.uid ? 'Propriétaire' : 'Collaborateur'))}
                                   </span>
                                </div>
                                <div className="bg-white/5 p-3 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">

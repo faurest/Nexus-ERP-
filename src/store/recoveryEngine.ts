@@ -2,6 +2,7 @@ import { auth, onAuthStateChanged } from '../lib/firebase';
 import { getSupabase } from '../lib/supabase';
 import { useAuthStore } from './authStore';
 import { isImmutableSuperAdmin } from '../lib/permissionIntegrityChecker';
+import { repairGlobalAdminMemberships } from '../lib/globalAdminMembershipRepair';
 
 export class NexusRecoveryEngine {
   private static isRecovering = false;
@@ -92,7 +93,10 @@ export class NexusRecoveryEngine {
         // Fix global admin missing memberships
         const hasGlobalRights = store.isGlobalAdmin || isImmutableSuperAdmin(user.email);
         if (hasGlobalRights) {
-           console.warn("[Nexus Recovery] Global Admin without local memberships detected. Fetching all available instances...");
+           console.warn('[Nexus Recovery] Global Admin without local memberships detected. Fetching all available instances...');
+           repairGlobalAdminMemberships(sb, profile, cleanEmail).then(() => {
+               // Optional: trigger re-fetch of memberships here to replace virtual ones with real DB ones
+           }); // Discrète, background sync
            const { data: allCompanies } = await sb.from('companies').select('*');
            
            if (allCompanies) {
