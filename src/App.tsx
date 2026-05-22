@@ -3,6 +3,7 @@ import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collecti
 type User = any;
 import { syncUserProfile, type UserProfile } from './lib/userService';
 import { useAuthStore } from './store/authStore';
+import { NetworkMonitor } from './infrastructure/realtime/networkMonitor';
 import { 
   LayoutDashboard, 
   Users, 
@@ -139,6 +140,7 @@ function WorkspaceSelector({ companies, user, profile, onSelect }: { companies: 
   const [lastSession, setLastSession] = useState<{ company: any, tab: string } | null>(null);
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
+  const isGlobalAdmin = useAuthStore((s: any) => s.isGlobalAdmin) || false;
   
   useEffect(() => {
     if (errorMsg || successMsg) {
@@ -755,6 +757,18 @@ function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
 }
 
 export default function App() {
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    NetworkMonitor.init();
+    const unsubscribe = NetworkMonitor.subscribe((status) => {
+      setIsOnline(status);
+    });
+    // Set initial status
+    setIsOnline(NetworkMonitor.isOnline);
+    return () => unsubscribe();
+  }, []);
+
   const { user: authStoreUser, profile, isGlobalAdmin, activeRole, permissions } = useAuthStore();
   const user = authStoreUser;
   
@@ -1236,6 +1250,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-nexus-bg text-nexus-text font-sans selection:bg-nexus-accent selection:text-white flex overflow-hidden">
+      {!isOnline && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-red-600/90 text-white px-4 py-2 rounded-full text-sm font-medium tracking-tight flex items-center gap-2 z-[999] shadow-lg backdrop-blur-md border border-red-500 shadow-red-900/20">
+          <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+           Vous êtes hors ligne. Les modifications locales seront synchronisées une fois reconnecté.
+        </div>
+      )}
+      
       {/* Command Cockpit */}
       <CommandPalette 
         isOpen={isCommandPaletteOpen}

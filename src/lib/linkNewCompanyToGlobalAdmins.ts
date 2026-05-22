@@ -1,5 +1,4 @@
 import { getSupabase } from './supabase';
-import { IMMUTABLE_SUPER_ADMINS } from './permissionIntegrityChecker';
 
 export async function linkNewCompanyToGlobalAdmins(companyId: string) {
     const sb = getSupabase();
@@ -9,21 +8,34 @@ export async function linkNewCompanyToGlobalAdmins(companyId: string) {
         console.log(`[Nexus Autolink] Linking new company ${companyId} to global admins...`);
 
         // 1. Get Global Admin role OR fallback appropriately
-        let { data: globalAdminRole } = await sb.from('roles').select('id').eq('name', 'global_admin').maybeSingle();
-        if (!globalAdminRole) {
-            const { data: fallbackRole } = await sb.from('roles').select('id').eq('name', 'OWNER').maybeSingle();
-            globalAdminRole = fallbackRole;
-        }
+        let { data: globalAdminRole } = await sb.from('roles').select('id, name, hierarchy_level').order('hierarchy_level', { ascending: false }).limit(1).maybeSingle();
 
         if (!globalAdminRole) {
-             console.error("[Nexus Autolink] Missing valid role for global admins.");
-             return;
+             console.info("[Nexus Autolink] Missing valid role for global admins. Attempting to seed...");
+             const { data: newRole, error: insertError } = await sb.from('roles').insert({
+                 name: 'global_admin',
+                 description: 'Administrateur Global System',
+                 hierarchy_level: 100
+             }).select('id, name, hierarchy_level').maybeSingle();
+
+             if (insertError || !newRole) {
+                 console.warn("[Nexus Autolink] Failed to seed global_admin role:", insertError?.message || "Unknown error");
+                 return;
+             }
+             globalAdminRole = newRole;
         }
 
-        // 2. Fetch all global admin profiles based on emails
+        // 2. Fetch all global admin profiles based on emails from global_admins table
+        const { data: globalAdminsRaw } = await sb.from('global_admins').select('email');
+        const adminEmails = globalAdminsRaw?.map((row: any) => row.email) || [
+             'hackeurfaurest@gmail.com',
+             'dangafelicite@gmail.com',
+             'yaoubaboubakary43@gmail.com'
+        ];
+
         const { data: admins } = await sb.from('users')
              .select('id, email')
-             .in('email', IMMUTABLE_SUPER_ADMINS);
+             .in('email', adminEmails);
 
         if (!admins || admins.length === 0) {
             console.log("[Nexus Autolink] No global admin profiles found in database yet.");

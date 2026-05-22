@@ -56,6 +56,7 @@ import { cn } from "../lib/utils";
 import { createNotification } from "../lib/notifications";
 import { AIService } from "../services/aiService";
 import AIAssistant from "./AIAssistant";
+import { marketplaceApi } from '../api/marketplace.api';
 
 interface Product {
   id: string;
@@ -482,121 +483,59 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     try {
       setSubmitting(true);
       
-      // Calculate total with exactly the delivery fees for each unique vendor
-      const uniqueCompanyIds = Array.from(new Set(cart.map(i => i.companyId)));
-      const totalDeliveryFees = uniqueCompanyIds.reduce((acc, cid) => {
-        const company = companies.find(c => c.id === cid);
-        return acc + (company?.deliveryFees?.[selectedLocation] || 0);
-      }, 0);
-      const grandTotal = cartTotal + totalDeliveryFees;
+      const payload = {
+        cart,
+        companies,
+        checkoutData,
+        selectedLocation,
+        selectedPaymentMethod,
+        paymentOperator
+      };
+      
+      const checkoutResult: any = await marketplaceApi.processMarketplaceCheckout(payload);
+      
+      if (!checkoutResult.success) {
+        throw new Error(checkoutResult.error || "Une erreur est survenue lors du paiement.");
+      }
+      
+      setGlobalOrderId(checkoutResult.globalOrderId);
 
-      // 1. Create a Global Order first
-      const globalOrderRef = await addDoc(collection(db, "global_orders"), {
-        total: grandTotal,
-        status: "PENDING",
-        paymentMethod: selectedPaymentMethod === 'CASH' ? 'CASH' : (paymentOperator === 'MTN' ? 'MTN MoMo' : 'Orange Money'),
-        paymentStatus: selectedPaymentMethod === 'CASH' ? "UNPAID" : "PENDING_MOMO",
-        customerName: checkoutData.name,
-        customerPhone: checkoutData.phone,
-        customerQuartier: checkoutData.quartier,
-        customerEmail: "Marketplace Multi-Vendor",
-        createdAt: serverTimestamp(),
-        subOrderIds: [] 
-      });
+       // Save to guest orders for tracking
+       const existingGuestOrders = JSON.parse(localStorage.getItem('nexus_guest_orders') || '[]');
+       const newIds = [...existingGuestOrders, ...(checkoutResult.subOrderIds || [])];
+       localStorage.setItem('nexus_guest_orders', JSON.stringify(newIds));
+       setOrderIds(newIds);
 
-      setGlobalOrderId(globalOrderRef.id);
-
-      // Group items by companyId
-      const ordersByCompany: Record<string, CartItem[]> = {};
-      cart.forEach((item) => {
-        if (!ordersByCompany[item.companyId]) {
-          ordersByCompany[item.companyId] = [];
-        }
-        ordersByCompany[item.companyId].push(item);
-      });
-
-      // Create an order for each company
-      const orderPromises = Object.entries(ordersByCompany).map(
-        async ([companyId, items]) => {
+      // Create an order for each company to handle notifications
+      const orderPromises = (checkoutResult.companyOrderIds || []).map(
+        async (co: any) => {
+          const companyId = co.companyId;
+          const orderRefId = co.orderId;
           const company = companies.find((c) => c.id === companyId);
-          const companyTotal = items.reduce(
-            (acc, item) => acc + item.price * item.cartQuantity,
-            0,
-          );
           
-          let deliveryFee = 0;
-          if (company?.deliveryFees && selectedLocation) {
-            deliveryFee = company.deliveryFees[selectedLocation] || 0;
-          }
-          
-          const orderRef = await addDoc(collection(db, "ecommerce_orders"), {
-            companyId,
-            globalOrderId: globalOrderRef.id,
-            items: items.map((item) => ({
-              id: item.id,
-              name: item.name,
-              price: item.price,
-              quantity: item.cartQuantity,
-            })),
-            total: companyTotal + deliveryFee,
-            deliveryFee,
-            deliveryLocation: selectedLocation,
-            status: "PENDING",
-            paymentStatus: selectedPaymentMethod === 'CASH' ? "UNPAID" : "PENDING_MOMO",
-            paymentMethod: selectedPaymentMethod === 'CASH' ? 'CASH' : (paymentOperator === 'MTN' ? 'MTN MoMo' : 'Orange Money'),
-            operator: paymentOperator,
-            date: serverTimestamp(),
-            checkoutSource: "MARKETPLACE",
-            customerName: checkoutData.name,
-            customerPhone: checkoutData.phone,
-            customerQuartier: checkoutData.quartier,
-            customerEmail: "Marketplace Multi-Vendor",
-          });
-
-          // Update Global Order with sub-order ID
-          const { arrayUnion } = await import("firebase/firestore");
-          await updateDoc(doc(db, "global_orders", globalOrderRef.id), {
-            subOrderIds: arrayUnion(orderRef.id)
-          });
-
-          // Deduct Stock immediately (Reservation) & Increment soldCount
-          for (const item of items) {
-             const productRef = doc(db, "products", item.id);
-             const { increment } = await import("firebase/firestore");
-             await updateDoc(productRef, {
-               stock: increment(-item.cartQuantity),
-               soldCount: increment(item.cartQuantity)
-             });
-          }
-
-          // Save to guest orders for tracking
-          const existingGuestOrders = JSON.parse(localStorage.getItem('nexus_guest_orders') || '[]');
-          const newIds = [...existingGuestOrders, orderRef.id];
-          localStorage.setItem('nexus_guest_orders', JSON.stringify(newIds));
-          setOrderIds(newIds);
-
           // If Mobile Money, simulate the push delay
           if (selectedPaymentMethod === 'MOMO') {
             await new Promise(resolve => setTimeout(resolve, 6000));
             // Check if order was cancelled while waiting
             try {
-              const { getDoc } = await import("firebase/firestore");
-              const freshSnap = await getDoc(doc(db, "ecommerce_orders", orderRef.id));
+              const { getDoc, doc } = await import("firebase/firestore");
+              const freshSnap = await getDoc(doc(db, "ecommerce_orders", orderRefId));
               if (freshSnap.exists() && freshSnap.data()?.status === "CANCELLED_BY_CUSTOMER") {
                 console.log("Order was cancelled by user during MOMO wait, stopping processing.");
                 return;
               }
             } catch (e) {
-              console.error("Error checking order status during wait:", e);
+              console.error("MOMO verify polling error", e);
             }
 
-            await updateDoc(doc(db, "ecommerce_orders", orderRef.id), {
+            const { doc, updateDoc } = await import("firebase/firestore");
+            await updateDoc(doc(db, "ecommerce_orders", orderRefId), {
               paymentStatus: "PAID",
               status: "PROCESSING"
             });
 
             // Also update Global Order status if all sub-orders are paid (simplified here)
-            await updateDoc(doc(db, "global_orders", globalOrderRef.id), {
+            await updateDoc(doc(db, "global_orders", checkoutResult.globalOrderId), {
                paymentStatus: "PAID"
             });
           }
@@ -607,7 +546,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               companyId,
               [company.ownerId],
               selectedPaymentMethod === 'CASH' ? "Nouvelle Commande (Cash sur place)" : "Commande Marketplace Payée !",
-              `${checkoutData.name} a passé une commande de ${(companyTotal + deliveryFee).toLocaleString()} FCFA. Paiement: ${selectedPaymentMethod === 'CASH' ? 'Espèces' : paymentOperator}.`,
+              `${checkoutData.name} a passé une commande. Paiement: ${selectedPaymentMethod === 'CASH' ? 'Espèces' : paymentOperator}.`,
               "alert"
             );
           }

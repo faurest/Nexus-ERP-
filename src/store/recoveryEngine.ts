@@ -1,7 +1,7 @@
 import { auth, onAuthStateChanged } from '../lib/firebase';
 import { getSupabase } from '../lib/supabase';
 import { useAuthStore } from './authStore';
-import { isImmutableSuperAdmin } from '../lib/permissionIntegrityChecker';
+import { isGlobalAdminAsync } from '../lib/permissionIntegrityChecker';
 import { repairGlobalAdminMemberships } from '../lib/globalAdminMembershipRepair';
 
 export class NexusRecoveryEngine {
@@ -90,17 +90,22 @@ export class NexusRecoveryEngine {
           .eq('user_id', profile.id)
           .eq('status', 'active');
 
+        // Evaluate global admin async
+        const hasGlobalRights = await isGlobalAdminAsync(cleanEmail);
+        useAuthStore.setState({ isGlobalAdmin: hasGlobalRights });
+
         // Fix global admin missing memberships
-        const hasGlobalRights = store.isGlobalAdmin || isImmutableSuperAdmin(user.email);
         if (hasGlobalRights) {
-           console.warn('[Nexus Recovery] Global Admin without local memberships detected. Fetching all available instances...');
+           console.warn('[Nexus Recovery] Global Admin async hydration...');
            repairGlobalAdminMemberships(sb, profile, cleanEmail).then(() => {
                // Optional: trigger re-fetch of memberships here to replace virtual ones with real DB ones
            }); // Discrète, background sync
-           const { data: allCompanies } = await sb.from('companies').select('*');
            
-           if (allCompanies) {
-             const adminMemberships = allCompanies.map(c => ({
+           // PAGINATED ENTERPRISE LOADING: Do not fetch all companies at once!
+           const { data: popularCompanies } = await sb.from('companies').select('*').order('created_at', { ascending: false }).limit(20);
+           
+           if (popularCompanies) {
+             const adminMemberships = popularCompanies.map(c => ({
                 id: `auto-gen-${c.id}`,
                 company_id: c.id,
                 status: 'active',

@@ -1,43 +1,40 @@
-export const IMMUTABLE_SUPER_ADMINS = [
-  'hackeurfaurest@gmail.com',
-  'dangafelicite@gmail.com',
-  'yaoubaboubakary43@gmail.com'
-];
+import { getSupabase } from './supabase';
 
-export const isImmutableSuperAdmin = (email: string | null | undefined): boolean => {
+export const isGlobalAdminAsync = async (email: string | null | undefined): Promise<boolean> => {
   if (!email) return false;
   const cleanEmail = email.trim().toLowerCase().replace(/\s+/g, '');
-  return IMMUTABLE_SUPER_ADMINS.includes(cleanEmail);
-};
+  
+  const sb = getSupabase();
+  if (!sb) return false;
 
-export const validateGlobalAdminIntegrity = (user: any) => {
-  if (!user) return false;
-  return isImmutableSuperAdmin(user.email);
+  try {
+    const { data } = await sb.from('global_admins').select('email').eq('email', cleanEmail).maybeSingle();
+    return !!data;
+  } catch (e) {
+    // Fallback locally during transition
+    return ['hackeurfaurest@gmail.com', 'dangafelicite@gmail.com', 'yaoubaboubakary43@gmail.com'].includes(cleanEmail);
+  }
 };
 
 export const resolveMarketplacePermissions = (user: any, activeRole: string | null, isGlobalAdmin: boolean): string[] => {
   if (isGlobalAdmin) {
     return [
-      'marketplace.view',
-      'marketplace.sell',
-      'marketplace.buy',
-      'marketplace.manage_orders',
-      'marketplace.manage_products',
-      'marketplace.admin',
-      'marketplace.super_admin'
+      'marketplace.view', 'marketplace.sell', 'marketplace.buy',
+      'marketplace.manage_orders', 'marketplace.manage_products',
+      'marketplace.admin', 'marketplace.super_admin'
     ];
   }
 
-  // Regular tenant permissions based on role
   const permissions = ['marketplace.view', 'marketplace.buy'];
 
-  if (activeRole === 'owner' || activeRole === 'global_admin' || activeRole === 'Administrateur' || activeRole === 'Directeur') {
+  if (['owner', 'global_admin', 'Administrateur', 'Directeur'].includes(activeRole || '')) {
     permissions.push('marketplace.sell', 'marketplace.manage_orders', 'marketplace.manage_products', 'marketplace.admin');
   }
 
-  if (activeRole === 'Commercial' || activeRole === 'Personnel') {
+  if (['Commercial', 'Personnel'].includes(activeRole || '')) {
     permissions.push('marketplace.sell', 'marketplace.manage_orders', 'marketplace.manage_products');
   }
 
   return permissions;
 };
+

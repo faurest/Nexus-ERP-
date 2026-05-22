@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { isImmutableSuperAdmin, resolveMarketplacePermissions } from '../lib/permissionIntegrityChecker';
+import { resolveMarketplacePermissions } from '../lib/permissionIntegrityChecker';
+import { PermissionService } from '../domains/permissions/permissions.service';
 
 type RoleType = 
   | 'super_admin' 
@@ -36,19 +37,7 @@ interface AuthState {
   canAccessCompany: (companyId: string) => boolean;
 }
 
-// Enterprise default permissions matrix
-const ROLE_PERMISSIONS: Record<string, string[]> = {
-  super_admin: ['*'],
-  global_admin: ['*'],
-  owner: ['*'],
-  admin: ['manage_users', 'manage_settings', 'view_reports', 'manage_billing', 'view_dashboard', 'manage_inventory', 'manage_sales', 'manage_projects'],
-  manager: ['view_reports', 'view_dashboard', 'manage_inventory', 'manage_sales', 'manage_projects'],
-  hr: ['manage_users', 'view_dashboard'],
-  accountant: ['view_reports', 'manage_billing', 'view_dashboard'],
-  employee: ['view_dashboard', 'view_tasks', 'create_reports'],
-  viewer: ['view_dashboard'],
-  Personnel: ['view_dashboard', 'view_tasks', 'create_reports'], // Legacy
-};
+// Deleted ROLE_PERMISSIONS
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -62,10 +51,7 @@ export const useAuthStore = create<AuthState>()(
       permissions: [],
 
       setUser: (user) => {
-        const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
-        const isMaster = isImmutableSuperAdmin(cleanEmail);
-        
-        set({ user, isGlobalAdmin: isMaster });
+        set({ user });
         get().syncRoleAndPermissions();
       },
 
@@ -91,7 +77,8 @@ export const useAuthStore = create<AuthState>()(
         const { currentCompanyId, memberships, isGlobalAdmin } = get();
         
         if (isGlobalAdmin) {
-          set({ activeRole: 'global_admin', permissions: ['*', ...resolveMarketplacePermissions(get().user, 'global_admin', true)] });
+          const basePerms = PermissionService.resolvePermissions('global_admin', true);
+          set({ activeRole: 'global_admin', permissions: [...basePerms, ...resolveMarketplacePermissions(get().user, 'global_admin', true)] });
           return;
         }
 
@@ -104,7 +91,7 @@ export const useAuthStore = create<AuthState>()(
         
         if (activeMembership) {
           // Resolve role from DB, fallback to legacy
-          const roleRaw = activeMembership.role?.name?.toLowerCase() || 'personnel';
+          const roleRaw = activeMembership.roles?.name?.toLowerCase() || activeMembership.role?.name?.toLowerCase() || 'personnel';
           let mappedRole: RoleType = 'Personnel';
           
           if (['super_admin', 'global_admin', 'owner', 'admin', 'manager', 'accountant', 'hr', 'employee', 'viewer'].includes(roleRaw)) {
@@ -119,7 +106,7 @@ export const useAuthStore = create<AuthState>()(
 
           set({ 
             activeRole: mappedRole, 
-            permissions: ROLE_PERMISSIONS[mappedRole] || ROLE_PERMISSIONS['viewer'] 
+            permissions: PermissionService.resolvePermissions(mappedRole, false)
           });
         } else {
           set({ activeRole: null, permissions: [] });
@@ -164,5 +151,5 @@ export const useAuthStore = create<AuthState>()(
 );
 
 export const resolveEffectivePermissions = (role: string): string[] => {
-  return ROLE_PERMISSIONS[role] || [];
+  return PermissionService.resolvePermissions(role, false);
 };
