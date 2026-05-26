@@ -56,18 +56,38 @@ export class SupabaseBootstrapRepo {
     return deterministicId;
   }
 
-  static async createMembershipIdempotent(companyId: string, userId: string): Promise<void> {
+  static async createMembershipIdempotent(companyId: string, userId: string, role: string = 'owner'): Promise<void> {
     // Upsert membership
     const { error } = await supabase.from('memberships').upsert({
       company_id: companyId,
       user_id: userId,
-      role: 'owner',
+      role: role,
       status: 'active'
     }, { onConflict: 'company_id,user_id' }); // Assuming unique constraint exists
 
     if (error && !error.message.includes('duplicate key')) { // Ignore explicit duplicates as idempotency 
        console.warn(`[SupabaseBootstrapRepo] Error creating membership (may already exist): ${error.message}`);
     }
+  }
+
+  static async createMembershipByEmailIdempotent(companyId: string, userEmail: string, role: string): Promise<void> {
+    // Look up user by email
+    const { data: user } = await supabase.from('users').select('id').eq('email', userEmail).maybeSingle();
+    let userId = user?.id;
+    
+    if (!userId) {
+       // If user does not exist, we might create a placeholder user or simply use email as ID placeholder for invitations.
+       // In Nexus ERP, we will insert them into users table if they don't exist.
+       const newUserId = `usr_${userEmail.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10)}_${Date.now().toString(36)}`;
+       const { error: insertError } = await supabase.from('users').insert({ id: newUserId, email: userEmail, first_name: 'Invited User' });
+       if (insertError) {
+          console.warn(`[SupabaseBootstrapRepo] Could not create placeholder user for ${userEmail}: ${insertError.message}`);
+          return;
+       }
+       userId = newUserId;
+    }
+    
+    await this.createMembershipIdempotent(companyId, userId, role);
   }
 
   static async rollbackCompany(companyId: string): Promise<void> {

@@ -15,7 +15,7 @@ export class BootstrapOrchestrator {
    * Main entry point for the tenant creation transaction.
    * Fully idempotent and capable of recovering from previous states.
    */
-  static async startBootstrap(name: string, userId: string, userEmail: string): Promise<string> {
+  static async startBootstrap(name: string, userId: string, userEmail: string, employeesToAssign?: Array<{ email: string; role: string }>): Promise<{ companyId: string, idempotencyKey: string }> {
     // 1. Check for pending crash recovery
     const pending = RecoveryManager.getPendingState();
     let context: BootstrapContext;
@@ -29,6 +29,7 @@ export class BootstrapOrchestrator {
         companyName: name,
         userId: userId,
         userEmail: userEmail,
+        employeesToAssign: employeesToAssign,
         retryCount: 0
       };
     }
@@ -101,14 +102,24 @@ export class BootstrapOrchestrator {
     }
 
     if (machine.getState() === BootstrapState.WORKSPACE_CREATED) {
-       machine.transitionTo(BootstrapState.MEMBERSHIP_CREATED);
-       if (!context.companyId) throw new Error("Missing companyId at MEMBERSHIP_CREATED");
-       await SupabaseBootstrapRepo.createMembershipIdempotent(context.companyId, context.userId);
+       machine.transitionTo(BootstrapState.ASSIGN_OWNER);
+       if (!context.companyId) throw new Error("Missing companyId at ASSIGN_OWNER");
+       await SupabaseBootstrapRepo.createMembershipIdempotent(context.companyId, context.userId, 'owner');
+       RecoveryManager.saveState(context);
+    }
+
+    if (machine.getState() === BootstrapState.ASSIGN_OWNER) {
+       machine.transitionTo(BootstrapState.ASSIGN_EMPLOYEE);
+       if (context.employeesToAssign && context.employeesToAssign.length > 0) {
+          for (const emp of context.employeesToAssign) {
+             await SupabaseBootstrapRepo.createMembershipByEmailIdempotent(context.companyId!, emp.email, emp.role);
+          }
+       }
        RecoveryManager.saveState(context);
     }
 
     // RUNTIME & PERMISSIONS PRE-LOAD
-    if (machine.getState() === BootstrapState.MEMBERSHIP_CREATED) {
+    if (machine.getState() === BootstrapState.ASSIGN_EMPLOYEE) {
        machine.transitionTo(BootstrapState.PERMISSIONS_INITIALIZED);
        // Internally mapped to owner rights
     }
@@ -155,7 +166,7 @@ export class BootstrapOrchestrator {
     if (machine.getState() === BootstrapState.TENANT_STABILIZING) {
        machine.transitionTo(BootstrapState.COMPLETED);
     }
-    return context.companyId!;
+    return { companyId: context.companyId!, idempotencyKey: context.idempotencyKey };
   }
 
   private static async handleError(machine: BootstrapStateMachine, error: Error): Promise<never> {
