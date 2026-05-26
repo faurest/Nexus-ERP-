@@ -35,6 +35,7 @@ interface AuthState {
   // Selectors
   hasPermission: (permission: string) => boolean;
   canAccessCompany: (companyId: string) => boolean;
+  addMembershipAndSwitch: (membership: any) => void;
 }
 
 // Deleted ROLE_PERMISSIONS
@@ -133,6 +134,12 @@ export const useAuthStore = create<AuthState>()(
         const { isGlobalAdmin, memberships } = get();
         if (isGlobalAdmin) return true;
         return memberships.some(m => m.company_id === companyId);
+      },
+
+      addMembershipAndSwitch: (membership: any) => {
+        const { memberships } = get();
+        set({ memberships: [...memberships, membership] });
+        get().setCurrentCompany(membership.company_id);
       }
     }),
     {

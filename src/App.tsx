@@ -3,7 +3,7 @@ import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collecti
 type User = any;
 import { syncUserProfile, type UserProfile } from './lib/userService';
 import { useAuthStore } from './store/authStore';
-import { NetworkMonitor } from './infrastructure/realtime/networkMonitor';
+import { NetworkStateManager } from './core/network/NetworkStateManager';
 import { 
   LayoutDashboard, 
   Users, 
@@ -760,12 +760,12 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
-    NetworkMonitor.init();
-    const unsubscribe = NetworkMonitor.subscribe((status) => {
+    NetworkStateManager.init();
+    const unsubscribe = NetworkStateManager.subscribe((status) => {
       setIsOnline(status);
     });
     // Set initial status
-    setIsOnline(NetworkMonitor.isOnline);
+    setIsOnline(NetworkStateManager.getIsOnline());
     return () => unsubscribe();
   }, []);
 
