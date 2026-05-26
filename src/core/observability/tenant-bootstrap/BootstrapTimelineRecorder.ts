@@ -18,9 +18,9 @@ export class BootstrapTimelineRecorder {
     BootstrapExecutionStore.saveEvent(event);
   }
 
-  static getReport(idempotencyKey: string) {
+  static async getReportAsync(idempotencyKey: string, companyId: string) {
     const timeline = BootstrapSessionCorrelator.getUnifiedTimeline(idempotencyKey);
-    const verdictData = BootstrapVerdictEngine.generateVerdict(idempotencyKey);
+    const verdictData = await BootstrapVerdictEngine.generateVerdictAsync(idempotencyKey, companyId);
 
     return {
       idempotencyKey,
@@ -34,8 +34,8 @@ export class BootstrapTimelineRecorder {
     };
   }
   
-  static printExecutionReport(idempotencyKey: string) {
-    const report = this.getReport(idempotencyKey);
+  static async printExecutionReportAsync(idempotencyKey: string, companyId: string) {
+    const report = await this.getReportAsync(idempotencyKey, companyId);
     console.group(`🧾 BOOTSTRAP_EXECUTION_REPORT: ${idempotencyKey}`);
     console.log(`Verdict: ${report.verdict} | Consistency: ${report.consistency}`);
     console.table(report.timeline, ['layer', 'status', 'stateBefore', 'stateAfter', 'latency', 'errorCode']);

@@ -3,8 +3,8 @@ import { UIState } from './UIState';
 
 export class BootstrapUIStateGate {
   
-  static evaluateAccessStatus(idempotencyKey: string): UIState {
-    const { verdict } = BootstrapVerdictEngine.generateVerdict(idempotencyKey);
+  static async evaluateAccessStatusAsync(idempotencyKey: string, companyId: string): Promise<UIState> {
+    const { verdict } = await BootstrapVerdictEngine.generateVerdictAsync(idempotencyKey, companyId);
     
     if (verdict === BootstrapVerdict.VERIFIED_SUCCESS) {
       return UIState.FULL_ACCESS;
@@ -15,11 +15,11 @@ export class BootstrapUIStateGate {
     }
   }
 
-  static async waitForStabilization(idempotencyKey: string, maxWaitMs = 15000): Promise<UIState> {
+  static async waitForStabilization(idempotencyKey: string, companyId: string, maxWaitMs = 15000): Promise<UIState> {
     const startTime = Date.now();
     
     while (Date.now() - startTime < maxWaitMs) {
-      const state = this.evaluateAccessStatus(idempotencyKey);
+      const state = await this.evaluateAccessStatusAsync(idempotencyKey, companyId);
       if (state !== UIState.LOCKED) {
         return state;
       }

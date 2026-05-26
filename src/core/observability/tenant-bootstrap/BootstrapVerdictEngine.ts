@@ -1,5 +1,6 @@
 import { BootstrapConsistencyEngine, ConsistencyStatus } from './BootstrapConsistencyEngine';
 import { BootstrapSessionCorrelator } from './BootstrapSessionCorrelator';
+import { SupabaseReadinessChecker } from '../tenant-bootstrap/infrastructure/SupabaseReadinessChecker';
 
 export enum BootstrapVerdict {
   VERIFIED_SUCCESS = 'VERIFIED_SUCCESS',
@@ -11,7 +12,7 @@ export enum BootstrapVerdict {
 }
 
 export class BootstrapVerdictEngine {
-  static generateVerdict(idempotencyKey: string): { verdict: BootstrapVerdict, consistency: ConsistencyStatus } {
+  static async generateVerdictAsync(idempotencyKey: string, companyId: string): Promise<{ verdict: BootstrapVerdict, consistency: ConsistencyStatus }> {
     const timeline = BootstrapSessionCorrelator.getUnifiedTimeline(idempotencyKey);
     const consistency = BootstrapConsistencyEngine.analyze(timeline);
     const hasCrash = BootstrapSessionCorrelator.hasPreviousCrash(timeline);
@@ -34,6 +35,16 @@ export class BootstrapVerdictEngine {
       case ConsistencyStatus.INCONSISTENT:
         verdict = BootstrapVerdict.DATA_INCONSISTENCY;
         break;
+    }
+
+    // Crucial SaaS Security Override: SAGA Success means NOTHING if Supabase IAM rejects the state.
+    // We enforce the backend readiness before granting a success verdict.
+    if ((verdict === BootstrapVerdict.VERIFIED_SUCCESS || verdict === BootstrapVerdict.RECOVERED_SUCCESS) && companyId) {
+       const isReadyOnBackend = await SupabaseReadinessChecker.isTenantFullyReady(companyId);
+       if (!isReadyOnBackend) {
+          console.error(`[BootstrapVerdictEngine] FATAL: System SAGA is consistent but Supabase IAM rejected the readiness state for ${companyId}`);
+          verdict = BootstrapVerdict.DATA_INCONSISTENCY; 
+       }
     }
 
     return { verdict, consistency };

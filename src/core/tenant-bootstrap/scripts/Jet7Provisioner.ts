@@ -45,7 +45,7 @@ export class Jet7Provisioner {
       console.log(`[Jet7Provisioner] Transaction complete for tenant ${companyId}. Verifying Absolute Consistency...`);
       
       // Enforce the Verdict
-      const state = await BootstrapUIStateGate.waitForStabilization(idempotencyKey);
+      const state = await BootstrapUIStateGate.waitForStabilization(idempotencyKey, companyId);
       
       // Let's assume for this abstraction if we got this far without throwing, orchestrator succeeded.
       // But adhering to the PROMPT: UI MUST NOT OPEN IF NOT VERIFIED.
