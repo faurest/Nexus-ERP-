@@ -61,95 +61,100 @@ export default function AdminModule() {
 
   const fetchGlobalData = async () => {
     try {
-      const { getSupabase } = await import('../lib/supabase');
-      const sb = getSupabase();
-      if (!sb) return;
-
+      setLoading(true);
       const [compSnap, salesSnap, expSnap] = await Promise.all([
         getDocs(collection(db, 'companies')),
         getDocs(collection(db, 'sales')),
         getDocs(collection(db, 'expenses'))
       ]);
       
-      const firestoreCompanies = compSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setCompanies(compSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       setGlobalSales(salesSnap.docs.map(d => d.data()));
       setGlobalExpenses(expSnap.docs.map(d => d.data()));
 
-      // Fetch all memberships and companies from Supabase
-      const { data: supabaseCompanies } = await sb.from('companies').select('*');
-      const { data: supabaseMemberships } = await sb.from('company_members').select('*, users(*), roles(*)');
-
-      // Merge Companies logic: Use Supabase data but respect Firestore IDs
-      const companyMap = new Map<string, any>();
-      firestoreCompanies.forEach(c => companyMap.set(c.id, c));
-      
-      if (supabaseCompanies) {
-        supabaseCompanies.forEach(sc => {
-          const existing = companyMap.get(sc.id) || {};
-          companyMap.set(sc.id, {
-            ...existing,
-            ...sc,
-            id: sc.id,
-            ownerEmail: sc.owner_email,
-            ownerId: sc.owner_id,
-            joinCode: sc.join_code
-          });
-        });
-      }
-
-      const mergedCompanies = Array.from(companyMap.values()).map(c => ({
-        ...c,
-        memberEmails: (supabaseMemberships || [])
-          .filter(m => m.company_id === c.id)
-          .map(m => m.users?.email?.toLowerCase())
-          .filter(Boolean)
-      }));
-
-      setCompanies(mergedCompanies);
-
-      // Fetch users
-      const usersSnap = await getDocs(collection(db, 'users'));
-      const firestoreUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-      // Merge logic: Primary source = Supabase Relational Auth
-      const userMap = new Map<string, any>();
-
-      (supabaseMemberships || []).forEach(m => {
-        const u = m.users;
-        if (!u) return;
-        const email = u.email.trim().toLowerCase();
+      // Fetch users and potential user sources (personnel, clients)
+      try {
+        const [usersSnap, personnelSnap, clientsSnap] = await Promise.all([
+          getDocs(collection(db, 'users')),
+          getDocs(collection(db, 'personnel')),
+          getDocs(collection(db, 'clients'))
+        ]);
         
-        const existing = userMap.get(email) || {};
-        userMap.set(email, {
-          ...existing,
-          id: u.id,
-          email: email,
-          displayName: u.fullname || u.email.split('@')[0],
-          uid: u.firebase_uid,
-          status: 'connected',
-          companies: [...(existing.companies || []), { 
-            id: m.company_id, 
-            role: m.roles?.name,
-            status: m.status 
-          }]
+        const activeUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data(), source: 'active' }));
+        const personnelUsers = personnelSnap.docs.map(d => ({ id: d.id, ...d.data(), source: 'personnel' }));
+        const clientUsers = clientsSnap.docs.map(d => ({ id: d.id, ...d.data(), source: 'client' }));
+
+        // Use a Map to merge by email (normalized) and UID
+        const userMap = new Map<string, any>();
+
+        // 1. Process Personnel & Clients first (the "Invitations")
+        [...personnelUsers, ...clientUsers].forEach(u => {
+          if (u.email) {
+            const email = u.email.trim().toLowerCase().replace(/\s+/g, '');
+            const existing = userMap.get(email);
+            
+            // Prioritize connected status if already found
+            const status = (u.uid || existing?.uid || u.status === 'active') ? 'connected' : 'invited';
+            
+            userMap.set(email, {
+              ...existing,
+              ...u,
+              email: email,
+              displayName: u.name || u.displayName || existing?.displayName || 'Utilisateur Invitée',
+              status: status,
+              uid: u.uid || existing?.uid || null,
+              nexusId: u.id || existing?.nexusId || existing?.id || null
+            });
+          }
         });
-      });
 
-      // 2. Add Firestore users not in Supabase yet
-      firestoreUsers.forEach(u => {
-        if (!u.email) return;
-        const email = u.email.trim().toLowerCase();
-        if (!userMap.has(email)) {
-          userMap.set(email, {
-            ...u,
-            displayName: u.displayName || u.email.split('@')[0],
-            status: u.uid ? 'connected' : 'invited',
-            companies: []
-          });
-        }
-      });
+        // 2. Process Active Users (the "Logins")
+        activeUsers.forEach(u => {
+          const email = u.email?.trim().toLowerCase().replace(/\s+/g, '');
+          const uid = u.uid;
+          
+          if (!uid && !email) return;
 
-      setSystemUsers(Array.from(userMap.values()));
+          // Find if we already have this user via email or UID
+          // We check the map values too because some keys might be UIDs if email was missing initially
+          let existingKey = email && userMap.has(email) ? email : null;
+          
+          if (!existingKey) {
+            for (const [key, val] of userMap.entries()) {
+              if ((uid && val.uid === uid) || (email && val.email === email)) {
+                existingKey = key;
+                break;
+              }
+            }
+          }
+
+          if (existingKey) {
+            const existing = userMap.get(existingKey);
+            userMap.set(existingKey, {
+              ...existing,
+              ...u,
+              id: existingKey,
+              status: 'connected',
+              email: email || existing.email,
+              uid: uid || existing.uid,
+              displayName: u.displayName || existing.displayName
+            });
+          } else {
+            // New user not seen in personnel/clients
+            const key = email || uid || u.id;
+            userMap.set(key, {
+              ...u,
+              id: key,
+              email: email || null,
+              status: 'connected'
+            });
+          }
+        });
+
+        setSystemUsers(Array.from(userMap.values()));
+      } catch (err) {
+        console.warn("Nexus Admin: Erreur lors de l'agrégation des utilisateurs", err);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -179,45 +184,13 @@ export default function AdminModule() {
     setSubmitting(true);
     try {
       const joinCode = newCompany.joinCode || Math.random().toString(36).substring(2, 8).toUpperCase();
-      const firestoreEmail = newCompany.ownerEmail.trim().toLowerCase();
-      
-      // 1. Firestore Creation
-      const docRef = await addDoc(collection(db, 'companies'), {
-        name: newCompany.name,
-        ownerEmail: firestoreEmail,
+      const snap = await addDoc(collection(db, 'companies'), {
+        ...newCompany,
         joinCode,
         ownerId: 'manual',
-        status: 'active',
+        memberEmails: [newCompany.ownerEmail.trim().toLowerCase()],
         createdAt: serverTimestamp()
       });
-
-      // 2. Supabase Integration
-      const { getSupabase } = await import('../lib/supabase');
-      const sb = getSupabase();
-      if (sb) {
-        const { data: uData } = await sb.from('users').select('id').eq('email', firestoreEmail).maybeSingle();
-        if (uData) {
-          const { data: cData } = await sb.from('companies').insert({
-            id: docRef.id,
-            name: newCompany.name,
-            owner_id: uData.id,
-            owner_email: firestoreEmail,
-            join_code: joinCode,
-            is_active: true
-          }).select().single();
-
-          if (cData) {
-            const { data: rData } = await sb.from('roles').select('id').eq('name', 'OWNER').maybeSingle();
-            await sb.from('company_members').insert({
-              user_id: uData.id,
-              company_id: cData.id,
-              role_id: rData?.id,
-              status: 'active'
-            });
-          }
-        }
-      }
-
       setShowCreateModal(false);
       setNewCompany({ name: '', ownerEmail: '', joinCode: '' });
       fetchGlobalData();
@@ -273,49 +246,19 @@ export default function AdminModule() {
     try {
       const company = showMemberModal;
       const email = newMemberEmail.trim().toLowerCase();
-
-      // 1. Supabase Relational Sync (Source of Truth)
-      const { getSupabase } = await import('../lib/supabase');
-      const sb = getSupabase();
-      if (sb) {
-        let uId: string | null = null;
-        const { data: uData } = await sb.from('users').select('id').eq('email', email).maybeSingle();
-        
-        if (!uData) {
-          // Create ghost profile in Supabase users if not exists
-          const { data: newUser } = await sb.from('users').insert({
-            email: email,
-            fullname: email.split('@')[0],
-            onboarding_state: 'invited'
-          }).select().single();
-          uId = newUser?.id;
-        } else {
-          uId = uData.id;
-        }
-
-        const { data: rData } = await sb.from('roles').select('id').eq('name', 'Personnel').maybeSingle();
-        if (uId && rData) {
-          await sb.from('company_members').upsert({
-            user_id: uId,
-            company_id: company.id,
-            role_id: rData.id,
-            status: 'active'
-          }, { onConflict: 'user_id, company_id' });
-        }
+      if (company.memberEmails?.includes(email)) {
+        alert('Cet utilisateur est déjà membre.');
+        return;
       }
 
-      // 2. Firestore Personnel Proxy (For Security Rules)
-      await setDoc(doc(db, 'personnel', email), {
-        email: email,
-        name: email.split('@')[0],
-        companyId: company.id,
-        role: 'Personnel',
-        status: 'active',
-        createdAt: serverTimestamp()
+      const updatedEmails = [...(company.memberEmails || []), email];
+      await updateDoc(doc(db, 'companies', company.id), {
+        memberEmails: updatedEmails,
+        updatedAt: serverTimestamp()
       });
       
       setNewMemberEmail('');
-      alert(`Membre ${email} ajouté avec succès via Supabase.`);
+      setShowMemberModal({ ...company, memberEmails: updatedEmails });
       fetchGlobalData();
     } catch (err) {
       console.error(err);
@@ -327,19 +270,18 @@ export default function AdminModule() {
     if (!window.confirm(`Retirer ${email} de cette entreprise ?`)) return;
 
     try {
-      // 1. Supabase Sync
-      const { getSupabase } = await import('../lib/supabase');
-      const sb = getSupabase();
-      if (sb) {
-        const { data: uData } = await sb.from('users').select('id').eq('email', email).maybeSingle();
-        if (uData) {
-          await sb.from('company_members').delete().eq('user_id', uData.id).eq('company_id', companyId);
-        }
-      }
+      const company = companies.find(c => c.id === companyId);
+      if (!company) return;
 
-      // 2. Firestore Personnel Proxy Removal
-      await deleteDoc(doc(db, 'personnel', email));
+      const updatedEmails = company.memberEmails.filter((e: string) => e !== email);
+      await updateDoc(doc(db, 'companies', companyId), {
+        memberEmails: updatedEmails,
+        updatedAt: serverTimestamp()
+      });
       
+      if (showMemberModal?.id === companyId) {
+        setShowMemberModal({ ...showMemberModal, memberEmails: updatedEmails });
+      }
       fetchGlobalData();
     } catch (err) {
       console.error(err);
@@ -349,46 +291,22 @@ export default function AdminModule() {
 
   const handleAssignUserToCompany = async (userEmail: string, companyId: string) => {
     try {
-      // 1. Relational Sync (Supabase) - Primary
-      const { getSupabase } = await import('../lib/supabase');
-      const sb = getSupabase();
-      if (sb) {
-        const emailClean = userEmail.trim().toLowerCase();
-        let { data: uData } = await sb.from('users').select('id').eq('email', emailClean).maybeSingle();
-        
-        if (!uData) {
-          const { data: newUser } = await sb.from('users').insert({
-            email: emailClean,
-            fullname: emailClean.split('@')[0],
-            onboarding_state: 'invited'
-          }).select().single();
-          uData = newUser;
-        }
+      const company = companies.find(c => c.id === companyId);
+      if (!company) return;
 
-        const { data: rData } = await sb.from('roles').select('id').eq('name', 'Personnel').maybeSingle();
-        
-        if (uData && rData) {
-          await sb.from('company_members').upsert({
-            user_id: uData.id,
-            company_id: companyId,
-            role_id: rData.id,
-            status: 'active'
-          }, { onConflict: 'user_id, company_id' });
-        }
+      if (company.memberEmails?.includes(userEmail)) {
+        alert('Cet utilisateur est déjà membre de cette entreprise.');
+        return;
       }
 
-      // 2. Legacy Sync (Firestore Personnel Proxy)
-      await setDoc(doc(db, 'personnel', userEmail.trim().toLowerCase()), {
-        email: userEmail.trim().toLowerCase(),
-        companyId: companyId,
-        role: 'Personnel',
-        status: 'active',
-        createdAt: serverTimestamp()
-      }, { merge: true });
+      await updateDoc(doc(db, 'companies', companyId), {
+        memberEmails: [...(company.memberEmails || []), userEmail],
+        updatedAt: serverTimestamp()
+      });
       
       setShowUserAssignModal(null);
       fetchGlobalData();
-      alert('Utilisateur affecté avec succès via Supabase.');
+      alert('Utilisateur affecté avec succès');
     } catch (err) {
       console.error(err);
       alert('Erreur lors de l\'affectation');
@@ -548,42 +466,46 @@ export default function AdminModule() {
       ]);
 
       const personnelToClone = pSnap.docs.filter(d => (d.data() as any).email?.toLowerCase() === src);
-      const companiesOwned = companies.filter(c => c.ownerEmail?.toLowerCase() === src);
-      const companiesMember = companies.filter(c => c.memberEmails?.some((e: string) => e.toLowerCase() === src));
-
-      const { getSupabase } = await import('../lib/supabase');
-      const sb = getSupabase();
+      const companiesOwned = cSnap.docs.filter(d => (d.data() as any).ownerEmail?.toLowerCase() === src);
+      const companiesMember = cSnap.docs.filter(d => (d.data() as any).memberEmails?.some((e: string) => e.toLowerCase() === src));
 
       let created = 0;
       let updated = 0;
 
-      // 2. Clone Membership logic via Supabase
-      const allCompanyIds = [...new Set([...companiesOwned.map(c => c.id), ...companiesMember.map(c => c.id)])];
-      
-      if (sb) {
-        const { data: uTarget } = await sb.from('users').select('id').eq('email', tgt).maybeSingle();
-        const { data: rPers } = await sb.from('roles').select('id').eq('name', 'Personnel').maybeSingle();
-        
-        if (uTarget && rPers) {
-          for (const cId of allCompanyIds) {
-            await sb.from('company_members').upsert({
-              user_id: uTarget.id,
-              company_id: cId,
-              role_id: rPers.id,
-              status: 'active'
-            }, { onConflict: 'user_id, company_id' });
-            
-            // Sync Firestore Personnel Proxy
-            await setDoc(doc(db, 'personnel', tgt), {
-              email: tgt,
-              companyId: cId,
-              role: 'Personnel',
-              status: 'active',
-              createdAt: serverTimestamp()
-            }, { merge: true });
-            updated++;
-          }
+      // 2. Clone Personnel entries
+      for (const d of personnelToClone) {
+        const data = d.data();
+        // Check if target already exists in this company (case-insensitive)
+        const alreadyExists = pSnap.docs.some(pd => 
+          (pd.data() as any).email?.toLowerCase() === tgt && 
+          (pd.data() as any).companyId === data.companyId
+        );
+
+        if (!alreadyExists) {
+          await addDoc(collection(db, 'personnel'), {
+            ...data,
+            email: tgt,
+            name: `(Clone) ${data.name || ''}`.trim(),
+            status: 'active',
+            createdAt: serverTimestamp()
+          });
+          created++;
         }
+
+        // Add to company memberEmails list
+        await updateDoc(doc(db, 'companies', data.companyId), {
+          memberEmails: arrayUnion(tgt)
+        });
+        updated++;
+      }
+
+      // 3. Clone Company Memberships (Owner or Member)
+      const allCompanyDocs = [...new Set([...companiesOwned, ...companiesMember])];
+      for (const d of allCompanyDocs) {
+        await updateDoc(doc(db, 'companies', d.id), {
+          memberEmails: arrayUnion(tgt)
+        });
+        updated++;
       }
 
       alert(`Clonage terminé !\n- ${created} nouvelles fiches personnel créées\n- ${updated} listes de membres mises à jour.`);
@@ -619,25 +541,36 @@ export default function AdminModule() {
         const e = (d.data() as any).email;
         return e && e.toLowerCase().replace(/\s+/g, '') === email.replace(/\s+/g, '');
       });
-      const ownedCompanies = companies.filter(c => {
-        const e = c.ownerEmail;
+      const ownedCompanies = cSnap.docs.filter(d => {
+        const e = (d.data() as any).ownerEmail;
         return e && e.toLowerCase().replace(/\s+/g, '') === email.replace(/\s+/g, '');
-      });
-      const memberCompanies = companies.filter(c => {
-        return c.memberEmails?.some((e: string) => e.toLowerCase().replace(/\s+/g, '') === email.replace(/\s+/g, ''));
       });
       const clientMatches = cliSnap.docs.filter(d => {
         const e = (d.data() as any).email;
         return e && e.toLowerCase().replace(/\s+/g, '') === email.replace(/\s+/g, '');
       });
 
+      // Fuzzy matching: check for emails that might have typos like '.' instead of '@'
+      const normalizeForFuzzy = (e: string) => e?.toLowerCase().replace(/[@.\s]/g, '');
+      const fuzzyTarget = normalizeForFuzzy(email);
+      const fuzzyMatches: string[] = [];
+
+      if (personnelMatches.length === 0 && clientMatches.length === 0 && ownedCompanies.length === 0) {
+        [...pSnap.docs, ...cliSnap.docs, ...cSnap.docs].forEach(d => {
+          const data = d.data() as any;
+          const e = data.email || data.ownerEmail;
+          if (e && normalizeForFuzzy(e) === fuzzyTarget && e.toLowerCase() !== email) {
+            fuzzyMatches.push(e);
+          }
+        });
+      }
+
       setDiagResult({
         email,
         inUsers: !!inUsers,
         actualUserEmail: inUsers ? (inUsers.data() as any).email : null,
         personnelCount: personnelMatches.length,
-        ownedCompanies: ownedCompanies.map(c => c.name),
-        memberCompanies: memberCompanies.map(c => c.name),
+        ownedCompanies: ownedCompanies.map(d => (d.data() as any).name),
         personnelDetails: personnelMatches.map(d => {
           const data = d.data() as any;
           const comp = companies.find(c => c.id === data.companyId);
@@ -1118,7 +1051,7 @@ export default function AdminModule() {
                   <div>
                     <div className="flex items-center gap-3">
                       <div className="flex -space-x-4">
-                        {Array.from({ length: Math.min(3, company.memberEmails?.length || 0) }).map((_, i) => (
+                        {Array.from({ length: Math.min(3, company.memberEmails?.length || 1) }).map((_, i) => (
                           <div key={i} className={cn(
                             "w-10 h-10 rounded-2xl border-4 border-white flex items-center justify-center text-[11px] font-black shadow-sm",
                             i === 0 ? "bg-blue-600 text-white" : i === 1 ? "bg-slate-800 text-white" : "bg-slate-200 text-slate-600"
@@ -1127,9 +1060,7 @@ export default function AdminModule() {
                           </div>
                         ))}
                       </div>
-                      <span className="text-[10px] font-black text-slate-400 ml-2">
-                        {company.memberEmails?.length || 0} membres
-                      </span>
+                      <span className="text-[10px] font-black text-slate-400 ml-2">+{company.memberEmails?.length || 0}</span>
                     </div>
                   </div>
                   <div className="pr-8 text-right flex items-center justify-end gap-2">
@@ -1221,10 +1152,9 @@ export default function AdminModule() {
                 </div>
                 <div>
                   <div className="flex flex-wrap gap-1">
-                    {companies.filter(c => c.memberEmails?.some((e: string) => e === u.email) || c.ownerEmail === u.email).map(c => (
-                      <span key={c.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[9px] font-black uppercase tracking-widest border border-blue-100">
+                    {companies.filter(c => c.memberEmails?.includes(u.email) || c.ownerEmail === u.email).map(c => (
+                      <span key={c.id} className="px-2 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-bold">
                         {c.name}
-                        {c.ownerEmail === u.email && <Shield size={8} />}
                       </span>
                     ))}
                     <button 

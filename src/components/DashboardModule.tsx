@@ -34,11 +34,8 @@ import {
   Hammer,
   Monitor,
   FolderKanban,
-  Sparkles,
-  RefreshCw,
-  ChevronRight,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
 import { cn } from '../lib/utils';
 import { useCompany } from '../lib/CompanyContext';
@@ -73,65 +70,8 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
   const [payments, setPayments] = useState<any[]>([]);
   const [orderHistory, setOrderHistory] = useState<any[]>([]);
 
-  // AI Insights State
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiInsight, setAiInsight] = useState<any>(null);
-
-  const generateAIInsights = async () => {
-    setAiLoading(true);
-    try {
-      const context = {
-        companyName: currentCompany?.name,
-        totalRevenue,
-        totalOrders: orders.length,
-        stockAlerts: products.filter(p => p.stock <= (p.stockThreshold || 5)).length,
-        topProducts: products.sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 3).map(p => p.name)
-      };
-
-      const resp = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'product_doc', context }) // Reusing product_doc prompt for general summary or I can add a specific case if needed
-      });
-      if (!resp.ok) throw new Error('AI Engine failed');
-      const data = await resp.json();
-      setAiInsight(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (orders.length > 0 && !aiInsight && !aiLoading) {
-      generateAIInsights();
-    }
-  }, [orders.length]);
-
   useEffect(() => {
     if (!currentCompany) return;
-
-    const fetchPersonnelFromSupabase = async () => {
-      const { getSupabase } = await import('../lib/supabase');
-      const sb = getSupabase();
-      if (!sb) return;
-
-      try {
-        const { data } = await sb
-          .from('company_members')
-          .select('*, users(*)')
-          .eq('company_id', currentCompany.id);
-
-        if (data) {
-          setPersonnel(data.map((m: any) => ({ id: m.users.id, ...m.users, status: m.status })));
-        }
-      } catch (err) {
-        console.error("Dashboard: Fail to sync personnel", err);
-      }
-    };
-
-    fetchPersonnelFromSupabase();
 
     const unsubServices = onSnapshot(query(collection(db, 'services'), where('companyId', '==', currentCompany.id)), snap => {
       setServices(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -144,6 +84,10 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
     const unsubTasks = onSnapshot(query(collection(db, 'tasks'), where('companyId', '==', currentCompany.id)), snap => {
       setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => handleFirestoreError(err, OperationType.LIST, 'tasks'));
+
+    const unsubPersonnel = onSnapshot(query(collection(db, 'personnel'), where('companyId', '==', currentCompany.id)), snap => {
+      setPersonnel(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'personnel'));
 
     const unsubProducts = onSnapshot(query(collection(db, 'products'), where('companyId', '==', currentCompany.id)), snap => {
       setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -165,6 +109,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       unsubServices(); 
       unsubInterventions(); 
       unsubTasks(); 
+      unsubPersonnel(); 
       unsubProducts(); 
       unsubOrders(); 
       unsubPayments();
@@ -249,8 +194,8 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
         createdAt: serverTimestamp()
       });
       
-      // Use the newly fetched personnel list for notifications
-      const recipients = personnel.map(p => p.id);
+      const recipients = [...(currentCompany.employees || [])];
+      if (!recipients.includes(currentCompany.ownerId)) recipients.push(currentCompany.ownerId);
 
       await createNotification(
         currentCompany.id,
@@ -544,45 +489,6 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
           </motion.button>
         ))}
       </div>
-
-      {/* AI AI Strategy Header */}
-      <AnimatePresence>
-        {aiInsight && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="col-span-12 bg-slate-950 border border-white/10 rounded-[3rem] p-8 shadow-2xl relative overflow-hidden group mb-6"
-          >
-            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-[100px] -mr-48 -mt-48" />
-            <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-               <div className="w-16 h-16 bg-blue-600/20 rounded-3xl flex items-center justify-center text-blue-400 shrink-0 border border-blue-500/20">
-                  <Sparkles size={32} className="animate-pulse" />
-               </div>
-               <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em] italic">Nexus AI • Analyse Stratégique</h3>
-                    <motion.button 
-                      onClick={generateAIInsights}
-                      disabled={aiLoading}
-                      whileTap={{ rotate: 180 }}
-                      className="p-1 hover:bg-white/5 rounded-full transition-colors"
-                    >
-                      <RefreshCw size={12} className={cn("text-slate-500", aiLoading && "animate-spin")} />
-                    </motion.button>
-                  </div>
-                  <p className="text-sm font-medium text-slate-300 leading-relaxed italic">
-                    "{aiInsight.shortDescription || aiInsight.longDescription?.slice(0, 150) + '...'}"
-                  </p>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {aiInsight.benefits?.slice(0, 3).map((tip: string, i: number) => (
-                      <span key={i} className="px-3 py-1 bg-white/5 border border-white/5 rounded-full text-[8px] font-black text-slate-400 uppercase tracking-widest">{tip}</span>
-                    ))}
-                  </div>
-               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Main Bento Grid */}
       {isEmptyState ? (
@@ -958,12 +864,12 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       </div>
 
       {/* Cross-tenant Global Overview */}
-      {companies.length > 0 && (
+      {companies.filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email).length > 0 && (
         <div className="mt-12 bg-white rounded-3xl border border-blue-100 p-8 shadow-xl shadow-blue-900/5">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h3 className="text-xl font-black text-slate-900 tracking-tight">Vue d'ensemble de vos opérations</h3>
-              <p className="text-sm font-medium text-slate-500 mt-1">Status et performances des entités associées à votre profil.</p>
+              <p className="text-sm font-medium text-slate-500 mt-1">Status et performances des entités sous votre direction.</p>
             </div>
             <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
               <Briefcase size={24} />
@@ -972,6 +878,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
           
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {companies
+              .filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email)
               .map(c => (
               <div key={c.id} className="p-5 border border-slate-200 rounded-2xl flex flex-col gap-4 hover:border-blue-300 transition-colors bg-slate-50 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-blue-100/50 rounded-bl-full -mr-12 -mt-12 group-hover:bg-blue-200/50 transition-colors" />

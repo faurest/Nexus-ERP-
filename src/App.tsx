@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion, setDoc, serverTimestamp, limit } from './lib/firebase';
 type User = any;
-import { syncUserProfile, type UserProfile } from './lib/userService';
 import { 
   LayoutDashboard, 
   Users, 
@@ -24,7 +23,6 @@ import {
   Shield,
   ShieldAlert,
   Calculator,
-  Activity,
   Layers,
   FileText,
   Database,
@@ -126,7 +124,7 @@ function SkeletonCard() {
   );
 }
 
-function WorkspaceSelector({ companies, user, userProfile, onSelect }: { companies: any[], user: User, userProfile: any, onSelect: any }) {
+function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], user: User, onSelect: any }) {
   const [mode, setMode] = useState<'select' | 'create' | 'join'>('select');
   const [newCompanyName, setNewCompanyName] = useState('');
   const [joinCodeInput, setJoinCodeInput] = useState('');
@@ -134,40 +132,25 @@ function WorkspaceSelector({ companies, user, userProfile, onSelect }: { compani
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
-  const { currentCompany, joinCompany, createCompany, refreshCompanies, loading: companyLoading } = useCompany();
-  const [lastSession, setLastSession] = useState<{ company: any, tab: string } | null>(null);
+  const { joinCompany, loading: companyLoading } = useCompany();
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
+  const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
   
-  useEffect(() => {
-    if (errorMsg || successMsg) {
-      const timer = setTimeout(() => {
-        setErrorMsg('');
-        setSuccessMsg('');
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [errorMsg, successMsg]);
-
-  const ownedCompanies = companies.filter(c => c.role === 'OWNER' || c.role === 'Administrateur');
-  const joinedCompanies = companies.filter(c => c.role !== 'OWNER' && c.role !== 'Administrateur');
+  const ownedCompanies = companies.filter(c => {
+    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
+    return c.ownerId === user?.uid || (cOwnerEmail && cOwnerEmail === cleanEmail);
+  });
+  const joinedCompanies = companies.filter(c => {
+    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
+    return c.ownerId !== user?.uid && cOwnerEmail !== cleanEmail;
+  });
 
   useEffect(() => {
     import('./lib/firebase').then(({ testFirestoreConnection }) => {
       testFirestoreConnection().then(ok => setConnStatus(ok ? 'ok' : 'fail'));
     });
-    
-    // Load last session
-    const lastCompId = localStorage.getItem('nexus_last_company_id');
-    const lastTab = localStorage.getItem('nexus_last_tab') || 'dashboard';
-    
-    if (lastCompId && companies.length > 0) {
-      const comp = companies.find(c => c.id === lastCompId);
-      if (comp) {
-        setLastSession({ company: comp, tab: lastTab });
-      }
-    }
-  }, [companies]);
+  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,18 +159,25 @@ function WorkspaceSelector({ companies, user, userProfile, onSelect }: { compani
 
     setSubmitting(true);
     try {
+      // Logic for 6 uppercase letters/numbers join code
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       let generatedJoinCode = '';
       for (let i = 0; i < 6; i++) {
         generatedJoinCode += chars.charAt(Math.floor(Math.random() * chars.length));
       }
 
-      const result = await createCompany(newCompanyName, generatedJoinCode);
-      if (result.success && result.id) {
-        onSelect({ id: result.id, name: newCompanyName, ownerId: user.uid, joinCode: generatedJoinCode });
-      } else {
-        throw new Error("Erreur lors de la création de l'entreprise");
-      }
+      const cleanEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
+      const docRef = await addDoc(collection(db, 'companies'), {
+        name: newCompanyName,
+        ownerId: user.uid,
+        ownerEmail: cleanEmail,
+        memberEmails: [cleanEmail],
+        employees: [user.uid],
+        joinCode: generatedJoinCode,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      onSelect({ id: docRef.id, name: newCompanyName, ownerId: user.uid, joinCode: generatedJoinCode });
     } catch(err: any) {
       console.error("Create Company Error:", err);
       setErrorMsg(`Erreur : ${err.message || 'Problème de connexion'}`);
@@ -207,6 +197,7 @@ function WorkspaceSelector({ companies, user, userProfile, onSelect }: { compani
 
     if (result.success) {
       setSuccessMsg(result.message);
+      // Wait a bit to show success before switching to selection mode
       setTimeout(() => {
         setMode('select');
         setSuccessMsg('');
@@ -217,425 +208,209 @@ function WorkspaceSelector({ companies, user, userProfile, onSelect }: { compani
     }
   };
 
-  const allWorkspaces = companies;
-
-  // AUTO-SELECTION ENGINE (Critical for multi-tenant flow)
-  useEffect(() => {
-    // 1. Skip if already selected or still loading
-    if (companyLoading || !user || !companies.length || currentCompany) return; 
-    
-    const savedId = localStorage.getItem('nexus_company_id') || localStorage.getItem('nexus_last_company_id');
-    const isNavigating = localStorage.getItem('nexus_navigate_to');
-    
-    // 2. Case: Single company -> Auto-Select
-    if (companies.length === 1 && !isNavigating) {
-      console.log("Nexus Hub: Auto-routing single tenant configuration.");
-      onSelect(companies[0]);
-      return;
-    }
-
-    // 3. Case: Restore last session
-    if (savedId && !isNavigating) {
-      const found = companies.find(c => c.id === savedId);
-      if (found) {
-        console.log("Nexus Hub: Restoring session to", found.name);
-        onSelect(found);
-      }
-    }
-  }, [companies, companyLoading, user, currentCompany]);
-
   return (
-    <div className="min-h-screen w-screen flex bg-[#020617] text-white font-sans overflow-hidden">
-      {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex w-80 flex-col border-r border-white/5 bg-slate-950/40 p-8 backdrop-blur-3xl relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none opacity-20">
-          <div className="absolute -top-24 -left-24 w-64 h-64 bg-blue-600/20 rounded-full blur-[100px]" />
-          <div className="absolute bottom-48 -right-12 w-40 h-40 bg-indigo-600/10 rounded-full blur-[80px]" />
-        </div>
+    <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-slate-900 font-sans relative">
+      <div className="max-w-md w-full bg-white rounded-3xl p-10 shadow-xl border border-slate-200 relative overflow-hidden">
         
-        <div className="relative z-10 flex flex-col h-full">
-           <div className="flex items-center gap-3 mb-12">
-              <NexusLogo className="w-10 h-10" />
-              <div className="flex flex-col">
-                <span className="font-black text-xl tracking-tighter leading-none italic text-white uppercase">NEXUS <span className="text-blue-500 not-italic">HUB</span></span>
-                <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">Enterprise Unified Launcher</span>
-              </div>
-           </div>
-
-           <div className="space-y-6 flex-1">
-              <div className="space-y-2">
-                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">Commandes Globales</h3>
-                 <button 
-                  onClick={() => setMode('select')}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-4 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest",
-                    mode === 'select' ? "bg-white/10 text-white border border-white/10" : "text-slate-400 hover:text-white hover:bg-white/5"
-                  )}
-                 >
-                    <Layers size={16} />
-                    Mes Espaces
-                 </button>
-                 <button 
-                  onClick={() => setMode('join')}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-4 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest",
-                    mode === 'join' ? "bg-white/10 text-white border border-white/10" : "text-slate-400 hover:text-white hover:bg-white/5"
-                  )}
-                 >
-                    <Users size={16} />
-                    Fusionner Espace
-                 </button>
-                 <button 
-                  onClick={() => setMode('create')}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-4 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest",
-                    mode === 'create' ? "bg-white/10 text-white border border-white/10" : "text-slate-400 hover:text-white hover:bg-white/5"
-                  )}
-                 >
-                    <Plus size={16} />
-                    Nouvel Espace
-                 </button>
-              </div>
-           </div>
-
-           <div className="pt-8 border-t border-white/5 flex flex-col gap-4">
-              <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
-                 <div className="w-10 h-10 rounded-full bg-slate-800 border-2 border-white/10 flex items-center justify-center font-black text-slate-400 overflow-hidden shrink-0">
-                    {user.photoURL ? <img src={user.photoURL} alt="User" /> : user.email?.charAt(0).toUpperCase()}
-                 </div>
-                 <div className="overflow-hidden">
-                    <p className="text-[10px] font-black uppercase truncate text-white">{userProfile?.fullName || user.displayName || user.email?.split('@')[0] || 'Utilisateur'}</p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                       <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                       <p className="text-[8px] font-black text-slate-500 uppercase">Synchronisé</p>
-                    </div>
-                 </div>
-              </div>
-              <button 
-                onClick={() => logout()}
-                className="w-full py-4 text-[9px] font-black text-slate-500 hover:text-red-400 uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
-              >
-                <LogOut size={12} />
-                Quitter Session
-              </button>
-           </div>
+        <div className="text-center mb-8 relative z-10">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl mx-auto flex items-center justify-center mb-6 text-white shadow-xl shadow-blue-500/20 rotate-3">
+            <Building2 size={40} />
+          </div>
+          <h2 className="text-3xl font-black tracking-tighter text-slate-900 mb-2 italic">ESPACE NEXUS</h2>
+          <p className="text-slate-500 text-sm font-medium tracking-tight">Accédez à votre intelligence industrielle.</p>
         </div>
-      </aside>
 
-      {/* Main Launcher Content */}
-      <main className="flex-1 overflow-y-auto p-6 lg:p-12 relative flex flex-col">
-         {/* Background Glows */}
-         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none" />
-         
-         <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col relative z-10">
-            {/* Header Area */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-16">
-               <div className="space-y-4">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
-                     <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
-                     <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">Connecté en tant que {user.email}</span>
-                  </div>
-                  <h1 className="text-5xl lg:text-7xl font-black tracking-tighter italic text-white leading-none">NEXUS <span className="text-blue-600 not-italic">HUB</span></h1>
-                  <p className="text-slate-400 font-medium text-base lg:text-lg max-w-xl">
-                    Tableau de bord de lancement unifié. Accédez à vos infrastructures opérationnelles ou déployez de nouvelles strates de gestion.
-                  </p>
-               </div>
-               
-               <AnimatePresence>
-                {lastSession && (
-                  <motion.button
-                    key="quick-resume"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    onClick={() => {
-                      onSelect(lastSession.company);
-                      localStorage.setItem('nexus_navigate_to', lastSession.tab);
-                    }}
-                    className="flex items-center gap-5 bg-white/5 border border-white/10 p-6 rounded-[2.5rem] hover:bg-blue-600 hover:border-transparent transition-all group shadow-2xl relative overflow-hidden active:scale-95"
-                  >
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-white/20" />
-                    <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:bg-white group-hover:text-blue-600 transition-all shrink-0">
-                      <TrendingUp size={28} className="animate-pulse" />
-                    </div>
-                    <div className="text-left pr-4">
-                      <span className="block text-[10px] font-black text-blue-400 uppercase tracking-widest group-hover:text-blue-50 transition-colors">Reprendre Session Active</span>
-                      <span className="block text-2xl font-black text-white italic tracking-tight">{lastSession.company.name}</span>
-                    </div>
-                  </motion.button>
-                )}
-               </AnimatePresence>
-            </div>
+        {errorMsg && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-red-50 text-red-600 text-[11px] font-black uppercase tracking-widest rounded-2xl border border-red-100 flex items-center gap-3"
+          >
+            <ShieldAlert size={18} />
+            {errorMsg}
+          </motion.div>
+        )}
 
-            {/* Error/Success Feedbacks */}
-            <AnimatePresence mode="wait">
-              {(errorMsg || successMsg) && (
-                <motion.div 
-                  key="feedback"
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className={cn(
-                    "mb-12 p-6 rounded-3xl border flex items-center gap-4 shadow-2xl backdrop-blur-md",
-                    errorMsg ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-green-500/10 border-green-500/20 text-green-400"
-                  )}
-                >
-                  <div className={cn("p-2 rounded-xl", errorMsg ? "bg-red-500/20" : "bg-green-500/20")}>
-                    {errorMsg ? <ShieldAlert size={20} /> : <AlertCircle size={20} />}
-                  </div>
-                  <span className="text-xs font-black uppercase tracking-widest">{errorMsg || successMsg}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+        {successMsg && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-green-50 text-green-600 text-[11px] font-black uppercase tracking-widest rounded-2xl border border-green-100 flex items-center gap-3"
+          >
+            <AlertCircle size={18} />
+            {successMsg}
+          </motion.div>
+        )}
 
-            {/* View Switching */}
-            <div className="flex-1">
-              {mode === 'select' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {companyLoading ? (
-                    [1,2,3].map(i => (
-                      <div key={i} className="h-64 bg-white/5 border border-white/5 rounded-[3rem] animate-pulse" />
-                    ))
-                  ) : allWorkspaces.length > 0 ? (
-                    allWorkspaces.map((c) => (
-                      <motion.button
-                        key={c.id}
-                        whileHover={{ y: -8, scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => onSelect(c)}
-                        className="group relative p-8 rounded-[3rem] border border-white/5 bg-gradient-to-br from-slate-900 to-slate-950 text-left overflow-hidden shadow-2xl transition-all hover:border-blue-500/30 ring-0 hover:ring-8 hover:ring-blue-500/5"
-                      >
-                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 rounded-full blur-[40px] -mr-16 -mt-16 group-hover:bg-blue-600/10 transition-all duration-700" />
-                         
-                         <div className="flex items-center justify-between mb-10 relative z-10">
-                            <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center font-black text-white text-3xl group-hover:bg-blue-600 group-hover:border-transparent group-hover:shadow-[0_15px_30px_rgba(37,99,235,0.3)] transition-all duration-500 rotate-6 group-hover:rotate-0">
-                               {c.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                               <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/5">
-                                  <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" />
-                                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{c.joinCode}</span>
-                                </div>
-                            </div>
-                         </div>
-
-                         <div className="relative z-10">
-                            <div className="flex items-center gap-2 mb-2">
-                               <h3 className="text-2xl font-black text-white italic tracking-tighter group-hover:text-blue-400 transition-colors uppercase truncate">{c.name}</h3>
-                               {c.company_members?.[0]?.role === 'OWNER' || c.ownerId === user.uid ? (
-                                 <span className="shrink-0 px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded-md text-[7px] font-black text-blue-400 uppercase tracking-widest">Master</span>
-                               ) : (
-                                 <span className="shrink-0 px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded-md text-[7px] font-black text-emerald-400 uppercase tracking-widest">Staff</span>
-                               )}
-                            </div>
-                            
-                            <div className="inline-flex items-center gap-2 text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-8">
-                               <div className="p-1 bg-slate-800 rounded-md"><Building2 size={10} /></div>
-                               Nexus Enterprise Cloud
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 mt-auto">
-                               <div className="bg-white/5 p-3 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
-                                  <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Privilèges</span>
-                                  <span className="block text-sm font-black text-white truncate italic">
-                                    {c.company_members?.[0]?.role || (c.ownerId === user.uid ? 'Propriétaire' : 'Collaborateur')}
-                                  </span>
-                               </div>
-                               <div className="bg-white/5 p-3 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
-                                  <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Réseau</span>
-                                  <span className="block text-sm font-black text-blue-500 italic">Distant (SSL)</span>
-                               </div>
-                            </div>
-                         </div>
-                         
-                         <div className="absolute bottom-8 right-8 p-3 bg-white/5 border border-white/10 rounded-full opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-500">
-                            <ChevronRight size={20} className="text-blue-500" />
-                         </div>
-                      </motion.button>
-                    ))
-                  ) : (
-    <div className="col-span-full py-24 px-8 text-center bg-slate-900/40 rounded-[4rem] border-2 border-dashed border-white/10 flex flex-col items-center justify-center backdrop-blur-xl relative overflow-hidden group">
-                       {/* Animated background elements */}
-                       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[100px] -mr-48 -mt-48 group-hover:bg-blue-600/20 transition-all duration-1000" />
-                       <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-600/10 rounded-full blur-[80px] -ml-24 -mb-24 group-hover:bg-indigo-600/20 transition-all duration-1000" />
-
-                       <div className="w-24 h-24 bg-white/5 rounded-[2.5rem] flex items-center justify-center text-blue-500 shadow-2xl relative mb-10 ring-1 ring-white/10">
-                          <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full animate-pulse" />
-                          <Activity size={48} className="relative z-10" />
-                       </div>
-                       
-                       <div className="space-y-6 relative z-10 max-w-lg mx-auto">
-                          <div className="space-y-3">
-                             <h3 className="text-3xl lg:text-4xl font-black text-white italic tracking-tighter uppercase leading-tight">Configuration en cours d&apos;analyse</h3>
-                             <p className="text-slate-400 font-medium leading-relaxed text-base">
-                                Votre compte <span className="text-blue-400 font-black uppercase text-sm">{user.email}</span> est authentifié, 
-                                mais <span className="text-white">aucune entreprise active</span> n&apos;est actuellement rattachée à votre profil.
-                             </p>
-                          </div>
-                          
-                          <div className="p-5 bg-blue-500/5 border border-blue-500/20 rounded-3xl text-left space-y-4">
-                             <div className="flex items-start gap-4">
-                                <div className="p-2 bg-blue-500/20 rounded-xl mt-1">
-                                   <ShieldAlert size={18} className="text-blue-400" />
-                                </div>
-                                <div className="space-y-1">
-                                   <p className="text-xs font-black text-white uppercase tracking-wider">Pourquoi ce message ?</p>
-                                   <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                                      Si vous êtes employé, votre administrateur doit vous ajouter dans le module **Ressources Humaines** avec votre email exact.
-                                   </p>
-                                </div>
-                             </div>
-                          </div>
-
-                          <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                             <button 
-                               onClick={() => setMode('create')} 
-                               className="flex-1 py-5 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white hover:text-blue-600 transition-all shadow-xl shadow-blue-600/20 active:scale-95"
-                             >
-                                Créer une Entreprise
-                             </button>
-                             <button 
-                               onClick={() => setMode('join')} 
-                               className="flex-1 py-5 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl active:scale-95"
-                             >
-                                Utiliser un code
-                             </button>
-                          </div>
-                          
-                          <div className="pt-8 flex flex-col gap-3">
-                             <button 
-                                onClick={async () => {
-                                  setSubmitting(true);
-                                  await refreshCompanies();
-                                  setSubmitting(false);
-                                  setSuccessMsg("Synchronisation forcée effectuée");
-                                }}
-                                className="w-full py-4 bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-white rounded-2xl transition-all border border-white/5 active:scale-95 flex items-center justify-center gap-2"
-                             >
-                                <Database size={14} />
-                                Lancer l&apos;auto-réparation intelligente
-                             </button>
-                             <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest">
-                                Nexus ERP v5.0 • Récupération automatique activée
-                             </p>
-                          </div>
-                       </div>
-                    </div>
-                  )}
+        {mode === 'select' && (
+          <div className="space-y-8 relative z-10">
+            {/* Scénario A: Entreprises existantes */}
+            {companyLoading ? (
+              <div className="space-y-4">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Synchronisation de vos accès...</h3>
+                <SkeletonCard />
+                <SkeletonCard />
+              </div>
+            ) : (ownedCompanies.length > 0 || joinedCompanies.length > 0) ? (
+              <div className="space-y-4">
+                <div className="flex justify-between items-end px-1">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Mes Espaces de Travail</h3>
+                  <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">{ownedCompanies.length + joinedCompanies.length} actif(s)</span>
                 </div>
-              )}
+                <div className="space-y-3">
+                  {[...ownedCompanies, ...joinedCompanies].map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => onSelect(c)}
+                      className="w-full flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-white hover:border-blue-600 hover:bg-blue-50/50 transition-all group relative overflow-hidden active:scale-[0.98]"
+                    >
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-900 text-xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                          {c.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="text-left">
+                          <span className="block font-black text-slate-900 text-base tracking-tight group-hover:text-blue-700 transition-colors">{c.name}</span>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 uppercase tracking-[0.1em]">{c.joinCode}</span>
+                            {c.ownerEmail === cleanEmail && (
+                              <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 uppercase tracking-[0.1em]">Propriétaire</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight size={18} className="text-slate-300 group-hover:translate-x-1 group-hover:text-blue-500 transition-all" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="py-8 px-4 text-center space-y-4 border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/50">
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-sm text-blue-500">
+                  <Layers size={32} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight">Bienvenue sur Nexus ERP</h3>
+                  <p className="text-xs font-medium text-slate-400 mt-1 max-w-[220px] mx-auto">Vous n'êtes rattaché à aucun espace sécurisé pour le moment.</p>
+                </div>
+              </div>
+            )}
 
-              {mode === 'create' && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="max-w-2xl mx-auto py-12"
+            {/* Scénario B: Rejoindre ou Créer */}
+            <div className="pt-4 space-y-4 text-center">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
+                <div className="relative flex justify-center text-[9px] uppercase font-black tracking-widest"><span className="bg-white px-4 text-slate-300 italic">Actions d'Infrastructure</span></div>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={() => setMode('join')}
+                  className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-indigo-600 text-white font-black text-[11px] uppercase tracking-widest hover:bg-slate-900 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
                 >
-                  <form onSubmit={handleCreate} className="space-y-12">
-                    <div className="text-center space-y-4 mb-16">
-                      <div className="w-20 h-20 bg-blue-600 text-white rounded-3xl mx-auto flex items-center justify-center shadow-2xl rotate-6"><Plus size={40} /></div>
-                      <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white">Architecture Industrielle</h2>
-                      <p className="text-slate-400 font-medium">Déployez une nouvelle instance Nexus sécurisée pour votre entreprise.</p>
-                    </div>
-
-                    <div className="space-y-8 bg-slate-900/50 p-12 rounded-[3.5rem] border border-white/5 backdrop-blur-xl">
-                      <div className="space-y-4">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] block ml-4 italic">Nom de l&apos;Entité Opérationnelle</label>
-                        <input 
-                          type="text" 
-                          value={newCompanyName}
-                          onChange={e => setNewCompanyName(e.target.value)}
-                          placeholder="Ex: NEXUS LOGISTICS HUB"
-                          className="w-full bg-white/5 border border-white/5 rounded-3xl p-8 outline-none focus:ring-4 focus:ring-blue-600/20 focus:border-blue-600 font-black text-2xl tracking-tight transition-all placeholder:text-slate-700 italic text-white uppercase"
-                          required
-                          autoFocus
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-4">
-                        <button type="submit" disabled={submitting || !newCompanyName.trim()} className="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 transition-all shadow-2xl shadow-blue-600/20 active:scale-95">
-                          {submitting ? 'Déploiement Nexus...' : "Initialiser l'Infrastructure"}
-                        </button>
-                        <button 
-                          type="button" 
-                          onClick={() => setMode('select')} 
-                          className="w-full py-4 text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
-                        >
-                          <ChevronLeft size={16} /> Retour au Terminal
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                </motion.div>
-              )}
-
-              {mode === 'join' && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="max-w-2xl mx-auto py-12"
+                  <Users size={16} />
+                  Rejoindre avec un Code
+                </button>
+                <button
+                  onClick={() => setMode('create')}
+                  className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-white border border-slate-200 text-slate-600 font-black text-[11px] uppercase tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all active:scale-95"
                 >
-                  <form onSubmit={handleJoin} className="space-y-12">
-                    <div className="text-center space-y-4 mb-16">
-                      <div className="w-20 h-20 bg-indigo-600 text-white rounded-3xl mx-auto flex items-center justify-center shadow-2xl -rotate-6"><Users size={40} /></div>
-                      <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white">Intégration Systémique</h2>
-                      <p className="text-slate-400 font-medium">Rejoignez un espace de travail existant grâce à votre protocole d'accès.</p>
-                    </div>
-
-                    <div className="space-y-8 bg-slate-900/50 p-12 rounded-[3.5rem] border border-white/5 backdrop-blur-xl">
-                      <div className="space-y-4">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] block ml-4 italic">Clé d&apos;Accès Nexus (6 Caractères)</label>
-                        <input 
-                          type="text" 
-                          value={joinCodeInput}
-                          onChange={e => setJoinCodeInput(e.target.value.toUpperCase())}
-                          placeholder="XXXXXX"
-                          maxLength={6}
-                          className="w-full bg-white/5 border border-white/5 rounded-3xl p-10 outline-none focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 font-black text-5xl text-center tracking-[0.5em] uppercase transition-all shadow-inner italic text-white"
-                          required
-                          autoFocus
-                        />
-                        <p className="text-center text-[10px] text-slate-600 font-bold uppercase tracking-widest mt-4">Demandez cette clé à votre agent d&apos;administration.</p>
-                      </div>
-
-                      <div className="flex flex-col gap-4">
-                        <button type="submit" disabled={submitting || !joinCodeInput.trim()} className="w-full py-6 bg-indigo-600 text-white rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-600/20 active:scale-95">
-                          {submitting ? 'Authentification...' : 'Synchroniser mon Accès'}
-                        </button>
-                        <button 
-                          type="button" 
-                          onClick={() => setMode('select')} 
-                          className="w-full py-4 text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
-                        >
-                          <ChevronLeft size={16} /> Retour au Terminal
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                </motion.div>
-              )}
+                  <Plus size={16} />
+                  Initialiser un Nouvel Espace
+                </button>
+              </div>
             </div>
+          </div>
+        )}
 
-            {/* Global Footer Launcher */}
-            <div className="mt-auto py-12 flex flex-col md:flex-row items-center justify-between gap-8 border-t border-white/5 px-4 lg:px-0">
-               <div className="flex items-center gap-8">
-                  <div className="flex items-center gap-2">
-                     <div className={cn("w-2 h-2 rounded-full", connStatus === 'ok' ? "bg-green-500 shadow-[0_0_10px_#22c55e]" : "bg-amber-500 animate-pulse")} />
-                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{connStatus === 'ok' ? 'Cloud Infrastructure Secured' : 'Connecting to Core...'}</span>
-                  </div>
-                  <div className="hidden lg:flex items-center gap-2 text-slate-600">
-                     <Shield size={14} />
-                     <span className="text-[10px] font-bold uppercase tracking-widest">Architectural v5.0-LEGENDARY</span>
-                  </div>
-               </div>
-
-               <div className="flex items-center gap-6">
-                  <a href="#" className="text-[10px] font-black text-slate-500 hover:text-white transition-colors uppercase tracking-widest">Protocoles</a>
-                  <a href="#" className="text-[10px] font-black text-slate-500 hover:text-white transition-colors uppercase tracking-widest">Support Global</a>
-                  <button onClick={() => logout()} className="px-5 py-2.5 bg-white/5 hover:bg-red-500/10 text-[10px] font-black text-slate-400 hover:text-red-400 uppercase tracking-widest rounded-xl border border-white/5 transition-all">Déconnexion</button>
-               </div>
+        {mode === 'create' && (
+          <motion.form 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            onSubmit={handleCreate} 
+            className="space-y-6"
+          >
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 text-center">Nom de votre Entreprise</label>
+              <input 
+                type="text" 
+                value={newCompanyName}
+                onChange={e => setNewCompanyName(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-black text-center text-xl tracking-tight placeholder:opacity-20 translate-y-0 focus:-translate-y-1 transition-all"
+                placeholder="Ex: JET 7 INFO"
+                required
+                autoFocus
+              />
             </div>
-         </div>
-      </main>
+            <div className="flex flex-col gap-3">
+              <button type="submit" disabled={submitting || !newCompanyName.trim()} className="w-full py-5 bg-blue-600 text-white shadow-xl shadow-blue-600/20 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all active:scale-95">
+                {submitting ? 'Symphonie en cours...' : 'Initialiser mon Espace'}
+              </button>
+              <button type="button" onClick={() => setMode('select')} className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-colors">Retour</button>
+            </div>
+          </motion.form>
+        )}
+
+        {mode === 'join' && (
+          <motion.form 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            onSubmit={handleJoin} 
+            className="space-y-6"
+          >
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 text-center">Code d'Espace de Travail</label>
+              <input 
+                type="text" 
+                value={joinCodeInput}
+                onChange={e => setJoinCodeInput(e.target.value.toUpperCase())}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent font-black text-center tracking-[0.4em] uppercase text-2xl shadow-inner italic"
+                placeholder="XXXXXX"
+                maxLength={6}
+                required
+                autoFocus
+              />
+              <p className="mt-4 text-center text-[10px] text-slate-400 font-medium">Demandez le code à 6 caractères à votre administrateur.</p>
+            </div>
+            <div className="flex flex-col gap-3 pt-4">
+              <button type="submit" disabled={submitting || !joinCodeInput.trim()} className="w-full py-5 bg-indigo-600 text-white shadow-xl shadow-indigo-600/20 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95">
+                {submitting ? 'Vérification...' : 'Fusionner avec cet Espace'}
+              </button>
+              <button type="button" onClick={() => setMode('select')} className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-colors">Retour</button>
+            </div>
+          </motion.form>
+        )}
+
+        <div className="mt-12 pt-8 border-t border-slate-50 flex flex-col items-center gap-6">
+          {isMaster && (
+            <button 
+              onClick={() => onSelect({ id: 'comp_nexus_master', name: 'Nexus Enterprise Global', ownerId: 'master_nexus_01', joinCode: 'NEXUS-ADMIN' })}
+              className="flex items-center gap-3 px-6 py-3 bg-slate-900 text-blue-400 rounded-full text-[9px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 hover:text-white transition-all shadow-lg active:scale-95"
+            >
+              <Shield size={14} />
+              Console Maître Active
+            </button>
+          )}
+
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => logout()}
+              className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500 transition-colors flex items-center gap-2 group p-2"
+            >
+              <LogOut size={12} className="group-hover:-translate-x-1 transition-transform" />
+              Quitter Nexus
+            </button>
+            <div className="w-1 h-1 bg-slate-200 rounded-full" />
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 rounded-full border border-slate-100">
+              <div className={`w-1.5 h-1.5 rounded-full ${connStatus === 'ok' ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-slate-300 animate-pulse'}`} />
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider">{connStatus === 'ok' ? 'Cloud Sync active' : 'Syncing...'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic Background */}
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-50 rounded-full blur-3xl opacity-60 pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-50 rounded-full blur-3xl opacity-60 pointer-events-none" />
+      </div>
     </div>
   );
 }
@@ -743,7 +518,6 @@ function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [slowLoading, setSlowLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -757,82 +531,17 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { currentCompany, companies, setCurrentCompany, loading: companyLoading } = useCompany();
 
-  const [backClickCount, setBackClickCount] = useState(0);
-  const [toast, setToast] = useState<{ message: string, type: 'info' | 'success' | 'warn' } | null>(null);
-
-  const showToast = (message: string, type: 'info' | 'success' | 'warn' = 'info') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  // Navigation Stack Management for Back Button
-  useEffect(() => {
-    const handlePopState = (e: PopStateEvent) => {
-      if (e.state) {
-        const { companyId, tab } = e.state;
-        if (companyId) {
-          const comp = companies.find(c => c.id === companyId);
-          if (comp) {
-            setCurrentCompany(comp);
-            if (tab) setActiveTab(tab);
-          }
-        } else {
-          setCurrentCompany(null);
-        }
-      } else {
-        // We are at root (selection screen)
-        if (!currentCompany) {
-          setBackClickCount(prev => prev + 1);
-          setTimeout(() => setBackClickCount(0), 2000);
-          
-          if (backClickCount === 0) {
-            // Push state back once to "prevent" immediate exit and show message
-            window.history.pushState(null, '');
-            showToast("Appuyez encore pour quitter Nexus ERP", 'info');
-          }
-        } else {
-          setCurrentCompany(null);
-        }
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [companies, setCurrentCompany, currentCompany, backClickCount]);
-
-  useEffect(() => {
-    // Pulse state to browser history
-    const state = { 
-      companyId: currentCompany?.id || null, 
-      tab: activeTab 
-    };
-    
-    const currentState = window.history.state;
-    if (!currentState || currentState.companyId !== state.companyId || currentState.tab !== state.tab) {
-      window.history.pushState(state, '');
-    }
-
-    // Save for Quick Resume
-    if (currentCompany?.id) {
-      localStorage.setItem('nexus_last_company_id', currentCompany.id);
-      localStorage.setItem('nexus_last_tab', activeTab);
-    }
-  }, [currentCompany?.id, activeTab]);
-
-  useEffect(() => {
-    // Check for auto-navigation from Quick Resume
-    const navTo = localStorage.getItem('nexus_navigate_to');
-    if (navTo && currentCompany) {
-      setActiveTab(navTo);
-      localStorage.removeItem('nexus_navigate_to');
-    }
-  }, [currentCompany]);
-
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
   const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
   
-  const allAffiliatedCompanies = companies;
-  
+  const ownedCompanies = companies.filter(c => {
+    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
+    return c.ownerId === user?.uid || (cOwnerEmail && cOwnerEmail === cleanEmail);
+  });
+  const joinedCompanies = companies.filter(c => {
+    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
+    return c.ownerId !== user?.uid && cOwnerEmail !== cleanEmail;
+  });
   const [isWhitelisted, setIsWhitelisted] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -966,45 +675,22 @@ export default function App() {
 
   useEffect(() => {
     if (user && currentCompany && !user.role) {
-      // 1. Check if Master/Owner
-      const userEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
-      const isOwner = currentCompany.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '') === userEmail || 
-                      currentCompany.ownerId === user.uid || 
-                      isMaster;
-
-      if (isOwner) {
-        setUser((prev: any) => prev ? { ...prev, role: 'owner' } : null);
+      if (currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid || user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') {
+        setUser(prev => prev ? { ...prev, role: 'owner' } : null);
         setIsBlocked(false);
       } else {
-        // 2. Check cached membership (Faster, especially for multi-tenant)
-        if (currentCompany.company_members && currentCompany.company_members.length > 0) {
-           const member = currentCompany.company_members[0];
-           if (member.status === 'blocked') {
-             setIsBlocked(true);
-           } else {
-             setUser((prev: any) => prev ? { 
-               ...prev, 
-               role: member.role || 'Personnel',
-               isCollaborator: true 
-             } : null);
-             setIsBlocked(false);
-             return;
-           }
-        }
-
-        // 3. Fallback: Robust recovery via DB
+        // Try to find the user in the personnel collection for this company
         const findRole = async () => {
           try {
-            if (!userEmail) {
+            const cleanEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '');
+            if (!cleanEmail) {
               setIsBlocked(true);
               return;
             }
-            
-            // Try Personnel first
             const q = query(
               collection(db, 'personnel'), 
               where('companyId', '==', currentCompany.id),
-              where('email', '==', userEmail),
+              where('email', '==', cleanEmail),
               limit(1)
             );
             const snap = await getDocs(q);
@@ -1014,47 +700,71 @@ export default function App() {
               if (memberData.status === 'blocked') {
                 setIsBlocked(true);
               } else {
-                // Auto-repair Firestore record with UID
-                if (memberData.uid !== user.uid) {
-                  await updateDoc(memberDoc.ref, { uid: user.uid, updatedAt: serverTimestamp() });
+                // Sync the UID and status if not present
+                if (memberData.uid !== user.uid || memberData.status !== 'active') {
+                  await updateDoc(memberDoc.ref, { 
+                    uid: user.uid,
+                    status: 'active',
+                    updatedAt: serverTimestamp()
+                  });
                 }
-                setUser((prev: any) => prev ? { ...prev, role: memberData.role || 'Personnel' } : null);
-                setIsBlocked(false);
-              }
-              return;
-            }
 
-            // Then check Client record
-            const clientQ = query(
-              collection(db, 'clients'),
-              where('companyId', '==', currentCompany.id),
-              where('email', '==', userEmail),
-              limit(1)
-            );
-            const clientSnap = await getDocs(clientQ);
-            if (!clientSnap.empty) {
-              const clientData = clientSnap.docs[0].data();
-              setUser((prev: any) => prev ? { 
-                ...prev, 
-                role: 'Client',
-                email: user.email || clientData.email,
-                nexusId: clientData.id || clientSnap.docs[0].id
-              } : null);
-              setIsBlocked(false);
+                setUser(prev => prev ? { 
+                  ...prev, 
+                  role: memberData.role || 'Personnel',
+                  customPermissions: memberData.customPermissions || [],
+                  email: user.email || memberData.email,
+                  nexusId: memberData.id || memberDoc.id
+                } : null);
+              }
             } else {
-              // If we reached here but companies list said they are members, trust the context but default role
-              setUser((prev: any) => prev ? { ...prev, role: 'Personnel' } : null);
-              setIsBlocked(false);
+               // Match as client
+               const clientQ = query(
+                 collection(db, 'clients'),
+                 where('companyId', '==', currentCompany.id),
+                 where('email', '==', cleanEmail),
+                 limit(1)
+               );
+               const clientSnap = await getDocs(clientQ);
+               if (!clientSnap.empty) {
+                  // Important: Sync the UID and status if not present to ensure security rules work better
+                  const clientRef = clientSnap.docs[0].ref;
+                  const clientData = clientSnap.docs[0].data();
+                  if (clientData.uid !== user.uid || clientData.status !== 'active') {
+                    await updateDoc(clientRef, { 
+                      uid: user.uid,
+                      status: 'active',
+                      updatedAt: serverTimestamp()
+                    });
+                  }
+                  
+                  // Double check membership in the company document
+                  if (!(currentCompany.memberEmails || []).includes(cleanEmail)) {
+                    await setDoc(doc(db, 'companies', currentCompany.id), {
+                      memberEmails: arrayUnion(cleanEmail),
+                      employees: arrayUnion(user.uid),
+                      updatedAt: serverTimestamp()
+                    }, { merge: true }).catch(e => console.error("Client auto-enroll sync failed", e));
+                  }
+                  
+                  setUser(prev => prev ? { 
+                    ...prev, 
+                    role: 'Client',
+                    email: user.email || clientData.email,
+                    nexusId: clientData.id || clientSnap.docs[0].id
+                  } : null);
+               } else {
+                 setIsBlocked(true); // Treat as unauthorized
+               }
             }
           } catch (err) {
-            console.error("Nexus Role Recovery Error:", err);
-            setIsBlocked(true);
+            console.error("Role lookup failed:", err);
           }
         };
         findRole();
       }
     }
-  }, [user?.uid, currentCompany?.id, isMaster]);
+  }, [user, currentCompany]);
 
   useEffect(() => {
     // Handle master switch from AdminModule
@@ -1075,11 +785,33 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
         setUser(u);
-        const profile = await syncUserProfile(u);
-        setUserProfile(profile);
+        // Sync user profile to Firestore for notification lookups
+        try {
+          const rawEmail = u.email || u.providerData?.find(p => p?.email)?.email;
+          const cleanEmail = rawEmail ? rawEmail.trim().toLowerCase().replace(/\s+/g, '') : null;
+          
+          const userId = cleanEmail || u.uid;
+          const userRef = doc(db, 'users', userId);
+          const userData = {
+            uid: u.uid,
+            email: cleanEmail,
+            displayName: u.displayName || (cleanEmail ? cleanEmail.split('@')[0] : 'Utilisateur Nexus'),
+            photoURL: u.photoURL || null,
+            lastLogin: serverTimestamp(),
+            status: 'active'
+          };
+          
+          await setDoc(userRef, userData, { merge: true });
+          
+          // Double indexing to avoid duplicates in Admin list when email is discovered later
+          if (cleanEmail && userId !== cleanEmail) {
+            await setDoc(doc(db, 'users', cleanEmail), userData, { merge: true });
+          }
+        } catch (err) {
+          console.error("Nexus Sync: User profile sync failed", err);
+        }
       } else {
         setUser(null);
-        setUserProfile(null);
       }
       setLoading(false);
     });
@@ -1101,99 +833,56 @@ export default function App() {
     }
   }, [user, currentCompany, activeTab]);
 
-  if (loading) {
+  if (loading || (user && companyLoading)) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#020617] p-8 relative overflow-hidden font-sans">
-        {/* Cinematic Background */}
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-1/4 left-1/4 w-[60vh] h-[60vh] bg-blue-600/10 rounded-full blur-[140px] animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-[50vh] h-[50vh] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse [animation-delay:2s]" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none" />
-        </div>
-
-        <div className="relative z-10 flex flex-col items-center max-w-sm w-full">
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="relative mb-16"
-          >
-            <NexusLogo className="w-28 h-28" />
-            <motion.div 
-              animate={{ rotate: 360 }}
-              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-              className="absolute -inset-6 border border-dashed border-blue-500/30 rounded-full"
-            />
-            <motion.div 
-              animate={{ rotate: -360 }}
-              transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-              className="absolute -inset-10 border border-dotted border-indigo-500/20 rounded-full"
-            />
-          </motion.div>
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6">
+        <div className="flex flex-col items-center max-w-sm w-full text-center">
+          <div className="relative mb-8">
+            <NexusLogo className="w-20 h-20 animate-pulse opacity-20" />
+            <div className="absolute inset-0 flex items-center justify-center">
+               <div className="h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-lg shadow-blue-600/20" />
+            </div>
+          </div>
           
-          <div className="space-y-6 w-full">
-            <div className="text-center">
-              <h2 className="text-4xl font-black text-white tracking-tighter mb-2 italic uppercase">Nexus <span className="text-blue-500 not-italic">OS</span></h2>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">INITIALISATION DE L'ÉCOSYSTÈME SÉCURISÉ</p>
-            </div>
-
-            <div className="space-y-4 w-full">
-              <div className="flex justify-between items-end px-1">
-                <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest animate-pulse">Sync avec l'Intelligence Hub...</span>
-                <span className="text-[10px] font-black text-slate-600 uppercase">Crypté</span>
-              </div>
-              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                 <motion.div 
-                   initial={{ width: "0%" }}
-                   animate={{ width: "100%" }}
-                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                   className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 shadow-[0_0_15px_#2563eb]"
-                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-1">
-                    <div className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">Auth Engine</div>
-                    <div className="text-[9px] font-black text-blue-500 uppercase truncate">Synchronisé</div>
-                 </div>
-                 <div className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-1">
-                    <div className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">Data Stream</div>
-                    <div className="text-[9px] font-black text-emerald-500 uppercase truncate">Sécurisé</div>
-                 </div>
-              </div>
-            </div>
-            
+          <h2 className="text-xl font-black text-slate-900 tracking-tight mb-2 italic uppercase">Symphonie Nexus</h2>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Initialisation de l'écosystème sécurisé...</p>
+          
+          <AnimatePresence>
             {slowLoading && (
               <motion.div 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }}
-                className="pt-4 flex flex-col gap-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-12 space-y-4 w-full"
               >
-                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
-                   <p className="text-[10px] text-amber-400 font-medium leading-relaxed">La synchronisation prend plus de temps que prévu. Vérifiez votre connexion Nexus.</p>
+                <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest leading-loose">
+                    La connexion au Cloud prend plus de temps que prévu. 
+                    Cela peut être dû à votre connexion réseau.
+                  </p>
                 </div>
                 <button 
                   onClick={() => window.location.reload()}
-                  className="w-full py-3 bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-white rounded-xl transition-all border border-white/5"
+                  className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl"
                 >
-                   Forcer la Synchronisation
+                  Forcer le Redémarrage
+                </button>
+                <button 
+                  onClick={() => auth.signOut()}
+                  className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
+                >
+                  Changer de Compte
                 </button>
               </motion.div>
             )}
-          </div>
+          </AnimatePresence>
         </div>
         
-        <div className="absolute bottom-12 flex flex-col items-center gap-4">
-           <div className="flex items-center gap-2">
-              <Shield size={12} className="text-blue-500" />
-              <span className="text-[8px] text-slate-500 font-black uppercase tracking-[0.2em]">End-to-End Encryption v5.0 Active</span>
-           </div>
+        <div className="absolute bottom-10 text-[9px] text-slate-300 font-bold uppercase tracking-[0.2em]">
+          Nexus ERP Architectural Sync v4.2
         </div>
       </div>
     );
   }
-
-  // If user is logged in but company data is loading, we can show a partial launcher 
-  // with a loading state inside it rather than a full screen blocker.
-  // This allows the user to see the "Launcher" environment immediately.
 
   if (showMarketplace) {
     return (
@@ -1222,7 +911,7 @@ export default function App() {
   }
 
   if (!currentCompany) {
-    return <WorkspaceSelector companies={companies} user={user} userProfile={userProfile} onSelect={setCurrentCompany} />;
+    return <WorkspaceSelector companies={companies} user={user} onSelect={setCurrentCompany} />;
   }
 
   if (isBlocked) {
@@ -1458,55 +1147,55 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col h-screen bg-nexus-bg">
         {/* Top Header */}
-        <header className="h-16 px-4 md:px-10 border-b border-white/5 bg-[#020617]/80 sticky top-0 z-20 flex items-center justify-between backdrop-blur-xl">
-          <div className="flex items-center gap-4">
+        <header className="h-24 px-6 sm:px-12 border-b border-white/5 bg-nexus-surface sticky top-0 z-20 flex items-center justify-between">
+          <div className="flex items-center gap-6">
             <button 
               onClick={() => setSidebarOpen(!isSidebarOpen)} 
-              className="lg:hidden p-2 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
+              className="lg:hidden p-3 bg-nexus-accent text-white rounded-2xl shadow-lg shadow-blue-600/20 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
             >
-              <Menu size={18} />
+              <Menu size={20} />
             </button>
             <div className="flex flex-col">
-              <h2 className="text-[8px] font-black text-blue-500/60 uppercase tracking-[0.4em] mb-0.5 leading-none">Nexus Protocol</h2>
-              <h1 className="text-sm md:text-base font-black text-white tracking-tight leading-none uppercase italic">
+              <h2 className="text-[10px] font-black text-nexus-accent uppercase tracking-[0.3em] mb-1">Nexus Cockpit</h2>
+              <h1 className="text-xl font-bold text-nexus-text tracking-tight leading-none">
                 {activeTab === 'admin' ? "Console Maître" : navItems.find(n => n.id === activeTab)?.label}
               </h1>
             </div>
           </div>
           
-          <div className="flex items-center gap-4 md:gap-6">
+          <div className="flex items-center gap-8">
             <div 
               onClick={() => setIsCommandPaletteOpen(true)}
-              className="hidden xl:flex items-center px-4 py-1.5 bg-white/5 rounded-xl border border-white/5 group transition-all cursor-pointer hover:border-blue-500/30"
+              className="hidden lg:flex items-center px-4 py-2 bg-white/5 rounded-2xl border border-white/10 group transition-all cursor-pointer hover:border-nexus-accent/50"
             >
-              <Search className="text-slate-500 group-hover:text-blue-500 transition-colors" size={14} />
-              <div className="text-[9px] font-bold text-slate-500 w-28 ml-3 flex justify-between items-center">
-                <span className="uppercase tracking-widest">Scanner</span>
-                <span className="text-[7px] px-1.5 py-0.5 bg-white/5 rounded border border-white/5">⌘K</span>
+              <Search className="text-nexus-text-muted group-hover:text-nexus-accent transition-colors" size={18} />
+              <div className="text-[11px] font-bold text-nexus-text-muted w-48 ml-3 flex justify-between items-center">
+                <span>Scanner l'écosystème...</span>
+                <span className="text-[9px] px-1.5 py-0.5 bg-white/10 rounded border border-white/10">⌘K</span>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-4 lg:border-l border-white/5 lg:pl-8">
               <NotificationBell user={user} />
               
-              <div className="flex items-center gap-2.5 pl-2 md:pl-4 border-l border-white/5">
-                <div className="hidden sm:flex flex-col items-end">
-                  <span className="text-[10px] font-black text-white uppercase tracking-tight truncate max-w-[100px]">
-                    {userProfile?.fullName || 'Utilisateur Nexus'}
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="hidden xs:flex flex-col items-end">
+                  <span className="text-[9px] sm:text-[10px] font-black text-nexus-text uppercase tracking-tighter truncate max-w-[80px] sm:max-w-none">
+                    {user?.displayName || user?.email?.split('@')[0] || 'Utilisateur'}
                   </span>
-                  <span className="text-[7px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-1.5 py-0.5 rounded-md border border-blue-500/10">
-                    ID: {userProfile?.id?.slice(0, 8)}
+                  <span className="text-[7px] sm:text-[8px] font-black text-nexus-accent uppercase tracking-[0.1em] px-1.5 sm:px-2 py-0.5 bg-nexus-accent/10 rounded-full border border-nexus-accent/20 mt-0.5">
+                    {user?.role}
                   </span>
                 </div>
-                <div className="relative group cursor-pointer active:scale-90 transition-transform">
+                <div className="relative group cursor-pointer">
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt="User" className="w-8 h-8 md:w-9 md:h-9 rounded-xl border border-white/10 shadow-xl object-cover" />
+                    <img src={user.photoURL} alt="User" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white/10 shadow-xl shadow-slate-950/20 object-cover" />
                   ) : (
-                    <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl border border-white/10 shadow-xl bg-slate-900 flex items-center justify-center text-slate-400 font-black text-xs">
-                      {user.displayName?.charAt(0)?.toUpperCase()}
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white/10 shadow-xl shadow-slate-950/20 bg-nexus-surface flex items-center justify-center text-nexus-text-muted font-black text-base sm:text-lg">
+                      {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
                     </div>
                   )}
-                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-950 shadow-sm" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-nexus-success rounded-full border-[3px] border-nexus-surface shadow-sm" />
                 </div>
               </div>
             </div>
@@ -1515,7 +1204,7 @@ export default function App() {
 
         {/* Dynamic View */}
         {user && currentCompany && <CriticalNotificationOverlay user={user} />}
-        <div className="flex-1 p-3 md:p-8 pb-32">
+        <div className="flex-1 p-4 sm:p-8 pb-32">
           <div
             className="max-w-[1400px] mx-auto"
           >
@@ -1541,30 +1230,6 @@ export default function App() {
           topic={helpTopic}
         />
 
-        {/* Global Toast System */}
-        <AnimatePresence>
-          {toast && (
-            <motion.div 
-              initial={{ opacity: 0, y: 100, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
-              className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] pointer-events-none"
-            >
-              <div className={cn(
-                "px-8 py-4 rounded-3xl border shadow-2xl backdrop-blur-xl flex items-center gap-4",
-                toast.type === 'info' ? "bg-slate-900/90 border-white/10 text-white" : "",
-                toast.type === 'success' ? "bg-emerald-950/90 border-emerald-500/20 text-emerald-400" : "",
-                toast.type === 'warn' ? "bg-amber-950/90 border-amber-500/20 text-amber-400" : ""
-              )}>
-                 <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
-                    <NexusLogo className="w-5 h-5" />
-                 </div>
-                 <span className="text-[10px] font-black uppercase tracking-[0.2em]">{toast.message}</span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Global Footer */}
         <footer className="mt-auto px-4 sm:px-8 py-6 border-t border-white/5 bg-nexus-surface flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-6">
@@ -1574,41 +1239,12 @@ export default function App() {
               <span className="text-[10px] font-bold text-nexus-text uppercase">Sync Intelligence Active</span>
             </div>
           </div>
-          <div className="flex items-center gap-4 pb-20 md:pb-0">
+          <div className="flex items-center gap-4">
             <button className="text-[10px] font-bold text-nexus-text-muted hover:text-nexus-text uppercase transition-colors">Support Principal</button>
             <span className="text-white/5">|</span>
             <button className="text-[10px] font-bold text-nexus-text-muted hover:text-nexus-text uppercase transition-colors">Protocole Sécurité</button>
           </div>
         </footer>
-
-        {/* Mobile Bottom Bar */}
-        <div className="lg:hidden fixed bottom-6 left-6 right-6 h-14 bg-slate-900/40 backdrop-blur-2xl border border-white/5 rounded-2xl flex items-center justify-around px-2 z-50 shadow-[0_15px_40px_rgba(0,0,0,0.4)]">
-           {[
-             { id: 'dashboard', icon: LayoutDashboard, label: 'Dash' },
-             { id: 'sales', icon: TrendingUp, label: 'Ventes' },
-             { id: 'resources', icon: Package, label: 'Stock' },
-             { id: 'projects', icon: FolderKanban, label: 'Projets' },
-             { id: 'marketplace', icon: Store, label: 'Nexus' }
-           ].map(item => (
-             <button
-               key={item.id}
-               onClick={() => setActiveTab(item.id)}
-               className={cn(
-                 "flex flex-col items-center gap-0.5 transition-all w-12 py-1 rounded-xl",
-                 activeTab === item.id ? "text-blue-400 bg-white/5" : "text-slate-500"
-               )}
-             >
-               <item.icon size={16} strokeWidth={activeTab === item.id ? 2.5 : 2} />
-               <span className="text-[6px] font-black uppercase tracking-[0.2em]">{item.label}</span>
-               {activeTab === item.id && (
-                 <motion.div 
-                   layoutId="activeTabIndicator"
-                   className="w-1 h-1 bg-blue-500 rounded-full mt-0.5 shadow-[0_0_8px_#3b82f6]"
-                 />
-               )}
-             </button>
-           ))}
-        </div>
       </main>
     </div>
   );

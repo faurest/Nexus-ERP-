@@ -3,17 +3,14 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import Database from 'better-sqlite3';
 import cors from 'cors';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const PORT = 3000;
 const db = new Database('database.sqlite');
 
-// Initialize AI with @google/genai as per guidelines
-// The SDK constructor takes a GoogleGenAIOptions object.
-const genAI: any = new GoogleGenAI({ 
-  apiKey: process.env.GEMINI_API_KEY || '' 
-} as any);
-const GEMINI_MODEL = 'gemini-1.5-flash';
+// Initialize AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 // Initialize Schema
 db.exec(`
@@ -23,6 +20,8 @@ db.exec(`
     ownerId TEXT,
     ownerEmail TEXT NOT NULL,
     joinCode TEXT UNIQUE NOT NULL,
+    memberEmails TEXT,
+    employees TEXT,
     createdAt INTEGER
   );
 
@@ -206,6 +205,7 @@ db.exec(`
 
 // Try Schema Migrations
 try { db.prepare('UPDATE users SET email = LOWER(TRIM(email))').run(); } catch(e) {}
+try { db.exec('ALTER TABLE companies ADD COLUMN employees TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE companies ADD COLUMN roles TEXT'); } catch (e) {}
 
 try { db.exec('ALTER TABLE personnel ADD COLUMN firstName TEXT'); } catch (e) {}
@@ -315,15 +315,6 @@ async function startServer() {
 
   // --- API ROUTES ---
 
-  // Mock endpoints for firebaseMock.ts if it's accidentally used
-  app.post('/api/auth/login', (req, res) => {
-    res.json({ success: true, user: { uid: 'mock-uid', email: req.body.email } });
-  });
-
-  app.post('/api/auth/register', (req, res) => {
-    res.json({ success: true, user: { uid: 'mock-uid', email: req.body.email } });
-  });
-
   // Generic CRUD Proxy
   const getPK = (collection: string) => collection === 'users' ? 'uid' : 'id';
 
@@ -344,8 +335,9 @@ async function startServer() {
         if (requestUserEmail === 'hackeurfaurest@gmail.com' || requestUserEmail === 'dangafelicite@gmail.com') {
           // All companies
         } else if (ownerId) {
-          conditions.push(`ownerId = ?`);
+          conditions.push(`(ownerId = ? OR memberEmails LIKE ?)`);
           params.push(ownerId);
+          params.push(`%${requestUserEmail}%`);
         }
       } else if (ownerId && validColumns.includes('ownerId')) {
         conditions.push(`ownerId = ?`);
@@ -523,110 +515,83 @@ async function startServer() {
     }
   });
 
-  // --- AI ENDPOINTS (Enterprise Engine) ---
+  // --- AI ENDPOINTS ---
+
   app.post('/api/ai/generate', async (req, res) => {
     try {
-      const { type, context, prompt: directPrompt } = req.body;
-      let prompt = directPrompt || '';
-      let systemInstruction = "Tu es l'expert Nexus ERP, un assistant IA pour les entreprises africaines. Réponds de manière concise et professionnelle.";
+      const { type, context } = req.body;
       
-      const ctx = context || {};
-
+      let prompt = '';
+      
       switch (type) {
         case 'product_doc':
-          prompt = `Produit: ${ctx.name}, Catégorie: ${ctx.category}. 
-          Génère un objet JSON STRICT avec les clés suivantes: 
-          - shortDescription: description marketing courte
-          - benefits: liste de 3 avantages
-          - technicalSpecs: objet avec 3 spécifications techniques.
-          IMPORTANT: Renvoie UNIQUEMENT le JSON, sans texte avant ou après.`;
+          prompt = `Génère une fiche produit professionnelle complète pour le produit suivant :
+            Nom: ${context.name}
+            Catégorie: ${context.category}
+            Prix: ${context.price} FCFA
+            Description de base: ${context.description || 'N/A'}
+            
+            Format de réponse attendu (JSON uniquement) :
+            {
+              "shortDescription": "Une phrase accrocheuse",
+              "longDescription": "Description détaillée et persuasive",
+              "benefits": ["Avantage 1", "Avantage 2", "Avantage 3"],
+              "technicalSpecs": {"Caractéristique": "Valeur"},
+              "faq": [{"q": "Question?", "a": "Réponse."}],
+              "usageTips": "Conseils d'utilisation",
+              "qualityScore": 0-100
+            }`;
           break;
-        case 'financial_suggestions':
-          prompt = `Expert financier Nexus ERP: Revenus ${ctx.totalRevenue} FCFA, Dépenses ${ctx.totalExpenses} FCFA. 
-          Donne 3 conseils stratégiques courts en Français.`;
+          
+        case 'seo':
+          prompt = `Génère des métadonnées SEO pour ce produit Marketplace :
+            Nom: ${context.name}
+            Catégorie: ${context.category}
+            Description: ${context.description}
+            
+            Format de réponse (JSON uniquement) :
+            {
+              "metaTitle": "Titre optimisé",
+              "metaDescription": "Description meta 160 chars",
+              "keywords": ["keyword1", "keyword2"],
+              "tags": ["tag1", "tag2"]
+            }`;
           break;
-        case 'inventory_forecast':
-          prompt = `Analyse de stock pour le produit ID ${ctx.productId}. Historique récent: ${JSON.stringify(ctx.history)}.
-          Prédit la demande pour les 30 prochains jours. Renvoie un objet JSON avec 'forecast' (string) et 'confidence' (number 0-1).`;
+          
+        case 'marketing':
+          prompt = `Génère du contenu marketing pour ce produit :
+            Nom: ${context.name}
+            
+            Format de réponse (JSON uniquement) :
+            {
+              "facebookPost": "Texte engageant avec emojis",
+              "instagramCaption": "Caption courte avec hashtags",
+              "adCopy": "Texte publicitaire percutant",
+              "smsPromo": "SMS court de 160 chars"
+            }`;
           break;
-        case 'fraud_detection':
-          prompt = `Analyse de sécurité pour la transaction: ${JSON.stringify(ctx.transaction)}.
-          Évalue le risque de fraude. Renvoie un objet JSON avec 'risk_level' (low, medium, high) et 'reason' (string).`;
-          break;
+          
         default:
-          if (!prompt) prompt = 'Analyse système Nexus ERP multi-tenant.';
+          return res.status(400).send('Invalid generation type');
       }
 
-      const model = (genAI as any).getGenerativeModel({ 
-        model: GEMINI_MODEL,
-        systemInstruction: systemInstruction 
-      });
-
-      const result = await Promise.race([
-        model.generateContent(prompt),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('AI Request Timeout')), 30000))
-      ]) as any;
-
+      const result = await model.generateContent(prompt);
       const response = await result.response;
-      const text = response.text();
+      let text = response.text();
       
-      if (type === 'financial_suggestions' || !text.includes('{')) {
-        return res.json({ success: true, text, content: text });
-      }
-
-      // Robust JSON extraction
+      // Clean JSON string if model adds markdown blocks
+      text = text.replace(/```json|```/g, '').trim();
+      
       try {
-        let cleanedText = text.trim();
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          cleanedText = jsonMatch[0];
-        } else {
-          // Try to handle code blocks
-          const blockMatch = text.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/i);
-          if (blockMatch) cleanedText = blockMatch[1];
-        }
-
-        const parsed = JSON.parse(cleanedText);
-        res.json({ success: true, ...parsed, content: text, text });
+        const jsonResponse = JSON.parse(text);
+        res.json(jsonResponse);
       } catch (e) {
-        console.warn('AI JSON Parse Error, returning raw:', text.substring(0, 100));
-        res.json({ 
-          success: true,
-          shortDescription: text.split('\n')[0].substring(0, 100),
-          benefits: ["Analyse automatique", "Performance", "Nexus AI"],
-          technicalSpecs: { info: "Données générées" },
-          content: text,
-          text: text, 
-          error: "Format JSON non détecté" 
-        });
+        res.json({ raw: text });
       }
     } catch (err: any) {
-      console.error('Nexus AI Failure:', err);
-      res.status(502).json({ 
-        success: false,
-        error: "IA Nexus momentanément indisponible", 
-        details: err.message,
-        text: "Désolé, le système d'IA Nexus rencontre une erreur."
-      });
+      console.error('AI Error:', err);
+      res.status(500).send(err.message);
     }
-  });
-
-  app.get('/api/health/enterprise', (req, res) => {
-    res.json({ 
-      status: 'operational', 
-      database: 'connected', 
-      ai: `models/${GEMINI_MODEL}`,
-      version: '2.1.1'
-    });
-  });
-
-  // Catch-all for API routes to prevent returning HTML index.html
-  app.all('/api/*', (req, res) => {
-    res.status(404).json({ 
-      error: 'API route not found', 
-      path: req.path,
-      hint: "Vérifiez l'URL ou le serveur de développement"
-    });
   });
 
   // --- VITE MIDDLEWARE ---
