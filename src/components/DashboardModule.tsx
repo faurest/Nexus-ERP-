@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/authStore';
 import { 
   TrendingUp, 
   Users, 
@@ -113,6 +112,27 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
   useEffect(() => {
     if (!currentCompany) return;
 
+    const fetchPersonnelFromSupabase = async () => {
+      const { getSupabase } = await import('../lib/supabase');
+      const sb = getSupabase();
+      if (!sb) return;
+
+      try {
+        const { data } = await sb
+          .from('company_members')
+          .select('*, users(*)')
+          .eq('company_id', currentCompany.id);
+
+        if (data) {
+          setPersonnel(data.map((m: any) => ({ id: m.users.id, ...m.users, status: m.status })));
+        }
+      } catch (err) {
+        console.error("Dashboard: Fail to sync personnel", err);
+      }
+    };
+
+    fetchPersonnelFromSupabase();
+
     const unsubServices = onSnapshot(query(collection(db, 'services'), where('companyId', '==', currentCompany.id)), snap => {
       setServices(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => handleFirestoreError(err, OperationType.LIST, 'services'));
@@ -124,10 +144,6 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
     const unsubTasks = onSnapshot(query(collection(db, 'tasks'), where('companyId', '==', currentCompany.id)), snap => {
       setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     }, err => handleFirestoreError(err, OperationType.LIST, 'tasks'));
-
-    const unsubPersonnel = onSnapshot(query(collection(db, 'personnel'), where('companyId', '==', currentCompany.id)), snap => {
-      setPersonnel(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, err => handleFirestoreError(err, OperationType.LIST, 'personnel'));
 
     const unsubProducts = onSnapshot(query(collection(db, 'products'), where('companyId', '==', currentCompany.id)), snap => {
       setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -149,7 +165,6 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       unsubServices(); 
       unsubInterventions(); 
       unsubTasks(); 
-      unsubPersonnel(); 
       unsubProducts(); 
       unsubOrders(); 
       unsubPayments();
@@ -234,8 +249,8 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
         createdAt: serverTimestamp()
       });
       
-      const recipients = [...(currentCompany.employees || [])];
-      if (!recipients.includes(currentCompany.ownerId)) recipients.push(currentCompany.ownerId);
+      // Use the newly fetched personnel list for notifications
+      const recipients = personnel.map(p => p.id);
 
       await createNotification(
         currentCompany.id,
@@ -252,8 +267,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
     }
   };
 
-  const { isGlobalAdmin, activeRole } = useAuthStore();
-  const role = isGlobalAdmin ? 'owner' : (activeRole || user?.role || 'Directeur');
+  const role = user?.role || 'Directeur';
 
   // Determine if it's a newly created enterprise (< 1 day)
   const isNewEnterprise = currentCompany?.createdAt && (Date.now() - new Date(currentCompany.createdAt).getTime()) < 24 * 60 * 60 * 1000;

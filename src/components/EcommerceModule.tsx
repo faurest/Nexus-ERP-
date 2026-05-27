@@ -62,7 +62,6 @@ interface Product {
   points: number;
   stockThreshold?: number;
   allowBackorder?: boolean;
-  is_marketplace_visible?: boolean;
 }
 
 interface InternalResource {
@@ -1187,7 +1186,6 @@ export default function EcommerceModule({ user }: { user: any }) {
                          stock: 0,
                          stockThreshold: 5,
                          allowBackorder: false,
-                         is_marketplace_visible: true,
                          description: '',
                          image: '',
                          category: (companyCategories[0] as any)?.name || 'Divers',
@@ -2920,7 +2918,6 @@ export default function EcommerceModule({ user }: { user: any }) {
                   stock: Number(formData.get('stock')),
                   stockThreshold: Number(formData.get('stockThreshold')),
                   allowBackorder: formData.get('allowBackorder') === 'on',
-                  is_marketplace_visible: formData.get('marketplace_visible') === 'on',
                   description: formData.get('description') as string,
                   category: formData.get('category') as string,
                   points: Number(formData.get('points'))
@@ -2984,15 +2981,6 @@ export default function EcommerceModule({ user }: { user: any }) {
                     <p className="text-[9px] font-medium text-slate-500 uppercase">Le produit restera disponible même si le stock est à zéro.</p>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-3 bg-emerald-50 p-4 rounded-xl border border-emerald-200 mt-4">
-                  <input name="marketplace_visible" type="checkbox" defaultChecked={editingProduct.is_marketplace_visible !== false} className="w-5 h-5 rounded-md border-emerald-300 text-emerald-600 focus:ring-emerald-500" />
-                  <div>
-                    <label className="text-xs font-black text-emerald-900 uppercase tracking-tight">Publier sur Marketplace</label>
-                    <p className="text-[9px] font-medium text-emerald-600 uppercase">Le produit sera visible sur l'espace d'achat B2B.</p>
-                  </div>
-                </div>
-    
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

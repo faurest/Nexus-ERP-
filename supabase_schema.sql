@@ -23,9 +23,14 @@ CREATE TABLE IF NOT EXISTS public.users (
     is_active BOOLEAN DEFAULT TRUE,
     kyc_status TEXT DEFAULT 'pending' CHECK (kyc_status IN ('pending', 'verified', 'rejected')),
     last_login TIMESTAMPTZ,
+    current_company_id UUID, -- Workspace Persistence
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_users_firebase_uid ON public.users(firebase_uid);
+CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
+CREATE INDEX IF NOT EXISTS idx_users_current_company ON public.users(current_company_id);
 
 -- 2. TENANCY (Companies)
 CREATE TABLE IF NOT EXISTS public.companies (
@@ -36,6 +41,7 @@ CREATE TABLE IF NOT EXISTS public.companies (
     sector TEXT,
     owner_id UUID REFERENCES public.users(id),
     owner_email TEXT,
+    join_code TEXT UNIQUE, -- Added for simplified affiliation via code
     subscription_tier TEXT DEFAULT 'free',
     is_verified BOOLEAN DEFAULT FALSE,
     trust_score DECIMAL(3,2) DEFAULT 0.0,
@@ -47,14 +53,19 @@ CREATE TABLE IF NOT EXISTS public.companies (
 
 CREATE TABLE IF NOT EXISTS public.company_members (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-    company_id UUID REFERENCES public.companies(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
+    company_id UUID NOT NULL,
     role_id UUID REFERENCES public.roles(id),
     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'pending')),
     permissions JSONB DEFAULT '[]',
     joined_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT company_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE,
+    CONSTRAINT company_members_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id) ON DELETE CASCADE,
     UNIQUE(user_id, company_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_membership_user ON public.company_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_membership_company ON public.company_members(company_id);
 
 -- 3. INVENTORY & WAREHOUSING (African Logistics ready)
 CREATE TABLE IF NOT EXISTS public.warehouses (
@@ -216,9 +227,103 @@ CREATE POLICY "Inventory view" ON public.inventory_stock FOR SELECT USING (
     warehouse_id IN (SELECT id FROM public.warehouses WHERE company_id IN (SELECT company_id FROM public.company_members WHERE user_id = (SELECT id FROM public.users WHERE firebase_uid = auth.uid()::text)))
 );
 
+-- 9. ERP BUSINESS ENTITIES
+CREATE TABLE IF NOT EXISTS public.clients (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID REFERENCES public.companies(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    email TEXT,
+    phone TEXT,
+    address TEXT,
+    interactions TEXT,
+    loyalty_points INTEGER DEFAULT 0,
+    total_sales_amount DECIMAL(12,2) DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.projects (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID REFERENCES public.companies(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT,
+    start_date DATE,
+    end_date DATE,
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'completed', 'on_hold', 'cancelled')),
+    budget DECIMAL(12,2),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.tasks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID REFERENCES public.companies(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL,
+    assigned_to_user_id UUID REFERENCES public.users(id),
+    title TEXT NOT NULL,
+    description TEXT,
+    start_date DATE,
+    end_date DATE,
+    priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'critical')),
+    status TEXT DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'done', 'blocked')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.sales (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID REFERENCES public.companies(id) ON DELETE CASCADE,
+    client_id UUID REFERENCES public.clients(id) ON DELETE SET NULL,
+    seller_id UUID REFERENCES public.users(id),
+    total_amount DECIMAL(12,2) NOT NULL,
+    status TEXT DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'cancelled')),
+    payment_method TEXT,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.expenses (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID REFERENCES public.companies(id) ON DELETE CASCADE,
+    category TEXT NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    description TEXT,
+    date DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- RLS for ERP Entities
+ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sales ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "ERP View Policy" ON public.clients FOR ALL USING (
+    company_id IN (SELECT company_id FROM public.company_members WHERE user_id = (SELECT id FROM public.users WHERE firebase_uid = auth.uid()::text))
+);
+CREATE POLICY "ERP Project Policy" ON public.projects FOR ALL USING (
+    company_id IN (SELECT company_id FROM public.company_members WHERE user_id = (SELECT id FROM public.users WHERE firebase_uid = auth.uid()::text))
+);
+CREATE POLICY "ERP Task Policy" ON public.tasks FOR ALL USING (
+    company_id IN (SELECT company_id FROM public.company_members WHERE user_id = (SELECT id FROM public.users WHERE firebase_uid = auth.uid()::text))
+);
+CREATE POLICY "ERP Sales Policy" ON public.sales FOR ALL USING (
+    company_id IN (SELECT company_id FROM public.company_members WHERE user_id = (SELECT id FROM public.users WHERE firebase_uid = auth.uid()::text))
+);
+CREATE POLICY "ERP Expenses Policy" ON public.expenses FOR ALL USING (
+    company_id IN (SELECT company_id FROM public.company_members WHERE user_id = (SELECT id FROM public.users WHERE firebase_uid = auth.uid()::text))
+);
+
+-- RE-ENABLE RLS on personnel table (renaming from company_members for conceptual personnel if needed, but company_members is better for auth)
+-- Actually, we use company_members for affiliations. Let's keep specific ERP tables for HR if needed but PersonnelModule uses 'personnel' collection.
+-- We'll stay with company_members linked to users for the 'HR' list of members.
+
 -- INDEXES
-CREATE INDEX idx_products_company ON public.products(company_id);
-CREATE INDEX idx_orders_company ON public.orders(company_id);
-CREATE INDEX idx_stock_product ON public.inventory_stock(product_id);
-CREATE INDEX idx_movements_product ON public.inventory_movements(product_id);
+CREATE INDEX idx_clients_company ON public.clients(company_id);
+CREATE INDEX idx_projects_company ON public.projects(company_id);
+CREATE INDEX idx_tasks_company ON public.tasks(company_id);
+CREATE INDEX idx_tasks_assigned ON public.tasks(assigned_to_user_id);
+CREATE INDEX idx_sales_company ON public.sales(company_id);
+CREATE INDEX idx_expenses_company ON public.expenses(company_id);
 

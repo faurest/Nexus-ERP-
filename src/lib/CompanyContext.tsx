@@ -1,16 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, query, where, getDocs, updateDoc, doc, arrayUnion, serverTimestamp } from '../lib/firebase';
-import { db, auth, onAuthStateChanged } from './firebase';
-import { getSupabase } from './supabase';
-import { useAuthStore } from '../store/authStore';
-import { NexusRecoveryEngine } from '../store/recoveryEngine';
-import { linkNewCompanyToGlobalAdmins } from '../lib/linkNewCompanyToGlobalAdmins';
-
-export interface CompanyCategory {
-  name: string;
-  isPriority: boolean;
-  icon?: string;
-}
+import React, { createContext, useContext, useEffect } from 'react';
+import { useNexusStore } from './store';
+import { auth, onAuthStateChanged } from './firebase';
 
 export interface Company {
   id: string;
@@ -26,14 +16,14 @@ export interface Company {
   whatsappNumber?: string;
   nairaRate?: number;
   totalProfit?: number;
-  categories?: CompanyCategory[];
+  categories?: any[];
   company_members?: { role: string; status: string }[];
 }
 
 interface CompanyContextType {
-  currentCompany: Company | null;
-  companies: Company[];
-  setCurrentCompany: (company: Company | null) => void;
+  currentCompany: any | null;
+  companies: any[];
+  setCurrentCompany: (company: any | null) => void;
   joinCompany: (code: string) => Promise<{ success: boolean; message: string }>;
   createCompany: (name: string, joinCode: string) => Promise<{ success: boolean; id?: string }>;
   loading: boolean;
@@ -51,135 +41,139 @@ const CompanyContext = createContext<CompanyContextType>({
 });
 
 export function CompanyProvider({ children }: { children: React.ReactNode }) {
-  const { memberships, currentCompanyId, setCurrentCompany: setZustandCompany } = useAuthStore();
-  const [loading, setLoading] = useState(true);
-
-  // Transform memberships back to "Company[]" format expected by the UI
-  const companies = memberships.map(m => ({
-    ...(m.companies || {}),
-    id: m.company_id,
-    company_members: [{ role: m.roles?.name || 'Personnel', status: m.status }]
-  }));
-
-  const currentCompany = companies.find(c => c.id === currentCompanyId) || null;
+  const { 
+    currentCompany, 
+    companies, 
+    setCurrentCompany, 
+    refreshAffiliations, 
+    loading, 
+    clearSession 
+  } = useNexusStore();
 
   useEffect(() => {
-    // Initialize Recovery Engine
-    NexusRecoveryEngine.init().then(() => setLoading(false));
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        clearSession();
+        return;
+      }
+      await refreshAffiliations();
+    });
+
+    return () => unsubscribeAuth();
   }, []);
 
-  const handleSetCurrentCompany = (company: Company | null) => {
-    setZustandCompany(company ? company.id : null);
-  };
+  const joinCompany = async (code: string): Promise<{ success: boolean; message: string }> => {
+     // Use store logic if available or keep this helper
+     const { getSupabase } = await import('./supabase');
+     const sb = getSupabase();
+     const firebaseUser = auth.currentUser;
+     if (!firebaseUser) return { success: false, message: "Système indisponible" };
 
-  const refreshCompanies = async () => {
-    setLoading(true);
-    NexusRecoveryEngine.forceSync();
-    // Wait for a short time for sync to finish
-    await new Promise(r => setTimeout(r, 1000));
-    setLoading(false);
+     if (!sb) {
+       // Fallback to Firestore
+       try {
+         const { db, getDocs, query, collection, where, updateDoc, doc, arrayUnion } = await import('./firebase');
+         const q = query(collection(db, 'companies'), where('joinCode', '==', code));
+         const snap = await getDocs(q);
+         if (snap.empty) return { success: false, message: "Code invalide" };
+         
+         const companyId = snap.docs[0].id;
+         const data = snap.docs[0].data();
+         await updateDoc(doc(db, 'companies', companyId), {
+           memberEmails: arrayUnion(firebaseUser.email)
+         });
+         await refreshAffiliations();
+         return { success: true, message: `Bienvenue chez ${data.name}` };
+       } catch (e) {
+         console.error("Firestore joinCompany fallback error", e);
+         return { success: false, message: "Erreur d'adhésion" };
+       }
+     }
+
+     try {
+       const { data: company, error: cErr } = await sb.from('companies').select('id, name').eq('join_code', code).maybeSingle();
+       if (!company) return { success: false, message: "Code invalide" };
+
+       const { data: userData } = await sb.from('users').select('id').eq('firebase_uid', firebaseUser.uid).single();
+       const { data: role } = await sb.from('roles').select('id').eq('name', 'EMPLOYEE').single();
+
+       await sb.from('company_members').upsert({
+         user_id: userData.id,
+         company_id: company.id,
+         role_id: role.id,
+         status: 'active'
+       });
+
+       await refreshAffiliations();
+       return { success: true, message: `Bienvenue chez ${company.name}` };
+     } catch(e) {
+       return { success: false, message: "Erreur d'adhésion" };
+     }
   };
 
   const createCompany = async (name: string, joinCode: string): Promise<{ success: boolean; id?: string }> => {
-    const user = auth.currentUser;
-    if (!user) return { success: false };
+    const { getSupabase } = await import('./supabase');
+    const sb = getSupabase();
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return { success: false };
+
+    if (!sb) {
+      // Fallback to Firestore
+      try {
+        const { db, addDoc, collection, serverTimestamp } = await import('./firebase');
+        const docRef = await addDoc(collection(db, 'companies'), {
+          name,
+          joinCode,
+          ownerId: firebaseUser.uid,
+          ownerEmail: firebaseUser.email,
+          createdAt: serverTimestamp()
+        });
+        await refreshAffiliations();
+        return { success: true, id: docRef.id };
+      } catch (e) {
+        console.error("Firestore createCompany fallback error", e);
+        return { success: false };
+      }
+    }
 
     try {
-      const cleanEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
-      
-      // 1. Create in Firestore
-      const { addDoc, collection, serverTimestamp } = await import('../lib/firebase');
-      const docRef = await addDoc(collection(db, 'companies'), {
+      const { data: userData } = await sb.from('users').select('id').eq('firebase_uid', firebaseUser.uid).single();
+      const { data: company, error: cErr } = await sb.from('companies').insert({
         name,
-        ownerId: user.uid,
-        ownerEmail: cleanEmail,
-        joinCode,
-        createdAt: serverTimestamp()
-      });
+        join_code: joinCode,
+        owner_id: userData.id,
+        owner_email: firebaseUser.email
+      }).select().single();
 
-      // 2. Sync to Supabase
-      const sb = getSupabase();
-      if (sb) {
-        const profile = useAuthStore.getState().profile;
-        const { data: ownerRole } = await sb.from('roles').select('id').eq('name', 'OWNER').maybeSingle();
+      if (company) {
+        const { data: role } = await sb.from('roles').select('id').eq('name', 'OWNER').single();
+        await sb.from('company_members').insert({
+          user_id: userData.id,
+          company_id: company.id,
+          role_id: role.id,
+          status: 'active',
+          permissions: ['*']
+        });
         
-        if (profile && ownerRole) {
-          try {
-            const { data: compData } = await sb.from('companies').insert({
-              id: docRef.id,
-              name,
-              owner_id: profile.id,
-              owner_email: cleanEmail
-            }).select().single();
-  
-            if (compData) {
-              await sb.from('company_members').insert({
-                user_id: profile.id,
-                company_id: compData.id,
-                role_id: ownerRole.id,
-                status: 'active' });
-              
-              // Auto-link new company to super admins safely
-              linkNewCompanyToGlobalAdmins(compData.id);
-            }
-          } catch (syncErr) {
-            console.warn("Supabase back sync err:", syncErr);
-          }
-        }
+        await refreshAffiliations();
+        return { success: true, id: company.id };
       }
-
-      await refreshCompanies();
-      return { success: true, id: docRef.id };
-    } catch (err) {
-      console.error("Create company error:", err);
+      return { success: false };
+    } catch(e) {
       return { success: false };
     }
   };
 
-  const joinCompany = async (code: string): Promise<{ success: boolean; message: string }> => {
-    const user = auth.currentUser;
-    if (!user || !user.email) return { success: false, message: "Vous devez être connecté." };
-    
-    const cleanCode = code.trim();
-
-    try {
-      const q = query(collection(db, 'companies'), where('joinCode', '==', cleanCode));
-      const snap = await getDocs(q);
-      
-      if (snap.empty) {
-        return { success: false, message: "Code d'accès invalide." };
-      }
-
-      const companyDoc = snap.docs[0];
-      const data = companyDoc.data();
-
-      // Sync to Supabase
-      const sb = getSupabase();
-      if (sb) {
-        const profile = useAuthStore.getState().profile;
-        const { data: empRole } = await sb.from('roles').select('id').eq('name', 'Personnel').maybeSingle();
-        
-        if (profile && empRole) {
-          try {
-            await sb.from('company_members').upsert({
-              user_id: profile.id,
-              company_id: companyDoc.id,
-              role_id: empRole.id,
-              status: 'active'
-            }, { onConflict: 'user_id, company_id' });
-          } catch (syncErr) {}
-        }
-      }
-
-      await refreshCompanies();
-      return { success: true, message: `Bienvenue chez ${data.name} !` };
-    } catch (error) {
-      return { success: false, message: "Erreur d'adhésion." };
-    }
-  };
-
   return (
-    <CompanyContext.Provider value={{ currentCompany, companies, setCurrentCompany: handleSetCurrentCompany, joinCompany, createCompany, loading, refreshCompanies }}>
+    <CompanyContext.Provider value={{ 
+      currentCompany, 
+      companies, 
+      setCurrentCompany, 
+      joinCompany, 
+      createCompany, 
+      loading, 
+      refreshCompanies: refreshAffiliations 
+    }}>
       {children}
     </CompanyContext.Provider>
   );

@@ -10,8 +10,6 @@
         "ownerId": { "type": "string" },
         "ownerEmail": { "type": "string" },
         "joinCode": { "type": "string" },
-        "memberEmails": { "type": "string" },
-        "employees": { "type": "string" },
         "roles": { "type": "string" },
         "deliveryFees": { 
           "type": "object",

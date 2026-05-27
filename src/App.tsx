@@ -1,9 +1,7 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion, setDoc, serverTimestamp, limit } from './lib/firebase';
 type User = any;
 import { syncUserProfile, type UserProfile } from './lib/userService';
-import { useAuthStore } from './store/authStore';
-import { NetworkStateManager } from './core/network/NetworkStateManager';
 import { 
   LayoutDashboard, 
   Users, 
@@ -38,21 +36,21 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 
-// Modules (Lazy Loaded)
-const DashboardModule = React.lazy(() => import('./components/DashboardModule'));
-const PersonnelModule = React.lazy(() => import('./components/PersonnelModule'));
-const ClientModule = React.lazy(() => import('./components/ClientModule'));
-const ResourceModule = React.lazy(() => import('./components/ResourceModule'));
-const ProjectModule = React.lazy(() => import('./components/ProjectModule'));
-const SalesModule = React.lazy(() => import('./components/SalesModule'));
-const AdminModule = React.lazy(() => import('./components/AdminModule'));
-const AccountingModule = React.lazy(() => import('./components/AccountingModule'));
-const PrestationsModule = React.lazy(() => import('./components/PrestationsModule'));
-const EcommerceModule = React.lazy(() => import('./components/EcommerceModule'));
-const CollaborationModule = React.lazy(() => import('./components/CollaborationModule'));
-const GuideModule = React.lazy(() => import('./components/GuideModule'));
-const MarketplaceAdminModule = React.lazy(() => import('./components/MarketplaceAdminModule'));
-const Marketplace = React.lazy(() => import('./components/Marketplace'));
+// Modules
+import DashboardModule from './components/DashboardModule';
+import PersonnelModule from './components/PersonnelModule';
+import ClientModule from './components/ClientModule';
+import ResourceModule from './components/ResourceModule';
+import ProjectModule from './components/ProjectModule';
+import SalesModule from './components/SalesModule';
+import AdminModule from './components/AdminModule';
+import AccountingModule from './components/AccountingModule';
+import PrestationsModule from './components/PrestationsModule';
+import EcommerceModule from './components/EcommerceModule';
+import CollaborationModule from './components/CollaborationModule';
+import CommunicationModule from './components/CommunicationModule';
+import Marketplace from './components/Marketplace';
+import GuideModule from './components/GuideModule';
 import ContextualHelp from './components/ContextualHelp';
 import NotificationBell from './components/NotificationBell';
 import CriticalNotificationOverlay from './components/CriticalNotificationOverlay';
@@ -128,7 +126,7 @@ function SkeletonCard() {
   );
 }
 
-function WorkspaceSelector({ companies, user, profile, onSelect }: { companies: any[], user: User, profile: any, onSelect: any }) {
+function WorkspaceSelector({ companies, user, userProfile, onSelect }: { companies: any[], user: User, userProfile: any, onSelect: any }) {
   const [mode, setMode] = useState<'select' | 'create' | 'join'>('select');
   const [newCompanyName, setNewCompanyName] = useState('');
   const [joinCodeInput, setJoinCodeInput] = useState('');
@@ -140,7 +138,6 @@ function WorkspaceSelector({ companies, user, profile, onSelect }: { companies: 
   const [lastSession, setLastSession] = useState<{ company: any, tab: string } | null>(null);
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
-  const isGlobalAdmin = useAuthStore((s: any) => s.isGlobalAdmin) || false;
   
   useEffect(() => {
     if (errorMsg || successMsg) {
@@ -152,14 +149,8 @@ function WorkspaceSelector({ companies, user, profile, onSelect }: { companies: 
     }
   }, [errorMsg, successMsg]);
 
-  const ownedCompanies = companies.filter(c => {
-    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
-    return isGlobalAdmin || c.ownerId === user?.uid || (cOwnerEmail && cOwnerEmail === cleanEmail);
-  });
-  const joinedCompanies = companies.filter(c => {
-    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
-    return c.ownerId !== user?.uid && cOwnerEmail !== cleanEmail;
-  });
+  const ownedCompanies = companies.filter(c => c.role === 'OWNER' || c.role === 'Administrateur');
+  const joinedCompanies = companies.filter(c => c.role !== 'OWNER' && c.role !== 'Administrateur');
 
   useEffect(() => {
     import('./lib/firebase').then(({ testFirestoreConnection }) => {
@@ -243,18 +234,12 @@ function WorkspaceSelector({ companies, user, profile, onSelect }: { companies: 
       return;
     }
 
-    // 2.1 Fallback: If navigating is false and we have NO savedId but multiple companies, do NOT auto-select, allow selection.
-    // If NO savedId but exactly 1 company, we auto-select. Wait, if companies.length > 0 and no savedId, we can just leave it to select mode.
-    
     // 3. Case: Restore last session
     if (savedId && !isNavigating) {
       const found = companies.find(c => c.id === savedId);
       if (found) {
         console.log("Nexus Hub: Restoring session to", found.name);
         onSelect(found);
-      } else if (companies.length > 0) {
-        // Fallback if saved company no longer accessible: pick first available
-        onSelect(companies[0]);
       }
     }
   }, [companies, companyLoading, user, currentCompany]);
@@ -319,7 +304,7 @@ function WorkspaceSelector({ companies, user, profile, onSelect }: { companies: 
                     {user.photoURL ? <img src={user.photoURL} alt="User" /> : user.email?.charAt(0).toUpperCase()}
                  </div>
                  <div className="overflow-hidden">
-                    <p className="text-[10px] font-black uppercase truncate text-white">{profile?.fullName || user.displayName || user.email?.split('@')[0] || 'Utilisateur'}</p>
+                    <p className="text-[10px] font-black uppercase truncate text-white">{userProfile?.fullName || user.displayName || user.email?.split('@')[0] || 'Utilisateur'}</p>
                     <div className="flex items-center gap-1.5 mt-1">
                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
                        <p className="text-[8px] font-black text-slate-500 uppercase">Synchronisé</p>
@@ -436,7 +421,7 @@ function WorkspaceSelector({ companies, user, profile, onSelect }: { companies: 
                          <div className="relative z-10">
                             <div className="flex items-center gap-2 mb-2">
                                <h3 className="text-2xl font-black text-white italic tracking-tighter group-hover:text-blue-400 transition-colors uppercase truncate">{c.name}</h3>
-                               {isGlobalAdmin || c.ownerId === user.uid || (c.ownerEmail && c.ownerEmail === cleanEmail) ? (
+                               {c.company_members?.[0]?.role === 'OWNER' || c.ownerId === user.uid ? (
                                  <span className="shrink-0 px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded-md text-[7px] font-black text-blue-400 uppercase tracking-widest">Master</span>
                                ) : (
                                  <span className="shrink-0 px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded-md text-[7px] font-black text-emerald-400 uppercase tracking-widest">Staff</span>
@@ -452,7 +437,7 @@ function WorkspaceSelector({ companies, user, profile, onSelect }: { companies: 
                                <div className="bg-white/5 p-3 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
                                   <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">Privilèges</span>
                                   <span className="block text-sm font-black text-white truncate italic">
-                                    {isGlobalAdmin ? 'Global Admin' : (c.company_members?.[0]?.role || (c.ownerId === user.uid ? 'Propriétaire' : 'Collaborateur'))}
+                                    {c.company_members?.[0]?.role || (c.ownerId === user.uid ? 'Propriétaire' : 'Collaborateur')}
                                   </span>
                                </div>
                                <div className="bg-white/5 p-3 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
@@ -757,22 +742,8 @@ function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
 }
 
 export default function App() {
-  const [isOnline, setIsOnline] = useState(true);
-
-  useEffect(() => {
-    NetworkStateManager.init();
-    const unsubscribe = NetworkStateManager.subscribe((status) => {
-      setIsOnline(status);
-    });
-    // Set initial status
-    setIsOnline(NetworkStateManager.getIsOnline());
-    return () => unsubscribe();
-  }, []);
-
-  const { user: authStoreUser, profile, isGlobalAdmin, activeRole, permissions } = useAuthStore();
-  const user = authStoreUser;
-  
-  /* removed */
+  const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [slowLoading, setSlowLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -993,27 +964,97 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const effectiveUser = React.useMemo(() => {
-    if (!user) return null;
-    return {
-      ...user,
-      role: activeRole || 'Personnel'
-    };
-  }, [user, activeRole]);
-
   useEffect(() => {
-    // DIAGNOSTIC LOGS REQUIRED FOR ANALYSIS
-    if (user) {
-      console.log("AUTH USER:", user);
-      console.log("PROFILE:", profile);
-      console.log("MEMBERSHIPS:", companies);
-      console.log("CURRENT COMPANY:", currentCompany);
-      console.log("WORKSPACE:", currentCompany ? currentCompany.id : 'None Selected');
-    }
-  }, [user, profile, companies, currentCompany]);
+    if (user && currentCompany && !user.role) {
+      // 1. Check if Master/Owner
+      const userEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
+      const isOwner = currentCompany.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '') === userEmail || 
+                      currentCompany.ownerId === user.uid || 
+                      isMaster;
 
-  // Remove the old role resolution logic that mutated user object directly
-  // We now rely on Zustand's authStore for roles and permissions
+      if (isOwner) {
+        setUser((prev: any) => prev ? { ...prev, role: 'owner' } : null);
+        setIsBlocked(false);
+      } else {
+        // 2. Check cached membership (Faster, especially for multi-tenant)
+        if (currentCompany.company_members && currentCompany.company_members.length > 0) {
+           const member = currentCompany.company_members[0];
+           if (member.status === 'blocked') {
+             setIsBlocked(true);
+           } else {
+             setUser((prev: any) => prev ? { 
+               ...prev, 
+               role: member.role || 'Personnel',
+               isCollaborator: true 
+             } : null);
+             setIsBlocked(false);
+             return;
+           }
+        }
+
+        // 3. Fallback: Robust recovery via DB
+        const findRole = async () => {
+          try {
+            if (!userEmail) {
+              setIsBlocked(true);
+              return;
+            }
+            
+            // Try Personnel first
+            const q = query(
+              collection(db, 'personnel'), 
+              where('companyId', '==', currentCompany.id),
+              where('email', '==', userEmail),
+              limit(1)
+            );
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+              const memberDoc = snap.docs[0];
+              const memberData = memberDoc.data();
+              if (memberData.status === 'blocked') {
+                setIsBlocked(true);
+              } else {
+                // Auto-repair Firestore record with UID
+                if (memberData.uid !== user.uid) {
+                  await updateDoc(memberDoc.ref, { uid: user.uid, updatedAt: serverTimestamp() });
+                }
+                setUser((prev: any) => prev ? { ...prev, role: memberData.role || 'Personnel' } : null);
+                setIsBlocked(false);
+              }
+              return;
+            }
+
+            // Then check Client record
+            const clientQ = query(
+              collection(db, 'clients'),
+              where('companyId', '==', currentCompany.id),
+              where('email', '==', userEmail),
+              limit(1)
+            );
+            const clientSnap = await getDocs(clientQ);
+            if (!clientSnap.empty) {
+              const clientData = clientSnap.docs[0].data();
+              setUser((prev: any) => prev ? { 
+                ...prev, 
+                role: 'Client',
+                email: user.email || clientData.email,
+                nexusId: clientData.id || clientSnap.docs[0].id
+              } : null);
+              setIsBlocked(false);
+            } else {
+              // If we reached here but companies list said they are members, trust the context but default role
+              setUser((prev: any) => prev ? { ...prev, role: 'Personnel' } : null);
+              setIsBlocked(false);
+            }
+          } catch (err) {
+            console.error("Nexus Role Recovery Error:", err);
+            setIsBlocked(true);
+          }
+        };
+        findRole();
+      }
+    }
+  }, [user?.uid, currentCompany?.id, isMaster]);
 
   useEffect(() => {
     // Handle master switch from AdminModule
@@ -1031,26 +1072,36 @@ export default function App() {
   }, [setCurrentCompany]);
 
   useEffect(() => {
-    setLoading(false); // Handled by context
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        setUser(u);
+        const profile = await syncUserProfile(u);
+        setUserProfile(profile);
+      } else {
+        setUser(null);
+        setUserProfile(null);
+      }
+      setLoading(false);
+    });
     
     // Test Firestore connection on load
     import('./lib/firebase').then(({ testFirestoreConnection }) => {
       testFirestoreConnection();
     });
 
-    
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
-    if (activeRole && currentCompany) {
-      const allowed = permissions;
-      if (allowed.length > 0 && !allowed.includes('*') && !allowed.includes(activeTab) && activeTab !== 'admin') {
-        setActiveTab('dashboard');
+    if (user && user.role && currentCompany) {
+      const allowed = (currentCompany.roles || DEFAULT_ROLES)[user.role] || ['dashboard'];
+      if (!allowed.includes(activeTab) && activeTab !== 'admin') {
+        setActiveTab(allowed[0] || 'dashboard');
       }
     }
-  }, [activeRole, permissions, currentCompany, activeTab]);
+  }, [user, currentCompany, activeTab]);
 
-  if (loading || (user && companyLoading)) {
+  if (loading) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#020617] p-8 relative overflow-hidden font-sans">
         {/* Cinematic Background */}
@@ -1171,7 +1222,7 @@ export default function App() {
   }
 
   if (!currentCompany) {
-    return <WorkspaceSelector companies={companies} user={user} profile={profile} onSelect={setCurrentCompany} />;
+    return <WorkspaceSelector companies={companies} user={user} userProfile={userProfile} onSelect={setCurrentCompany} />;
   }
 
   if (isBlocked) {
@@ -1222,41 +1273,16 @@ export default function App() {
     { id: 'collaboration', label: 'Collaboration & Comm', icon: Handshake },
     { id: 'accounting', label: 'Comptabilité & Finance', icon: Calculator },
     { id: 'guide', label: 'Guide & Performance', icon: BookOpen },
-    ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield },
-      ...(isGlobalAdmin ? [{ id: 'market_admin', label: 'Admin Marketplace', icon: Shield }] : [])] : []),
+    ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
   ].filter(item => {
-    if (item.id === 'admin' || item.id === 'market_admin') return isGlobalAdmin;
-    if (item.id === 'dashboard') return true;
-    if (permissions.includes('*')) return true;
-    
-    // Temporary map of legacy tab IDs to RBAC permissions
-    const tabPermMap: Record<string, string> = {
-        'marketplace': 'view_dashboard',
-        'services': 'manage_projects',
-        'sales': 'manage_sales',
-        'ecommerce': 'manage_sales',
-        'clients': 'manage_sales',
-        'personnel': 'manage_users',
-        'resources': 'manage_inventory',
-        'projects': 'manage_projects',
-        'collaboration': 'view_dashboard',
-        'communication': 'view_dashboard',
-        'accounting': 'manage_billing',
-        'guide': 'view_dashboard'
-    };
-    const requiredPerm = tabPermMap[item.id];
-    return requiredPerm ? permissions.includes(requiredPerm) : false;
+    if (item.id === 'admin') return true;
+    const allowedByRole = (currentCompany.roles || DEFAULT_ROLES)[user.role] || ['dashboard'];
+    const customPermissions = user.customPermissions || [];
+    return allowedByRole.includes(item.id) || customPermissions.includes(item.id);
   });
 
   return (
     <div className="min-h-screen bg-nexus-bg text-nexus-text font-sans selection:bg-nexus-accent selection:text-white flex overflow-hidden">
-      {!isOnline && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-red-600/90 text-white px-4 py-2 rounded-full text-sm font-medium tracking-tight flex items-center gap-2 z-[999] shadow-lg backdrop-blur-md border border-red-500 shadow-red-900/20">
-          <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-           Vous êtes hors ligne. Les modifications locales seront synchronisées une fois reconnecté.
-        </div>
-      )}
-      
       {/* Command Cockpit */}
       <CommandPalette 
         isOpen={isCommandPaletteOpen}
@@ -1466,10 +1492,10 @@ export default function App() {
               <div className="flex items-center gap-2.5 pl-2 md:pl-4 border-l border-white/5">
                 <div className="hidden sm:flex flex-col items-end">
                   <span className="text-[10px] font-black text-white uppercase tracking-tight truncate max-w-[100px]">
-                    {profile?.fullName || 'Utilisateur Nexus'}
+                    {userProfile?.fullName || 'Utilisateur Nexus'}
                   </span>
                   <span className="text-[7px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-1.5 py-0.5 rounded-md border border-blue-500/10">
-                    ID: {profile?.id?.slice(0, 8)}
+                    ID: {userProfile?.id?.slice(0, 8)}
                   </span>
                 </div>
                 <div className="relative group cursor-pointer active:scale-90 transition-transform">
@@ -1493,22 +1519,19 @@ export default function App() {
           <div
             className="max-w-[1400px] mx-auto"
           >
-        <Suspense fallback={<div className='flex justify-center items-center h-64'><div className='animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500'></div></div>}>
-              {activeTab === 'dashboard' && <DashboardModule user={user} companies={companies} />}
-              {activeTab === 'marketplace' && <Marketplace onBack={() => setActiveTab('dashboard')} />}
-              {activeTab === 'services' && <PrestationsModule />}
-              {activeTab === 'sales' && <SalesModule user={user} />}
-              {activeTab === 'ecommerce' && <EcommerceModule user={user} />}
-              {activeTab === 'clients' && <ClientModule />}
-              {activeTab === 'personnel' && <PersonnelModule user={user} />}
-              {activeTab === 'resources' && <ResourceModule user={user} />}
-              {activeTab === 'projects' && <ProjectModule />}
-              {activeTab === 'accounting' && <AccountingModule />}
-              {activeTab === 'collaboration' && <CollaborationModule />}
-              {activeTab === 'guide' && <GuideModule />}
-              {activeTab === 'admin' && <AdminModule />}
-              {activeTab === 'market_admin' && <MarketplaceAdminModule />}
-            </Suspense>
+            {activeTab === 'dashboard' && <DashboardModule user={user} companies={companies} />}
+            {activeTab === 'marketplace' && <Marketplace onBack={() => setActiveTab('dashboard')} />}
+            {activeTab === 'services' && <PrestationsModule />}
+            {activeTab === 'sales' && <SalesModule user={user} />}
+            {activeTab === 'ecommerce' && <EcommerceModule user={user} />}
+            {activeTab === 'clients' && <ClientModule />}
+            {activeTab === 'personnel' && <PersonnelModule user={user} />}
+            {activeTab === 'resources' && <ResourceModule user={user} />}
+            {activeTab === 'projects' && <ProjectModule />}
+            {activeTab === 'accounting' && <AccountingModule />}
+            {activeTab === 'collaboration' && <CollaborationModule />}
+            {activeTab === 'guide' && <GuideModule />}
+            {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') && <AdminModule />}
           </div>
         </div>
 

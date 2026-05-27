@@ -82,39 +82,10 @@ service cloud.firestore {
       allow update: if isSignedIn() && (
         isAdmin() || 
         (resource.data.ownerEmail.lower() == currentUserEmail() && isValidCompany(incoming())) ||
-        // Action: Join (Allow a non-member to add themselves if they know the joinCode)
-        (
-          incoming().joinCode == existing().joinCode &&
-          incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees', 'status', 'updatedAt']) &&
-          incoming().memberEmails.hasAll(existing().memberEmails) &&
-          incoming().memberEmails.size() == existing().memberEmails.size() + 1 &&
-          currentUserEmail() in incoming().memberEmails
-        ) ||
-        // Action: Client Auto-Enroll (Allow users listed in 'clients' to sync their access)
-        (
-          incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees', 'status', 'updatedAt']) &&
-          incoming().memberEmails.size() == existing().memberEmails.size() + 1 &&
-          currentUserEmail() in incoming().memberEmails &&
-          exists(/databases/$(database)/documents/clients/$(currentUserEmail())) &&
-          get(/databases/$(database)/documents/clients/$(currentUserEmail())).data.companyId == companyId
-        ) ||
-        // Action: Join via Code (Self-Enrollment)
-        (
-          incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees', 'updatedAt']) &&
-          incoming().memberEmails.size() == existing().memberEmails.size() + 1 &&
-          currentUserEmail() in incoming().memberEmails &&
-          incoming().joinCode == existing().joinCode // Verifies the secret code matches
-        ) ||
-        // Action: Personnel Auto-Enroll (Allow users listed in 'personnel' to sync their access)
-        (
-          incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees', 'updatedAt']) &&
-          incoming().memberEmails.size() == existing().memberEmails.size() + 1 &&
-          currentUserEmail() in incoming().memberEmails &&
-          exists(/databases/$(database)/documents/personnel/$(currentUserEmail())) &&
-          get(/databases/$(database)/documents/personnel/$(currentUserEmail())).data.companyId == companyId
-        ) ||
-        // Action: Standard update for existing members
-        (currentUserEmail() in resource.data.memberEmails && incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees', 'whatsappNumber', 'category', 'logo', 'nairaRate', 'updatedAt']))
+        // Action: Standard update for existing members (Checks personnel collection as proxy)
+        (exists(/databases/$(database)/documents/personnel/$(currentUserEmail())) && 
+         get(/databases/$(database)/documents/personnel/$(currentUserEmail())).data.companyId == companyId &&
+         incoming().diff(existing()).affectedKeys().hasOnly(['whatsappNumber', 'category', 'logo', 'nairaRate', 'updatedAt']))
       );
 
       allow delete: if isAdmin();
