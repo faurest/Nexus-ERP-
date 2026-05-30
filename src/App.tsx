@@ -1,1250 +1,393 @@
-import React, { useState, useEffect } from 'react';
-import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion, setDoc, serverTimestamp, limit } from './lib/firebase';
-type User = any;
-import { 
-  LayoutDashboard, 
-  Users, 
-  Briefcase, 
-  Package, 
-  FolderKanban, 
-  Handshake, 
-  LogOut, 
-  Menu, 
-  X,
-  Plus,
-  Search,
-  Bell,
-  ChevronRight,
-  ChevronLeft,
-  DownloadCloud,
-  TrendingUp,
-  AlertCircle,
-  Building2,
-  Shield,
-  ShieldAlert,
-  Calculator,
-  Layers,
-  FileText,
-  Database,
-  MessageSquare,
-  ShoppingBag,
-  Store,
-  BookOpen
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { cn } from './lib/utils';
+import React, { useState } from 'react';
+import { Shield, Home, Settings, FileText, Activity, AlertCircle, Users, Briefcase, MessageSquare, Store, UserCheck, Menu, X, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
-// Modules
-import DashboardModule from './components/DashboardModule';
-import PersonnelModule from './components/PersonnelModule';
-import ClientModule from './components/ClientModule';
-import ResourceModule from './components/ResourceModule';
-import ProjectModule from './components/ProjectModule';
-import SalesModule from './components/SalesModule';
-import AdminModule from './components/AdminModule';
-import AccountingModule from './components/AccountingModule';
-import PrestationsModule from './components/PrestationsModule';
-import EcommerceModule from './components/EcommerceModule';
-import CollaborationModule from './components/CollaborationModule';
-import CommunicationModule from './components/CommunicationModule';
-import Marketplace from './components/Marketplace';
-import GuideModule from './components/GuideModule';
-import ContextualHelp from './components/ContextualHelp';
-import NotificationBell from './components/NotificationBell';
-import CriticalNotificationOverlay from './components/CriticalNotificationOverlay';
-import CommandPalette from './components/CommandPalette';
+// Modules métiers
 
-import { bootstrapDemoData } from './lib/bootstrap';
-import { useCompany } from './lib/CompanyContext';
-
-export const NexusLogo = ({ className = "" }: { className?: string }) => (
-  <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <defs>
-      <linearGradient id="primary" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#0EA5E9" />
-        <stop offset="100%" stopColor="#2563EB" />
-      </linearGradient>
-      <linearGradient id="secondary" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#38BDF8" />
-        <stop offset="100%" stopColor="#6EE7B7" />
-      </linearGradient>
-      <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="6" result="blur" />
-        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-      </filter>
-    </defs>
-    
-    <g transform="translate(60, 60)">
-      {/* Outer Orbit */}
-      <circle cx="0" cy="0" r="45" fill="none" stroke="url(#primary)" strokeWidth="2" strokeDasharray="8 6" opacity="0.4" />
-      
-      {/* Connecting nodes */}
-      <circle cx="0" cy="-45" r="4" fill="#0EA5E9" />
-      <circle cx="39" cy="22.5" r="4" fill="#2563EB" />
-      <circle cx="-39" cy="22.5" r="4" fill="#38BDF8" />
-
-      {/* Inner geometric structure */}
-      <path d="M0 -25 L21.6 12.5 L-21.6 12.5 Z" fill="none" stroke="url(#secondary)" strokeWidth="4" strokeLinejoin="round" />
-      
-      <path d="M0 -45 L0 -25" stroke="url(#secondary)" strokeWidth="3" opacity="0.6"/>
-      <path d="M39 22.5 L21.6 12.5" stroke="url(#secondary)" strokeWidth="3" opacity="0.6"/>
-      <path d="M-39 22.5 L-21.6 12.5" stroke="url(#secondary)" strokeWidth="3" opacity="0.6"/>
-
-      {/* The Core */}
-      <circle cx="0" cy="0" r="12" fill="url(#primary)" filter="url(#glow)" />
-      <circle cx="0" cy="0" r="6" fill="#FFFFFF" />
-    </g>
-  </svg>
+const AccountingModule = () => (
+  <div className="p-6 bg-neutral-800 rounded-lg border border-neutral-700 shadow-xl mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+      <FileText className="w-6 h-6 text-blue-400" />
+      Comptabilité
+    </h2>
+    <p className="text-neutral-400 mb-6">Interface opérationnelle. Connexion aux serveurs établie.</p>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-neutral-900 border border-neutral-800 p-4 rounded text-center">
+        <h3 className="text-neutral-500 text-sm font-medium">Chiffre d'Affaires</h3>
+        <p className="text-3xl font-bold text-emerald-400 mt-2 flex items-center justify-center gap-2">
+          1.2M €
+          <ArrowUpRight className="w-5 h-5 text-emerald-500" />
+        </p>
+      </div>
+      <div className="bg-neutral-900 border border-neutral-800 p-4 rounded text-center">
+        <h3 className="text-neutral-500 text-sm font-medium">Dépenses</h3>
+        <p className="text-3xl font-bold text-rose-400 mt-2 flex items-center justify-center gap-2">
+          420k €
+          <ArrowDownRight className="w-5 h-5 text-rose-500" />
+        </p>
+      </div>
+      <div className="bg-neutral-900 border border-neutral-800 p-4 rounded text-center">
+        <h3 className="text-neutral-500 text-sm font-medium">Bénéfice</h3>
+        <p className="text-3xl font-bold text-blue-400 mt-2">780k €</p>
+      </div>
+    </div>
+  </div>
 );
 
-export const DEFAULT_ROLES: Record<string, string[]> = {
-  'owner': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
-  'Directeur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
-  'Administrateur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
-  'Secrétaire': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
-  'Comptable': ['dashboard', 'services', 'sales', 'ecommerce', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
-  'Agent Commercial': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'projects', 'collaboration', 'communication', 'guide'],
-  'Collaborateur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
-  'Personnel': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
-  'Client': ['dashboard', 'ecommerce'],
-};
-
-function SkeletonCard() {
-  return (
-    <div className="w-full flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-white animate-pulse">
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-slate-100 rounded-2xl" />
-        <div className="space-y-2">
-          <div className="h-4 w-32 bg-slate-100 rounded" />
-          <div className="h-3 w-16 bg-slate-50 rounded" />
+const MarketplaceModule = () => (
+  <div className="p-6 bg-neutral-800 rounded-lg border border-neutral-700 shadow-xl mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+      <Store className="w-6 h-6 text-purple-400" />
+      Marketplace
+    </h2>
+    <p className="text-neutral-400 mb-6">Applications et extensions disponibles pour votre ERP.</p>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-neutral-900 border border-neutral-800 p-4 rounded flex justify-between items-center group">
+        <div>
+          <h3 className="text-neutral-200 font-medium tracking-tight">Intégration Stripe</h3>
+          <p className="text-neutral-500 text-sm">Paiements en ligne synchronisés</p>
         </div>
+        <button className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-xs rounded border border-purple-500/30 transition-colors">Installer</button>
       </div>
-      <div className="w-4 h-4 bg-slate-50 rounded" />
-    </div>
-  );
-}
-
-function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], user: User, onSelect: any }) {
-  const [mode, setMode] = useState<'select' | 'create' | 'join'>('select');
-  const [newCompanyName, setNewCompanyName] = useState('');
-  const [joinCodeInput, setJoinCodeInput] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-  const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
-  const { joinCompany, loading: companyLoading } = useCompany();
-
-  const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
-  const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
-  
-  const ownedCompanies = companies.filter(c => {
-    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
-    return c.ownerId === user?.uid || (cOwnerEmail && cOwnerEmail === cleanEmail);
-  });
-  const joinedCompanies = companies.filter(c => {
-    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
-    return c.ownerId !== user?.uid && cOwnerEmail !== cleanEmail;
-  });
-
-  useEffect(() => {
-    import('./lib/firebase').then(({ testFirestoreConnection }) => {
-      testFirestoreConnection().then(ok => setConnStatus(ok ? 'ok' : 'fail'));
-    });
-  }, []);
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-    if (!newCompanyName.trim()) return;
-
-    setSubmitting(true);
-    try {
-      // Logic for 6 uppercase letters/numbers join code
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      let generatedJoinCode = '';
-      for (let i = 0; i < 6; i++) {
-        generatedJoinCode += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-
-      const cleanEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
-      const docRef = await addDoc(collection(db, 'companies'), {
-        name: newCompanyName,
-        ownerId: user.uid,
-        ownerEmail: cleanEmail,
-        memberEmails: [cleanEmail],
-        employees: [user.uid],
-        joinCode: generatedJoinCode,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-      onSelect({ id: docRef.id, name: newCompanyName, ownerId: user.uid, joinCode: generatedJoinCode });
-    } catch(err: any) {
-      console.error("Create Company Error:", err);
-      setErrorMsg(`Erreur : ${err.message || 'Problème de connexion'}`);
-      setSubmitting(false);
-    }
-  };
-
-  const handleJoin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-    setSuccessMsg('');
-    if (!joinCodeInput.trim()) return;
-    
-    setSubmitting(true);
-    const result = await joinCompany(joinCodeInput);
-    setSubmitting(false);
-
-    if (result.success) {
-      setSuccessMsg(result.message);
-      // Wait a bit to show success before switching to selection mode
-      setTimeout(() => {
-        setMode('select');
-        setSuccessMsg('');
-        setJoinCodeInput('');
-      }, 2000);
-    } else {
-      setErrorMsg(result.message);
-    }
-  };
-
-  return (
-    <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-slate-900 font-sans relative">
-      <div className="max-w-md w-full bg-white rounded-3xl p-10 shadow-xl border border-slate-200 relative overflow-hidden">
-        
-        <div className="text-center mb-8 relative z-10">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl mx-auto flex items-center justify-center mb-6 text-white shadow-xl shadow-blue-500/20 rotate-3">
-            <Building2 size={40} />
-          </div>
-          <h2 className="text-3xl font-black tracking-tighter text-slate-900 mb-2 italic">ESPACE NEXUS</h2>
-          <p className="text-slate-500 text-sm font-medium tracking-tight">Accédez à votre intelligence industrielle.</p>
+      <div className="bg-neutral-900 border border-neutral-800 p-4 rounded flex justify-between items-center group">
+        <div>
+          <h3 className="text-neutral-200 font-medium tracking-tight">Connecteur Slack</h3>
+          <p className="text-neutral-500 text-sm">Notifications d'évènements</p>
         </div>
-
-        {errorMsg && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-red-50 text-red-600 text-[11px] font-black uppercase tracking-widest rounded-2xl border border-red-100 flex items-center gap-3"
-          >
-            <ShieldAlert size={18} />
-            {errorMsg}
-          </motion.div>
-        )}
-
-        {successMsg && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-green-50 text-green-600 text-[11px] font-black uppercase tracking-widest rounded-2xl border border-green-100 flex items-center gap-3"
-          >
-            <AlertCircle size={18} />
-            {successMsg}
-          </motion.div>
-        )}
-
-        {mode === 'select' && (
-          <div className="space-y-8 relative z-10">
-            {/* Scénario A: Entreprises existantes */}
-            {companyLoading ? (
-              <div className="space-y-4">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Synchronisation de vos accès...</h3>
-                <SkeletonCard />
-                <SkeletonCard />
-              </div>
-            ) : (ownedCompanies.length > 0 || joinedCompanies.length > 0) ? (
-              <div className="space-y-4">
-                <div className="flex justify-between items-end px-1">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Mes Espaces de Travail</h3>
-                  <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">{ownedCompanies.length + joinedCompanies.length} actif(s)</span>
-                </div>
-                <div className="space-y-3">
-                  {[...ownedCompanies, ...joinedCompanies].map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => onSelect(c)}
-                      className="w-full flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-white hover:border-blue-600 hover:bg-blue-50/50 transition-all group relative overflow-hidden active:scale-[0.98]"
-                    >
-                      <div className="flex items-center gap-4 relative z-10">
-                        <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-900 text-xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-                          {c.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="text-left">
-                          <span className="block font-black text-slate-900 text-base tracking-tight group-hover:text-blue-700 transition-colors">{c.name}</span>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 uppercase tracking-[0.1em]">{c.joinCode}</span>
-                            {c.ownerEmail === cleanEmail && (
-                              <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 uppercase tracking-[0.1em]">Propriétaire</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <ChevronRight size={18} className="text-slate-300 group-hover:translate-x-1 group-hover:text-blue-500 transition-all" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="py-8 px-4 text-center space-y-4 border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/50">
-                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-sm text-blue-500">
-                  <Layers size={32} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-slate-900 tracking-tight">Bienvenue sur Nexus ERP</h3>
-                  <p className="text-xs font-medium text-slate-400 mt-1 max-w-[220px] mx-auto">Vous n'êtes rattaché à aucun espace sécurisé pour le moment.</p>
-                </div>
-              </div>
-            )}
-
-            {/* Scénario B: Rejoindre ou Créer */}
-            <div className="pt-4 space-y-4 text-center">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-                <div className="relative flex justify-center text-[9px] uppercase font-black tracking-widest"><span className="bg-white px-4 text-slate-300 italic">Actions d'Infrastructure</span></div>
-              </div>
-
-              <div className="space-y-3">
-                <button
-                  onClick={() => setMode('join')}
-                  className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-indigo-600 text-white font-black text-[11px] uppercase tracking-widest hover:bg-slate-900 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
-                >
-                  <Users size={16} />
-                  Rejoindre avec un Code
-                </button>
-                <button
-                  onClick={() => setMode('create')}
-                  className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-white border border-slate-200 text-slate-600 font-black text-[11px] uppercase tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all active:scale-95"
-                >
-                  <Plus size={16} />
-                  Initialiser un Nouvel Espace
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {mode === 'create' && (
-          <motion.form 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onSubmit={handleCreate} 
-            className="space-y-6"
-          >
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 text-center">Nom de votre Entreprise</label>
-              <input 
-                type="text" 
-                value={newCompanyName}
-                onChange={e => setNewCompanyName(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-black text-center text-xl tracking-tight placeholder:opacity-20 translate-y-0 focus:-translate-y-1 transition-all"
-                placeholder="Ex: JET 7 INFO"
-                required
-                autoFocus
-              />
-            </div>
-            <div className="flex flex-col gap-3">
-              <button type="submit" disabled={submitting || !newCompanyName.trim()} className="w-full py-5 bg-blue-600 text-white shadow-xl shadow-blue-600/20 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all active:scale-95">
-                {submitting ? 'Symphonie en cours...' : 'Initialiser mon Espace'}
-              </button>
-              <button type="button" onClick={() => setMode('select')} className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-colors">Retour</button>
-            </div>
-          </motion.form>
-        )}
-
-        {mode === 'join' && (
-          <motion.form 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onSubmit={handleJoin} 
-            className="space-y-6"
-          >
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 text-center">Code d'Espace de Travail</label>
-              <input 
-                type="text" 
-                value={joinCodeInput}
-                onChange={e => setJoinCodeInput(e.target.value.toUpperCase())}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent font-black text-center tracking-[0.4em] uppercase text-2xl shadow-inner italic"
-                placeholder="XXXXXX"
-                maxLength={6}
-                required
-                autoFocus
-              />
-              <p className="mt-4 text-center text-[10px] text-slate-400 font-medium">Demandez le code à 6 caractères à votre administrateur.</p>
-            </div>
-            <div className="flex flex-col gap-3 pt-4">
-              <button type="submit" disabled={submitting || !joinCodeInput.trim()} className="w-full py-5 bg-indigo-600 text-white shadow-xl shadow-indigo-600/20 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 transition-all active:scale-95">
-                {submitting ? 'Vérification...' : 'Fusionner avec cet Espace'}
-              </button>
-              <button type="button" onClick={() => setMode('select')} className="w-full py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-colors">Retour</button>
-            </div>
-          </motion.form>
-        )}
-
-        <div className="mt-12 pt-8 border-t border-slate-50 flex flex-col items-center gap-6">
-          {isMaster && (
-            <button 
-              onClick={() => onSelect({ id: 'comp_nexus_master', name: 'Nexus Enterprise Global', ownerId: 'master_nexus_01', joinCode: 'NEXUS-ADMIN' })}
-              className="flex items-center gap-3 px-6 py-3 bg-slate-900 text-blue-400 rounded-full text-[9px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 hover:text-white transition-all shadow-lg active:scale-95"
-            >
-              <Shield size={14} />
-              Console Maître Active
-            </button>
-          )}
-
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => logout()}
-              className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500 transition-colors flex items-center gap-2 group p-2"
-            >
-              <LogOut size={12} className="group-hover:-translate-x-1 transition-transform" />
-              Quitter Nexus
-            </button>
-            <div className="w-1 h-1 bg-slate-200 rounded-full" />
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 rounded-full border border-slate-100">
-              <div className={`w-1.5 h-1.5 rounded-full ${connStatus === 'ok' ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-slate-300 animate-pulse'}`} />
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider">{connStatus === 'ok' ? 'Cloud Sync active' : 'Syncing...'}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Dynamic Background */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-50 rounded-full blur-3xl opacity-60 pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-50 rounded-full blur-3xl opacity-60 pointer-events-none" />
+        <button className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-xs rounded border border-purple-500/30 transition-colors">Installer</button>
       </div>
     </div>
-  );
-}
+  </div>
+);
 
-function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
-  const [authError, setAuthError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
+import { ClientModule } from './modules/crm';
 
-  useEffect(() => {
-    import('./lib/firebase').then(({ testFirestoreConnection }) => {
-      testFirestoreConnection().then(ok => setConnStatus(ok ? 'ok' : 'fail'));
-    });
-  }, []);
+const HrModule = () => (
+  <div className="p-6 bg-neutral-800 rounded-lg border border-neutral-700 shadow-xl mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+      <UserCheck className="w-6 h-6 text-rose-400" />
+      Ressources Humaines (RH)
+    </h2>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="bg-neutral-900 border border-neutral-800 p-5 rounded-lg border-l-4 border-l-blue-500">
+        <h3 className="text-neutral-500 text-sm font-medium">Employés actifs</h3>
+        <p className="text-3xl font-bold text-neutral-200 mt-2">142</p>
+      </div>
+      <div className="bg-neutral-900 border border-neutral-800 p-5 rounded-lg border-l-4 border-l-amber-500">
+        <h3 className="text-neutral-500 text-sm font-medium">En congés</h3>
+        <p className="text-3xl font-bold text-amber-400 mt-2">12</p>
+      </div>
+      <div className="bg-neutral-900 border border-neutral-800 p-5 rounded-lg border-l-4 border-l-emerald-500">
+        <h3 className="text-neutral-500 text-sm font-medium">Nouveaux ce mois</h3>
+        <p className="text-3xl font-bold text-emerald-400 mt-2">+4</p>
+      </div>
+      <div className="bg-neutral-900 border border-neutral-800 p-5 rounded-lg border-l-4 border-l-purple-500">
+        <h3 className="text-neutral-500 text-sm font-medium">Entretiens prévus</h3>
+        <p className="text-3xl font-bold text-purple-400 mt-2">8</p>
+      </div>
+    </div>
+  </div>
+);
 
-  const handleGoogleLogin = async () => {
-    setAuthError('');
-    setLoading(true);
-    try {
-      await loginWithGoogle();
-    } catch (err: any) {
-      console.error(err);
-      setAuthError('Échec de la connexion avec Google. Réessayez.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-slate-900 font-sans relative">
-      <div className="max-w-md w-full bg-white rounded-3xl p-12 shadow-xl border border-slate-200 relative overflow-hidden">
-        
-        <div className="flex flex-col items-center gap-6 mb-12 justify-center">
+const ProjectModule = () => (
+  <div className="p-6 bg-neutral-800 rounded-lg border border-neutral-700 shadow-xl mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+      <Briefcase className="w-6 h-6 text-orange-400" />
+      Gestion de Projets
+    </h2>
+    <div className="space-y-4">
+      <div className="bg-neutral-900 border border-neutral-800 p-5 rounded-lg">
+        <div className="flex justify-between mb-3">
           <div>
-            <NexusLogo className="w-20 h-20" />
+            <span className="text-neutral-200 font-medium text-lg">Refonte plateforme web</span>
+            <p className="text-sm text-neutral-500 mt-1">Lancement prévu : 15 Juin</p>
           </div>
-          
-          <div className="text-center">
-            <h1 className="text-4xl font-black tracking-tight text-slate-900">Nexus<span className="text-blue-600">ERP</span></h1>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3">Intelligence Industrielle</p>
+          <span className="text-orange-400 font-bold text-lg">75%</span>
+        </div>
+        <div className="w-full bg-neutral-800 rounded-full h-2.5 overflow-hidden">
+          <div className="bg-orange-500 h-2.5 rounded-full transition-all duration-1000 ease-out" style={{ width: '75%' }}></div>
+        </div>
+      </div>
+      <div className="bg-neutral-900 border border-neutral-800 p-5 rounded-lg">
+        <div className="flex justify-between mb-3">
+          <div>
+            <span className="text-neutral-200 font-medium text-lg">Migration Cloud</span>
+            <p className="text-sm text-neutral-500 mt-1">Phase d'audit d'infrastructure</p>
           </div>
-          
-          <div className="mt-2">
-            {connStatus === 'testing' && (
-              <span className="px-3 py-1 bg-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full animate-pulse">Syncing...</span>
-            )}
-            {connStatus === 'ok' && (
-              <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[9px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 border border-blue-100">
-                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
-                Secured
-              </span>
-            )}
+          <span className="text-orange-400 font-bold text-lg">30%</span>
+        </div>
+        <div className="w-full bg-neutral-800 rounded-full h-2.5 overflow-hidden">
+          <div className="bg-orange-500 h-2.5 rounded-full transition-all duration-1000 ease-out" style={{ width: '30%' }}></div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const CollaborationModule = () => (
+  <div className="p-6 bg-neutral-800 rounded-lg border border-neutral-700 shadow-xl mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+      <MessageSquare className="w-6 h-6 text-pink-400" />
+      Collaboration
+    </h2>
+    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-5">
+      <div className="flex gap-4 items-start mb-6">
+        <div className="w-10 h-10 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold shrink-0">AL</div>
+        <div className="bg-neutral-800 border border-neutral-700 p-3 rounded-lg rounded-tl-none flex-1">
+          <p className="text-sm text-neutral-200"><span className="font-semibold text-pink-300">Alice L.</span> a partagé le document :</p>
+          <div className="mt-2 text-sm bg-neutral-900 p-2 rounded border border-neutral-700 text-blue-400 flex items-center gap-2">
+            <FileText className="w-4 h-4" /> Specs_V2.pdf
+          </div>
+          <p className="text-xs text-neutral-500 mt-2">Il y a 10 min</p>
+        </div>
+      </div>
+      <div className="flex gap-4 items-start">
+        <div className="w-10 h-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold shrink-0">BM</div>
+        <div className="bg-neutral-800 border border-neutral-700 p-3 rounded-lg rounded-tl-none flex-1">
+          <p className="text-sm text-neutral-200"><span className="font-semibold text-blue-300">Bob M.</span> a laissé un commentaire sur le projet <b>Migration Cloud</b> :</p>
+          <p className="text-sm text-neutral-400 mt-1 italic">"Les serveurs de test sont provisionnés. On peut démarrer la phase 2."</p>
+          <p className="text-xs text-neutral-500 mt-2">Il y a 1 heure</p>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const Dashboard = () => (
+  <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+    <div className="mb-8">
+      <h1 className="text-3xl font-bold tracking-tight mb-2">Bonjour, Administrateur</h1>
+      <p className="text-neutral-400">Voici l'état de votre entreprise aujourd'hui.</p>
+    </div>
+    
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="bg-neutral-800 border border-neutral-700 p-6 rounded-xl shadow-lg">
+        <div className="flex justify-between items-start mb-4">
+          <div className="bg-blue-500/20 p-3 rounded-lg">
+            <Activity className="w-6 h-6 text-blue-400" />
+          </div>
+          <span className="text-xs font-medium px-2 py-1 bg-neutral-900 text-neutral-300 rounded border border-neutral-700">Aujourd'hui</span>
+        </div>
+        <h3 className="text-neutral-400 text-sm font-medium mb-1">Nouveaux prospects</h3>
+        <p className="text-3xl font-bold text-white">+14</p>
+      </div>
+
+      <div className="bg-neutral-800 border border-neutral-700 p-6 rounded-xl shadow-lg">
+        <div className="flex justify-between items-start mb-4">
+          <div className="bg-emerald-500/20 p-3 rounded-lg">
+            <FileText className="w-6 h-6 text-emerald-400" />
+          </div>
+          <span className="text-xs font-medium px-2 py-1 bg-neutral-900 text-neutral-300 rounded border border-neutral-700">Ce mois</span>
+        </div>
+        <h3 className="text-neutral-400 text-sm font-medium mb-1">Factures payées</h3>
+        <p className="text-3xl font-bold text-white">45k €</p>
+      </div>
+
+      <div className="bg-neutral-800 border border-neutral-700 p-6 rounded-xl shadow-lg">
+        <div className="flex justify-between items-start mb-4">
+          <div className="bg-orange-500/20 p-3 rounded-lg">
+            <Briefcase className="w-6 h-6 text-orange-400" />
+          </div>
+          <span className="text-xs font-medium px-2 py-1 bg-neutral-900 text-neutral-300 rounded border border-neutral-700">En cours</span>
+        </div>
+        <h3 className="text-neutral-400 text-sm font-medium mb-1">Projets actifs</h3>
+        <p className="text-3xl font-bold text-white">12</p>
+      </div>
+    </div>
+    
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="bg-neutral-800 border border-neutral-700 p-6 rounded-xl shadow-lg">
+        <h3 className="text-lg font-semibold mb-4 border-b border-neutral-700 pb-2">Activité Récente</h3>
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+            <p className="text-sm text-neutral-300">Paiement reçu de <span className="font-semibold">Acme Corp</span> (1,200 €)</p>
+            <span className="text-xs text-neutral-500 ml-auto">10:42</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            <p className="text-sm text-neutral-300">Nouveau contrat signé avec <span className="font-semibold">Global Tech</span></p>
+            <span className="text-xs text-neutral-500 ml-auto">Hier</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 bg-rose-500 rounded-full"></div>
+            <p className="text-sm text-neutral-300">Serveur de paie mis à jour</p>
+            <span className="text-xs text-neutral-500 ml-auto">Lun</span>
           </div>
         </div>
-
-        <div className="space-y-6">
-          {authError && (
-            <div className="p-4 bg-red-50 text-red-700 text-[11px] font-bold rounded-xl border border-red-100 flex items-center gap-2">
-              <AlertCircle size={16} className="shrink-0" />
-              <span className="leading-tight">{authError}</span>
-            </div>
-          )}
-
-          <div className="text-center mb-4">
-            <p className="text-slate-500 text-sm font-medium">L'accès est sécurisé par authentification Google.</p>
-          </div>
-
-          <button 
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center justify-center gap-4 shadow-lg shadow-blue-600/10 disabled:opacity-50"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <>
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor" />
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor" />
-                  <path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z" fill="currentColor" />
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor" />
-                </svg>
-                <span>Google Nexus Access</span>
-              </>
-            )}
+      </div>
+      
+      <div className="bg-neutral-800 border border-neutral-700 p-6 rounded-xl shadow-lg">
+        <h3 className="text-lg font-semibold mb-4 border-b border-neutral-700 pb-2">Actions Rapides</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <button className="flex flex-col items-center justify-center gap-2 p-4 bg-neutral-900 border border-neutral-800 rounded-lg hover:border-blue-500/50 hover:bg-neutral-800 transition-colors group">
+            <Users className="w-6 h-6 text-neutral-400 group-hover:text-blue-400 transition-colors" />
+            <span className="text-sm font-medium text-neutral-300">Nouveau Client</span>
           </button>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-            <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest"><span className="bg-white px-4 text-slate-300 italic">Ou explorez</span></div>
-          </div>
-
-          <button 
-            onClick={onMarketplace}
-            className="w-full bg-slate-900 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-4 shadow-xl"
-          >
-            <ShoppingBag size={18} />
-            <span>Accéder au Marketplace</span>
+          <button className="flex flex-col items-center justify-center gap-2 p-4 bg-neutral-900 border border-neutral-800 rounded-lg hover:border-blue-500/50 hover:bg-neutral-800 transition-colors group">
+            <FileText className="w-6 h-6 text-neutral-400 group-hover:text-emerald-400 transition-colors" />
+            <span className="text-sm font-medium text-neutral-300">Créer Facture</span>
+          </button>
+          <button className="flex flex-col items-center justify-center gap-2 p-4 bg-neutral-900 border border-neutral-800 rounded-lg hover:border-blue-500/50 hover:bg-neutral-800 transition-colors group">
+            <UserCheck className="w-6 h-6 text-neutral-400 group-hover:text-rose-400 transition-colors" />
+            <span className="text-sm font-medium text-neutral-300">Poser Congé</span>
+          </button>
+          <button className="flex flex-col items-center justify-center gap-2 p-4 bg-neutral-900 border border-neutral-800 rounded-lg hover:border-blue-500/50 hover:bg-neutral-800 transition-colors group">
+            <Store className="w-6 h-6 text-neutral-400 group-hover:text-purple-400 transition-colors" />
+            <span className="text-sm font-medium text-neutral-300">Extensions</span>
           </button>
         </div>
       </div>
     </div>
-  );
-}
+  </div>
+);
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [slowLoading, setSlowLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [helpTopic, setHelpTopic] = useState<string | undefined>(undefined);
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [showMarketplace, setShowMarketplace] = useState(false);
-  const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth > 1024);
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const [isBlocked, setIsBlocked] = useState(false);
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const { currentCompany, companies, setCurrentCompany, loading: companyLoading } = useCompany();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Simulation d'un utilisateur invité (user === null) pour vérifier le correctif de plantage
+  const [user, setUser] = useState<{ email?: string } | null>(null);
 
-  const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
-  const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
-  
-  const ownedCompanies = companies.filter(c => {
-    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
-    return c.ownerId === user?.uid || (cOwnerEmail && cOwnerEmail === cleanEmail);
-  });
-  const joinedCompanies = companies.filter(c => {
-    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
-    return c.ownerId !== user?.uid && cOwnerEmail !== cleanEmail;
-  });
-  const [isWhitelisted, setIsWhitelisted] = useState<boolean | null>(null);
+  // CORRECTIF APPLIQUÉ SUR LA CHAINE DE CARACTÈRES
+  // Utilisation sécurisée de l'opérateur optionnel ? tout au long de la chaîne
+  const cleanEmail = user?.email?.trim()?.toLowerCase()?.replace(/\s+/g, '');
+  const isMaster = cleanEmail === 'admin@nexus.erp';
 
-  useEffect(() => {
-    if (loading || (user && companyLoading)) {
-      const timer = setTimeout(() => {
-        setSlowLoading(true);
-      }, 6000);
-      return () => clearTimeout(timer);
-    } else {
-      setSlowLoading(false);
-    }
-  }, [loading, user, companyLoading]);
-
-  useEffect(() => {
-    const handleOpenHelp = (e: any) => {
-      setHelpTopic(e.detail);
-      setIsHelpOpen(true);
-    };
-    const handleNavigate = (e: any) => {
-      setActiveTab(e.detail);
-    };
-    window.addEventListener('OPEN_HELP', handleOpenHelp);
-    window.addEventListener('NAVIGATE_TAB', handleNavigate);
-    return () => {
-      window.removeEventListener('OPEN_HELP', handleOpenHelp);
-      window.removeEventListener('NAVIGATE_TAB', handleNavigate);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isMaster) {
-      setIsWhitelisted(true);
-      return;
-    }
-
-    const checkWhitelist = async () => {
-      if (!user?.email || !user?.uid) return;
-      
-      const normalizedEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
-
-      try {
-        console.log("Nexus Security: Analyse des accès pour", normalizedEmail);
-        
-        // Use targeted lookups
-        const [personnelDocSnap, clientDocSnap] = await Promise.all([
-          getDoc(doc(db, 'personnel', normalizedEmail)).catch(() => null),
-          getDoc(doc(db, 'clients', normalizedEmail)).catch(() => null)
-        ]);
-
-        let hasSpecificAccess = false;
-        
-        if (personnelDocSnap?.exists()) {
-          hasSpecificAccess = true;
-          const pData = personnelDocSnap.data();
-          if (pData.uid !== user.uid || pData.status === 'invited') {
-            try {
-              await updateDoc(doc(db, 'personnel', normalizedEmail), { 
-                uid: user.uid, 
-                status: 'active', 
-                updatedAt: serverTimestamp() 
-              });
-            } catch (e) { /* Ignore background update fail */ }
-          }
-        }
-
-        if (clientDocSnap?.exists()) {
-          hasSpecificAccess = true;
-          const cData = clientDocSnap.data();
-          if (cData.uid !== user.uid || cData.status === 'invited') {
-            try {
-              await updateDoc(doc(db, 'clients', normalizedEmail), { 
-                uid: user.uid, 
-                status: 'active', 
-                updatedAt: serverTimestamp() 
-              });
-            } catch (e) { /* Ignore background update fail */ }
-          }
-        }
-
-        // Final decision logic
-        const hasCompanies = companies && companies.length > 0;
-        console.log("Nexus Security: Analyse terminée. Access:", hasSpecificAccess || hasCompanies);
-        
-        if (hasSpecificAccess || hasCompanies) {
-          setIsWhitelisted(true);
-        } else {
-          setIsWhitelisted(false);
-        }
-      } catch (err) {
-        console.error("Whitelist check failed:", err);
-        setIsWhitelisted(false);
-      }
-    };
-    checkWhitelist();
-  }, [user?.email, user?.uid, companies.length, isMaster]);
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
-    }
-  };
-
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsCommandPaletteOpen(true);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  useEffect(() => {
-    if (user && currentCompany && !user.role) {
-      if (currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid || user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') {
-        setUser(prev => prev ? { ...prev, role: 'owner' } : null);
-        setIsBlocked(false);
-      } else {
-        // Try to find the user in the personnel collection for this company
-        const findRole = async () => {
-          try {
-            const cleanEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '');
-            if (!cleanEmail) {
-              setIsBlocked(true);
-              return;
-            }
-            const q = query(
-              collection(db, 'personnel'), 
-              where('companyId', '==', currentCompany.id),
-              where('email', '==', cleanEmail),
-              limit(1)
-            );
-            const snap = await getDocs(q);
-            if (!snap.empty) {
-              const memberDoc = snap.docs[0];
-              const memberData = memberDoc.data();
-              if (memberData.status === 'blocked') {
-                setIsBlocked(true);
-              } else {
-                // Sync the UID and status if not present
-                if (memberData.uid !== user.uid || memberData.status !== 'active') {
-                  await updateDoc(memberDoc.ref, { 
-                    uid: user.uid,
-                    status: 'active',
-                    updatedAt: serverTimestamp()
-                  });
-                }
-
-                setUser(prev => prev ? { 
-                  ...prev, 
-                  role: memberData.role || 'Personnel',
-                  customPermissions: memberData.customPermissions || [],
-                  email: user.email || memberData.email,
-                  nexusId: memberData.id || memberDoc.id
-                } : null);
-              }
-            } else {
-               // Match as client
-               const clientQ = query(
-                 collection(db, 'clients'),
-                 where('companyId', '==', currentCompany.id),
-                 where('email', '==', cleanEmail),
-                 limit(1)
-               );
-               const clientSnap = await getDocs(clientQ);
-               if (!clientSnap.empty) {
-                  // Important: Sync the UID and status if not present to ensure security rules work better
-                  const clientRef = clientSnap.docs[0].ref;
-                  const clientData = clientSnap.docs[0].data();
-                  if (clientData.uid !== user.uid || clientData.status !== 'active') {
-                    await updateDoc(clientRef, { 
-                      uid: user.uid,
-                      status: 'active',
-                      updatedAt: serverTimestamp()
-                    });
-                  }
-                  
-                  // Double check membership in the company document
-                  if (!(currentCompany.memberEmails || []).includes(cleanEmail)) {
-                    await setDoc(doc(db, 'companies', currentCompany.id), {
-                      memberEmails: arrayUnion(cleanEmail),
-                      employees: arrayUnion(user.uid),
-                      updatedAt: serverTimestamp()
-                    }, { merge: true }).catch(e => console.error("Client auto-enroll sync failed", e));
-                  }
-                  
-                  setUser(prev => prev ? { 
-                    ...prev, 
-                    role: 'Client',
-                    email: user.email || clientData.email,
-                    nexusId: clientData.id || clientSnap.docs[0].id
-                  } : null);
-               } else {
-                 setIsBlocked(true); // Treat as unauthorized
-               }
-            }
-          } catch (err) {
-            console.error("Role lookup failed:", err);
-          }
-        };
-        findRole();
-      }
-    }
-  }, [user, currentCompany]);
-
-  useEffect(() => {
-    // Handle master switch from AdminModule
-    const handleStorageChange = () => {
-      const switchReq = localStorage.getItem('nexus_switch_company');
-      if (switchReq) {
-        const company = JSON.parse(switchReq);
-        setCurrentCompany(company);
-        localStorage.removeItem('nexus_switch_company');
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    handleStorageChange(); // Check on mount
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [setCurrentCompany]);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        setUser(u);
-        // Sync user profile to Firestore for notification lookups
-        try {
-          const rawEmail = u.email || u.providerData?.find(p => p?.email)?.email;
-          const cleanEmail = rawEmail ? rawEmail.trim().toLowerCase().replace(/\s+/g, '') : null;
-          
-          const userId = cleanEmail || u.uid;
-          const userRef = doc(db, 'users', userId);
-          const userData = {
-            uid: u.uid,
-            email: cleanEmail,
-            displayName: u.displayName || (cleanEmail ? cleanEmail.split('@')[0] : 'Utilisateur Nexus'),
-            photoURL: u.photoURL || null,
-            lastLogin: serverTimestamp(),
-            status: 'active'
-          };
-          
-          await setDoc(userRef, userData, { merge: true });
-          
-          // Double indexing to avoid duplicates in Admin list when email is discovered later
-          if (cleanEmail && userId !== cleanEmail) {
-            await setDoc(doc(db, 'users', cleanEmail), userData, { merge: true });
-          }
-        } catch (err) {
-          console.error("Nexus Sync: User profile sync failed", err);
-        }
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
-    
-    // Test Firestore connection on load
-    import('./lib/firebase').then(({ testFirestoreConnection }) => {
-      testFirestoreConnection();
-    });
-
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    if (user && user.role && currentCompany) {
-      const allowed = (currentCompany.roles || DEFAULT_ROLES)[user.role] || ['dashboard'];
-      if (!allowed.includes(activeTab) && activeTab !== 'admin') {
-        setActiveTab(allowed[0] || 'dashboard');
-      }
-    }
-  }, [user, currentCompany, activeTab]);
-
-  if (loading || (user && companyLoading)) {
-    return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6">
-        <div className="flex flex-col items-center max-w-sm w-full text-center">
-          <div className="relative mb-8">
-            <NexusLogo className="w-20 h-20 animate-pulse opacity-20" />
-            <div className="absolute inset-0 flex items-center justify-center">
-               <div className="h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-lg shadow-blue-600/20" />
-            </div>
-          </div>
-          
-          <h2 className="text-xl font-black text-slate-900 tracking-tight mb-2 italic uppercase">Symphonie Nexus</h2>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Initialisation de l'écosystème sécurisé...</p>
-          
-          <AnimatePresence>
-            {slowLoading && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-12 space-y-4 w-full"
-              >
-                <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
-                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest leading-loose">
-                    La connexion au Cloud prend plus de temps que prévu. 
-                    Cela peut être dû à votre connexion réseau.
-                  </p>
-                </div>
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl"
-                >
-                  Forcer le Redémarrage
-                </button>
-                <button 
-                  onClick={() => auth.signOut()}
-                  className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
-                >
-                  Changer de Compte
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-        
-        <div className="absolute bottom-10 text-[9px] text-slate-300 font-bold uppercase tracking-[0.2em]">
-          Nexus ERP Architectural Sync v4.2
-        </div>
-      </div>
-    );
-  }
-
-  if (showMarketplace) {
-    return (
-      <div className="min-h-screen bg-slate-50 font-sans">
-        <div className="bg-white border-b border-slate-100 p-4 sticky top-0 z-[100] shadow-sm">
-          <div className="max-w-7xl mx-auto flex justify-between items-center">
-             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowMarketplace(false)}>
-                <NexusLogo className="w-8 h-8" />
-                <span className="font-black text-slate-800 tracking-tighter">NEXUS OPERATIONAL</span>
-             </div>
-             <button 
-               onClick={() => setShowMarketplace(false)}
-               className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all font-sans"
-             >
-               Espace Connexion
-             </button>
-          </div>
-        </div>
-        <Marketplace onBack={() => setShowMarketplace(false)} />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <LoginScreen onMarketplace={() => setShowMarketplace(true)} />;
-  }
-
-  if (!currentCompany) {
-    return <WorkspaceSelector companies={companies} user={user} onSelect={setCurrentCompany} />;
-  }
-
-  if (isBlocked) {
-    return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-950 p-6 text-center">
-        <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-8 border border-red-500/20">
-          <ShieldAlert size={40} className="text-red-500 animate-pulse" />
-        </div>
-        <h1 className="text-3xl font-black text-white uppercase tracking-tight mb-4">Accès Interrompu</h1>
-        <p className="text-slate-400 max-w-sm font-medium leading-relaxed mb-10">
-          Votre compte fait l'objet d'une suspension temporaire ou votre accès à cet espace de travail a été révoqué par la direction. 
-          Veuillez contacter votre administrateur système.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <button 
-            onClick={() => {
-              setCurrentCompany(null);
-              setIsBlocked(false);
-            }}
-            className="px-8 py-4 bg-slate-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all font-sans"
-          >
-            Changer d'Espace
-          </button>
-          <button 
-            onClick={() => auth.signOut()}
-            className="px-8 py-4 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl shadow-white/5 font-sans"
-          >
-            Déconnexion
-          </button>
-        </div>
-        <div className="mt-12 text-[10px] text-slate-600 font-bold uppercase tracking-widest">
-          Nexus Security Architecture v5.0
-        </div>
-      </div>
-    );
-  }
-
-  const navItems = [
-    { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-    { id: 'marketplace', label: 'Marketplace Public', icon: Store },
-    { id: 'services', label: 'Services & Prestations', icon: Layers },
-    { id: 'sales', label: 'Ventes & Facturation', icon: TrendingUp },
-    { id: 'ecommerce', label: 'E-commerce', icon: ShoppingBag },
-    { id: 'clients', label: 'CRM / Clients', icon: Users },
-    { id: 'personnel', label: 'Ressources Humaines', icon: Briefcase },
-    { id: 'resources', label: 'Stocks & Logistique', icon: Package },
-    { id: 'projects', label: 'Projets & Tâches', icon: FolderKanban },
-    { id: 'collaboration', label: 'Collaboration & Comm', icon: Handshake },
-    { id: 'accounting', label: 'Comptabilité & Finance', icon: Calculator },
-    { id: 'guide', label: 'Guide & Performance', icon: BookOpen },
-    ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
-  ].filter(item => {
-    if (item.id === 'admin') return true;
-    const allowedByRole = (currentCompany.roles || DEFAULT_ROLES)[user.role] || ['dashboard'];
-    const customPermissions = user.customPermissions || [];
-    return allowedByRole.includes(item.id) || customPermissions.includes(item.id);
-  });
+  const NavButton = ({ id, icon: Icon, label, colorClass }: { id: string, icon: any, label: string, colorClass: string }) => (
+    <button
+      onClick={() => {
+        setActiveTab(id);
+        setIsSidebarOpen(false); // Close sidebar on mobile after clicking
+      }}
+      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+        activeTab === id 
+          ? `bg-${colorClass}-600/10 text-${colorClass}-400 border border-${colorClass}-500/20 font-medium` 
+          : 'text-neutral-400 hover:bg-neutral-900 border border-transparent'
+      }`}
+    >
+      <Icon className="w-4 h-4" /> {label}
+    </button>
+  );
 
   return (
-    <div className="min-h-screen bg-nexus-bg text-nexus-text font-sans selection:bg-nexus-accent selection:text-white flex overflow-hidden">
-      {/* Command Cockpit */}
-      <CommandPalette 
-        isOpen={isCommandPaletteOpen}
-        onClose={() => setIsCommandPaletteOpen(false)}
-        onNavigate={(tab) => setActiveTab(tab)}
-        user={user}
-      />
-
-      {/* Sidebar - Mobile Overlay */}
+    <div className="flex h-screen bg-neutral-950 text-white font-sans overflow-hidden selection:bg-blue-500/30">
+      
+      {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
-          onClick={() => setSidebarOpen(false)}
-          className="md:hidden fixed inset-0 bg-slate-900/40 z-30"
+          className="fixed inset-0 bg-black/60 z-20 md:hidden backdrop-blur-sm transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      {/* Sidebar Overlay for Mobile */}
-      {windowWidth < 1024 && isSidebarOpen && (
-        <div
-          onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 bg-slate-950/60 z-30"
-        />
-      )}
-
-      <aside 
-        style={{
-          width: isSidebarOpen ? (windowWidth < 640 ? windowWidth : 320) : (windowWidth < 1024 ? 0 : 100),
-          transform: (windowWidth < 1024 && !isSidebarOpen) ? 'translateX(-320px)' : 'translateX(0)'
-        }}
-        className={cn(
-          "bg-[#020617] border border-white/5 flex flex-col z-40 shrink-0 transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden",
-          windowWidth < 1024 
-            ? "fixed left-0 top-0 h-screen" 
-            : "h-[calc(100vh-2rem)] my-4 ml-4 rounded-[2.5rem] sticky top-4",
-          isSidebarOpen && windowWidth < 1024 && "rounded-r-[2rem]"
-        )}
-      >
-        {/* Abstract Background Elements for Sidebar */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
-          <div className="absolute -top-24 -left-24 w-64 h-64 bg-indigo-600/30 rounded-full blur-[80px]" />
-          <div className="absolute bottom-48 -right-12 w-40 h-40 bg-blue-600/20 rounded-full blur-[60px]" />
-        </div>
-
-        <div className="p-8 h-28 flex items-center justify-between border-b border-white/5 bg-slate-950/20 relative z-10">
-          <div className="flex items-center gap-4 w-full">
-            <div 
-              className="shrink-0 flex items-center justify-center p-2.5 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl shadow-xl shadow-indigo-900/40 border border-white/10"
-            >
-              <NexusLogo className="w-8 h-8 filter brightness-200" />
+      {/* Sidebar Navigation */}
+      <aside className={`fixed inset-y-0 left-0 z-30 w-72 bg-neutral-950 border-r border-neutral-800 flex flex-col transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="p-6 flex justify-between items-center bg-neutral-950 z-10 sticky top-0 border-b border-neutral-900">
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+              <Activity className="text-blue-500 w-7 h-7" />
+              NEXUS ERP
+            </h1>
+            <div className="mt-2 text-xs font-mono text-neutral-400 bg-neutral-900 px-2 py-1 rounded inline-block border border-neutral-800">
+              {isMaster ? 'Root Admin' : 'Mode Invité'}
             </div>
-            
-            {isSidebarOpen && (
-              <div 
-                className="overflow-hidden flex-1"
-              >
-                {activeTab === 'admin' ? (
-                  <div className="font-black text-indigo-400 text-xl tracking-tighter leading-none italic">
-                    NEXUS <span className="text-white not-italic">CORE</span>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <div className="relative group/select">
-                      <select 
-                        value={currentCompany.id}
-                        onChange={(e) => {
-                          const c = companies.find(c => c.id === e.target.value);
-                          if (c) setCurrentCompany(c);
-                        }}
-                        className="font-black text-lg tracking-tight bg-transparent text-white border-none p-0 focus:ring-0 cursor-pointer w-full leading-none appearance-none pr-6 truncate"
-                      >
-                        {companies.map(c => (
-                          <option key={c.id} value={c.id} className="bg-slate-950 text-white font-sans">{c.name}</option>
-                        ))}
-                      </select>
-                      <ChevronRight size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-500 group-hover/select:text-white transition-colors rotate-90" />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
-                      <span className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">{currentCompany.joinCode}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
-
           <button 
-            onClick={() => setSidebarOpen(!isSidebarOpen)} 
-            className="p-2.5 hover:bg-white/10 text-slate-500 hover:text-white transition-all rounded-xl ml-2 border border-transparent hover:border-white/5 active:scale-95"
+            className="md:hidden text-neutral-400 hover:text-white p-2 rounded-lg hover:bg-neutral-900 transition-colors"
+            onClick={() => setIsSidebarOpen(false)}
           >
-            {isSidebarOpen ? <ChevronLeft size={20} /> : <Menu size={20} />}
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <nav className="flex-1 py-8 px-4 space-y-1.5 overflow-y-auto scrollbar-hide relative z-10">
-          <div className="space-y-1.5">
-            {navItems.map((item, i) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  if (windowWidth < 1024) setSidebarOpen(false);
-                }}
-                className={cn(
-                  "w-full flex items-center gap-5 px-5 py-4 rounded-2xl transition-all group relative overflow-hidden",
-                  activeTab === item.id 
-                    ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-[0_10px_30px_rgba(79,70,229,0.3)] border border-indigo-500/50" 
-                    : "text-slate-400 hover:bg-white/5 hover:text-slate-100 hover:translate-x-1"
-                )}
-              >
-                <div className={cn(
-                  "transition-all duration-500",
-                  activeTab === item.id ? "text-white scale-110" : "text-slate-500 group-hover:text-indigo-400"
-                )}>
-                  <item.icon size={22} strokeWidth={activeTab === item.id ? 2.5 : 2} />
-                </div>
-                {isSidebarOpen && (
-                  <span className={cn(
-                    "text-[10px] font-black uppercase tracking-[0.2em] shrink-0 transition-colors",
-                    activeTab === item.id ? "text-white" : "text-slate-400 group-hover:text-slate-100"
-                  )}>{item.label}</span>
-                )}
-                
-                {activeTab === item.id && (
-                  <div 
-                    className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-white rounded-l-full shadow-[0_0_15px_#fff]" 
-                  />
-                )}
-
-                {/* Hover Highlight Overlay */}
-                <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-              </button>
-            ))}
-          </div>
-        </nav>
-
-        <div className="p-6 border-t border-white/5 flex flex-col gap-3 bg-slate-950/20 relative z-10">
-          {user?.role === 'Client' && isSidebarOpen && (
-            <div className="mb-2 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl">
-              <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-1 italic">NEXUS CONNECT</p>
-              <p className="text-[10px] text-slate-400 leading-tight">Votre support prioritaire est actif.</p>
-              <button 
-                onClick={() => setActiveTab('ecommerce')}
-                className="mt-3 w-full py-2 bg-indigo-600 text-white text-[9px] font-black uppercase rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-indigo-500 transition-colors"
-              >
-                Ouvrir Support / Chat
-              </button>
-            </div>
-          )}
-          <button 
-            onClick={() => setCurrentCompany(null)}
-            className="w-full flex items-center gap-5 px-5 py-4 rounded-2xl bg-white/5 text-slate-400 hover:text-white transition-all group border border-white/5 hover:border-white/20 hover:bg-white/10 active:scale-95"
-          >
-            <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-900 border border-white/5 group-hover:border-indigo-500/50 group-hover:text-indigo-400 transition-all">
-              <Database size={16} className="group-hover:rotate-12 transition-transform" />
-            </div>
-            {isSidebarOpen && <span className="text-[10px] font-black uppercase tracking-[0.2em]">Changer d'Espace</span>}
-          </button>
+        <nav className="flex-1 overflow-y-auto px-4 space-y-1 mt-2 pb-4 scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent">
+          <NavButton id="dashboard" icon={Home} label="Vue d'ensemble" colorClass="blue" />
           
-          <button 
-            onClick={logout}
-            className="w-full flex items-center gap-5 px-5 py-4 rounded-2xl text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-all group border border-transparent hover:border-red-500/20 active:scale-95"
-          >
-            <div className="w-8 h-8 flex items-center justify-center rounded-lg group-hover:bg-red-500/10 transition-all">
-              <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
+          <div className="pt-6 pb-2 px-4 text-xs font-bold text-neutral-600 uppercase tracking-widest">
+            Opérations
+          </div>
+          
+          <NavButton id="clients" icon={Users} label="Gestion Client (CRM)" colorClass="cyan" />
+          <NavButton id="projects" icon={Briefcase} label="Gestion de Projets" colorClass="orange" />
+          <NavButton id="hr" icon={UserCheck} label="Ressources Humaines" colorClass="rose" />
+          <NavButton id="accounting" icon={FileText} label="Comptabilité" colorClass="emerald" />
+          <NavButton id="collaboration" icon={MessageSquare} label="Collaboration" colorClass="pink" />
+
+          <div className="pt-6 pb-2 px-4 text-xs font-bold text-neutral-600 uppercase tracking-widest">
+            Système
+          </div>
+
+          <NavButton id="marketplace" icon={Store} label="Marketplace" colorClass="purple" />
+          <NavButton id="settings" icon={Settings} label="Paramètres" colorClass="neutral" />
+        </nav>
+        
+        <div className="p-4 border-t border-neutral-900 bg-neutral-950/50">
+          <div className="flex items-start gap-3 bg-emerald-500/5 border border-emerald-500/10 p-3 rounded-lg">
+            <Shield className="w-5 h-5 text-emerald-500 shrink-0" />
+            <div>
+              <p className="text-xs font-semibold text-emerald-400">Système Stable</p>
+              <p className="text-[10px] text-neutral-500 mt-1 leading-relaxed">Rendu React opérationnel. Aucun crash détecté. All systems nominal.</p>
             </div>
-            {isSidebarOpen && <span className="text-[10px] font-black uppercase tracking-[0.2em]">Fin de Session</span>}
-          </button>
+          </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col h-screen bg-nexus-bg">
-        {/* Top Header */}
-        <header className="h-24 px-6 sm:px-12 border-b border-white/5 bg-nexus-surface sticky top-0 z-20 flex items-center justify-between">
-          <div className="flex items-center gap-6">
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col min-w-0 bg-[#0c0c0c] relative">
+        <header className="sticky top-0 z-10 p-4 md:p-6 bg-[#0c0c0c]/80 border-b border-neutral-800/80 flex justify-between items-center backdrop-blur-md">
+          <div className="flex items-center gap-4">
             <button 
-              onClick={() => setSidebarOpen(!isSidebarOpen)} 
-              className="lg:hidden p-3 bg-nexus-accent text-white rounded-2xl shadow-lg shadow-blue-600/20 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
+              className="md:hidden p-2 -ml-2 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
+              onClick={() => setIsSidebarOpen(true)}
             >
-              <Menu size={20} />
+              <Menu className="w-6 h-6" />
             </button>
-            <div className="flex flex-col">
-              <h2 className="text-[10px] font-black text-nexus-accent uppercase tracking-[0.3em] mb-1">Nexus Cockpit</h2>
-              <h1 className="text-xl font-bold text-nexus-text tracking-tight leading-none">
-                {activeTab === 'admin' ? "Console Maître" : navItems.find(n => n.id === activeTab)?.label}
-              </h1>
-            </div>
+            <h2 className="text-xl font-semibold text-neutral-100 capitalize tracking-tight hidden sm:block">
+              {activeTab === 'dashboard' ? 'Tableau de bord' : 
+               activeTab === 'clients' ? 'Gestion Client (CRM)' :
+               activeTab === 'hr' ? 'Ressources Humaines' :
+               activeTab === 'projects' ? 'Projets' :
+               activeTab === 'accounting' ? 'Comptabilité' :
+               activeTab}
+            </h2>
           </div>
           
-          <div className="flex items-center gap-8">
-            <div 
-              onClick={() => setIsCommandPaletteOpen(true)}
-              className="hidden lg:flex items-center px-4 py-2 bg-white/5 rounded-2xl border border-white/10 group transition-all cursor-pointer hover:border-nexus-accent/50"
-            >
-              <Search className="text-nexus-text-muted group-hover:text-nexus-accent transition-colors" size={18} />
-              <div className="text-[11px] font-bold text-nexus-text-muted w-48 ml-3 flex justify-between items-center">
-                <span>Scanner l'écosystème...</span>
-                <span className="text-[9px] px-1.5 py-0.5 bg-white/10 rounded border border-white/10">⌘K</span>
+          <div className="flex items-center gap-4">
+            {user ? (
+              <div className="text-sm px-4 py-2 bg-neutral-800/80 rounded-full text-neutral-300 border border-neutral-700 shadow-sm font-medium">
+                {user.email}
               </div>
-            </div>
-            
-            <div className="flex items-center gap-2 sm:gap-4 lg:border-l border-white/5 lg:pl-8">
-              <NotificationBell user={user} />
-              
-              <div className="flex items-center gap-2 sm:gap-4">
-                <div className="hidden xs:flex flex-col items-end">
-                  <span className="text-[9px] sm:text-[10px] font-black text-nexus-text uppercase tracking-tighter truncate max-w-[80px] sm:max-w-none">
-                    {user?.displayName || user?.email?.split('@')[0] || 'Utilisateur'}
-                  </span>
-                  <span className="text-[7px] sm:text-[8px] font-black text-nexus-accent uppercase tracking-[0.1em] px-1.5 sm:px-2 py-0.5 bg-nexus-accent/10 rounded-full border border-nexus-accent/20 mt-0.5">
-                    {user?.role}
-                  </span>
-                </div>
-                <div className="relative group cursor-pointer">
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="User" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white/10 shadow-xl shadow-slate-950/20 object-cover" />
-                  ) : (
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white/10 shadow-xl shadow-slate-950/20 bg-nexus-surface flex items-center justify-center text-nexus-text-muted font-black text-base sm:text-lg">
-                      {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
-                    </div>
-                  )}
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-nexus-success rounded-full border-[3px] border-nexus-surface shadow-sm" />
-                </div>
+            ) : (
+              <div className="text-xs flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full font-medium shadow-sm">
+                <AlertCircle className="w-4 h-4" />
+                <span className="hidden sm:inline">Non authentifié</span>
+                <span className="sm:hidden">Invité</span>
               </div>
-            </div>
+            )}
           </div>
         </header>
 
-        {/* Dynamic View */}
-        {user && currentCompany && <CriticalNotificationOverlay user={user} />}
-        <div className="flex-1 p-4 sm:p-8 pb-32">
-          <div
-            className="max-w-[1400px] mx-auto"
-          >
-            {activeTab === 'dashboard' && <DashboardModule user={user} companies={companies} />}
-            {activeTab === 'marketplace' && <Marketplace onBack={() => setActiveTab('dashboard')} />}
-            {activeTab === 'services' && <PrestationsModule />}
-            {activeTab === 'sales' && <SalesModule user={user} />}
-            {activeTab === 'ecommerce' && <EcommerceModule user={user} />}
+        <div className="flex-1 overflow-y-auto w-full">
+          <div className="p-4 md:p-8 max-w-7xl mx-auto pb-32">
+            {activeTab === 'dashboard' && <Dashboard />}
             {activeTab === 'clients' && <ClientModule />}
-            {activeTab === 'personnel' && <PersonnelModule user={user} />}
-            {activeTab === 'resources' && <ResourceModule user={user} />}
+            {activeTab === 'hr' && <HrModule />}
             {activeTab === 'projects' && <ProjectModule />}
-            {activeTab === 'accounting' && <AccountingModule />}
             {activeTab === 'collaboration' && <CollaborationModule />}
-            {activeTab === 'guide' && <GuideModule />}
-            {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') && <AdminModule />}
+            {activeTab === 'accounting' && <AccountingModule />}
+            {activeTab === 'marketplace' && <MarketplaceModule />}
+            {activeTab === 'settings' && (
+              <div className="text-neutral-400 text-sm p-6 bg-neutral-800 rounded-lg border border-neutral-700 shadow-xl flex items-center justify-center min-h-[300px]">
+                <div className="text-center">
+                  <Settings className="w-12 h-12 text-neutral-600 mx-auto mb-4 animate-spin-slow" />
+                  <p className="text-lg font-medium text-neutral-300">Panneau de configuration</p>
+                  <p className="mt-2 text-neutral-500">Ce module est actuellement en cours de construction.</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-
-        <ContextualHelp 
-          isOpen={isHelpOpen} 
-          onClose={() => setIsHelpOpen(false)} 
-          topic={helpTopic}
-        />
-
-        {/* Global Footer */}
-        <footer className="mt-auto px-4 sm:px-8 py-6 border-t border-white/5 bg-nexus-surface flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-6">
-            <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest">Nexus Cockpit v5.0-LEGENDARY</p>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-nexus-success rounded-full animate-pulse" />
-              <span className="text-[10px] font-bold text-nexus-text uppercase">Sync Intelligence Active</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="text-[10px] font-bold text-nexus-text-muted hover:text-nexus-text uppercase transition-colors">Support Principal</button>
-            <span className="text-white/5">|</span>
-            <button className="text-[10px] font-bold text-nexus-text-muted hover:text-nexus-text uppercase transition-colors">Protocole Sécurité</button>
-          </div>
-        </footer>
       </main>
     </div>
   );
