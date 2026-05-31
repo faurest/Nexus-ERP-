@@ -730,16 +730,27 @@ export default function App() {
       <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col h-screen bg-nexus-bg">
         {/* Top Header */}
         <header className="h-24 px-6 sm:px-12 border-b border-white/5 bg-nexus-surface sticky top-0 z-20 flex items-center justify-between">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6">
             <button 
               onClick={() => setSidebarOpen(!isSidebarOpen)} 
               className="lg:hidden p-3 bg-nexus-accent text-white rounded-2xl shadow-lg shadow-blue-600/20 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
             >
               <Menu size={20} />
             </button>
+            
+            {activeTab !== 'dashboard' && (
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className="hidden sm:flex items-center justify-center w-10 h-10 bg-white/5 border border-white/10 rounded-xl text-nexus-text-muted hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
+                title="Retour au Tableau de bord"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            )}
+
             <div className="flex flex-col">
               <h2 className="text-[10px] font-black text-nexus-accent uppercase tracking-[0.3em] mb-1">Nexus Cockpit</h2>
-              <h1 className="text-xl font-bold text-nexus-text tracking-tight leading-none">
+              <h1 className="text-xl font-bold text-nexus-text tracking-tight leading-none flex items-center gap-2">
                 {activeTab === 'admin' ? "Console Maître" : navItems.find(n => n.id === activeTab)?.label}
               </h1>
             </div>
@@ -790,19 +801,29 @@ export default function App() {
           <div
             className="max-w-[1400px] mx-auto"
           >
-            {activeTab === 'dashboard' && <DashboardModule user={user} companies={companies} />}
-            {activeTab === 'marketplace' && <Marketplace onBack={() => setActiveTab('dashboard')} />}
-            {activeTab === 'services' && <PrestationsModule />}
-            {activeTab === 'sales' && <SalesModule user={user} />}
-            {activeTab === 'ecommerce' && <EcommerceModule user={user} />}
-            {activeTab === 'clients' && <ClientModule />}
-            {activeTab === 'personnel' && <PersonnelModule user={user} />}
-            {activeTab === 'resources' && <ResourceModule user={user} />}
-            {activeTab === 'projects' && <ProjectModule />}
-            {activeTab === 'accounting' && <AccountingModule />}
-            {activeTab === 'collaboration' && <CollaborationModule />}
-            {activeTab === 'guide' && <GuideModule />}
-            {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') && <AdminModule />}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              >
+                {activeTab === 'dashboard' && <DashboardModule user={user} companies={companies} />}
+                {activeTab === 'marketplace' && <Marketplace onBack={() => setActiveTab('dashboard')} />}
+                {activeTab === 'services' && <PrestationsModule />}
+                {activeTab === 'sales' && <SalesModule user={user} />}
+                {activeTab === 'ecommerce' && <EcommerceModule user={user} />}
+                {activeTab === 'clients' && <ClientModule />}
+                {activeTab === 'personnel' && <PersonnelModule user={user} />}
+                {activeTab === 'resources' && <ResourceModule user={user} />}
+                {activeTab === 'projects' && <ProjectModule />}
+                {activeTab === 'accounting' && <AccountingModule />}
+                {activeTab === 'collaboration' && <CollaborationModule />}
+                {activeTab === 'guide' && <GuideModule />}
+                {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') && <AdminModule />}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
 

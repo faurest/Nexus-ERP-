@@ -719,10 +719,10 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           {onBack && (
             <button
               onClick={onBack}
-              className="hidden md:flex items-center gap-2 p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all font-black text-[9px] uppercase tracking-widest hover:border-slate-300"
+              className="flex items-center gap-2 p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all font-black text-[9px] uppercase tracking-widest hover:border-slate-300 shrink-0"
             >
               <ArrowLeft size={18} />
-              Retour
+              <span className="hidden sm:inline">Retour</span>
             </button>
           )}
 

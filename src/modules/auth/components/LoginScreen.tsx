@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, AlertCircle, Key, User } from 'lucide-react';
+import { ShoppingBag, AlertCircle, Key, User, ArrowLeft } from 'lucide-react';
 import { motion } from 'motion/react';
 import { loginWithGoogle } from '../../../lib/firebase';
 import { NexusLogo } from '../../../components/NexusLogo';
@@ -185,8 +185,8 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
             onClick={onMarketplace}
             className="w-full bg-slate-900 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-4 shadow-xl"
           >
-            <ShoppingBag size={18} />
-            <span>Accéder au Marketplace</span>
+            <ArrowLeft size={18} />
+            <span>Retourner au Marketplace</span>
           </button>
         </div>
       </div>
