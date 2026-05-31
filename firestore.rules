@@ -209,7 +209,7 @@ service cloud.firestore {
       function isValidEntity(data) {
         return (collectionName == 'global_orders') || (
           data.companyId is string && isValidId(data.companyId) && 
-          (isAdmin() || isMemberOfCompany(data.companyId))
+          (isAdmin() || collectionName in ['ecommerce_orders', 'order_history'] || isMemberOfCompany(data.companyId))
         );
       }
 

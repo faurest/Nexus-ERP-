@@ -520,6 +520,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             paymentMethod: selectedPaymentMethod === 'CASH' ? 'CASH' : (paymentOperator === 'MTN' ? 'MTN MoMo' : 'Orange Money'),
             operator: paymentOperator,
             date: serverTimestamp(),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
             checkoutSource: "MARKETPLACE",
             customerName: checkoutData.name,
             customerPhone: checkoutData.phone,
@@ -539,7 +541,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
              const { increment } = await import("firebase/firestore");
              await updateDoc(productRef, {
                stock: increment(-item.cartQuantity),
-               soldCount: increment(item.cartQuantity)
+               soldCount: increment(item.cartQuantity),
+               updatedAt: serverTimestamp()
              });
           }
 
@@ -566,7 +569,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
             await updateDoc(doc(db, "ecommerce_orders", orderRef.id), {
               paymentStatus: "PAID",
-              status: "PROCESSING"
+              status: "PROCESSING",
+              updatedAt: serverTimestamp(),
             });
 
             // Also update Global Order status if all sub-orders are paid (simplified here)
@@ -625,7 +629,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           if (item.id) {
             const productRef = doc(db, "products", item.id);
             await updateDoc(productRef, {
-              stock: increment(item.quantity || 0)
+              stock: increment(item.quantity || 0),
+              updatedAt: serverTimestamp()
             });
           }
         }

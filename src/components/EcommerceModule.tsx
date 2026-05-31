@@ -848,6 +848,8 @@ export default function EcommerceModule({ user }: { user: any }) {
         paymentStatus: 'UNPAID',
         status: 'PENDING',
         date: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         customerEmail: auth.currentUser?.email || 'Guest',
         customerName: auth.currentUser?.displayName || 'Client'
       });
