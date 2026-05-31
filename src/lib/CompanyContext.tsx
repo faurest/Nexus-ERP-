@@ -81,8 +81,22 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
       await updateDoc(doc(db, 'companies', companyId), {
         memberEmails: arrayUnion(cleanEmail),
-        employees: arrayUnion(user.uid),
+        employees: arrayUnion(session.id || session.uid),
         joinCode: cleanCode, // Required by security rules for self-enrollment sync
+        updatedAt: serverTimestamp()
+      });
+
+      // Automatically create a personnel record so the user can access the app
+      const { setDoc } = await import('firebase/firestore');
+      await setDoc(doc(db, 'personnel', cleanEmail), {
+        companyId: companyId,
+        uid: session.id || session.uid,
+        email: cleanEmail,
+        name: session.displayName || cleanEmail.split('@')[0],
+        role: 'Personnel',
+        status: 'active',
+        joinMethod: 'invite_code',
+        createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
 

@@ -184,13 +184,28 @@ export default function AdminModule() {
     setSubmitting(true);
     try {
       const joinCode = newCompany.joinCode || Math.random().toString(36).substring(2, 8).toUpperCase();
+      const cleanEmail = newCompany.ownerEmail.trim().toLowerCase();
       const snap = await addDoc(collection(db, 'companies'), {
         ...newCompany,
         joinCode,
         ownerId: 'manual',
-        memberEmails: [newCompany.ownerEmail.trim().toLowerCase()],
+        memberEmails: [cleanEmail],
         createdAt: serverTimestamp()
       });
+
+      const { setDoc, doc } = await import('firebase/firestore');
+      await setDoc(doc(db, 'personnel', cleanEmail), {
+        companyId: snap.id,
+        uid: 'manual',
+        email: cleanEmail,
+        name: cleanEmail.split('@')[0],
+        role: 'owner',
+        status: 'active',
+        joinMethod: 'master_creation',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
       setShowCreateModal(false);
       setNewCompany({ name: '', ownerEmail: '', joinCode: '' });
       fetchGlobalData();

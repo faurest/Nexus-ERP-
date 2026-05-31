@@ -74,6 +74,21 @@ export function WorkspaceSelector({ companies, user, onSelect }: { companies: an
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
+
+      // Create a personnel record for the owner so they show up in RH module
+      const { setDoc, doc } = await import('firebase/firestore');
+      await setDoc(doc(db, 'personnel', cleanEmail), {
+        companyId: docRef.id,
+        uid: user.uid,
+        email: cleanEmail,
+        name: user.displayName || cleanEmail.split('@')[0],
+        role: 'owner',
+        status: 'active',
+        joinMethod: 'creation',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
       onSelect({ id: docRef.id, name: newCompanyName, ownerId: user.uid, joinCode: generatedJoinCode });
     } catch(err: any) {
       console.error("Create Company Error:", err);

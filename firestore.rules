@@ -138,23 +138,19 @@ service cloud.firestore {
 
     // 1.2 Dedicated Ecommerce Orders & Company Entities
     match /clients/{clientId} {
-      allow read: if isSignedIn() && (
-        isAdmin() || 
-        clientId == currentUserEmail() ||
-        clientId == request.auth.uid ||
-        (resource != null && resource.data.email == currentUserEmail()) ||
-        (resource != null && resource.data.companyId != null && isMemberOfCompany(resource.data.companyId))
-      );
+      allow read: if isSignedIn();
       allow create: if isSignedIn();
-      allow update: if isSignedIn() && (
-        isAdmin() || 
-        clientId == currentUserEmail() ||
-        clientId == request.auth.uid ||
-        (resource != null && resource.data.email == currentUserEmail()) ||
-        (resource != null && isMemberOfCompany(resource.data.companyId))
-      );
+      allow update: if isSignedIn();
       allow delete: if isAdmin();
     }
+
+    match /personnel/{personnelId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
 
     // Notification access
     match /notifications/{docId} {
