@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion, setDoc, serverTimestamp, limit } from './lib/firebase';
 type User = any;
-import { syncUserProfile, type UserProfile } from './lib/userService';
 import { 
   LayoutDashboard, 
   Users, 
@@ -24,7 +23,6 @@ import {
   Shield,
   ShieldAlert,
   Calculator,
-  Activity,
   Layers,
   FileText,
   Database,
@@ -57,277 +55,18 @@ import CriticalNotificationOverlay from './components/CriticalNotificationOverla
 import CommandPalette from './components/CommandPalette';
 
 import { bootstrapDemoData } from './lib/bootstrap';
-import { useTheme } from './lib/ThemeContext';
-import { ThemeToggle } from './components/ThemeToggle';
-import { Button, Card, Input, Badge } from './components/NexusUI';
 import { useCompany } from './lib/CompanyContext';
 
-export const NexusLogo = ({ className = "" }: { className?: string }) => (
-  <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <defs>
-      <linearGradient id="primary" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#0EA5E9" />
-        <stop offset="100%" stopColor="#2563EB" />
-      </linearGradient>
-      <linearGradient id="secondary" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#38BDF8" />
-        <stop offset="100%" stopColor="#6EE7B7" />
-      </linearGradient>
-      <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="6" result="blur" />
-        <feComposite in="SourceGraphic" in2="blur" operator="over" />
-      </filter>
-    </defs>
-    
-    <g transform="translate(60, 60)">
-      {/* Outer Orbit */}
-      <circle cx="0" cy="0" r="45" fill="none" stroke="url(#primary)" strokeWidth="2" strokeDasharray="8 6" opacity="0.4" />
-      
-      {/* Connecting nodes */}
-      <circle cx="0" cy="-45" r="4" fill="#0EA5E9" />
-      <circle cx="39" cy="22.5" r="4" fill="#2563EB" />
-      <circle cx="-39" cy="22.5" r="4" fill="#38BDF8" />
+import { authService } from './core/auth/AuthService';
+import { LoginScreen } from './modules/auth/components/LoginScreen';
+import { WorkspaceSelector } from './modules/companies/components/WorkspaceSelector';
+import { DEFAULT_ROLES } from './core/permissions/roles';
+import { NexusLogo } from './components/NexusLogo';
 
-      {/* Inner geometric structure */}
-      <path d="M0 -25 L21.6 12.5 L-21.6 12.5 Z" fill="none" stroke="url(#secondary)" strokeWidth="4" strokeLinejoin="round" />
-      
-      <path d="M0 -45 L0 -25" stroke="url(#secondary)" strokeWidth="3" opacity="0.6"/>
-      <path d="M39 22.5 L21.6 12.5" stroke="url(#secondary)" strokeWidth="3" opacity="0.6"/>
-      <path d="M-39 22.5 L-21.6 12.5" stroke="url(#secondary)" strokeWidth="3" opacity="0.6"/>
 
-      {/* The Core */}
-      <circle cx="0" cy="0" r="12" fill="url(#primary)" filter="url(#glow)" />
-      <circle cx="0" cy="0" r="6" fill="#FFFFFF" />
-    </g>
-  </svg>
-);
 
-export const DEFAULT_ROLES: Record<string, string[]> = {
-  'owner': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
-  'Directeur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
-  'Administrateur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
-  'Secrétaire': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
-  'Comptable': ['dashboard', 'services', 'sales', 'ecommerce', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
-  'Agent Commercial': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'projects', 'collaboration', 'communication', 'guide'],
-  'Collaborateur': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
-  'Personnel': ['dashboard', 'services', 'sales', 'ecommerce', 'clients', 'personnel', 'resources', 'projects', 'accounting', 'collaboration', 'communication', 'guide'],
-  'Client': ['dashboard', 'ecommerce'],
-};
-
-function SkeletonCard() {
-  return (
-    <div className="w-full flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-white animate-pulse">
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-slate-100 rounded-2xl" />
-        <div className="space-y-2">
-          <div className="h-4 w-32 bg-slate-100 rounded" />
-          <div className="h-3 w-16 bg-slate-50 rounded" />
-        </div>
-      </div>
-      <div className="w-4 h-4 bg-slate-50 rounded" />
-    </div>
-  );
-}
-
-function WorkspaceSelector({ companies, user, onSelect }: { companies: any[], user: User, onSelect: any }) {
-  const [mode, setMode] = useState<'select' | 'create' | 'join'>('select');
-  const [newCompanyName, setNewCompanyName] = useState('');
-  const [joinCodeInput, setJoinCodeInput] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const { currentCompany, joinCompany, createCompany } = useCompany();
-
-  useEffect(() => {
-    if (!user || !companies.length || currentCompany) return; 
-    const savedId = localStorage.getItem('nexus_company_id') || localStorage.getItem('nexus_last_company_id');
-    if (companies.length === 1) {
-      onSelect(companies[0]);
-    } else if (savedId) {
-      const found = companies.find(c => c.id === savedId);
-      if (found) onSelect(found);
-    }
-  }, [companies, user, currentCompany]);
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-bg-main transition-colors relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none opacity-10">
-        <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-nexus-primary/20 rounded-full blur-[140px]" />
-        <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-nexus-accent/20 rounded-full blur-[100px]" />
-      </div>
-
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-xl space-y-8 relative z-10">
-        <div className="text-center space-y-2">
-          <div className="flex justify-center mb-6">
-             <NexusLogo className="w-16 h-16" />
-          </div>
-          <h1 className="text-3xl font-black text-text-main tracking-tight uppercase">SÉLECTION D'ESPACE</h1>
-          <p className="text-sm text-text-muted font-medium italic text-center">Accédez à votre infrastructure de performance.</p>
-        </div>
-
-        <AnimatePresence mode="wait">
-          {mode === 'select' && (
-            <motion.div key="select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
-              <div className="grid gap-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
-                {companies.map((c) => (
-                  <Card key={c.id} className="p-6 cursor-pointer group flex items-center justify-between hover:border-nexus-primary transition-all bg-surface/50 backdrop-blur-md" onClick={() => onSelect(c)}>
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 bg-nexus-primary/10 rounded-2xl flex items-center justify-center text-nexus-primary font-black text-xl group-hover:bg-nexus-primary group-hover:text-white transition-all shadow-inner">
-                        {c.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="space-y-1 text-left">
-                        <h3 className="font-black text-lg text-text-main group-hover:text-nexus-primary transition-colors text-left">{c.name}</h3>
-                        <div className="flex items-center gap-2">
-                           <Badge variant="info">{c.joinCode}</Badge>
-                        </div>
-                      </div>
-                    </div>
-                    <ChevronRight className="text-text-muted group-hover:translate-x-1 transition-transform" />
-                  </Card>
-                ))}
-                {companies.length === 0 && (
-                  <div className="py-12 text-center text-text-muted opacity-50 space-y-4">
-                    <p className="font-black uppercase tracking-widest text-xs">Aucun espace rattaché</p>
-                    <p className="text-[10px] italic">Utilisez un code ou créez votre entreprise pour commencer.</p>
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <Button variant="secondary" onClick={() => setMode('join')} leftIcon={<Users size={16} />}>REJOINDRE</Button>
-                <Button onClick={() => setMode('create')} leftIcon={<Plus size={16} />}>CRÉER</Button>
-              </div>
-            </motion.div>
-          )}
-
-          {mode === 'create' && (
-            <motion.div key="create" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -20 }}>
-              <Card className="p-10 space-y-8 bg-surface/80 backdrop-blur-xl text-center">
-                 <div className="text-center space-y-2">
-                    <Building2 className="w-12 h-12 mx-auto text-nexus-primary" />
-                    <h2 className="text-xl font-bold text-text-main uppercase">Initialisation Engine</h2>
-                    <p className="text-xs text-text-muted italic">Spécifiez le nom de votre nouvelle entité commerciale.</p>
-                 </div>
-                 <div className="space-y-4">
-                   <Input placeholder="Nom de l'entreprise" value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)} className="h-14 text-lg font-bold" />
-                   <Button className="w-full h-14" isLoading={submitting} disabled={!newCompanyName} onClick={async () => {
-                      setSubmitting(true);
-                      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-                      const result = await createCompany(newCompanyName, code);
-                      if (result.success) onSelect({ id: result.id, name: newCompanyName, ownerId: user.uid, joinCode: code });
-                      else setErrorMsg("Échec de création");
-                      setSubmitting(false);
-                    }}>DÉPLOYER L'ESPACE</Button>
-                   <Button variant="ghost" onClick={() => setMode('select')} className="w-full">RETOUR</Button>
-                 </div>
-              </Card>
-            </motion.div>
-          )}
-
-          {mode === 'join' && (
-            <motion.div key="join" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -20 }}>
-              <Card className="p-10 space-y-8 bg-surface/80 backdrop-blur-xl text-center">
-                 <div className="text-center space-y-2">
-                    <Shield size={12} className="mx-auto text-nexus-accent mb-2" />
-                    <h2 className="text-xl font-bold text-text-main uppercase">Authentification Hub</h2>
-                    <p className="text-xs text-text-muted italic">Entrez le code d'activation fourni par votre organisation.</p>
-                 </div>
-                 <div className="space-y-4">
-                   <Input placeholder="CODE D'ACCÈS" value={joinCodeInput} onChange={(e) => setJoinCodeInput(e.target.value)} className="h-16 text-center text-2xl font-black tracking-[0.5em] focus:tracking-[0.6em] transition-all uppercase" />
-                   <Button className="w-full h-14 bg-nexus-accent hover:bg-nexus-accent/90" isLoading={submitting} disabled={!joinCodeInput} onClick={async () => {
-                      setSubmitting(true);
-                      const result = await joinCompany(joinCodeInput);
-                      if (result.success) setMode('select');
-                      else setErrorMsg(result.message);
-                      setSubmitting(false);
-                    }}>VÉRIFIER & CONNECTER</Button>
-                   {errorMsg && <p className="text-nexus-danger text-[10px] font-black text-center uppercase tracking-widest">{errorMsg}</p>}
-                   <Button variant="ghost" onClick={() => setMode('select')} className="w-full">RETOUR</Button>
-                 </div>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div className="flex justify-center gap-8 pt-12">
-           <ThemeToggle />
-           <Button variant="ghost" size="sm" onClick={logout} leftIcon={<LogOut size={14} />}>Déconnexion</Button>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
-function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
-  const [loading, setLoading] = useState(false);
-  const [authError, setAuthError] = useState('');
-
-  const handleGoogleLogin = async () => {
-    setAuthError('');
-    setLoading(true);
-    try {
-      await loginWithGoogle();
-    } catch (err: any) {
-      console.error(err);
-      setAuthError('Échec de la connexion. Réessayez.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-bg-main transition-colors overflow-hidden relative">
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-nexus-primary/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-nexus-accent/20 rounded-full blur-[120px] animate-pulse [animation-delay:2s]" />
-      </div>
-
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md space-y-12 relative z-10">
-        <div className="text-center space-y-4">
-          <div className="flex justify-center mb-6">
-             <div className="w-20 h-20 bg-nexus-primary rounded-3xl flex items-center justify-center shadow-2xl shadow-nexus-primary/30 rotate-3 hover:rotate-0 transition-transform duration-500">
-                <NexusLogo className="w-10 h-10 brightness-200" />
-             </div>
-          </div>
-          <h1 className="text-4xl font-black tracking-tighter text-text-main uppercase italic leading-none">
-            Nexus <span className="nexus-gradient-text not-italic">OS</span>
-          </h1>
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-text-muted">Intelligence Opérationnelle Unifiée</p>
-        </div>
-
-        <Card className="p-10 space-y-8 bg-surface/80 backdrop-blur-xl">
-          <div className="space-y-2 text-center">
-            <h2 className="text-xl font-bold text-text-main uppercase">Accès Hub Personnel</h2>
-            <p className="text-xs text-text-muted font-medium italic">Connectez-vous pour synchroniser vos opérations.</p>
-          </div>
-
-          <div className="space-y-4">
-            <Button onClick={handleGoogleLogin} isLoading={loading} className="w-full h-14" leftIcon={<img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />}>
-              Démarrer la Session
-            </Button>
-            <Button variant="ghost" onClick={onMarketplace} className="w-full h-12 text-[10px]" rightIcon={<ChevronRight size={14} />}>
-              Explorer le Marketplace Public
-            </Button>
-          </div>
-
-          {authError && <p className="text-nexus-danger text-[10px] font-black text-center uppercase tracking-widest">{authError}</p>}
-
-          <div className="flex justify-center pt-4">
-            <ThemeToggle />
-          </div>
-        </Card>
-
-        <div className="text-center pt-12 space-y-4">
-          <div className="flex items-center justify-center gap-3 opacity-40">
-            <Shield size={12} className="text-nexus-primary" />
-            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-text-main">End-to-End Encryption Active</span>
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [slowLoading, setSlowLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -341,82 +80,17 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { currentCompany, companies, setCurrentCompany, loading: companyLoading } = useCompany();
 
-  const [backClickCount, setBackClickCount] = useState(0);
-  const [toast, setToast] = useState<{ message: string, type: 'info' | 'success' | 'warn' } | null>(null);
-
-  const showToast = (message: string, type: 'info' | 'success' | 'warn' = 'info') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  // Navigation Stack Management for Back Button
-  useEffect(() => {
-    const handlePopState = (e: PopStateEvent) => {
-      if (e.state) {
-        const { companyId, tab } = e.state;
-        if (companyId) {
-          const comp = companies.find(c => c.id === companyId);
-          if (comp) {
-            setCurrentCompany(comp);
-            if (tab) setActiveTab(tab);
-          }
-        } else {
-          setCurrentCompany(null);
-        }
-      } else {
-        // We are at root (selection screen)
-        if (!currentCompany) {
-          setBackClickCount(prev => prev + 1);
-          setTimeout(() => setBackClickCount(0), 2000);
-          
-          if (backClickCount === 0) {
-            // Push state back once to "prevent" immediate exit and show message
-            window.history.pushState(null, '');
-            showToast("Appuyez encore pour quitter Nexus ERP", 'info');
-          }
-        } else {
-          setCurrentCompany(null);
-        }
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [companies, setCurrentCompany, currentCompany, backClickCount]);
-
-  useEffect(() => {
-    // Pulse state to browser history
-    const state = { 
-      companyId: currentCompany?.id || null, 
-      tab: activeTab 
-    };
-    
-    const currentState = window.history.state;
-    if (!currentState || currentState.companyId !== state.companyId || currentState.tab !== state.tab) {
-      window.history.pushState(state, '');
-    }
-
-    // Save for Quick Resume
-    if (currentCompany?.id) {
-      localStorage.setItem('nexus_last_company_id', currentCompany.id);
-      localStorage.setItem('nexus_last_tab', activeTab);
-    }
-  }, [currentCompany?.id, activeTab]);
-
-  useEffect(() => {
-    // Check for auto-navigation from Quick Resume
-    const navTo = localStorage.getItem('nexus_navigate_to');
-    if (navTo && currentCompany) {
-      setActiveTab(navTo);
-      localStorage.removeItem('nexus_navigate_to');
-    }
-  }, [currentCompany]);
-
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
   const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
   
-  const allAffiliatedCompanies = companies;
-  
+  const ownedCompanies = companies.filter(c => {
+    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
+    return c.ownerId === user?.uid || (cOwnerEmail && cOwnerEmail === cleanEmail);
+  });
+  const joinedCompanies = companies.filter(c => {
+    const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
+    return c.ownerId !== user?.uid && cOwnerEmail !== cleanEmail;
+  });
   const [isWhitelisted, setIsWhitelisted] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -550,45 +224,22 @@ export default function App() {
 
   useEffect(() => {
     if (user && currentCompany && !user.role) {
-      // 1. Check if Master/Owner
-      const userEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
-      const isOwner = currentCompany.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '') === userEmail || 
-                      currentCompany.ownerId === user.uid || 
-                      isMaster;
-
-      if (isOwner) {
-        setUser((prev: any) => prev ? { ...prev, role: 'owner' } : null);
+      if (currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid || user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') {
+        setUser(prev => prev ? { ...prev, role: 'owner' } : null);
         setIsBlocked(false);
       } else {
-        // 2. Check cached membership (Faster, especially for multi-tenant)
-        if (currentCompany.company_members && currentCompany.company_members.length > 0) {
-           const member = currentCompany.company_members[0];
-           if (member.status === 'blocked') {
-             setIsBlocked(true);
-           } else {
-             setUser((prev: any) => prev ? { 
-               ...prev, 
-               role: member.role || 'Personnel',
-               isCollaborator: true 
-             } : null);
-             setIsBlocked(false);
-             return;
-           }
-        }
-
-        // 3. Fallback: Robust recovery via DB
+        // Try to find the user in the personnel collection for this company
         const findRole = async () => {
           try {
-            if (!userEmail) {
+            const cleanEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '');
+            if (!cleanEmail) {
               setIsBlocked(true);
               return;
             }
-            
-            // Try Personnel first
             const q = query(
               collection(db, 'personnel'), 
               where('companyId', '==', currentCompany.id),
-              where('email', '==', userEmail),
+              where('email', '==', cleanEmail),
               limit(1)
             );
             const snap = await getDocs(q);
@@ -598,47 +249,71 @@ export default function App() {
               if (memberData.status === 'blocked') {
                 setIsBlocked(true);
               } else {
-                // Auto-repair Firestore record with UID
-                if (memberData.uid !== user.uid) {
-                  await updateDoc(memberDoc.ref, { uid: user.uid, updatedAt: serverTimestamp() });
+                // Sync the UID and status if not present
+                if (memberData.uid !== user.uid || memberData.status !== 'active') {
+                  await updateDoc(memberDoc.ref, { 
+                    uid: user.uid,
+                    status: 'active',
+                    updatedAt: serverTimestamp()
+                  });
                 }
-                setUser((prev: any) => prev ? { ...prev, role: memberData.role || 'Personnel' } : null);
-                setIsBlocked(false);
-              }
-              return;
-            }
 
-            // Then check Client record
-            const clientQ = query(
-              collection(db, 'clients'),
-              where('companyId', '==', currentCompany.id),
-              where('email', '==', userEmail),
-              limit(1)
-            );
-            const clientSnap = await getDocs(clientQ);
-            if (!clientSnap.empty) {
-              const clientData = clientSnap.docs[0].data();
-              setUser((prev: any) => prev ? { 
-                ...prev, 
-                role: 'Client',
-                email: user.email || clientData.email,
-                nexusId: clientData.id || clientSnap.docs[0].id
-              } : null);
-              setIsBlocked(false);
+                setUser(prev => prev ? { 
+                  ...prev, 
+                  role: memberData.role || 'Personnel',
+                  customPermissions: memberData.customPermissions || [],
+                  email: user.email || memberData.email,
+                  nexusId: memberData.id || memberDoc.id
+                } : null);
+              }
             } else {
-              // If we reached here but companies list said they are members, trust the context but default role
-              setUser((prev: any) => prev ? { ...prev, role: 'Personnel' } : null);
-              setIsBlocked(false);
+               // Match as client
+               const clientQ = query(
+                 collection(db, 'clients'),
+                 where('companyId', '==', currentCompany.id),
+                 where('email', '==', cleanEmail),
+                 limit(1)
+               );
+               const clientSnap = await getDocs(clientQ);
+               if (!clientSnap.empty) {
+                  // Important: Sync the UID and status if not present to ensure security rules work better
+                  const clientRef = clientSnap.docs[0].ref;
+                  const clientData = clientSnap.docs[0].data();
+                  if (clientData.uid !== user.uid || clientData.status !== 'active') {
+                    await updateDoc(clientRef, { 
+                      uid: user.uid,
+                      status: 'active',
+                      updatedAt: serverTimestamp()
+                    });
+                  }
+                  
+                  // Double check membership in the company document
+                  if (!(currentCompany.memberEmails || []).includes(cleanEmail)) {
+                    await setDoc(doc(db, 'companies', currentCompany.id), {
+                      memberEmails: arrayUnion(cleanEmail),
+                      employees: arrayUnion(user.uid),
+                      updatedAt: serverTimestamp()
+                    }, { merge: true }).catch(e => console.error("Client auto-enroll sync failed", e));
+                  }
+                  
+                  setUser(prev => prev ? { 
+                    ...prev, 
+                    role: 'Client',
+                    email: user.email || clientData.email,
+                    nexusId: clientData.id || clientSnap.docs[0].id
+                  } : null);
+               } else {
+                 setIsBlocked(true); // Treat as unauthorized
+               }
             }
           } catch (err) {
-            console.error("Nexus Role Recovery Error:", err);
-            setIsBlocked(true);
+            console.error("Role lookup failed:", err);
           }
         };
         findRole();
       }
     }
-  }, [user?.uid, currentCompany?.id, isMaster]);
+  }, [user, currentCompany]);
 
   useEffect(() => {
     // Handle master switch from AdminModule
@@ -656,14 +331,36 @@ export default function App() {
   }, [setCurrentCompany]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+    const unsubscribe = authService.observeAuthState(async (u) => {
       if (u) {
         setUser(u);
-        const profile = await syncUserProfile(u);
-        setUserProfile(profile);
+        // Sync user profile to Firestore for notification lookups
+        try {
+          const rawEmail = u.email || u.providerData?.find((p: any) => p?.email)?.email;
+          const cleanEmail = rawEmail ? rawEmail.trim().toLowerCase().replace(/\s+/g, '') : null;
+          
+          const userId = cleanEmail || u.uid;
+          const userRef = doc(db, 'users', userId);
+          const userData = {
+            uid: u.uid,
+            email: cleanEmail,
+            displayName: u.displayName || (cleanEmail ? cleanEmail.split('@')[0] : 'Utilisateur Nexus'),
+            photoURL: u.photoURL || null,
+            lastLogin: serverTimestamp(),
+            status: 'active'
+          };
+          
+          await setDoc(userRef, userData, { merge: true });
+          
+          // Double indexing to avoid duplicates in Admin list when email is discovered later
+          if (cleanEmail && userId !== cleanEmail) {
+            await setDoc(doc(db, 'users', cleanEmail), userData, { merge: true });
+          }
+        } catch (err) {
+          console.error("Nexus Sync: User profile sync failed", err);
+        }
       } else {
         setUser(null);
-        setUserProfile(null);
       }
       setLoading(false);
     });
@@ -685,99 +382,56 @@ export default function App() {
     }
   }, [user, currentCompany, activeTab]);
 
-  if (loading) {
+  if (loading || (user && companyLoading)) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#020617] p-8 relative overflow-hidden font-sans">
-        {/* Cinematic Background */}
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-1/4 left-1/4 w-[60vh] h-[60vh] bg-blue-600/10 rounded-full blur-[140px] animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-[50vh] h-[50vh] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse [animation-delay:2s]" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none" />
-        </div>
-
-        <div className="relative z-10 flex flex-col items-center max-w-sm w-full">
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="relative mb-16"
-          >
-            <NexusLogo className="w-28 h-28" />
-            <motion.div 
-              animate={{ rotate: 360 }}
-              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-              className="absolute -inset-6 border border-dashed border-blue-500/30 rounded-full"
-            />
-            <motion.div 
-              animate={{ rotate: -360 }}
-              transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-              className="absolute -inset-10 border border-dotted border-indigo-500/20 rounded-full"
-            />
-          </motion.div>
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6">
+        <div className="flex flex-col items-center max-w-sm w-full text-center">
+          <div className="relative mb-8">
+            <NexusLogo className="w-20 h-20 animate-pulse opacity-20" />
+            <div className="absolute inset-0 flex items-center justify-center">
+               <div className="h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-lg shadow-blue-600/20" />
+            </div>
+          </div>
           
-          <div className="space-y-6 w-full">
-            <div className="text-center">
-              <h2 className="text-4xl font-black text-white tracking-tighter mb-2 italic uppercase">Nexus <span className="text-blue-500 not-italic">OS</span></h2>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">INITIALISATION DE L'ÉCOSYSTÈME SÉCURISÉ</p>
-            </div>
-
-            <div className="space-y-4 w-full">
-              <div className="flex justify-between items-end px-1">
-                <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest animate-pulse">Sync avec l'Intelligence Hub...</span>
-                <span className="text-[10px] font-black text-slate-600 uppercase">Crypté</span>
-              </div>
-              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                 <motion.div 
-                   initial={{ width: "0%" }}
-                   animate={{ width: "100%" }}
-                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                   className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 shadow-[0_0_15px_#2563eb]"
-                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-1">
-                    <div className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">Auth Engine</div>
-                    <div className="text-[9px] font-black text-blue-500 uppercase truncate">Synchronisé</div>
-                 </div>
-                 <div className="p-3 bg-white/5 rounded-xl border border-white/5 space-y-1">
-                    <div className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">Data Stream</div>
-                    <div className="text-[9px] font-black text-emerald-500 uppercase truncate">Sécurisé</div>
-                 </div>
-              </div>
-            </div>
-            
+          <h2 className="text-xl font-black text-slate-900 tracking-tight mb-2 italic uppercase">Symphonie Nexus</h2>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Initialisation de l'écosystème sécurisé...</p>
+          
+          <AnimatePresence>
             {slowLoading && (
               <motion.div 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }}
-                className="pt-4 flex flex-col gap-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-12 space-y-4 w-full"
               >
-                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
-                   <p className="text-[10px] text-amber-400 font-medium leading-relaxed">La synchronisation prend plus de temps que prévu. Vérifiez votre connexion Nexus.</p>
+                <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest leading-loose">
+                    La connexion au Cloud prend plus de temps que prévu. 
+                    Cela peut être dû à votre connexion réseau.
+                  </p>
                 </div>
                 <button 
                   onClick={() => window.location.reload()}
-                  className="w-full py-3 bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-white rounded-xl transition-all border border-white/5"
+                  className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl"
                 >
-                   Forcer la Synchronisation
+                  Forcer le Redémarrage
+                </button>
+                <button 
+                  onClick={() => auth.signOut()}
+                  className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
+                >
+                  Changer de Compte
                 </button>
               </motion.div>
             )}
-          </div>
+          </AnimatePresence>
         </div>
         
-        <div className="absolute bottom-12 flex flex-col items-center gap-4">
-           <div className="flex items-center gap-2">
-              <Shield size={12} className="text-blue-500" />
-              <span className="text-[8px] text-slate-500 font-black uppercase tracking-[0.2em]">End-to-End Encryption v5.0 Active</span>
-           </div>
+        <div className="absolute bottom-10 text-[9px] text-slate-300 font-bold uppercase tracking-[0.2em]">
+          Nexus ERP Architectural Sync v4.2
         </div>
       </div>
     );
   }
-
-  // If user is logged in but company data is loading, we can show a partial launcher 
-  // with a loading state inside it rather than a full screen blocker.
-  // This allows the user to see the "Launcher" environment immediately.
 
   if (showMarketplace) {
     return (
@@ -811,37 +465,62 @@ export default function App() {
 
   if (isBlocked) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-bg-main p-6 text-center space-y-8">
-        <div className="w-24 h-24 bg-nexus-danger/10 text-nexus-danger rounded-full flex items-center justify-center animate-pulse shadow-[0_0_30px_rgba(239,68,68,0.2)]">
-          <ShieldAlert size={48} />
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-950 p-6 text-center">
+        <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-8 border border-red-500/20">
+          <ShieldAlert size={40} className="text-red-500 animate-pulse" />
         </div>
-        <div className="space-y-4 max-w-md">
-          <h2 className="text-3xl font-black text-text-main uppercase tracking-tighter italic">Accès Interdit</h2>
-          <p className="text-text-muted font-medium italic">Votre profil nexus n&apos;est pas autorisé à accéder à cette infrastructure. Contactez votre administrateur réseau.</p>
+        <h1 className="text-3xl font-black text-white uppercase tracking-tight mb-4">Accès Interrompu</h1>
+        <p className="text-slate-400 max-w-sm font-medium leading-relaxed mb-10">
+          Votre compte fait l'objet d'une suspension temporaire ou votre accès à cet espace de travail a été révoqué par la direction. 
+          Veuillez contacter votre administrateur système.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button 
+            onClick={() => {
+              setCurrentCompany(null);
+              setIsBlocked(false);
+            }}
+            className="px-8 py-4 bg-slate-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all font-sans"
+          >
+            Changer d'Espace
+          </button>
+          <button 
+            onClick={() => auth.signOut()}
+            className="px-8 py-4 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl shadow-white/5 font-sans"
+          >
+            Déconnexion
+          </button>
         </div>
-        <Button variant="secondary" onClick={() => setCurrentCompany(null)} leftIcon={<ChevronLeft size={16} />}>RETOUR HUB</Button>
+        <div className="mt-12 text-[10px] text-slate-600 font-bold uppercase tracking-widest">
+          Nexus Security Architecture v5.0
+        </div>
       </div>
     );
   }
 
-  const allowedModules = (currentCompany.roles || DEFAULT_ROLES)[user.role || 'Personnel'] || ['dashboard'];
   const navItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
-    { id: 'sales', icon: TrendingUp, label: 'Ventes & CRM' },
-    { id: 'ecommerce', icon: ShoppingBag, label: 'E-commerce' },
-    { id: 'services', icon: Briefcase, label: 'Prestations' },
-    { id: 'clients', icon: Users, label: 'Clients' },
-    { id: 'personnel', icon: Activity, label: 'Ressources Humaines' },
-    { id: 'resources', icon: Package, label: 'Stocks & Logistique' },
-    { id: 'projects', icon: FolderKanban, label: 'Projets' },
-    { id: 'accounting', icon: Calculator, label: 'Comptabilité' },
-    { id: 'collaboration', icon: MessageSquare, label: 'Collaboration' },
-    { id: 'marketplace', icon: Store, label: 'Nexus Store' },
-    { id: 'guide', icon: BookOpen, label: 'Guide & Protocoles' },
-  ].filter(item => allowedModules.includes(item.id) || item.id === 'dashboard');
+    { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+    { id: 'marketplace', label: 'Marketplace Public', icon: Store },
+    { id: 'services', label: 'Services & Prestations', icon: Layers },
+    { id: 'sales', label: 'Ventes & Facturation', icon: TrendingUp },
+    { id: 'ecommerce', label: 'E-commerce', icon: ShoppingBag },
+    { id: 'clients', label: 'CRM / Clients', icon: Users },
+    { id: 'personnel', label: 'Ressources Humaines', icon: Briefcase },
+    { id: 'resources', label: 'Stocks & Logistique', icon: Package },
+    { id: 'projects', label: 'Projets & Tâches', icon: FolderKanban },
+    { id: 'collaboration', label: 'Collaboration & Comm', icon: Handshake },
+    { id: 'accounting', label: 'Comptabilité & Finance', icon: Calculator },
+    { id: 'guide', label: 'Guide & Performance', icon: BookOpen },
+    ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
+  ].filter(item => {
+    if (item.id === 'admin') return true;
+    const allowedByRole = (currentCompany.roles || DEFAULT_ROLES)[user.role] || ['dashboard'];
+    const customPermissions = user.customPermissions || [];
+    return allowedByRole.includes(item.id) || customPermissions.includes(item.id);
+  });
 
   return (
-    <div className="min-h-screen bg-bg-main flex overflow-hidden font-sans selection:bg-nexus-primary/30 text-text-main">
+    <div className="min-h-screen bg-nexus-bg text-nexus-text font-sans selection:bg-nexus-accent selection:text-white flex overflow-hidden">
       {/* Command Cockpit */}
       <CommandPalette 
         isOpen={isCommandPaletteOpen}
@@ -867,173 +546,232 @@ export default function App() {
         />
       )}
 
-      <motion.aside 
-        initial={false}
-        animate={{ width: isSidebarOpen ? (windowWidth < 1024 ? '85%' : '300px') : '0px' }}
+      <aside 
+        style={{
+          width: isSidebarOpen ? (windowWidth < 640 ? windowWidth : 320) : (windowWidth < 1024 ? 0 : 100),
+          transform: (windowWidth < 1024 && !isSidebarOpen) ? 'translateX(-320px)' : 'translateX(0)'
+        }}
         className={cn(
-          "fixed lg:relative z-50 h-full bg-surface border-r border-border backdrop-blur-xl flex flex-col transition-all overflow-hidden",
-          !isSidebarOpen && "lg:w-0 border-none"
+          "bg-[#020617] border border-white/5 flex flex-col z-40 shrink-0 transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden",
+          windowWidth < 1024 
+            ? "fixed left-0 top-0 h-screen" 
+            : "h-[calc(100vh-2rem)] my-4 ml-4 rounded-[2.5rem] sticky top-4",
+          isSidebarOpen && windowWidth < 1024 && "rounded-r-[2rem]"
         )}
       >
-        <div className="p-6 flex items-center justify-between border-b border-border bg-surface/50">
-          <div className="flex items-center gap-3">
-            <NexusLogo className="w-10 h-10" />
-            <div className="flex flex-col">
-              <span className="font-black text-xl tracking-tighter leading-none italic text-text-main uppercase">NEXUS <span className="text-nexus-primary not-italic">OS</span></span>
-              <span className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em] mt-1">Enterprise Cloud Engine</span>
+        {/* Abstract Background Elements for Sidebar */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-indigo-600/30 rounded-full blur-[80px]" />
+          <div className="absolute bottom-48 -right-12 w-40 h-40 bg-blue-600/20 rounded-full blur-[60px]" />
+        </div>
+
+        <div className="p-8 h-28 flex items-center justify-between border-b border-white/5 bg-slate-950/20 relative z-10">
+          <div className="flex items-center gap-4 w-full">
+            <div 
+              className="shrink-0 flex items-center justify-center p-2.5 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl shadow-xl shadow-indigo-900/40 border border-white/10"
+            >
+              <NexusLogo className="w-8 h-8 filter brightness-200" />
             </div>
+            
+            {isSidebarOpen && (
+              <div 
+                className="overflow-hidden flex-1"
+              >
+                {activeTab === 'admin' ? (
+                  <div className="font-black text-indigo-400 text-xl tracking-tighter leading-none italic">
+                    NEXUS <span className="text-white not-italic">CORE</span>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="relative group/select">
+                      <select 
+                        value={currentCompany.id}
+                        onChange={(e) => {
+                          const c = companies.find(c => c.id === e.target.value);
+                          if (c) setCurrentCompany(c);
+                        }}
+                        className="font-black text-lg tracking-tight bg-transparent text-white border-none p-0 focus:ring-0 cursor-pointer w-full leading-none appearance-none pr-6 truncate"
+                      >
+                        {companies.map(c => (
+                          <option key={c.id} value={c.id} className="bg-slate-950 text-white font-sans">{c.name}</option>
+                        ))}
+                      </select>
+                      <ChevronRight size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-500 group-hover/select:text-white transition-colors rotate-90" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
+                      <span className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">{currentCompany.joinCode}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 text-text-muted hover:text-text-main transition-colors">
-            <X size={20} />
+
+          <button 
+            onClick={() => setSidebarOpen(!isSidebarOpen)} 
+            className="p-2.5 hover:bg-white/10 text-slate-500 hover:text-white transition-all rounded-xl ml-2 border border-transparent hover:border-white/5 active:scale-95"
+          >
+            {isSidebarOpen ? <ChevronLeft size={20} /> : <Menu size={20} />}
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5 no-scrollbar">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                setActiveTab(item.id);
-                if (windowWidth < 1024) setSidebarOpen(false);
-              }}
-              className={cn(
-                "w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all relative group",
-                activeTab === item.id 
-                  ? "bg-nexus-primary text-white shadow-xl shadow-nexus-primary/20" 
-                  : "text-text-muted hover:bg-surface-accent hover:text-text-main"
-              )}
-            >
-              <item.icon size={20} className={cn("shrink-0", activeTab === item.id ? "text-white" : "group-hover:text-nexus-primary transition-colors")} />
-              <span className="text-[11px] font-black uppercase tracking-widest truncate">{item.label}</span>
-              {activeTab === item.id && (
-                <motion.div layoutId="nav-indicator" className="absolute left-0 w-1 h-6 bg-white rounded-r-full shadow-[0_0_10px_#fff]" />
-              )}
-            </button>
-          ))}
+        <nav className="flex-1 py-8 px-4 space-y-1.5 overflow-y-auto scrollbar-hide relative z-10">
+          <div className="space-y-1.5">
+            {navItems.map((item, i) => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  if (windowWidth < 1024) setSidebarOpen(false);
+                }}
+                className={cn(
+                  "w-full flex items-center gap-5 px-5 py-4 rounded-2xl transition-all group relative overflow-hidden",
+                  activeTab === item.id 
+                    ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-[0_10px_30px_rgba(79,70,229,0.3)] border border-indigo-500/50" 
+                    : "text-slate-400 hover:bg-white/5 hover:text-slate-100 hover:translate-x-1"
+                )}
+              >
+                <div className={cn(
+                  "transition-all duration-500",
+                  activeTab === item.id ? "text-white scale-110" : "text-slate-500 group-hover:text-indigo-400"
+                )}>
+                  <item.icon size={22} strokeWidth={activeTab === item.id ? 2.5 : 2} />
+                </div>
+                {isSidebarOpen && (
+                  <span className={cn(
+                    "text-[10px] font-black uppercase tracking-[0.2em] shrink-0 transition-colors",
+                    activeTab === item.id ? "text-white" : "text-slate-400 group-hover:text-slate-100"
+                  )}>{item.label}</span>
+                )}
+                
+                {activeTab === item.id && (
+                  <div 
+                    className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-white rounded-l-full shadow-[0_0_15px_#fff]" 
+                  />
+                )}
+
+                {/* Hover Highlight Overlay */}
+                <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              </button>
+            ))}
+          </div>
         </nav>
 
-        <div className="p-6 border-t border-border space-y-4 bg-surface/50">
-          <Card className="p-4 bg-nexus-primary/5 border-nexus-primary/10 group cursor-pointer hover:border-nexus-primary/30 transition-all font-sans" onClick={() => setCurrentCompany(null)}>
-             <div className="flex items-center gap-3 px-0">
-                <div className="w-10 h-10 bg-nexus-primary/10 rounded-xl flex items-center justify-center text-nexus-primary font-black text-lg shadow-inner shrink-0">
-                   {currentCompany.name.charAt(0)}
-                </div>
-                <div className="overflow-hidden">
-                   <p className="text-[8px] font-black text-nexus-primary gap-1 flex items-center mb-1">
-                      <Shield size={8} /> SESSION ACTIVE
-                   </p>
-                   <p className="text-[11px] font-black text-text-main truncate uppercase">{currentCompany.name}</p>
-                </div>
-             </div>
-             <p className="text-[9px] text-text-muted mt-3 italic font-medium">Changer d&apos;espace de travail &rarr;</p>
-          </Card>
+        <div className="p-6 border-t border-white/5 flex flex-col gap-3 bg-slate-950/20 relative z-10">
+          {user?.role === 'Client' && isSidebarOpen && (
+            <div className="mb-2 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl">
+              <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-1 italic">NEXUS CONNECT</p>
+              <p className="text-[10px] text-slate-400 leading-tight">Votre support prioritaire est actif.</p>
+              <button 
+                onClick={() => setActiveTab('ecommerce')}
+                className="mt-3 w-full py-2 bg-indigo-600 text-white text-[9px] font-black uppercase rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-indigo-500 transition-colors"
+              >
+                Ouvrir Support / Chat
+              </button>
+            </div>
+          )}
+          <button 
+            onClick={() => setCurrentCompany(null)}
+            className="w-full flex items-center gap-5 px-5 py-4 rounded-2xl bg-white/5 text-slate-400 hover:text-white transition-all group border border-white/5 hover:border-white/20 hover:bg-white/10 active:scale-95"
+          >
+            <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-900 border border-white/5 group-hover:border-indigo-500/50 group-hover:text-indigo-400 transition-all">
+              <Database size={16} className="group-hover:rotate-12 transition-transform" />
+            </div>
+            {isSidebarOpen && <span className="text-[10px] font-black uppercase tracking-[0.2em]">Changer d'Espace</span>}
+          </button>
           
-          <div className="flex items-center justify-between px-2 pt-2">
-            <ThemeToggle />
-            <button onClick={logout} className="p-3 text-text-muted hover:text-nexus-danger transition-colors rounded-xl hover:bg-nexus-danger/5 active:scale-95">
-              <LogOut size={20} />
-            </button>
-          </div>
+          <button 
+            onClick={() => authService.logout().then(() => window.location.reload())}
+            className="w-full flex items-center gap-5 px-5 py-4 rounded-2xl text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-all group border border-transparent hover:border-red-500/20 active:scale-95"
+          >
+            <div className="w-8 h-8 flex items-center justify-center rounded-lg group-hover:bg-red-500/10 transition-all">
+              <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
+            </div>
+            {isSidebarOpen && <span className="text-[10px] font-black uppercase tracking-[0.2em]">Fin de Session</span>}
+          </button>
         </div>
-      </motion.aside>
+      </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="h-20 border-b border-border bg-surface/80 backdrop-blur-xl sticky top-0 z-30 flex items-center justify-between px-6 lg:px-10">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(true)} className={cn("p-2.5 bg-surface-accent text-text-main rounded-xl hover:bg-surface-hover transition-all lg:hidden")}>
+      <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col h-screen bg-nexus-bg">
+        {/* Top Header */}
+        <header className="h-24 px-6 sm:px-12 border-b border-white/5 bg-nexus-surface sticky top-0 z-20 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <button 
+              onClick={() => setSidebarOpen(!isSidebarOpen)} 
+              className="lg:hidden p-3 bg-nexus-accent text-white rounded-2xl shadow-lg shadow-blue-600/20 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
+            >
               <Menu size={20} />
             </button>
-            <div className="hidden md:flex items-center gap-4 px-4 h-11 bg-bg-main border border-border rounded-2xl cursor-pointer hover:border-nexus-primary/50 transition-all group w-64 lg:w-96" onClick={() => setIsCommandPaletteOpen(true)}>
-               <Search size={18} className="text-text-muted group-hover:text-nexus-primary transition-colors" />
-               <span className="text-[11px] font-black text-text-muted uppercase tracking-widest">Recherche Nexus...</span>
-               <div className="ml-auto flex gap-1">
-                  <span className="px-1.5 py-0.5 bg-surface border border-border rounded-md text-[8px] font-black text-text-muted">CMD</span>
-                  <span className="px-1.5 py-0.5 bg-surface border border-border rounded-md text-[8px] font-black text-text-muted">K</span>
-               </div>
+            <div className="flex flex-col">
+              <h2 className="text-[10px] font-black text-nexus-accent uppercase tracking-[0.3em] mb-1">Nexus Cockpit</h2>
+              <h1 className="text-xl font-bold text-nexus-text tracking-tight leading-none">
+                {activeTab === 'admin' ? "Console Maître" : navItems.find(n => n.id === activeTab)?.label}
+              </h1>
             </div>
           </div>
-
-          <div className="flex items-center gap-4">
-            <NotificationBell user={user} />
-            <div className="h-10 w-[1px] bg-border mx-2" />
-            <div className="flex items-center gap-3 pl-2 group cursor-pointer">
-              <div className="text-right hidden sm:block">
-                <p className="text-[11px] font-black text-text-main uppercase tracking-tighter leading-none">{userProfile?.fullName || user.displayName || 'Opérateur'}</p>
-                <Badge variant="info" className="mt-1 text-[8px]">{user.role || 'Personnel'}</Badge>
+          
+          <div className="flex items-center gap-8">
+            <div 
+              onClick={() => setIsCommandPaletteOpen(true)}
+              className="hidden lg:flex items-center px-4 py-2 bg-white/5 rounded-2xl border border-white/10 group transition-all cursor-pointer hover:border-nexus-accent/50"
+            >
+              <Search className="text-nexus-text-muted group-hover:text-nexus-accent transition-colors" size={18} />
+              <div className="text-[11px] font-bold text-nexus-text-muted w-48 ml-3 flex justify-between items-center">
+                <span>Scanner l'écosystème...</span>
+                <span className="text-[9px] px-1.5 py-0.5 bg-white/10 rounded border border-white/10">⌘K</span>
               </div>
-              <div className="w-11 h-11 rounded-2xl bg-nexus-primary/10 border border-nexus-primary/20 flex items-center justify-center font-black text-nexus-primary shadow-inner overflow-hidden">
-                {user.photoURL ? <img src={user.photoURL} alt="User" /> : (userProfile?.fullName?.charAt(0) || user.email?.charAt(0) || 'U').toUpperCase()}
+            </div>
+            
+            <div className="flex items-center gap-2 sm:gap-4 lg:border-l border-white/5 lg:pl-8">
+              <NotificationBell user={user} />
+              
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="hidden xs:flex flex-col items-end">
+                  <span className="text-[9px] sm:text-[10px] font-black text-nexus-text uppercase tracking-tighter truncate max-w-[80px] sm:max-w-none">
+                    {user?.displayName || user?.email?.split('@')[0] || 'Utilisateur'}
+                  </span>
+                  <span className="text-[7px] sm:text-[8px] font-black text-nexus-accent uppercase tracking-[0.1em] px-1.5 sm:px-2 py-0.5 bg-nexus-accent/10 rounded-full border border-nexus-accent/20 mt-0.5">
+                    {user?.role}
+                  </span>
+                </div>
+                <div className="relative group cursor-pointer">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="User" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white/10 shadow-xl shadow-slate-950/20 object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white/10 shadow-xl shadow-slate-950/20 bg-nexus-surface flex items-center justify-center text-nexus-text-muted font-black text-base sm:text-lg">
+                      {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
+                    </div>
+                  )}
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-nexus-success rounded-full border-[3px] border-nexus-surface shadow-sm" />
+                </div>
               </div>
             </div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth">
-          {user && currentCompany && <CriticalNotificationOverlay user={user} />}
-          
-          <div className="p-6 md:p-10 pb-36 max-w-7xl mx-auto w-full">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {activeTab === 'dashboard' && <DashboardModule user={user} companies={companies} />}
-              {activeTab === 'marketplace' && <Marketplace onBack={() => setActiveTab('dashboard')} />}
-              {activeTab === 'services' && <PrestationsModule />}
-              {activeTab === 'sales' && <SalesModule user={user} />}
-              {activeTab === 'ecommerce' && <EcommerceModule user={user} />}
-              {activeTab === 'clients' && <ClientModule />}
-              {activeTab === 'personnel' && <PersonnelModule user={user} />}
-              {activeTab === 'resources' && <ResourceModule user={user} />}
-              {activeTab === 'projects' && <ProjectModule />}
-              {activeTab === 'accounting' && <AccountingModule />}
-              {activeTab === 'collaboration' && <CollaborationModule />}
-              {activeTab === 'guide' && <GuideModule />}
-              {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') && <AdminModule />}
-            </motion.div>
+        {/* Dynamic View */}
+        {user && currentCompany && <CriticalNotificationOverlay user={user} />}
+        <div className="flex-1 p-4 sm:p-8 pb-32">
+          <div
+            className="max-w-[1400px] mx-auto"
+          >
+            {activeTab === 'dashboard' && <DashboardModule user={user} companies={companies} />}
+            {activeTab === 'marketplace' && <Marketplace onBack={() => setActiveTab('dashboard')} />}
+            {activeTab === 'services' && <PrestationsModule />}
+            {activeTab === 'sales' && <SalesModule user={user} />}
+            {activeTab === 'ecommerce' && <EcommerceModule user={user} />}
+            {activeTab === 'clients' && <ClientModule />}
+            {activeTab === 'personnel' && <PersonnelModule user={user} />}
+            {activeTab === 'resources' && <ResourceModule user={user} />}
+            {activeTab === 'projects' && <ProjectModule />}
+            {activeTab === 'accounting' && <AccountingModule />}
+            {activeTab === 'collaboration' && <CollaborationModule />}
+            {activeTab === 'guide' && <GuideModule />}
+            {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') && <AdminModule />}
           </div>
         </div>
-
-        {/* Global Bottom Navigation for Mobile */}
-        <div className="lg:hidden fixed bottom-6 left-6 right-6 h-16 bg-surface/80 backdrop-blur-xl border border-border rounded-3xl flex items-center justify-around px-4 z-[100] shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
-           {[
-             { id: 'dashboard', icon: LayoutDashboard },
-             { id: 'sales', icon: TrendingUp },
-             { id: 'ecommerce', icon: ShoppingBag },
-             { id: 'personnel', icon: Activity },
-             { id: 'marketplace', icon: Store }
-           ].map(item => (
-             <button
-               key={item.id}
-               onClick={() => setActiveTab(item.id)}
-               className={cn(
-                 "p-3 rounded-2xl transition-all relative",
-                 activeTab === item.id ? "text-nexus-primary bg-nexus-primary/10 shadow-inner" : "text-text-muted"
-               )}
-             >
-               <item.icon size={22} strokeWidth={activeTab === item.id ? 2.5 : 2} />
-               {activeTab === item.id && (
-                 <motion.div layoutId="mobile-indicator" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-nexus-primary rounded-full shadow-[0_0_10px_#0EA5E9]" />
-               )}
-             </button>
-           ))}
-        </div>
-
-        <footer className="mt-auto px-10 py-8 border-t border-border bg-surface flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-3">
-               <div className="w-2 h-2 bg-nexus-success rounded-full animate-pulse shadow-[0_0_10px_#22c55e]" />
-               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted">Système Nexus Sécurisé 5.0</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-6">
-            <Button variant="ghost" size="sm" className="text-[9px]" rightIcon={<Activity size={12} />}>HUB STATUS</Button>
-            <div className="w-[1px] h-4 bg-border" />
-            <p className="text-[9px] font-black text-text-muted uppercase tracking-[0.3em]">&copy; 2024 NEXUS CORP. INTERFACE INDUSTRIELLE.</p>
-          </div>
-        </footer>
 
         <ContextualHelp 
           isOpen={isHelpOpen} 
@@ -1041,26 +779,21 @@ export default function App() {
           topic={helpTopic}
         />
 
-        <AnimatePresence>
-          {toast && (
-            <motion.div 
-              initial={{ opacity: 0, y: 100, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[200]"
-            >
-              <Card className={cn(
-                "px-8 py-4 bg-surface/90 backdrop-blur-xl border flex items-center gap-4 shadow-2xl min-w-[300px]",
-                toast.type === 'info' ? "border-nexus-primary/30" : "",
-                toast.type === 'success' ? "border-nexus-success/30" : "",
-                toast.type === 'warn' ? "border-nexus-warning/30" : ""
-              )}>
-                 <NexusLogo className="w-6 h-6" />
-                 <span className="text-[11px] font-black uppercase tracking-widest text-text-main">{toast.message}</span>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Global Footer */}
+        <footer className="mt-auto px-4 sm:px-8 py-6 border-t border-white/5 bg-nexus-surface flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-6">
+            <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest">Nexus Cockpit v5.0-LEGENDARY</p>
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-nexus-success rounded-full animate-pulse" />
+              <span className="text-[10px] font-bold text-nexus-text uppercase">Sync Intelligence Active</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <button className="text-[10px] font-bold text-nexus-text-muted hover:text-nexus-text uppercase transition-colors">Support Principal</button>
+            <span className="text-white/5">|</span>
+            <button className="text-[10px] font-bold text-nexus-text-muted hover:text-nexus-text uppercase transition-colors">Protocole Sécurité</button>
+          </div>
+        </footer>
       </main>
     </div>
   );

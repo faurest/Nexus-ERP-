@@ -2,15 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, where, setDoc, updateDoc, doc, arrayUnion, deleteDoc, getDocs, addDoc, serverTimestamp } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save, Ban, Clock, CalendarRange, CheckCircle2, XCircle, Timer, FileText } from 'lucide-react';
-import { motion } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { cn } from '../lib/utils';
 import { useCompany } from '../lib/CompanyContext';
-import { DEFAULT_ROLES } from '../App';
+import { DEFAULT_ROLES } from '../core/permissions/roles';
 
 import { createNotification } from '../lib/notifications';
-import { normalizePhoneNumber } from '../lib/userService';
 
 interface Staff {
   id: string;
@@ -145,40 +143,9 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
   useEffect(() => {
     if (!currentCompany) return;
-    
-    const fetchStaffFromSupabase = async () => {
-      const { getSupabase } = await import('../lib/supabase');
-      const sb = getSupabase();
-      if (!sb) return;
-
-      try {
-        const { data, error } = await sb
-          .from('company_members')
-          .select('*, users(*), roles(*)')
-          .eq('company_id', currentCompany.id);
-
-        if (data) {
-          const formattedStaff: Staff[] = data.map(m => ({
-            id: m.users.id,
-            name: m.users.fullname || m.users.email.split('@')[0],
-            email: m.users.email,
-            phone: m.users.phone,
-            role: m.roles?.name || 'Personnel',
-            status: m.status === 'active' ? 'active' : (m.status === 'inactive' ? 'resigned' : 'blocked'),
-            department: 'Général', // We could add a department column to company_members or users
-            tasksAssignedCount: 0,
-            customPermissions: m.permissions || []
-          }));
-          setStaffList(formattedStaff);
-        }
-      } catch (err) {
-        console.error("Nexus Talent: Fail to fetch staff from Supabase", err);
-      }
-    };
-
-    fetchStaffFromSupabase();
-
-    // Still use Firestore for real-time tasks, leave requests, etc. as they are "events"
+    const unsubStaff = onSnapshot(query(collection(db, 'personnel'), where('companyId', '==', currentCompany.id)), (snapshot) => {
+      setStaffList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff)));
+    });
     const unsubTasks = onSnapshot(query(collection(db, 'tasks'), where('companyId', '==', currentCompany.id)), (snapshot) => {
       setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
     });
@@ -195,6 +162,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
       setProjectsList(snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name })));
     });
     return () => { 
+      unsubStaff(); 
       unsubTasks(); 
       unsubLeave();
       unsubTime();
@@ -251,60 +219,35 @@ export default function PersonnelModule({ user }: { user?: any }) {
     if (!currentCompany || (!newStaff.firstName.trim() && !newStaff.lastName.trim()) || !newStaff.email.trim() || submitting) return;
     setSubmitting(true);
     try {
-      const firstName = newStaff.firstName.trim();
-      const lastName = newStaff.lastName.trim();
-      const fullName = `${firstName} ${lastName}`.trim();
+      const fullName = `${newStaff.firstName} ${newStaff.lastName}`.trim();
       const cleanEmail = newStaff.email.trim().toLowerCase().replace(/\s+/g, '');
-      const cleanPhone = normalizePhoneNumber(newStaff.phone.trim());
       
-      // 1. SUPABASE RELATIONAL SYNC (Single Source of Truth for Affiliations)
-      const { getSupabase } = await import('../lib/supabase');
-      const sb = getSupabase();
-      if (sb) {
-        try {
-          // A. Ensure user exists in Supabase
-          const { data: uData, error: uError } = await sb.from('users').select('id').eq('email', cleanEmail).maybeSingle();
-          let finalUserId = uData?.id;
-
-          if (!finalUserId) {
-            const { data: newUser, error: createError } = await sb.from('users').insert({
-              email: cleanEmail,
-              full_name: fullName,
-              phone: cleanPhone,
-            }).select('id').single();
-            if (!createError) finalUserId = newUser.id;
-          }
-
-          // B. Get role ID
-          const { data: rData } = await sb.from('roles').select('id').eq('name', newStaff.role || 'Personnel').maybeSingle();
-          
-          // C. Upsert affiliation
-          if (finalUserId) {
-            await sb.from('company_members').upsert({
-              user_id: finalUserId,
-              company_id: currentCompany.id,
-              role_id: rData?.id,
-              status: 'active'
-            }, { onConflict: 'user_id, company_id' });
-            console.log("Nexus Talent: Relational affiliation synchronized.");
-          }
-        } catch (sbErr) {
-          console.warn("Supabase sync failed, continuing with Firestore:", sbErr);
-        }
-      }
-
-      // 2. FIRESTORE REAL-TIME SYNC (Optional, for notifications/chat metadata)
       if (editingStaff) {
-        // Just update real-time specific fields if needed
-        await updateDoc(doc(db, 'personnel', editingStaff.email), {
-          firstName,
-          lastName,
+        const oldEmail = editingStaff.email.trim().toLowerCase().replace(/\s+/g, '');
+        
+        // If email changed, we need to update the memberEmails array in the company doc
+        if (cleanEmail !== oldEmail) {
+          await updateDoc(doc(db, 'companies', currentCompany.id), {
+            memberEmails: arrayUnion(cleanEmail),
+            updatedAt: serverTimestamp()
+          });
+          // Note: we don't strictly remove the old email from memberEmails here to avoid accidentally 
+          // removing someone who might be sharing an email or if the removal logic is complex,
+          // but for strictness we could use arrayRemove.
+          // Given the context of fixing the connection for the new email, adding it is the priority.
+        }
+
+        await updateDoc(doc(db, 'personnel', editingStaff.id), {
+          firstName: newStaff.firstName,
+          lastName: newStaff.lastName,
           name: fullName,
           email: cleanEmail,
-          phone: cleanPhone,
+          phone: newStaff.phone,
+          notes: newStaff.notes,
+          role: newStaff.role,
+          department: newStaff.department,
           updatedAt: serverTimestamp()
-        }).catch(() => {}); // If no document exists in Firestore, ignore
-        
+        });
         setCreationMessage('Profil mis à jour.');
         setTimeout(() => {
           setIsAdding(false);
@@ -312,17 +255,40 @@ export default function PersonnelModule({ user }: { user?: any }) {
           setCreationMessage('');
         }, 1500);
       } else {
-        // Optional: create a real-time entry in Firestore if you need it for chat/presence
-        const staffRef = doc(db, 'personnel', cleanEmail);
-        await setDoc(staffRef, {
+        const cleanEmail = newStaff.email.trim().toLowerCase().replace(/\s+/g, '');
+        await setDoc(doc(db, 'personnel', cleanEmail), {
+          firstName: newStaff.firstName,
+          lastName: newStaff.lastName,
           name: fullName,
           email: cleanEmail,
+          phone: newStaff.phone,
+          notes: newStaff.notes,
+          role: newStaff.role,
+          department: newStaff.department,
           companyId: currentCompany.id,
           status: 'active',
+          tasksAssignedCount: 0,
           createdAt: serverTimestamp()
-        }, { merge: true }).catch(() => {});
+        });
 
-        setCreationMessage(`Employé ajouté avec succès via Nexus Cloud !`);
+        // Create Ghost Profile for global visibility
+        try {
+          const ghostUserRef = doc(db, 'users', cleanEmail);
+          await setDoc(ghostUserRef, {
+            email: cleanEmail,
+            displayName: fullName,
+            status: 'invited',
+            invitationDate: serverTimestamp(),
+            role: newStaff.role
+          }, { merge: true });
+        } catch (ghostErr) {
+          console.warn("Ghost profile creation skipped:", ghostErr);
+        }
+
+        await setDoc(doc(db, 'companies', currentCompany.id), {
+          memberEmails: arrayUnion(cleanEmail)
+        }, { merge: true });
+        setCreationMessage(`Employé ajouté avec succès ! Il peut désormais se connecter avec Google via l'adresse : ${cleanEmail}`);
         setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général' });
       }
     } catch (err: any) {
@@ -494,7 +460,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3 space-y-6">
             <div className="flex flex-col sm:flex-row justify-between gap-4">
-              <div className="bg-white border border-slate-200 rounded-2xl p-1.5 flex items-center gap-3 shadow-sm focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all flex-1">
+              <div className="bg-white border border-slate-200 rounded-xl p-1.5 flex items-center gap-3 shadow-sm focus-within:border-blue-400 transition-all flex-1">
                 <div className="pl-3">
                   <Search className="text-slate-400" size={18} />
                 </div>
@@ -508,168 +474,107 @@ export default function PersonnelModule({ user }: { user?: any }) {
               </div>
               <button 
                 onClick={() => setIsAdding(true)}
-                className="w-full sm:w-auto justify-center bg-blue-600 text-white px-8 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20 active:scale-95"
+                className="w-full sm:w-auto justify-center bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-sm"
               >
                 <Plus size={16} /> Recruter
               </button>
             </div>
 
-            {/* Desktop Table View */}
-            <div className="hidden md:block bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-               <Table headers={['Employé', 'Service', 'Poste', 'Activité', 'Status', 'Actions']}>
-                 {filteredStaff.length === 0 ? (
-                   <div className="p-12 text-center bg-slate-50 border-t border-slate-100 italic text-slate-400 text-sm">
-                     Aucun collaborateur référencé pour le moment.
-                   </div>
-                 ) : filteredStaff.map((staff) => (
-                   <TableRow key={staff.id}>
-                     <div className="flex items-center gap-3">
-                       <div className="w-9 h-9 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xs font-bold border border-blue-100 uppercase">
-                         {staff.name.split(' ').map(n => n[0]).join('')}
-                       </div>
-                       <div>
-                         <span className="font-bold text-slate-900 block leading-none mb-1">{staff.name}</span>
-                         <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest leading-none">{staff.email}</span>
-                       </div>
-                     </div>
-                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{staff.department}</span>
-                     <span className="text-xs font-bold text-slate-700">{staff.role}</span>
-                     <div className="flex items-center gap-2">
-                       <div className={cn("w-1.5 h-1.5 rounded-full", staff.tasksAssignedCount > 5 ? 'bg-orange-500' : 'bg-blue-500')} />
-                       <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">{staff.tasksAssignedCount} tâches</span>
-                     </div>
-                     <div>
-                       <span className={cn(
-                         "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
-                         staff.status === 'active' ? "bg-emerald-100 text-emerald-700" :
-                         staff.status === 'on_leave' ? "bg-amber-100 text-amber-700" :
-                         staff.status === 'blocked' ? "bg-red-100 text-red-700" :
-                         "bg-slate-100 text-slate-500"
-                       )}>
-                         {staff.status === 'active' ? 'Actif' : staff.status === 'on_leave' ? 'Congé' : staff.status === 'blocked' ? 'Bloqué' : 'Départ'}
-                       </span>
-                     </div>
-                     <div className="flex items-center gap-1">
-                       <button 
-                         onClick={() => setViewingStaff(staff)}
-                         className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                       >
-                         <User size={14} />
-                       </button>
-                       <button 
-                         onClick={() => {
-                           setEditingPermissionsStaff(staff);
-                           setSelectedPermissions(staff.customPermissions || []);
-                         }}
-                         className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                       >
-                         <Shield size={14} />
-                       </button>
-                       <button 
-                         onClick={() => {
-                           setEditingStaff(staff);
-                           setNewStaff({ 
-                             firstName: staff.firstName || '', 
-                             lastName: staff.lastName || '', 
-                             phone: staff.phone || '',
-                             notes: staff.notes || '',
-                             email: staff.email, 
-                             role: staff.role, 
-                             department: staff.department
-                           });
-                           setIsAdding(true);
-                         }}
-                         className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                       >
-                         <Edit2 size={14} />
-                       </button>
-                       <button 
-                         onClick={() => handleToggleBlockStaff(staff.id, staff.status)}
-                         className={cn("p-2 rounded-lg transition-all", staff.status === 'blocked' ? "text-red-500 bg-red-50" : "text-slate-400 hover:text-amber-600 hover:bg-amber-50")}
-                       >
-                         <Ban size={14} />
-                       </button>
-                       <button 
-                         onClick={() => handleDeleteStaff(staff.id)}
-                         className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                       >
-                         <Trash2 size={14} />
-                       </button>
-                     </div>
-                   </TableRow>
-                 ))}
-               </Table>
-            </div>
-
-            {/* Mobile Card View */}
-             <div className="md:hidden grid grid-cols-1 gap-6">
-               {filteredStaff.length === 0 ? (
-                 <div className="py-24 text-center bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100">
-                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                       <User size={24} className="text-slate-300" />
-                    </div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-8 leading-relaxed">Aucun écho cryptographique de collaborateur détecté dans cette strate.</p>
-                 </div>
-               ) : filteredStaff.map((staff) => (
-                 <motion.div 
-                   layout
-                   initial={{ opacity: 0, y: 20 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   key={staff.id}
-                   className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/40 relative overflow-hidden group"
-                 >
-                    <div className="flex items-center justify-between mb-6">
-                       <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-lg shadow-blue-500/20 uppercase relative">
-                             {staff.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
-                             <div className={cn(
-                                "absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white",
-                                staff.status === 'active' ? "bg-emerald-500" :
-                                staff.status === 'on_leave' ? "bg-amber-500" : "bg-red-500"
-                             )} />
-                          </div>
-                          <div>
-                             <h3 className="font-black text-slate-900 leading-none mb-1.5 text-base">{staff.name}</h3>
-                             <div className="flex items-center gap-2">
-                                <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-lg">{staff.department}</span>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 mb-6">
-                       <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
-                          <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5 opacity-60">Matricule</span>
-                          <span className="block text-[11px] font-bold text-slate-700 truncate">{staff.role}</span>
-                       </div>
-                       <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
-                          <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5 opacity-60">Flux Actions</span>
-                          <div className="flex items-center gap-1.5">
-                             <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
-                             <span className="text-[11px] font-bold text-slate-700">{staff.tasksAssignedCount} Actives</span>
-                          </div>
-                       </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-5 border-t border-slate-50">
-                       <div className="flex gap-2">
-                          <button onClick={() => setViewingStaff(staff)} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all active:scale-90"><User size={18} /></button>
-                          <button onClick={() => setEditingPermissionsStaff(staff)} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all active:scale-90"><Shield size={18} /></button>
-                          <button onClick={() => {
-                            setEditingStaff(staff);
-                            setNewStaff({ firstName: staff.firstName||'', lastName: staff.lastName||'', phone: staff.phone||'', notes: staff.notes||'', email: staff.email, role: staff.role, department: staff.department });
-                            setIsAdding(true);
-                          }} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all active:scale-90"><Edit2 size={18} /></button>
-                       </div>
-                       <div className="flex gap-2">
-                          <button onClick={() => handleToggleBlockStaff(staff.id, staff.status)} className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90", staff.status === 'blocked' ? "bg-red-50 text-red-500" : "bg-slate-50 text-slate-400 hover:text-amber-500 hover:bg-amber-50")}><Ban size={18} /></button>
-                          <button onClick={() => handleDeleteStaff(staff.id)} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all active:scale-90"><Trash2 size={18} /></button>
-                       </div>
-                    </div>
-                 </motion.div>
-               ))}
-             </div>
-           </div>
+          <Table headers={['Employé', 'Service', 'Poste', 'Activité', 'Status', 'Actions']}>
+            {filteredStaff.length === 0 ? (
+              <div className="p-12 text-center bg-slate-50 border-t border-slate-100 italic text-slate-400 text-sm">
+                Aucun collaborateur référencé pour le moment.
+              </div>
+            ) : filteredStaff.map((staff) => (
+              <TableRow key={staff.id}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold border border-blue-100">
+                    {staff.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-900 block">{staff.name}</span>
+                    <span className="text-[10px] text-slate-400 font-medium">{staff.email}</span>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-slate-500 uppercase">{staff.department}</span>
+                <span className="text-slate-600 font-medium">{staff.role}</span>
+                <div className="flex items-center gap-2">
+                  <Activity size={14} className={staff.tasksAssignedCount > 5 ? 'text-red-500' : 'text-blue-500'} />
+                  <span className="text-xs font-bold text-slate-700">{staff.tasksAssignedCount} tâches</span>
+                </div>
+                <div>
+                  <span className={cn(
+                    "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase",
+                    staff.status === 'active' ? "bg-green-100 text-green-700" :
+                    staff.status === 'on_leave' ? "bg-amber-100 text-amber-700" :
+                    staff.status === 'blocked' ? "bg-red-100 text-red-700" :
+                    "bg-slate-100 text-slate-500"
+                  )}>
+                    {staff.status === 'active' ? 'Actif' : staff.status === 'on_leave' ? 'Congé' : staff.status === 'blocked' ? 'Bloqué' : 'Départ'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      setViewingStaff(staff);
+                    }}
+                    className="p-1 text-slate-400 hover:text-green-600 transition-colors"
+                  >
+                    <User size={14} />
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setEditingPermissionsStaff(staff);
+                      setSelectedPermissions(staff.customPermissions || []);
+                    }}
+                    className="p-1 text-slate-400 hover:text-indigo-600 transition-colors"
+                    title="Permissions spécifiques"
+                  >
+                    <Shield size={14} />
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setEditingStaff(staff);
+                      setNewStaff({ 
+                        firstName: staff.firstName || '', 
+                        lastName: staff.lastName || '', 
+                        phone: staff.phone || '',
+                        notes: staff.notes || '',
+                        email: staff.email, 
+                        role: staff.role, 
+                        department: staff.department
+                      });
+                      setIsAdding(true);
+                    }}
+                    className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                  <button 
+                    onClick={() => handleToggleBlockStaff(staff.id, staff.status)}
+                    className="p-1 text-slate-400 hover:text-amber-600 transition-colors"
+                    title={staff.status === 'blocked' ? 'Débloquer' : 'Bloquer'}
+                  >
+                    <Ban size={14} className={staff.status === 'blocked' ? "text-red-500" : ""} />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteStaff(staff.id)}
+                    className="p-1 text-slate-400 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </TableRow>
+            ))}
+            {filteredStaff.length === 0 && (
+              <div className="p-12 text-center">
+                <User size={48} className="mx-auto text-slate-200 mb-4" />
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Aucun employé trouvé</p>
+                <p className="text-xs text-slate-300 mt-1">Commencez par recruter votre premier collaborateur.</p>
+              </div>
+            )}
+          </Table>
+        </div>
 
         <div className="space-y-6">
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
@@ -725,7 +630,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
             </div>
           </div>
         </div>
-      </div>
+        </div>
       ) : activeTab === 'time' ? (
         <div className="space-y-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

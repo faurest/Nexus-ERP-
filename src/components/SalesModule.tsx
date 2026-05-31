@@ -2,15 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, onSnapshot, query, where, addDoc, setDoc, serverTimestamp, doc, updateDoc, deleteDoc, auth } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { Search, Plus, TrendingUp, Filter, ShoppingCart, Receipt, CreditCard, DollarSign, Edit2, Trash2, CheckCircle2, ArrowRight, HelpCircle, FileText, Package, Sparkles, Wand2, RefreshCw, Truck as LogisticsIcon, BrainCircuit, ShieldCheck } from 'lucide-react';
+import { Search, Plus, TrendingUp, Filter, ShoppingCart, Receipt, CreditCard, DollarSign, Edit2, Trash2, CheckCircle2, ArrowRight, HelpCircle, FileText, Package } from 'lucide-react';
 import { HelpTrigger } from './ContextualHelp';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
-import { PaymentService } from '../services/paymentService';
-import { LogisticsService } from '../services/logisticsService';
-import LogisticsTracker from './LogisticsTracker';
 
 interface Sale {
   id: string;
@@ -74,74 +71,6 @@ export default function SalesModule({ user }: { user: any }) {
   const [isAddingCatalogItem, setIsAddingCatalogItem] = useState(false);
   const [catalogFormData, setCatalogFormData] = useState<any>({ name: '', price: 0, quantity: 0, type: 'Stock' });
   const [submitting, setSubmitting] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeCategory, setActiveCategory] = useState('Tous');
-  const [trackingInvoiceId, setTrackingInvoiceId] = useState<string | null>(null);
-
-  const filteredResources = useMemo(() => {
-    return resources.filter(res => {
-      const matchesSearch = res.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = activeCategory === 'Tous' || res.category === activeCategory;
-      return res.type === 'Stock' && matchesSearch && matchesCategory;
-    });
-  }, [resources, searchTerm, activeCategory]);
-
-  const resourceCategories = useMemo(() => {
-    const cats = new Set(resources.filter(r => r.type === 'Stock' && r.category).map(r => r.category));
-    return ['Tous', ...Array.from(cats)].sort();
-  }, [resources]);
-
-  const activeOrder = useMemo(() => openOrders.find(o => o.id === activeOrderId), [openOrders, activeOrderId]);
-  const currentCart = useMemo(() => activeOrder ? activeOrder.items || [] : cart, [activeOrder, cart]);
-
-  const handleUpdateCart = async (newItems: any[]) => {
-    if (activeOrderId) {
-      try {
-        await updateDoc(doc(db, 'open_orders', activeOrderId), { 
-          items: newItems,
-          updatedAt: serverTimestamp()
-        });
-      } catch (err) { handleFirestoreError(err, OperationType.UPDATE, 'open_orders'); }
-    } else {
-      setCart(newItems);
-    }
-  };
-
-  const generateSalesAnalysis = async () => {
-    setAiLoading(true);
-    try {
-      const topClients = clients.sort((a,b) => (b.salesTotal||0) - (a.salesTotal||0)).slice(0, 3).map(c => c.name);
-      const pendingTotal = calculatePendingRevenue();
-      
-      const resp = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          type: 'product_doc', 
-          context: { 
-            module: 'Sales', 
-            topClients, 
-            pendingTotal, 
-            totalSales: sales.length 
-          } 
-        })
-      });
-      const data = await resp.json();
-      setAiAnalysis(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (sales.length > 5 && !aiAnalysis && !aiLoading) {
-      generateSalesAnalysis();
-    }
-  }, [sales.length]);
 
   const availableTabs = useMemo(() => {
     const allTabs = [
@@ -225,37 +154,6 @@ export default function SalesModule({ user }: { user: any }) {
     if (!currentCompany || !selectedInvoice || submitting) return;
     setSubmitting(true);
     try {
-      // Enterprise Security Check (AI powered)
-      if (['Orange Money', 'Mobile Money'].includes(paymentForm.method)) {
-        console.log("Engaging AI Fraud Detection Protocol...");
-        const securityResult = await PaymentService.verifySecurity({
-          amount: Number(paymentForm.amount),
-          userId: user.uid,
-          method: paymentForm.method
-        });
-        
-        if (securityResult.riskScore > 0.8) {
-          alert("ALERTE SÉCURITÉ: Transaction suspecte interceptée par l'IA Nexus.");
-          return;
-        }
-
-        // Process actual Payment via Service
-        const result = await PaymentService.processPayment({
-          orderId: selectedInvoice.id,
-          companyId: currentCompany.id,
-          amount: Number(paymentForm.amount),
-          provider: paymentForm.method === 'Orange Money' ? 'orange' : 'mtn',
-          details: { phone: paymentForm.reference }
-        });
-        
-        if (!result.success) {
-          alert(`Échec Transaction: ${result.txId}`);
-          return;
-        }
-        
-        paymentForm.reference = result.txId || paymentForm.reference;
-      }
-
       await addDoc(collection(db, 'payments'), {
         companyId: currentCompany.id,
         invoiceId: selectedInvoice.id,
@@ -417,6 +315,24 @@ export default function SalesModule({ user }: { user: any }) {
   const calculatePendingRevenue = () => invoices.filter(s => s.status === 'unpaid').reduce((acc, sum) => acc + sum.amount, 0);
   const calculateTotalExpenses = () => expenses.reduce((acc, e) => acc + (e.amount || 0), 0);
 
+  const activeOrder = activeOrderId ? openOrders.find(o => o.id === activeOrderId) : null;
+  const currentCart = activeOrder ? activeOrder.items : cart;
+
+  const handleUpdateCart = async (newCart: any[]) => {
+    if (activeOrderId) {
+      try {
+        await updateDoc(doc(db, 'open_orders', activeOrderId), {
+          items: newCart,
+          updatedAt: serverTimestamp()
+        });
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, 'open_orders');
+      }
+    } else {
+      setCart(newCart);
+    }
+  };
+
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentCompany || (!newOrderName && !newOrderTable) || submitting) return;
@@ -547,42 +463,6 @@ export default function SalesModule({ user }: { user: any }) {
            <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.2em] mb-1">Encours Facturation</p>
            <p className="text-2xl font-black text-nexus-text">{calculatePendingRevenue().toLocaleString()} FCFA</p>
         </motion.div>
-
-        <AnimatePresence>
-          {aiAnalysis && (
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="md:col-span-2 bg-nexus-surface border border-blue-500/10 p-6 rounded-[2rem] shadow-2xl relative overflow-hidden group flex items-start gap-4"
-            >
-               <div className="absolute inset-0 bg-blue-600/5 pointer-events-none" />
-               <div className="w-12 h-12 bg-blue-600/20 text-blue-400 rounded-2xl flex items-center justify-center shrink-0 border border-blue-500/20 shadow-lg">
-                 <Sparkles size={24} className="animate-pulse" />
-               </div>
-               <div className="flex-1 space-y-2 relative z-10">
-                 <div className="flex items-center gap-2">
-                   <h3 className="text-[9px] font-black text-blue-400 uppercase tracking-widest italic">Nexus Intelligence • Sales Focus</h3>
-                   <motion.button 
-                     onClick={generateSalesAnalysis}
-                     disabled={aiLoading}
-                     whileTap={{ rotate: 180 }}
-                     className="p-1 hover:bg-white/5 rounded-full transition-colors"
-                   >
-                     <RefreshCw size={10} className={cn("text-slate-500", aiLoading && "animate-spin")} />
-                   </motion.button>
-                 </div>
-                 <p className="text-xs font-medium text-slate-300 leading-relaxed italic pr-4">
-                   "{aiAnalysis.shortDescription}"
-                 </p>
-                 <div className="flex gap-2">
-                   {aiAnalysis.benefits?.slice(0, 2).map((tip: string, i: number) => (
-                     <span key={i} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/10 rounded-md text-[7px] font-black text-blue-300 uppercase tracking-widest">{tip}</span>
-                   ))}
-                 </div>
-               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       <div className="bg-nexus-surface border border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden">
@@ -668,164 +548,89 @@ export default function SalesModule({ user }: { user: any }) {
         )}
 
         {activeTab === 'sales' && (
-          <div className="p-4 sm:p-6 lg:p-8">
-            {/* Desktop Table View */}
-            <div className="hidden lg:block">
-              <Table headers={['Date', 'Type', 'Désignation', 'Qté', 'Prix U.', 'Total', 'Statut', 'Actions']}>
-                {sales.map(sale => (
-                  <TableRow key={sale.id}>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-nexus-text tracking-tight italic">
-                        {sale.date ? new Date((sale.date.seconds || sale.date / 1000) * 1000).toLocaleDateString() : 'Auj'}
-                      </span>
-                      <span className="text-[8px] font-bold text-nexus-text-muted uppercase tracking-widest mt-1">
-                        {sale.date ? new Date((sale.date.seconds || sale.date / 1000) * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) : '--:--'}
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <button 
-                        onClick={() => setSelectedClientName(sale.clientName || null)}
-                        className="font-black text-nexus-text text-left hover:text-nexus-accent hover:underline outline-none uppercase italic tracking-tight"
-                      >
-                        {sale.itemName}
-                      </button>
-                      {sale.clientName && <span className="text-[8px] text-nexus-text-muted font-bold uppercase tracking-widest mt-1">{sale.clientName}</span>}
-                    </div>
-                    <span className={cn("px-2.5 py-1 rounded-xl text-[9px] uppercase font-black tracking-widest border", sale.type === 'product' ? "bg-nexus-warning/10 text-nexus-warning border-nexus-warning/20" : "bg-purple-500/10 text-purple-400 border-purple-500/20")}>{sale.type === 'product' ? 'Stock' : 'Service'}</span>
-                    <span className="text-nexus-text font-black italic">{sale.quantity}</span>
-                    <span className="text-nexus-text-muted font-black tracking-tighter">{sale.price.toLocaleString()} F</span>
-                    <span className="font-black text-nexus-accent nexus-gradient-text italic tracking-tighter">{sale.total.toLocaleString()} F</span>
-                    <span className={cn("px-2.5 py-1 rounded-xl text-[8px] uppercase font-black border", sale.status === 'completed' ? "bg-nexus-success/10 text-nexus-success border-nexus-success/20" : "bg-white/5 text-nexus-text-muted border-white/10")}>
-                      {sale.status === 'completed' ? 'VALIDÉ' : 'ATTENTE'}
-                    </span>
-                    <div className="flex items-center gap-2">
-                       {sale.status !== 'completed' && (
-                         <button 
-                           onClick={async () => {
-                             try {
-                               await updateDoc(doc(db, 'sales', sale.id), { 
-                                 status: 'completed',
-                                 updatedAt: serverTimestamp()
-                               });
-                             } catch (err) {
-                               handleFirestoreError(err, OperationType.UPDATE, 'sales');
-                             }
-                           }}
-                           className="p-2 text-nexus-success hover:bg-nexus-success/10 rounded-xl transition-all"
-                           title="Valider"
-                         >
-                           <CheckCircle2 size={16} />
-                         </button>
-                       )}
-                       <button onClick={() => { setEditingSale(sale); setFormData(sale); setIsAdding(true); }} className="p-2 text-nexus-text-muted hover:text-nexus-accent hover:bg-nexus-accent/10 rounded-xl transition-all"><Edit2 size={16}/></button>
-                       {userRole === 'admin' && (
-                         <button onClick={() => handleDeleteSale(sale.id)} className="p-2 text-nexus-text-muted hover:text-nexus-danger hover:bg-nexus-danger/10 rounded-xl transition-all"><Trash2 size={16}/></button>
-                       )}
-                    </div>
-                  </TableRow>
-                ))}
-              </Table>
-            </div>
-
-            {/* Mobile Card View */}
-            <div className="lg:hidden space-y-4">
+          <div className="p-4">
+            <Table headers={['Date', 'Type', 'Désignation', 'Qté', 'Prix U.', 'Total', 'Statut', 'Actions']}>
               {sales.map(sale => (
-                <motion.div 
-                  key={sale.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-nexus-bg/50 border border-white/5 rounded-2xl p-5 space-y-4"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-nexus-text tracking-tight italic">
-                        {sale.date ? new Date((sale.date.seconds || sale.date / 1000) * 1000).toLocaleDateString() : 'Auj'}
-                      </span>
-                      <button 
-                        onClick={() => setSelectedClientName(sale.clientName || null)}
-                        className="font-black text-nexus-text text-sm hover:text-nexus-accent text-left mt-1 uppercase italic tracking-tight"
-                      >
-                        {sale.itemName}
-                      </button>
-                      {sale.clientName && <span className="text-[9px] text-nexus-text-muted font-black uppercase tracking-widest mt-1">{sale.clientName}</span>}
-                    </div>
-                    <span className={cn("px-2.5 py-1 rounded-xl text-[8px] uppercase font-black border", sale.status === 'completed' ? "bg-nexus-success/10 text-nexus-success border-nexus-success/20" : "bg-white/10 text-nexus-text-muted border-white/10")}>
-                      {sale.status === 'completed' ? 'VALIDÉ' : 'ATTENTE'}
+                <TableRow key={sale.id}>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-nexus-text tracking-tight italic">
+                      {sale.date ? new Date((sale.date.seconds || sale.date / 1000) * 1000).toLocaleDateString() : 'Auj'}
+                    </span>
+                    <span className="text-[8px] font-bold text-nexus-text-muted uppercase tracking-widest mt-1">
+                      {sale.date ? new Date((sale.date.seconds || sale.date / 1000) * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) : '--:--'}
                     </span>
                   </div>
-
-                  <div className="grid grid-cols-3 gap-4 py-4 border-y border-white/5">
-                    <div>
-                      <p className="text-[8px] font-black text-nexus-text-muted uppercase tracking-widest mb-1">Qté</p>
-                      <p className="text-xs font-black text-nexus-text">{sale.quantity}</p>
-                    </div>
-                    <div>
-                      <p className="text-[8px] font-black text-nexus-text-muted uppercase tracking-widest mb-1">Prix U.</p>
-                      <p className="text-xs font-black text-nexus-text">{sale.price.toLocaleString()} F</p>
-                    </div>
-                    <div>
-                      <p className="text-[8px] font-black text-nexus-text-muted uppercase tracking-widest mb-1">Total</p>
-                      <p className="text-sm font-black text-nexus-accent italic">{sale.total.toLocaleString()} F</p>
-                    </div>
+                  <div className="flex flex-col">
+                    <button 
+                      onClick={() => setSelectedClientName(sale.clientName || null)}
+                      className="font-black text-nexus-text text-left hover:text-nexus-accent hover:underline outline-none uppercase italic tracking-tight"
+                    >
+                      {sale.itemName}
+                    </button>
+                    {sale.clientName && <span className="text-[8px] text-nexus-text-muted font-bold uppercase tracking-widest mt-1">{sale.clientName}</span>}
                   </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className={cn("px-2 py-0.5 rounded-lg text-[8px] uppercase font-black tracking-widest", sale.type === 'product' ? "text-nexus-warning bg-nexus-warning/10" : "text-purple-400 bg-purple-500/10")}>
-                      {sale.type === 'product' ? 'STOCK' : 'SERVICE'}
-                    </span>
-                    <div className="flex gap-2">
-                       {sale.status !== 'completed' && (
-                         <button 
-                           onClick={async () => {
-                             try {
-                               await updateDoc(doc(db, 'sales', sale.id), { status: 'completed', updatedAt: serverTimestamp() });
-                             } catch (err) { handleFirestoreError(err, OperationType.UPDATE, 'sales'); }
-                           }}
-                           className="p-2 text-nexus-success bg-nexus-success/10 rounded-xl"
-                         >
-                           <CheckCircle2 size={16} />
-                         </button>
-                       )}
-                       <button onClick={() => { setEditingSale(sale); setFormData(sale); setIsAdding(true); }} className="p-2 text-nexus-text-muted bg-white/5 rounded-xl"><Edit2 size={16}/></button>
-                       {userRole === 'admin' && (
-                         <button onClick={() => handleDeleteSale(sale.id)} className="p-2 text-nexus-text-muted bg-nexus-danger/10 rounded-xl"><Trash2 size={16}/></button>
-                       )}
-                    </div>
+                  <span className={cn("px-2.5 py-1 rounded-xl text-[9px] uppercase font-black tracking-widest border", sale.type === 'product' ? "bg-nexus-warning/10 text-nexus-warning border-nexus-warning/20" : "bg-purple-500/10 text-purple-400 border-purple-500/20")}>{sale.type === 'product' ? 'Stock' : 'Service'}</span>
+                  <span className="text-nexus-text font-black italic">{sale.quantity}</span>
+                  <span className="text-nexus-text-muted font-black tracking-tighter">{sale.price.toLocaleString()} F</span>
+                  <span className="font-black text-nexus-accent nexus-gradient-text italic tracking-tighter">{sale.total.toLocaleString()} F</span>
+                  <span className={cn("px-2.5 py-1 rounded-xl text-[8px] uppercase font-black border", sale.status === 'completed' ? "bg-nexus-success/10 text-nexus-success border-nexus-success/20" : "bg-white/5 text-nexus-text-muted border-white/10")}>
+                    {sale.status === 'completed' ? 'VALIDÉ' : 'ATTENTE'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                     {sale.status !== 'completed' && (
+                       <button 
+                         onClick={async () => {
+                           try {
+                             await updateDoc(doc(db, 'sales', sale.id), { 
+                               status: 'completed',
+                               updatedAt: serverTimestamp()
+                             });
+                           } catch (err) {
+                             handleFirestoreError(err, OperationType.UPDATE, 'sales');
+                           }
+                         }}
+                         className="p-2 text-nexus-success hover:bg-nexus-success/10 rounded-xl transition-all"
+                         title="Valider"
+                       >
+                         <CheckCircle2 size={16} />
+                       </button>
+                     )}
+                     <button onClick={() => { setEditingSale(sale); setFormData(sale); setIsAdding(true); }} className="p-2 text-nexus-text-muted hover:text-nexus-accent hover:bg-nexus-accent/10 rounded-xl transition-all"><Edit2 size={16}/></button>
+                     {userRole === 'admin' && (
+                       <button onClick={() => handleDeleteSale(sale.id)} className="p-2 text-nexus-text-muted hover:text-nexus-danger hover:bg-nexus-danger/10 rounded-xl transition-all"><Trash2 size={16}/></button>
+                     )}
                   </div>
-                </motion.div>
+                </TableRow>
               ))}
-            </div>
+            </Table>
           </div>
         )}
 
         {activeTab === 'pos' && (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 bg-nexus-bg/20 p-4 sm:p-6 lg:p-8">
+          <div className="p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 bg-slate-50 border-t border-slate-200">
             {/* Commandes en Cours Sidebar */}
-            <div className="lg:col-span-1 bg-nexus-surface rounded-3xl border border-white/5 shadow-2xl p-6 flex flex-col h-[600px]">
-               <div className="flex justify-between items-center mb-6">
-                 <div>
-                   <h3 className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.2em] mb-1">Files Attente</h3>
-                   <h2 className="text-sm font-black text-nexus-text uppercase tracking-widest">Protocoles</h2>
-                 </div>
+            <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col h-[500px]">
+               <div className="flex justify-between items-center mb-4">
+                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Commandes</h3>
                  <button 
                    onClick={() => setIsAddingOrder(true)}
-                   className="bg-white/5 hover:bg-nexus-accent text-nexus-text hover:text-white p-2 rounded-xl transition-all border border-white/10"
+                   className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-1.5 rounded-lg transition-all"
                  >
-                   <Plus size={18} />
+                   <Plus size={16} />
                  </button>
                </div>
                
-               <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+               <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                  <button 
                    onClick={() => setActiveOrderId(null)}
                    className={cn(
-                     "w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between group",
-                     activeOrderId === null ? "bg-nexus-accent border-nexus-accent text-white shadow-lg shadow-nexus-accent/20" : "bg-white/5 border-white/5 hover:border-white/20 text-nexus-text-muted"
+                     "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between",
+                     activeOrderId === null ? "bg-slate-900 border-slate-900 text-white" : "bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-800"
                    )}
                  >
                    <div>
-                     <span className="text-xs font-black block uppercase tracking-tight italic">Flux Direct</span>
-                     <span className={cn("text-[9px] font-bold", activeOrderId === null ? "text-white/70" : "text-nexus-text-muted/50")}>Client de passage</span>
+                     <span className="text-xs font-bold block">Vente Rapide</span>
+                     <span className={cn("text-[10px]", activeOrderId === null ? "text-slate-300" : "text-slate-500")}>Client de passage</span>
                    </div>
                  </button>
 
@@ -834,273 +639,186 @@ export default function SalesModule({ user }: { user: any }) {
                      key={order.id}
                      onClick={() => setActiveOrderId(order.id)}
                      className={cn(
-                       "w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between group",
-                       activeOrderId === order.id ? "bg-nexus-accent border-nexus-accent text-white shadow-lg shadow-nexus-accent/20" : "bg-white/5 border-white/5 hover:border-nexus-accent/50 text-nexus-text"
+                       "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between group",
+                       activeOrderId === order.id ? "bg-blue-600 border-blue-600 text-white" : "bg-white border-slate-200 hover:border-blue-300 text-slate-800"
                      )}
                    >
-                     <div className="flex-1 mr-2 truncate">
-                       <span className="text-xs font-black block uppercase tracking-tight italic truncate">
-                         {order.clientName || 'Flux Alpha'} {order.tableNumber ? `• P${order.tableNumber}` : ''}
-                       </span>
-                       <span className={cn("text-[9px] font-bold", activeOrderId === order.id ? "text-white/70" : "text-nexus-text-muted/70")}>
-                         {order.items?.length || 0} Segment(s)
+                     <div>
+                       <span className="text-xs font-bold block">{order.clientName || 'Client'} {order.tableNumber ? `- Table ${order.tableNumber}` : ''}</span>
+                       <span className={cn("text-[10px]", activeOrderId === order.id ? "text-blue-200" : "text-slate-500")}>
+                         {order.items?.length || 0} article(s)
                        </span>
                      </div>
                      <div 
                        onClick={(e) => handleDeleteOrder(order.id, e)}
                        className={cn(
-                         "p-2 rounded-lg transition-all opacity-0 group-hover:opacity-100 shrink-0",
-                         activeOrderId === order.id ? "text-white hover:bg-white/20" : "text-nexus-danger hover:bg-nexus-danger/10"
+                         "p-1.5 rounded-lg transition-colors opacity-0 group-hover:opacity-100",
+                         activeOrderId === order.id ? "text-white hover:bg-white/20" : "text-red-500 hover:bg-red-50"
                        )}
                      >
                        <Trash2 size={14} />
                      </div>
                    </button>
                  ))}
-
-                 {openOrders.length === 0 && (
-                   <div className="py-10 text-center opacity-20 italic">
-                     <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-[0.2em]">Aucun protocole ouvert</p>
-                   </div>
-                 )}
                </div>
             </div>
 
             {/* Main Catalogue */}
-            <div className="lg:col-span-2 space-y-6 flex flex-col h-[600px]">
-               <div className="space-y-4 shrink-0">
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-3 flex items-center gap-3 focus-within:border-nexus-accent transition-all group">
-                       <Search size={16} className="text-nexus-text-muted group-focus-within:text-nexus-accent"/>
-                       <input 
-                        type="text" 
-                        placeholder="Scanner ou Rechercher Actif..." 
-                        className="bg-transparent outline-none text-[11px] font-black text-nexus-text w-full placeholder:text-nexus-text-muted/40 uppercase italic"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                       />
-                    </div>
-                    {resourceCategories.length > 1 && (
-                      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide shrink-0 max-w-[250px]">
-                        {resourceCategories.map(cat => (
-                          <button
-                            key={cat}
-                            onClick={() => setActiveCategory(cat)}
-                            className={cn(
-                              "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap border",
-                              activeCategory === cat ? "bg-nexus-accent text-white border-nexus-accent shadow-lg shadow-nexus-accent/10" : "bg-white/5 text-nexus-text-muted border-white/5 hover:border-white/20"
-                            )}
-                          >
-                            {cat}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-               </div>
-
-               <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {filteredResources.map(r => (
-                      <motion.button 
-                        key={r.id} 
-                        layout
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        onClick={() => {
-                           const existing = currentCart.find((c: any) => c.id === r.id);
-                           let newCart;
-                           if (existing) {
-                              newCart = currentCart.map((c: any) => c.id === r.id ? { ...c, quantity: c.quantity + 1 } : c);
-                           } else {
-                              newCart = [...currentCart, { id: r.id, name: r.name, price: r.price || 0, quantity: 1 }];
-                           }
-                           handleUpdateCart(newCart);
-                        }}
-                        className="bg-nexus-surface p-5 rounded-3xl border border-white/5 hover:border-nexus-accent/50 hover:shadow-2xl hover:shadow-nexus-accent/5 transition-all text-left flex flex-col justify-between h-40 relative overflow-hidden group active:scale-95 shadow-xl"
-                      >
-                        <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-100 transition-opacity">
-                          <Plus size={20} className="text-nexus-accent" />
-                        </div>
-                        <div className="relative z-10">
-                          <span className="text-[9px] font-black text-nexus-text-muted uppercase tracking-[0.2em] mb-1 block">{r.category || 'Vecteur Stock'}</span>
-                          <span className="text-xs font-black text-nexus-text break-words line-clamp-3 uppercase italic tracking-tighter leading-tight">{r.name}</span>
-                        </div>
-                        <div className="mt-auto flex justify-between items-end relative z-10 border-t border-white/5 pt-3">
-                          <span className={cn("text-[10px] font-black", r.quantity <= 0 ? "text-nexus-danger" : "text-nexus-text-muted")}>S: {r.quantity}</span>
-                          <span className="text-sm font-black text-nexus-accent italic">{r.price ? `${r.price.toLocaleString()} F` : '---'}</span>
-                        </div>
-                        <div className="absolute inset-0 bg-nexus-accent/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </motion.button>
-                    ))}
-                    {filteredResources.length === 0 && (
-                      <div className="col-span-full py-20 flex flex-col items-center justify-center gap-4 opacity-20">
-                        <Package size={48} />
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em]">Aucun actif localisé dans cette zone</p>
-                      </div>
-                    )}
-                  </div>
+            <div className="lg:col-span-2 space-y-4">
+               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4">Catalogue (Produits & Boissons)</h3>
+               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3">
+                 {resources.filter(r => r.type === 'Stock').map(r => (
+                   <button 
+                     key={r.id} 
+                     onClick={() => {
+                        const existing = currentCart.find((c: any) => c.id === r.id);
+                        let newCart;
+                        if (existing) {
+                           newCart = currentCart.map((c: any) => c.id === r.id ? { ...c, quantity: c.quantity + 1 } : c);
+                        } else {
+                           newCart = [...currentCart, { id: r.id, name: r.name, price: r.price || 0, quantity: 1 }];
+                        }
+                        handleUpdateCart(newCart);
+                     }}
+                     className="bg-white p-3 rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all text-left flex flex-col justify-between h-24 relative overflow-hidden group"
+                   >
+                     <span className="text-xs font-bold text-slate-700 break-words line-clamp-2">{r.name}</span>
+                     <div className="mt-auto flex justify-between items-end">
+                       <span className="text-[10px] font-bold text-slate-400">Stock: {r.quantity}</span>
+                       <span className="text-[10px] font-bold text-slate-900">{r.price ? `${r.price} FCFA` : ''}</span>
+                     </div>
+                     <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                   </button>
+                 ))}
+                 {resources.length === 0 && <p className="text-xs text-slate-400">Aucun produit en stock.</p>}
                </div>
             </div>
             
             {/* Cart */}
-            <div className="lg:col-span-1 bg-nexus-surface rounded-[2.5rem] border border-white/5 shadow-2xl p-7 flex flex-col h-[600px] relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-nexus-accent/5 rounded-full blur-2xl -mr-16 -mt-16" />
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col h-[500px]">
+               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+                 <ShoppingCart size={16} /> Panier {activeOrder ? `(${activeOrder.clientName})` : ''}
+               </h3>
                
-               <div className="flex justify-between items-center mb-8 relative z-10">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-nexus-accent/10 border border-nexus-accent/20 rounded-xl flex items-center justify-center text-nexus-accent">
-                      <ShoppingCart size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.2em] mb-1">Panier Flux</h3>
-                      <h2 className="text-sm font-black text-nexus-text uppercase tracking-widest">{activeOrder ? activeOrder.clientName : 'Injection Directe'}</h2>
-                    </div>
-                  </div>
-                  {currentCart.length > 0 && (
-                    <button onClick={() => handleUpdateCart([])} className="p-2 text-nexus-text-muted hover:text-nexus-danger transition-colors">
-                      <RefreshCw size={16} />
-                    </button>
-                  )}
-               </div>
-               
-               <div className="flex-1 overflow-y-auto space-y-3 pr-2 relative z-10 custom-scrollbar">
+               <div className="flex-1 overflow-y-auto space-y-2 pr-2">
                  {currentCart.length === 0 ? (
-                   <div className="h-full flex flex-col items-center justify-center text-nexus-text-muted/30 text-center gap-4 py-10 italic">
-                      <Package size={40} className="opacity-20" />
-                      <p className="text-[9px] font-black uppercase tracking-[0.3em]">Cargaison Vide</p>
+                   <div className="h-full flex items-center justify-center text-slate-400 text-xs italic">
+                     Panier vide
                    </div>
                  ) : (
                    currentCart.map((item: any) => (
-                     <motion.div 
-                      key={item.id} 
-                      layout
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="group/cart-item flex flex-col bg-white/5 p-4 rounded-3xl border border-white/5 hover:border-nexus-accent/30 transition-all hover:bg-white/10"
-                    >
-                       <div className="flex justify-between items-start mb-3 gap-2">
-                         <div className="text-[11px] font-black text-nexus-text uppercase italic leading-tight truncate flex-1">{item.name}</div>
-                         <button onClick={() => handleUpdateCart(currentCart.filter((c: any) => c.id !== item.id))} className="text-nexus-text-muted hover:text-nexus-danger opacity-0 group-hover/cart-item:opacity-100 transition-all">
-                           <Trash2 size={12} />
-                         </button>
-                       </div>
-                       
-                       <div className="flex justify-between items-center">
-                         <div className="flex items-center gap-3 bg-nexus-bg rounded-xl p-1.5 border border-white/10">
+                     <div key={item.id} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+                       <div className="flex-1 min-w-0 pr-2">
+                         <div className="text-xs font-bold text-slate-800 truncate">{item.name}</div>
+                         <div className="flex items-center gap-2 mt-1">
                            <button onClick={() => {
-                               if (item.quantity > 1) {
-                                 handleUpdateCart(currentCart.map((c: any) => c.id === item.id ? { ...c, quantity: c.quantity - 1 } : c));
-                               } else {
-                                 handleUpdateCart(currentCart.filter((c: any) => c.id !== item.id));
-                               }
-                           }} className="w-7 h-7 bg-white/5 hover:bg-nexus-accent hover:text-white rounded-lg flex items-center justify-center font-black text-nexus-text/50 transition-all">-</button>
-                           <span className="text-xs font-black text-nexus-text w-5 text-center italic">{item.quantity}</span>
+                              if (item.quantity > 1) {
+                                handleUpdateCart(currentCart.map((c: any) => c.id === item.id ? { ...c, quantity: c.quantity - 1 } : c));
+                              } else {
+                                handleUpdateCart(currentCart.filter((c: any) => c.id !== item.id));
+                              }
+                           }} className="w-5 h-5 bg-white border border-slate-200 rounded flex items-center justify-center font-bold text-xs hover:bg-slate-100">-</button>
+                           <span className="text-[10px] font-bold w-4 text-center">{item.quantity}</span>
                            <button onClick={() => {
-                               handleUpdateCart(currentCart.map((c: any) => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c));
-                           }} className="w-7 h-7 bg-white/5 hover:bg-nexus-accent hover:text-white rounded-lg flex items-center justify-center font-black text-nexus-text/50 transition-all">+</button>
-                         </div>
-                         <div className="text-right">
-                           <div className="flex items-center gap-1">
-                             <input 
-                              type="number" 
-                              className="w-20 text-right bg-transparent outline-none font-black text-nexus-accent text-sm italic" 
-                              value={item.price} 
-                              onChange={(e) => {
-                                handleUpdateCart(currentCart.map((c: any) => c.id === item.id ? { ...c, price: Number(e.target.value) } : c));
-                              }} 
-                             />
-                             <span className="text-[10px] font-black text-nexus-text-muted tracking-tight">F</span>
-                           </div>
-                           <p className="text-[8px] font-bold text-nexus-text-muted uppercase tracking-widest mt-0.5">PV U.</p>
+                              handleUpdateCart(currentCart.map((c: any) => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c));
+                           }} className="w-5 h-5 bg-white border border-slate-200 rounded flex items-center justify-center font-bold text-xs hover:bg-slate-100">+</button>
                          </div>
                        </div>
-                     </motion.div>
+                       <div className="text-right shrink-0">
+                         <div className="text-xs font-black text-slate-900 border-b border-transparent group-hover:border-slate-200 focus-within:border-blue-400 pb-0.5">
+                           <input type="number" className="w-12 text-right bg-transparent outline-none" value={item.price} onChange={(e) => {
+                             handleUpdateCart(currentCart.map((c: any) => c.id === item.id ? { ...c, price: Number(e.target.value) } : c));
+                           }} /> FCFA
+                         </div>
+                         <button onClick={() => handleUpdateCart(currentCart.filter((c: any) => c.id !== item.id))} className="text-[9px] text-red-500 hover:underline mt-1 font-bold">Retirer</button>
+                       </div>
+                     </div>
                    ))
                  )}
                </div>
 
-               <div className="mt-8 pt-6 border-t border-white/10 relative z-10 shrink-0">
-                 <div className="flex justify-between items-end mb-8">
-                   <div>
-                     <span className="text-[10px] font-black uppercase text-nexus-text-muted tracking-[0.2em] block mb-1">Total à Encaisser</span>
-                     <span className="text-3xl font-black text-nexus-text italic tracking-tighter nexus-gradient-text">{currentCart.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0).toLocaleString()} F</span>
-                   </div>
+               <div className="mt-4 pt-4 border-t border-slate-100">
+                 <div className="flex justify-between items-center mb-4">
+                   <span className="text-xs font-bold uppercase text-slate-500">Total à encaisser</span>
+                   <span className="text-2xl font-black text-slate-900">{currentCart.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0).toLocaleString()} FCFA</span>
                  </div>
-                 
                  <button 
-                   disabled={currentCart.length === 0 || submitting}
+                   disabled={currentCart.length === 0}
                    onClick={async () => {
-                      if (submitting) return;
-                      setSubmitting(true);
-                      try {
-                         const batchSales = currentCart.map((item: any) => ({
-                           resourceId: item.id,
-                           itemName: item.name,
-                           quantity: item.quantity,
-                           price: item.price,
-                           total: item.quantity * item.price,
-                           type: 'product',
-                           status: 'completed',
-                           companyId: currentCompany?.id,
+                     try {
+                        const batchSales = currentCart.map((item: any) => ({
+                          resourceId: item.id,
+                          itemName: item.name,
+                          quantity: item.quantity,
+                          price: item.price,
+                          total: item.quantity * item.price,
+                          type: 'product',
+                          status: 'completed',
+                          companyId: currentCompany.id,
+                          clientName: activeOrder ? activeOrder.clientName : '',
+                          date: serverTimestamp()
+                        }));
+
+                        let totalAmount = 0;
+                        const itemsForInvoice = [];
+
+                        for (let s of batchSales) {
+                           const sData = { ...s };
+                           delete sData.resourceId; // optional, to not clutter sales table, but let's keep it or remove it
+                           
+                           const res = await addDoc(collection(db, 'sales'), sData);
+                           
+                           // Décrémenter le stock
+                           if (s.resourceId) {
+                               const resource = resources.find(r => r.id === s.resourceId);
+                               if (resource && typeof resource.quantity === 'number') {
+                                  await updateDoc(doc(db, 'resources', s.resourceId), {
+                                     quantity: Math.max(0, resource.quantity - s.quantity)
+                                  });
+                               }
+                           }
+                           
+                           totalAmount += s.total;
+                           itemsForInvoice.push({
+                             name: s.itemName,
+                             quantity: s.quantity,
+                             price: s.price,
+                             total: s.total
+                           });
+                        }
+
+                        // Create a single invoice for the entire order
+                        await addDoc(collection(db, 'sales_invoices'), {
+                           saleId: activeOrderId || `direct-${Date.now()}`,
                            clientName: activeOrder ? activeOrder.clientName : '',
-                           date: serverTimestamp()
-                         }));
+                           tableNumber: activeOrder ? activeOrder.tableNumber : '',
+                           invoiceNumber: `FA-POS-${Date.now().toString().slice(-6)}`,
+                           amount: totalAmount,
+                           status: 'paid',
+                           companyId: currentCompany.id,
+                           date: serverTimestamp(),
+                           items: JSON.stringify(itemsForInvoice)
+                        });
 
-                         let totalAmount = 0;
-                         const itemsForInvoice = [];
+                        if (activeOrderId) {
+                          await deleteDoc(doc(db, 'open_orders', activeOrderId));
+                          setActiveOrderId(null);
+                        } else {
+                          setCart([]);
+                        }
 
-                         for (let s of batchSales) {
-                            const { resourceId, ...sData } = s;
-                            await addDoc(collection(db, 'sales'), sData);
-                            
-                            if (resourceId) {
-                                const resource = resources.find(r => r.id === resourceId);
-                                if (resource && typeof resource.quantity === 'number') {
-                                   await updateDoc(doc(db, 'resources', resourceId), {
-                                      quantity: Math.max(0, resource.quantity - s.quantity)
-                                   });
-                                }
-                            }
-                            
-                            totalAmount += s.total;
-                            itemsForInvoice.push({
-                              name: s.itemName,
-                              quantity: s.quantity,
-                              price: s.price,
-                              total: s.total
-                            });
-                         }
-
-                         await addDoc(collection(db, 'sales_invoices'), {
-                            saleId: activeOrderId || `direct-${Date.now()}`,
-                            clientName: activeOrder ? activeOrder.clientName : '',
-                            tableNumber: activeOrder ? activeOrder.tableNumber : '',
-                            invoiceNumber: `FA-POS-${Date.now().toString().slice(-6)}`,
-                            amount: totalAmount,
-                            status: 'paid',
-                            companyId: currentCompany?.id,
-                            date: serverTimestamp(),
-                            items: JSON.stringify(itemsForInvoice)
-                         });
-
-                         if (activeOrderId) {
-                           await deleteDoc(doc(db, 'open_orders', activeOrderId));
-                           setActiveOrderId(null);
-                         } else {
-                           setCart([]);
-                         }
-                         alert('ENCAISSEMENT VECTEUR VALIDÉ');
-                      } catch(e) {
-                         alert('ÉCHEC DU PROTOCOLE D\'ENCAISSEMENT');
-                         console.error(e);
-                      } finally {
-                        setSubmitting(false);
-                      }
+                        alert('Encaissement réussi !');
+                     } catch(e) {
+                        alert('Erreur lors de l\'encaissement');
+                        console.error(e);
+                     }
                    }}
-                   className="w-full bg-nexus-accent text-white py-5 rounded-2xl font-black uppercase tracking-[0.3em] text-[11px] hover:bg-blue-500 disabled:opacity-50 transition-all shadow-[0_20px_40px_rgba(91,140,255,0.3)] active:scale-95 flex justify-center items-center gap-3 italic"
+                   className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-slate-800 disabled:opacity-50 transition-all shadow-md active:scale-95 flex justify-center items-center gap-2"
                  >
-                   {submitting ? 'Validation...' : <><CheckCircle2 size={18} /> Valider Encaissement</>}
+                   <CheckCircle2 size={16} /> Valider l'Encaissement
+                 </button>
+                 <button onClick={() => handleUpdateCart([])} disabled={currentCart.length === 0} className="w-full mt-2 text-center text-[10px] uppercase font-bold text-slate-400 hover:text-slate-600 disabled:opacity-50 py-2">
+                   Vider le panier
                  </button>
                </div>
             </div>
@@ -1108,158 +826,71 @@ export default function SalesModule({ user }: { user: any }) {
         )}
 
         {activeTab === 'invoices' && (
-          <div className="p-4 sm:p-6 lg:p-8">
-            <div className="hidden lg:block">
-              <Table headers={['N° Facture', 'Entité / Source', 'Contenu Vecteur', 'Date', 'Valence', 'Statut', 'Actions']}>
-                {invoices.map(inv => {
-                  const paidAmount = payments.filter(p => p.invoiceId === inv.id).reduce((sum, p) => sum + p.amount, 0);
-                  const remaining = inv.amount - paidAmount;
-                  
-                  return (
-                    <TableRow key={inv.id}>
-                      <span className="font-black text-nexus-accent italic tracking-tight">{inv.invoiceNumber}</span>
-                      <div className="flex flex-col">
-                         <button 
-                           onClick={() => setSelectedClientName(inv.clientName || null)}
-                           className="font-black text-nexus-text text-xs hover:text-nexus-accent hover:underline text-left outline-none uppercase italic"
-                         >
-                           {inv.clientName || 'Flux Direct'}
-                         </button>
-                         {inv.tableNumber && <span className="text-[9px] text-nexus-text-muted font-black uppercase tracking-widest mt-1">Poste: {inv.tableNumber}</span>}
-                      </div>
-                      <div className="text-[10px] text-nexus-text-muted max-w-[200px] truncate italic" title={inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ')}>
-                         {inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ') || 'Injection directe'}
-                      </div>
-                      <span className="text-[10px] font-black text-nexus-text tracking-tighter">
-                        {inv.date ? new Date(inv.date.seconds * 1000).toLocaleDateString() : 'Auj'}
-                      </span>
-                      <span className="font-black text-nexus-text italic tracking-tighter">{inv.amount.toLocaleString()} F</span>
-                      <span className={cn("px-2.5 py-1 rounded-xl text-[8px] uppercase font-black border tracking-widest", inv.status === 'paid' ? "bg-nexus-success/10 text-nexus-success border-nexus-success/20" : "bg-nexus-danger/10 text-nexus-danger border-nexus-danger/20")}>
-                        {inv.status === 'paid' ? 'Soldée' : `Reliquat: ${remaining.toLocaleString()} F`}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => setTrackingInvoiceId(inv.id)}
-                          className="p-2 bg-white/5 text-nexus-text-muted hover:text-nexus-accent rounded-xl transition-all border border-white/10"
-                          title="Suivre la livraison"
-                        >
-                          <LogisticsIcon size={14} />
-                        </button>
-                        {inv.status !== 'paid' && (
-                          <button 
-                            onClick={() => { setSelectedInvoice(inv); setPaymentForm({...paymentForm, amount: remaining}); setIsAddingPayment(true); }}
-                            className="px-4 py-2 bg-nexus-success text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-[0_10px_20px_rgba(0,200,150,0.2)] active:scale-95"
-                          >
-                            Encaisser
-                          </button>
-                        )}
-                      </div>
-                    </TableRow>
-                  );
-                })}
-              </Table>
-            </div>
-
-            <div className="lg:hidden space-y-4">
+          <div className="p-4">
+            <Table headers={['N° Facture', 'Entité / Source', 'Contenu Vecteur', 'Date', 'Valence', 'Statut', 'Actions']}>
               {invoices.map(inv => {
                 const paidAmount = payments.filter(p => p.invoiceId === inv.id).reduce((sum, p) => sum + p.amount, 0);
                 const remaining = inv.amount - paidAmount;
+                
                 return (
-                  <motion.div 
-                    key={inv.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-nexus-bg/50 border border-white/5 rounded-2xl p-5 space-y-4"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="text-nexus-accent font-black italic text-sm tracking-tight">{inv.invoiceNumber}</span>
-                        <p className="text-[10px] font-black text-nexus-text-muted mt-1 uppercase tracking-widest">
-                          {inv.date ? new Date(inv.date.seconds * 1000).toLocaleDateString() : 'Auj'}
-                        </p>
-                      </div>
-                      <span className={cn("px-2.5 py-1 rounded-xl text-[8px] uppercase font-black border", inv.status === 'paid' ? "bg-nexus-success/10 text-nexus-success border-nexus-success/20" : "bg-nexus-danger/10 text-nexus-danger border-nexus-danger/20")}>
-                        {inv.status === 'paid' ? 'SOLDÉE' : 'IMPAYÉE'}
-                      </span>
+                  <TableRow key={inv.id}>
+                    <span className="font-black text-nexus-accent italic tracking-tight">{inv.invoiceNumber}</span>
+                    <div className="flex flex-col">
+                       <button 
+                         onClick={() => setSelectedClientName(inv.clientName || null)}
+                         className="font-black text-nexus-text text-xs hover:text-nexus-accent hover:underline text-left outline-none uppercase italic"
+                       >
+                         {inv.clientName || 'Flux Direct'}
+                       </button>
+                       {inv.tableNumber && <span className="text-[9px] text-nexus-text-muted font-black uppercase tracking-widest mt-1">Poste: {inv.tableNumber}</span>}
                     </div>
-
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-black text-nexus-text-muted uppercase tracking-widest">Client / Source</p>
-                      <p className="text-xs font-black text-nexus-text uppercase italic tracking-tight">{inv.clientName || 'Flux Direct'}</p>
+                    <div className="text-[10px] text-nexus-text-muted max-w-[200px] truncate italic" title={inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ')}>
+                       {inv.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ') || 'Injection directe'}
                     </div>
-
-                    <div className="flex justify-between items-end border-t border-white/5 pt-4">
-                      <div>
-                         <p className="text-[8px] font-black text-nexus-text-muted uppercase tracking-widest mb-1">Total</p>
-                         <p className="text-lg font-black text-nexus-text italic tracking-tighter">{inv.amount.toLocaleString()} F</p>
-                      </div>
+                    <span className="text-[10px] font-black text-nexus-text tracking-tighter">
+                      {inv.date ? new Date(inv.date.seconds * 1000).toLocaleDateString() : 'Auj'}
+                    </span>
+                    <span className="font-black text-nexus-text italic tracking-tighter">{inv.amount.toLocaleString()} F</span>
+                    <span className={cn("px-2.5 py-1 rounded-xl text-[8px] uppercase font-black border tracking-widest", inv.status === 'paid' ? "bg-nexus-success/10 text-nexus-success border-nexus-success/20" : "bg-nexus-danger/10 text-nexus-danger border-nexus-danger/20")}>
+                      {inv.status === 'paid' ? 'Soldée' : `Reliquat: ${remaining.toLocaleString()} F`}
+                    </span>
+                    <div className="flex items-center gap-2">
                       {inv.status !== 'paid' && (
                         <button 
                           onClick={() => { setSelectedInvoice(inv); setPaymentForm({...paymentForm, amount: remaining}); setIsAddingPayment(true); }}
-                          className="px-4 py-2 bg-nexus-success text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-lg active:scale-95"
+                          className="px-4 py-2 bg-nexus-success text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-[0_10px_20px_rgba(0,200,150,0.2)] active:scale-95"
                         >
                           Encaisser
                         </button>
                       )}
                     </div>
-                  </motion.div>
+                  </TableRow>
                 );
               })}
-            </div>
+            </Table>
           </div>
         )}
 
         {activeTab === 'payments' && (
-          <div className="p-4 sm:p-6 lg:p-8">
-            <div className="hidden lg:block">
-              <Table headers={['Référence Flux', 'Vecteur Source', 'Protocole', 'Date', 'Valence Apportée']}>
-                {payments.map(pay => (
-                  <TableRow key={pay.id}>
-                    <span className="font-black text-nexus-accent italic tracking-tight">{pay.reference || 'REF_AUTO'}</span>
-                    <button 
-                      onClick={() => setSelectedClientName(invoices.find(i => i.id === pay.invoiceId)?.clientName || null)}
-                      className="font-black text-nexus-text hover:text-nexus-accent hover:underline text-left italic border-b border-white/10"
-                    >
-                      {invoices.find(i => i.id === pay.invoiceId)?.invoiceNumber || 'FLUX_EXT'}
-                    </button>
-                    <span className="px-2.5 py-1 bg-white/5 text-nexus-text-muted rounded-xl text-[9px] uppercase font-black tracking-widest border border-white/10">{pay.method}</span>
-                    <span className="text-[10px] font-black text-nexus-text tracking-tighter">
-                      {pay.date ? new Date(pay.date.seconds * 1000).toLocaleDateString() : 'Auj'}
-                    </span>
-                    <span className="font-black text-nexus-success italic">+{pay.amount.toLocaleString()} FCFA</span>
-                  </TableRow>
-                ))}
-              </Table>
-            </div>
-
-            <div className="lg:hidden space-y-4">
+          <div className="p-4">
+            <Table headers={['Référence Flux', 'Vecteur Source', 'Protocole', 'Date', 'Valence Apportée']}>
               {payments.map(pay => (
-                <motion.div 
-                  key={pay.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-nexus-bg/50 border border-white/5 rounded-2xl p-5 space-y-4"
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="font-black text-nexus-accent italic text-xs tracking-tight">{pay.reference || 'REF_AUTO'}</span>
-                    <span className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest">
-                      {pay.date ? new Date(pay.date.seconds * 1000).toLocaleDateString() : 'Auj'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <p className="text-[8px] font-black text-nexus-text-muted uppercase tracking-widest mb-1">Source Facture</p>
-                      <p className="text-xs font-black text-nexus-text italic">{invoices.find(i => i.id === pay.invoiceId)?.invoiceNumber || 'FLUX_EXT'}</p>
-                      <span className="mt-2 inline-block px-2 py-0.5 bg-white/5 text-nexus-text-muted rounded-lg text-[8px] uppercase font-black border border-white/10">
-                        {pay.method}
-                      </span>
-                    </div>
-                    <p className="font-black text-lg text-nexus-success italic tracking-tighter">+{pay.amount.toLocaleString()} F</p>
-                  </div>
-                </motion.div>
+                <TableRow key={pay.id}>
+                  <span className="font-black text-nexus-accent italic tracking-tight">{pay.reference || 'REF_AUTO'}</span>
+                  <button 
+                    onClick={() => setSelectedClientName(invoices.find(i => i.id === pay.invoiceId)?.clientName || null)}
+                    className="font-black text-nexus-text hover:text-nexus-accent hover:underline text-left italic border-b border-white/10"
+                  >
+                    {invoices.find(i => i.id === pay.invoiceId)?.invoiceNumber || 'FLUX_EXT'}
+                  </button>
+                  <span className="px-2.5 py-1 bg-white/5 text-nexus-text-muted rounded-xl text-[9px] uppercase font-black tracking-widest border border-white/10">{pay.method}</span>
+                  <span className="text-[10px] font-black text-nexus-text tracking-tighter">
+                    {pay.date ? new Date(pay.date.seconds * 1000).toLocaleDateString() : 'Auj'}
+                  </span>
+                  <span className="font-black text-nexus-success italic">+{pay.amount.toLocaleString()} FCFA</span>
+                </TableRow>
               ))}
-            </div>
+            </Table>
           </div>
         )}
 
@@ -1413,65 +1044,6 @@ export default function SalesModule({ user }: { user: any }) {
 
               return (
                 <div className="space-y-12 relative z-10">
-                  {/* AI Credit Risk Analysis */}
-                  <div className="p-10 bg-slate-900 border border-white/5 rounded-[3.5rem] shadow-2xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-1000">
-                      <BrainCircuit size={120} />
-                    </div>
-                    <div className="relative z-10 space-y-8">
-                       <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 bg-blue-600 rounded-[2rem] flex items-center justify-center text-white shadow-xl shadow-blue-500/20">
-                             <Sparkles size={32} />
-                          </div>
-                          <div>
-                             <h3 className="text-xl font-black text-white italic tracking-tight uppercase">Analyse Prédictive Nexus AI</h3>
-                             <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mt-1">Intelligence Financière & Gestion des Risques</p>
-                          </div>
-                          <div className="ml-auto px-6 py-3 bg-white/5 border border-white/10 rounded-2xl flex flex-col items-center">
-                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Score de Fiabilité</span>
-                             <span className={cn(
-                               "text-2xl font-black italic tracking-tighter",
-                               balance > (totalInvoiced * 0.3) ? "text-nexus-danger" : "text-nexus-success"
-                             )}>
-                               {balance > (totalInvoiced * 0.3) ? 'Risqué (42%)' : balance > 0 ? 'Moyen (78%)' : 'Optimal (99%)'}
-                             </span>
-                          </div>
-                       </div>
-
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-white/5">
-                          <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5">
-                             <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <TrendingUp size={14} /> Perspectives de Croissance
-                             </h4>
-                             <p className="text-sm font-medium text-slate-300 leading-relaxed italic">
-                               {balance === 0 
-                                 ? "Client à fort potentiel. Recommandation: Proposer des remises de fidélité ou des offres groupées pour augmenter le volume de transactions."
-                                 : balance > (totalInvoiced * 0.5)
-                                 ? "Alerte de recouvrement: La dette cumulée dépasse 50% de l'historique client. Suspendre les nouvelles commandes à crédit."
-                                 : "Solvabilité stable. Le client respecte généralement les délais, bien que des reliquats mineurs soient présents."}
-                             </p>
-                          </div>
-                          <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5">
-                             <h4 className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <ShieldCheck size={14} /> Recommandation Système
-                             </h4>
-                             <div className="space-y-3">
-                                {[
-                                  { label: 'Limite de Crédit IA', value: `${Math.floor(totalInvoiced * 0.2).toLocaleString()} F` },
-                                  { label: 'Délai de Paiement Moyen', value: '12 Jours' },
-                                  { label: 'Catégorie de Confiance', value: balance === 0 ? 'V.I.P' : 'Standard' }
-                                ].map((stat, i) => (
-                                  <div key={i} className="flex justify-between items-center bg-white/5 px-4 py-2 rounded-xl">
-                                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{stat.label}</span>
-                                     <span className="text-xs font-black text-white italic">{stat.value}</span>
-                                  </div>
-                                ))}
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-                  </div>
-
                   {/* Summary Cards */}
                   <div className="grid grid-cols-3 gap-6">
                     <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/10 group hover:border-nexus-accent/30 transition-all">
@@ -1805,26 +1377,6 @@ export default function SalesModule({ user }: { user: any }) {
                 </button>
               </div>
             </form>
-          </motion.div>
-        </div>
-      )}
-      {trackingInvoiceId && (
-        <div className="fixed inset-0 bg-nexus-bg/80 backdrop-blur-xl z-[150] flex items-center justify-center p-6">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="w-full max-w-2xl relative"
-          >
-            <button 
-              onClick={() => setTrackingInvoiceId(null)}
-              className="absolute -top-16 right-0 p-4 text-white/50 hover:text-white transition-all"
-            >
-              <Plus className="rotate-45" size={40} />
-            </button>
-            <LogisticsTracker 
-              orderId={trackingInvoiceId} 
-              customerName={invoices.find(i => i.id === trackingInvoiceId)?.clientName} 
-            />
           </motion.div>
         </div>
       )}

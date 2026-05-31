@@ -30,37 +30,14 @@ export default function ClientModule() {
 
   useEffect(() => {
     if (!currentCompany) return;
-
-    const fetchClientsFromSupabase = async () => {
-      const { getSupabase } = await import('../lib/supabase');
-      const sb = getSupabase();
-      if (!sb) return;
-
-      try {
-        const { data, error } = await sb
-          .from('clients')
-          .select('*')
-          .eq('company_id', currentCompany.id);
-
-        if (data) {
-          const formattedClients: Client[] = data.map(c => ({
-            id: c.id,
-            name: c.name,
-            email: c.email || '',
-            phone: c.phone || '',
-            address: c.address,
-            interactions: c.interactions,
-            salesTotal: Number(c.total_sales_amount || 0),
-            loyaltyPoints: c.loyalty_points || 0
-          }));
-          setClients(formattedClients);
-        }
-      } catch (err) {
-        console.error("Nexus Clients: Fail to fetch from Supabase", err);
-      }
-    };
-
-    fetchClientsFromSupabase();
+    const q = query(collection(db, 'clients'), where('companyId', '==', currentCompany.id));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
+      setClients(data);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'clients');
+    });
+    return unsubscribe;
   }, [currentCompany]);
 
   const handleAddClient = async (e: React.FormEvent) => {
@@ -68,40 +45,50 @@ export default function ClientModule() {
     if (!currentCompany || submitting) return;
     setSubmitting(true);
     try {
-      const cleanEmail = newClient.email.trim().toLowerCase().replace(/\s+/g, '');
-      const { getSupabase } = await import('../lib/supabase');
-      const sb = getSupabase();
-      
-      if (sb) {
-        if (editingClient) {
-          await sb.from('clients').update({
-            name: newClient.name,
-            email: cleanEmail,
-            phone: newClient.phone,
-            address: newClient.address,
-            interactions: newClient.interactions,
-            updated_at: new Date().toISOString()
-          }).eq('id', editingClient.id);
-        } else {
-          await sb.from('clients').insert({
-            company_id: currentCompany.id,
-            name: newClient.name,
-            email: cleanEmail,
-            phone: newClient.phone,
-            address: newClient.address,
-            interactions: newClient.interactions
-          });
-        }
-      }
+      const normalizedClient = {
+        ...newClient,
+        email: newClient.email.trim().toLowerCase().replace(/\s+/g, '')
+      };
+      if (editingClient) {
+        await updateDoc(doc(db, 'clients', editingClient.id), {
+          ...normalizedClient,
+          updatedAt: serverTimestamp(),
+        });
+      } else {
+        // Use email as doc ID for security rule verification
+        await setDoc(doc(db, 'clients', normalizedClient.email), {
+          ...normalizedClient,
+          companyId: currentCompany.id,
+          salesTotal: 0,
+          loyaltyPoints: 0,
+          createdAt: serverTimestamp(),
+        });
 
+        // Create Ghost Profile for global visibility
+        try {
+          const ghostUserRef = doc(db, 'users', normalizedClient.email);
+          await setDoc(ghostUserRef, {
+            email: normalizedClient.email,
+            displayName: normalizedClient.name,
+            status: 'invited',
+            invitationDate: serverTimestamp(),
+            role: 'Client'
+          }, { merge: true });
+        } catch (ghostErr) {
+          console.warn("Ghost profile creation skipped:", ghostErr);
+        }
+        
+        // Also enroll client in company member emails to satisfy security rules
+        await setDoc(doc(db, 'companies', currentCompany.id), {
+          memberEmails: arrayUnion(normalizedClient.email),
+          updatedAt: serverTimestamp()
+        }, { merge: true }).catch(e => console.error("Could not enroll client in company members:", e));
+      }
       setNewClient({ name: '', email: '', phone: '', address: '', interactions: '' });
       setIsAdding(false);
       setEditingClient(null);
-      // Force refresh (simplified for this module)
-      window.location.reload(); 
     } catch (error) {
-      console.error(error);
-      alert("Erreur lors de l'enregistrement du client");
+      handleFirestoreError(error, editingClient ? OperationType.UPDATE : OperationType.CREATE, 'clients');
     } finally {
       setSubmitting(false);
     }
@@ -110,14 +97,9 @@ export default function ClientModule() {
   const handleDeleteClient = async (clientId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) return;
     try {
-      const { getSupabase } = await import('../lib/supabase');
-      const sb = getSupabase();
-      if (sb) {
-        await sb.from('clients').delete().eq('id', clientId);
-        setClients(prev => prev.filter(c => c.id !== clientId));
-      }
+      await deleteDoc(doc(db, 'clients', clientId));
     } catch (error) {
-      console.error(error);
+      handleFirestoreError(error, OperationType.DELETE, 'clients');
     }
   };
 
