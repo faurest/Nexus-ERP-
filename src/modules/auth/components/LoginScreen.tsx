@@ -55,7 +55,15 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
       }
     } catch (err: any) {
       console.error(err);
-      setAuthError('Erreur de connexion serveur.');
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
+        setAuthError('Identifiants incorrects ou compte inexistant.');
+      } else if (err.code === 'auth/email-already-in-use') {
+        setAuthError('Cette adresse email est déjà utilisée.');
+      } else if (err.code === 'auth/weak-password') {
+        setAuthError('Le mot de passe doit contenir au moins 6 caractères.');
+      } else {
+        setAuthError('Erreur de connexion : ' + (err.message || 'Serveur indisponible.'));
+      }
     } finally {
       setLoading(false);
     }

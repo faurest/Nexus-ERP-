@@ -140,14 +140,18 @@ service cloud.firestore {
     match /clients/{clientId} {
       allow read: if isSignedIn() && (
         isAdmin() || 
-        (resource.data != null && resource.data.email == currentUserEmail()) ||
-        (resource.data != null && resource.data.companyId != null && isMemberOfCompany(resource.data.companyId))
+        clientId == currentUserEmail() ||
+        clientId == request.auth.uid ||
+        (resource != null && resource.data.email == currentUserEmail()) ||
+        (resource != null && resource.data.companyId != null && isMemberOfCompany(resource.data.companyId))
       );
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (
         isAdmin() || 
-        (resource.data != null && resource.data.email == currentUserEmail()) ||
-        (resource.data != null && isMemberOfCompany(resource.data.companyId))
+        clientId == currentUserEmail() ||
+        clientId == request.auth.uid ||
+        (resource != null && resource.data.email == currentUserEmail()) ||
+        (resource != null && isMemberOfCompany(resource.data.companyId))
       );
       allow delete: if isAdmin();
     }
@@ -230,8 +234,10 @@ service cloud.firestore {
         collectionName in ['products', 'services', 'ecommerce_orders', 'order_history', 'global_orders'] ||
         (isSignedIn() && (
           isAdmin() || 
-          isSelf(resource.data) ||
-          (resource.data.companyId != null && isMemberOfCompany(resource.data.companyId))
+          docId == currentUserEmail() ||
+          docId == request.auth.uid ||
+          (resource != null && isSelf(resource.data)) ||
+          (resource != null && resource.data.companyId != null && isMemberOfCompany(resource.data.companyId))
         ))
       );
       
@@ -239,8 +245,8 @@ service cloud.firestore {
         collectionName in ['products', 'services', 'ecommerce_orders', 'order_history', 'global_orders'] ||
         (isSignedIn() && (
           isAdmin() || 
-          isSelf(resource.data) ||
-          (resource.data.companyId != null && isMemberOfCompany(resource.data.companyId))
+          (resource != null && isSelf(resource.data)) ||
+          (resource != null && resource.data.companyId != null && isMemberOfCompany(resource.data.companyId))
         ))
       );
 

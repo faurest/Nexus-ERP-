@@ -23,7 +23,7 @@ class AuthService {
          return this.registerWithEmail(credentials);
       }
       console.error('Email login failed:', e);
-      return null;
+      throw e;
     }
   }
 
@@ -40,7 +40,7 @@ class AuthService {
       return customUser;
     } catch (e) {
       console.error('Email registration failed:', e);
-      return null;
+      throw e;
     }
   }
 
