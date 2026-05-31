@@ -4,7 +4,9 @@ import {
   signOut, 
   onAuthStateChanged as firebaseOnAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -144,6 +146,40 @@ export function onAuthStateChanged(auth: any, cb: (user: any) => void) {
     }
   });
 }
+
+export const registerWithEmail = async (email: string, pass: string) => {
+  try {
+    const result = await createUserWithEmailAndPassword(auth, email, pass);
+    
+    // Create profile
+    const cleanEmail = email.trim().toLowerCase();
+    const userData: any = {
+      uid: result.user.uid,
+      email: cleanEmail,
+      displayName: cleanEmail.split('@')[0],
+      photoURL: null,
+      updatedAt: firestoreServerTimestamp()
+    };
+    
+    await firestoreSetDoc(firestoreDoc(db, 'users', result.user.uid), userData, { merge: true });
+    await firestoreSetDoc(firestoreDoc(db, 'users', cleanEmail), userData, { merge: true });
+
+    return { user: result.user };
+  } catch (error) {
+    console.error("Email register error:", error);
+    throw error;
+  }
+};
+
+export const loginWithEmail = async (email: string, pass: string) => {
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, pass);
+    return { user: result.user };
+  } catch (error) {
+    console.error("Email login error:", error);
+    throw error;
+  }
+};
 
 export const loginWithGoogle = async () => {
   try {

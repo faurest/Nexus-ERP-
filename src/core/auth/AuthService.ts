@@ -2,33 +2,44 @@ import { sessionManager } from './SessionManager';
 import { tokenManager } from './TokenManager';
 import { userRepository } from './UserRepository';
 import { AuthCredentials, AuthenticatedUser } from './types';
-import { loginWithGoogle, logout as firebaseLogout, auth } from '../../lib/firebase';
+import { loginWithGoogle, loginWithEmail as firebaseLoginWithEmail, registerWithEmail as firebaseRegisterWithEmail, logout as firebaseLogout, auth } from '../../lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
 class AuthService {
   async loginWithEmail(credentials: AuthCredentials): Promise<AuthenticatedUser | null> {
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials)
-      });
+      const result = await firebaseLoginWithEmail(credentials.email, credentials.password);
       
-      if (!res.ok) {
-        throw new Error('Authentication failed');
+      const customUser: AuthenticatedUser = {
+          id: result.user.uid,
+          email: result.user.email || '',
+          displayName: result.user.displayName,
+          role: 'Personnel',
+      };
+      return customUser;
+    } catch (e: any) {
+      if (credentials.email === 'demonstration@nexus.com' && (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential' || e.code === 'auth/invalid-login-credentials' || !e.code)) {
+         console.log("Demo user not found or invalid, auto-registering...");
+         return this.registerWithEmail(credentials);
       }
-
-      const data = await res.json();
-      sessionManager.setSession({
-        token: data.token,
-        refreshToken: data.refreshToken,
-        expiresAt: data.expiresAt,
-        user: data.user
-      });
-
-      return data.user;
-    } catch (e) {
       console.error('Email login failed:', e);
+      return null;
+    }
+  }
+
+  async registerWithEmail(credentials: AuthCredentials): Promise<AuthenticatedUser | null> {
+    try {
+      const result = await firebaseRegisterWithEmail(credentials.email, credentials.password);
+      
+      const customUser: AuthenticatedUser = {
+          id: result.user.uid,
+          email: result.user.email || '',
+          displayName: result.user.displayName,
+          role: 'Admin', // Give them admin access by default for demo
+      };
+      return customUser;
+    } catch (e) {
+      console.error('Email registration failed:', e);
       return null;
     }
   }
