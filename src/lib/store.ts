@@ -86,7 +86,27 @@ export const useNexusStore = create<NexusState>()(
         
         while (attempts < maxAttempts) {
           try {
-            if (!sb) throw new Error("Supabase unavailable");
+            if (!sb) {
+              console.warn("Nexus Recovery: Supabase unavailable. Falling back to Firestore for affiliations.");
+              const q = query(collection(db, 'companies'), where('ownerEmail', '==', cleanEmail));
+              const snaps = await getDocs(q);
+              const fallbackCompanies: Company[] = [];
+              snaps.forEach(doc => {
+                fallbackCompanies.push({ id: doc.id, ...doc.data(), role: 'Owner', status: 'active', permissions: ['all'] } as Company);
+              });
+              
+              set({ 
+                companies: fallbackCompanies,
+                userProfile: { email: cleanEmail, firebase_uid: firebaseUser.uid },
+                initialized: true,
+              });
+              
+              if (fallbackCompanies.length > 0) {
+                 set({ currentCompany: fallbackCompanies[0] });
+                 localStorage.setItem('nexus_company_id', fallbackCompanies[0].id);
+              }
+              break;
+            }
 
             // 1. Get/Sync Supabase User Profile
             const { data: userDataSnap, error: profileErr } = await sb
