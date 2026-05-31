@@ -1,0 +1,6 @@
+{
+  "name": "Nexus ERP - Hub Opérationnel",
+  "description": "Système de gestion ERP multi-entreprises avec architecture unifiée Firebase/Supabase. Lanceur opérationnel pour la gestion des pôles métiers : RH, Ventes, Projets et Comptabilité.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

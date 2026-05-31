@@ -1,0 +1,21 @@
+{
+  "name": "Nexus Connect",
+  "short_name": "Nexus",
+  "description": "Système de Commandement Opérationnel Nexus",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=192",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=512",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

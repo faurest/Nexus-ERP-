@@ -1,12 +1,26 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nexus ERP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="/nexus-logo.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/nexus-logo.svg">
+    <link rel="manifest" href="/manifest.json">
+    <title>NEXUS ERP</title>
   </head>
-  <body class="bg-neutral-900 text-white min-h-screen">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Nexus SW Registered', reg))
+            .catch(err => console.log('Nexus SW Registration failed', err));
+        });
+      }
+    </script>
   </body>
 </html>
+
