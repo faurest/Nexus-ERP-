@@ -341,6 +341,36 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     });
   }, [products, searchTerm, activeCompanyId, activeCategory]);
 
+  const groupedProducts = useMemo(() => {
+    const groups: Record<string, Record<string, Product[]>> = {};
+    
+    filteredProducts.forEach(product => {
+      const category = product.category || 'Divers';
+      const companyId = product.companyId || 'unknown';
+      const company = companies.find(c => c.id === companyId);
+      const companyName = company?.name || 'Inconnu';
+      
+      if (!groups[category]) groups[category] = {};
+      if (!groups[category][companyName]) groups[category][companyName] = [];
+      
+      groups[category][companyName].push(product);
+    });
+    
+    // Sort categories, moving Divers to the end
+    const sortedCategories = Object.keys(groups).sort((a, b) => {
+      if (a === 'Divers') return 1;
+      if (b === 'Divers') return -1;
+      return a.localeCompare(b);
+    });
+
+    const sortedGroups: Record<string, Record<string, Product[]>> = {};
+    for (const cat of sortedCategories) {
+      sortedGroups[cat] = groups[cat];
+    }
+    
+    return sortedGroups;
+  }, [filteredProducts, companies]);
+
   const addToCart = (product: Product) => {
     if (product.stock <= 0 && !product.allowBackorder) {
       alert("Désolé, ce produit est en rupture de stock.");
@@ -1129,204 +1159,236 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           </div>
         </div>
 
-        {/* Product Grid / List */}
-        <div className={cn(
-          "transition-all duration-500",
-          viewMode === 'grid' 
-            ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" 
-            : "flex flex-col gap-4"
-        )}>
-          <AnimatePresence mode="popLayout">
-            {filteredProducts.map((product) => {
-              const company = companies.find((c) => c.id === product.companyId);
-              const nairaPrice = ((product.price * (company?.nairaRate || GLOBAL_NAIRA_RATE)) / 1000).toFixed(1);
-              
-              if (viewMode === 'list') {
-                return (
-                  <motion.div
-                    key={product.id}
-                    layout
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    onClick={() => {
-                      addToRecentlyViewed(product);
-                      setSelectedProduct(product);
-                    }}
-                    className="group bg-white rounded-3xl border border-slate-100 p-4 flex items-center gap-6 cursor-pointer hover:shadow-xl hover:border-blue-100 transition-all"
-                  >
-                    <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
-                      <img src={product.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    </div>
-                    <div className="flex-1 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[8px] font-black text-blue-600 underline underline-offset-4 decoration-2">{company?.name}</span>
-                          <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">• {product.category}</span>
-                        </div>
-                        <h3 className="text-sm font-black text-slate-900 uppercase italic line-clamp-1">{product.name}</h3>
-                      </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <p className="text-sm font-black text-slate-900 line-none">{product.price.toLocaleString()} F</p>
-                          <p className={cn("text-[9px] font-black uppercase tracking-widest", nairaEnabled ? "text-amber-500" : "text-slate-300")}>₦ {nairaPrice}k</p>
-                        </div>
-                        <div className={cn("hidden sm:block px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border", getStockStatus(product.stock).color)}>
-                           {getStockStatus(product.stock).label}
-                        </div>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            addToCart(product);
-                          }}
-                          className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-blue-600 transition-all shadow-lg shadow-slate-200"
-                        >
-                          <Plus size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              }
-
+        {/* Product Grid / List Grouped */}
+        <div className="space-y-12">
+          {Object.entries(groupedProducts).length === 0 ? (
+            <div className="py-20 text-center space-y-6">
+              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300">
+                <Search size={32} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-slate-900 uppercase">
+                  Aucun résultat
+                </h3>
+                <p className="text-xs font-medium text-slate-400">
+                  Essayez une autre recherche ou un autre partenaire.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setActiveCompanyId("all");
+                }}
+                className="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-blue-600 hover:text-blue-600 transition-all"
+              >
+                Réinitialiser les filtres
+              </button>
+            </div>
+          ) : (
+            Object.entries(groupedProducts).map(([category, companiesDict]) => {
+              const CategoryIcon = CATEGORY_ICONS[category] || CATEGORY_ICONS["Divers"];
               return (
-                <motion.div
-                  key={product.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="group bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 flex flex-col relative"
-                >
-                  <div
-                    className="aspect-square overflow-hidden relative cursor-pointer"
-                    onClick={() => {
-                      addToRecentlyViewed(product);
-                      setSelectedProduct(product);
-                    }}
-                  >
-                    <img
-                      src={product.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=60"}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s] brightness-[0.98] group-hover:brightness-100"
-                      referrerPolicy="no-referrer"
-                    />
-
-                    {/* Progressive Loading Visual Placeholder */}
-                    <div className="absolute inset-0 bg-slate-100 animate-pulse opacity-0 pointer-events-none" />
-
-                    <div className="absolute top-4 right-4 flex flex-col gap-2 scale-90 origin-top-right">
-                      {company?.logo && (
-                        <div className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-xl p-1.5 shadow-xl border border-white/50 overflow-hidden flex items-center justify-center">
-                           <img src={company.logo} className="max-w-full max-h-full object-contain" />
-                        </div>
-                      )}
+                <div key={category} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  {/* Category Header */}
+                  <div className="flex items-center gap-3">
+                    <div className="h-px bg-slate-200 flex-1" />
+                    <div className="px-5 py-2 bg-white rounded-full border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] flex items-center gap-2.5">
+                      <CategoryIcon size={14} className="text-blue-600" />
+                      <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{category}</span>
                     </div>
-
-                    <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                      <div className="px-3 py-1.5 bg-slate-900/90 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest text-white shadow-xl flex items-center gap-2">
-                        <Info size={12} />
-                        Détails
-                      </div>
-                    </div>
+                    <div className="h-px bg-slate-200 flex-1" />
                   </div>
-
-                  <div className="p-6 flex-1 flex flex-col justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[7px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{product.category}</span>
-                        <div className="w-1 h-1 bg-slate-200 rounded-full" />
-                        <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest truncate">{company?.name}</span>
-                      </div>
-                      <h3 className="text-[13px] font-black text-slate-900 tracking-tight leading-tight group-hover:text-blue-600 transition-colors uppercase italic line-clamp-1 mt-1">
-                        {product.name}
-                      </h3>
-                    </div>
-
-                    <div className="mt-6 space-y-5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-[15px] font-black text-slate-900 leading-none tracking-tight">
-                            {product.price.toLocaleString()} <span className="text-[8px] opacity-40">F</span>
-                          </span>
-                          <span className={cn(
-                            "text-[8px] font-black uppercase tracking-widest mt-1.5 transition-colors",
-                            nairaEnabled ? "text-amber-500" : "text-slate-300"
-                          )}>
-                            ₦ {nairaPrice}k Naira
-                          </span>
+                  
+                  <div className="space-y-10">
+                    {Object.entries(companiesDict).map(([companyName, companyProducts]) => (
+                      <div key={companyName} className="space-y-6 bg-slate-50/50 p-6 sm:p-8 rounded-[2.5rem] border border-slate-100">
+                        {/* Company Header */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-1.5 h-5 bg-indigo-500 rounded-full" />
+                          <h3 className="text-base font-black text-slate-900 uppercase italic tracking-tight">{companyName}</h3>
+                          <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md ml-auto border border-indigo-100 shadow-sm">{companyProducts.length} Produit{companyProducts.length > 1 ? 's' : ''}</span>
                         </div>
-                        <div
-                          className={cn(
-                            "px-2.5 py-1 rounded-lg text-[7px] font-black uppercase tracking-widest border shadow-sm",
-                            getStockStatus(product.stock).color,
-                          )}
-                        >
-                          {getStockStatus(product.stock).label}
+                        
+                        <div className={cn(
+                          "transition-all duration-500",
+                          viewMode === 'grid' 
+                            ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6" 
+                            : "flex flex-col gap-4"
+                        )}>
+                          <AnimatePresence mode="popLayout">
+                            {companyProducts.map((product) => {
+                              const company = companies.find((c) => c.id === product.companyId);
+                              const nairaPrice = ((product.price * (company?.nairaRate || GLOBAL_NAIRA_RATE)) / 1000).toFixed(1);
+                              
+                              if (viewMode === 'list') {
+                                return (
+                                  <motion.div
+                                    key={product.id}
+                                    layout
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    onClick={() => {
+                                      addToRecentlyViewed(product);
+                                      setSelectedProduct(product);
+                                    }}
+                                    className="group bg-white rounded-3xl border border-slate-100 p-4 flex items-center gap-6 cursor-pointer hover:shadow-xl hover:border-blue-100 transition-all"
+                                  >
+                                    <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
+                                      <img src={product.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                    </div>
+                                    <div className="flex-1 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                      <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="text-[8px] font-black text-blue-600 underline underline-offset-4 decoration-2">{company?.name}</span>
+                                          <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">• {product.category}</span>
+                                        </div>
+                                        <h3 className="text-sm font-black text-slate-900 uppercase italic line-clamp-1">{product.name}</h3>
+                                      </div>
+                                      <div className="flex items-center gap-6">
+                                        <div className="text-right">
+                                          <p className="text-sm font-black text-slate-900 line-none">{product.price.toLocaleString()} F</p>
+                                          <p className={cn("text-[9px] font-black uppercase tracking-widest", nairaEnabled ? "text-amber-500" : "text-slate-300")}>₦ {nairaPrice}k</p>
+                                        </div>
+                                        <div className={cn("hidden sm:block px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border", getStockStatus(product.stock).color)}>
+                                          {getStockStatus(product.stock).label}
+                                        </div>
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            addToCart(product);
+                                          }}
+                                          className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-blue-600 transition-all shadow-lg shadow-slate-200"
+                                        >
+                                          <Plus size={18} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </motion.div>
+                                );
+                              }
+
+                              return (
+                                <motion.div
+                                  key={product.id}
+                                  layout
+                                  initial={{ opacity: 0, scale: 0.9 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.9 }}
+                                  className="group bg-white rounded-[2rem] border border-slate-100 overflow-hidden hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 flex flex-col relative shadow-sm"
+                                >
+                                  <div
+                                    className="aspect-square overflow-hidden relative cursor-pointer"
+                                    onClick={() => {
+                                      addToRecentlyViewed(product);
+                                      setSelectedProduct(product);
+                                    }}
+                                  >
+                                    <img
+                                      src={product.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=60"}
+                                      alt={product.name}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s] brightness-[0.98] group-hover:brightness-100"
+                                      referrerPolicy="no-referrer"
+                                    />
+
+                                    {/* Progressive Loading Visual Placeholder */}
+                                    <div className="absolute inset-0 bg-slate-100 animate-pulse opacity-0 pointer-events-none" />
+
+                                    <div className="absolute top-4 right-4 flex flex-col gap-2 scale-90 origin-top-right">
+                                      {company?.logo && (
+                                        <div className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-xl p-1.5 shadow-xl border border-white/50 overflow-hidden flex items-center justify-center">
+                                          <img src={company.logo} className="max-w-full max-h-full object-contain" />
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                                      <div className="px-3 py-1.5 bg-slate-900/90 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest text-white shadow-xl flex items-center gap-2">
+                                        <Info size={12} />
+                                        Détails
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="p-5 flex-1 flex flex-col justify-between">
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[7px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{product.category}</span>
+                                        <div className="w-1 h-1 bg-slate-200 rounded-full" />
+                                        <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest truncate">{company?.name}</span>
+                                      </div>
+                                      <h3 className="text-[12px] font-black text-slate-900 tracking-tight leading-tight group-hover:text-blue-600 transition-colors uppercase italic line-clamp-1 mt-1">
+                                        {product.name}
+                                      </h3>
+                                    </div>
+
+                                    <div className="mt-5 space-y-4">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex flex-col">
+                                          <span className="text-[14px] font-black text-slate-900 leading-none tracking-tight">
+                                            {product.price.toLocaleString()} <span className="text-[7px] opacity-40">F</span>
+                                          </span>
+                                          <span className={cn(
+                                            "text-[7px] font-black uppercase tracking-widest mt-1.5 transition-colors",
+                                            nairaEnabled ? "text-amber-500" : "text-slate-300"
+                                          )}>
+                                            ₦ {nairaPrice}k Naira
+                                          </span>
+                                        </div>
+                                        <div
+                                          className={cn(
+                                            "px-2 py-1 rounded-md text-[7px] font-black uppercase tracking-widest border shadow-sm",
+                                            getStockStatus(product.stock).color,
+                                          )}
+                                        >
+                                          {getStockStatus(product.stock).label}
+                                        </div>
+                                      </div>
+
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            checkoutWhatsApp(product);
+                                          }}
+                                          className="w-10 h-10 bg-white border border-slate-100 text-emerald-600 rounded-xl flex items-center justify-center hover:bg-emerald-50 transition-all active:scale-95"
+                                        >
+                                          <MessageCircle size={16} />
+                                        </button>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (product.stock > 0) addToCart(product);
+                                          }}
+                                          disabled={product.stock <= 0}
+                                          className={cn(
+                                            "flex-1 h-10 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xl group/btn",
+                                            product.stock > 0 
+                                              ? "bg-slate-950 text-white hover:bg-blue-600 shadow-slate-200 group-hover:shadow-blue-600/20" 
+                                              : "bg-slate-50 text-slate-300 cursor-not-allowed border border-slate-100 shadow-none"
+                                          )}
+                                        >
+                                          <Plus size={14} className="mr-1.5 group-hover/btn:rotate-90 transition-transform duration-300" />
+                                          <span className="text-[8px] font-black uppercase tracking-widest">
+                                            {product.stock > 0 ? "Panier" : "Rupture"}
+                                          </span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </AnimatePresence>
                         </div>
                       </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            checkoutWhatsApp(product);
-                          }}
-                          className="w-11 h-11 bg-white border border-slate-100 text-emerald-600 rounded-2xl flex items-center justify-center hover:bg-emerald-50 transition-all active:scale-95"
-                        >
-                          <MessageCircle size={18} />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (product.stock > 0) addToCart(product);
-                          }}
-                          disabled={product.stock <= 0}
-                          className={cn(
-                            "flex-1 h-11 rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-xl group/btn",
-                            product.stock > 0 
-                              ? "bg-slate-950 text-white hover:bg-blue-600 shadow-slate-200 group-hover:shadow-blue-600/20" 
-                              : "bg-slate-50 text-slate-300 cursor-not-allowed border border-slate-100 shadow-none"
-                          )}
-                        >
-                          <Plus size={16} className="mr-2 group-hover/btn:rotate-90 transition-transform duration-300" />
-                          <span className="text-[9px] font-black uppercase tracking-widest">
-                            {product.stock > 0 ? "Panier" : "Rupture"}
-                          </span>
-                        </button>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                </motion.div>
+                </div>
               );
-            })}
-          </AnimatePresence>
+            })
+          )}
         </div>
-
-        {filteredProducts.length === 0 && (
-          <div className="py-20 text-center space-y-6">
-            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300">
-              <Search size={32} />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-lg font-black text-slate-900 uppercase">
-                Aucun résultat
-              </h3>
-              <p className="text-xs font-medium text-slate-400">
-                Essayez une autre recherche ou un autre partenaire.
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                setSearchTerm("");
-                setActiveCompanyId("all");
-              }}
-              className="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-blue-600 hover:text-blue-600 transition-all"
-            >
-              Réinitialiser les filtres
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Cart Drawer */}
