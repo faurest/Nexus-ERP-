@@ -118,6 +118,30 @@ export default function PersonnelModule({ user }: { user?: any }) {
     setEditingRoles(currentCompany?.roles || DEFAULT_ROLES);
   }, [currentCompany]);
 
+  const handleRegenerateJoinCode = async () => {
+    if (!currentCompany || submitting) return;
+    if (!confirm("Générer un nouveau code d'accès ? L'ancien code ne sera plus valide. Les membres actuels resteront connectés.")) return;
+    
+    setSubmitting(true);
+    try {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let generatedJoinCode = '';
+      for (let i = 0; i < 6; i++) {
+        generatedJoinCode += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      
+      await updateDoc(doc(db, 'companies', currentCompany.id), {
+        joinCode: generatedJoinCode,
+        updatedAt: serverTimestamp()
+      });
+      alert('Nouveau code généré avec succès : ' + generatedJoinCode);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'companies');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleUpdateRoles = async () => {
     if (!currentCompany || submitting) return;
     setSubmitting(true);
@@ -570,13 +594,39 @@ export default function PersonnelModule({ user }: { user?: any }) {
               <div className="p-12 text-center">
                 <User size={48} className="mx-auto text-slate-200 mb-4" />
                 <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Aucun employé trouvé</p>
-                <p className="text-xs text-slate-300 mt-1">Commencez par recruter votre premier collaborateur.</p>
+                <p className="text-xs text-slate-500 mt-2 font-medium">
+                  Partagez le code <span className="font-mono bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md mx-1 select-all font-black">{currentCompany?.joinCode}</span> avec vos collaborateurs pour qu'ils rejoignent automatiquement votre espace.
+                </p>
               </div>
             )}
           </Table>
         </div>
 
         <div className="space-y-6">
+          <div className="bg-gradient-to-br from-slate-900 to-indigo-900 border border-slate-800 rounded-xl p-6 shadow-lg text-white">
+            <h3 className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <Shield size={14} /> Accès & Invitations
+            </h3>
+            <div className="space-y-4">
+              <p className="text-xs text-slate-300 leading-relaxed font-medium">Partagez ce code avec vos collaborateurs pour qu'ils rejoignent automatiquement votre espace Nexus :</p>
+              
+              <div className="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center gap-2">
+                <span className="text-3xl font-black tracking-[0.3em] font-mono text-white">
+                  {currentCompany?.joinCode || '------'}
+                </span>
+                <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">Code Unique Sécurisé</span>
+              </div>
+              
+              <button 
+                onClick={handleRegenerateJoinCode}
+                disabled={submitting}
+                className="w-full mt-2 bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Activity size={14} /> Renouveler le code
+              </button>
+            </div>
+          </div>
+
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
               <Briefcase size={14} /> Affectation Rapide
