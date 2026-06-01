@@ -8,7 +8,7 @@ class UserRepository {
       const docRef = doc(db, 'users', id);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        const data = docSnap.data();
+        const data = docSnap.data() as any;
         return {
           id: docSnap.id,
           email: data.email,

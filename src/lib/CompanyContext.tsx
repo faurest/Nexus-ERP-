@@ -81,7 +81,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
       await updateDoc(doc(db, 'companies', companyId), {
         memberEmails: arrayUnion(cleanEmail),
-        employees: arrayUnion(session.id || session.uid),
+        employees: arrayUnion(session.id || (session as any).uid),
         joinCode: cleanCode, // Required by security rules for self-enrollment sync
         updatedAt: serverTimestamp()
       });
@@ -90,7 +90,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const { setDoc } = await import('firebase/firestore');
       await setDoc(doc(db, 'personnel', cleanEmail), {
         companyId: companyId,
-        uid: session.id || session.uid,
+        uid: session.id || (session as any).uid,
         email: cleanEmail,
         name: session.displayName || cleanEmail.split('@')[0],
         role: 'Personnel',

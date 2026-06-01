@@ -955,7 +955,9 @@ export default function EcommerceModule({ user }: { user: any }) {
   };
   
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const pName = p.name || '';
+    const pDesc = p.description || '';
+    const matchesSearch = pName.toLowerCase().includes(searchTerm.toLowerCase()) || pDesc.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = activeCategory === 'Tous' || p.category === activeCategory;
     return matchesSearch && matchesCategory;
   });

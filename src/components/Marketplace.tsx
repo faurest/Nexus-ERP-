@@ -90,16 +90,22 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   const [activeCompanyId, setActiveCompanyId] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [cart, setCart] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem("nexus_cart");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem("nexus_cart");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   });
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>(() => {
-    const saved = localStorage.getItem("nexus_recent");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem("nexus_recent");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   });
   const [favorites, setFavorites] = useState<string[]>(() => {
-    const saved = localStorage.getItem("nexus_favorites");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem("nexus_favorites");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   });
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
   const [showCart, setShowCart] = useState(false);
@@ -331,9 +337,11 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
+      const pName = p.name || '';
+      const pDesc = p.description || '';
       const matchesSearch =
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchTerm.toLowerCase());
+        pName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pDesc.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCompany =
         activeCompanyId === "all" || p.companyId === activeCompanyId;
       const matchesCategory = activeCategory === "Tous" || p.category === activeCategory;
@@ -1186,7 +1194,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
             </div>
           ) : (
             Object.entries(groupedProducts).map(([category, companiesDict]) => {
-              const CategoryIcon = CATEGORY_ICONS[category] || CATEGORY_ICONS["Divers"];
+              const CategoryIcon = categoryIcons[category] || categoryIcons["Divers"];
               return (
                 <div key={category} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                   {/* Category Header */}
