@@ -29,7 +29,7 @@ import { cn } from '../lib/utils';
 
 interface GuideStep {
   id: string;
-  category: 'SALES' | 'LOGISTICS' | 'FINANCE' | 'STOCK';
+  category: 'SALES' | 'LOGISTICS' | 'FINANCE' | 'STOCK' | 'MANAGEMENT';
   title: string;
   content: string;
   keywords: string[];
@@ -38,7 +38,7 @@ interface GuideStep {
 
 export default function GuideModule() {
   const [search, setSearch] = useState('');
-  const [activeCategory, setActiveCategory] = useState<'ALL' | 'SALES' | 'LOGISTICS' | 'FINANCE' | 'STOCK'>('ALL');
+  const [activeCategory, setActiveCategory] = useState<'ALL' | 'SALES' | 'LOGISTICS' | 'FINANCE' | 'STOCK' | 'MANAGEMENT'>('ALL');
   const [dbSteps, setDbSteps] = useState<GuideStep[]>([]);
   const [loading, setLoading] = useState(true);
   const [showQuiz, setShowQuiz] = useState(false);
@@ -47,8 +47,8 @@ export default function GuideModule() {
 
   const quizQuestions = [
     { q: "Qu'affiche le marketplace pour un produit en stock limité ?", a: ["Rupture", "Alerte Orange", "Stock Limité"], correct: 2 },
-    { q: "Quelle action est obligatoire après avoir accepté une commande ?", a: ["Appeler le patron", "Vérifier le stock réel", "Supprimer le produit"], correct: 1 },
-    { q: "Que faire si un client MoMo n'a pas reçu son push de validation ?", a: ["Lui donner le produit gratuitement", "Lui demander de taper son code secret manuellement", "Conseiller d'utiliser les espèces ou réessayer"], correct: 2 }
+    { q: "Comment un nouveau collaborateur rejoint-il l'entreprise sur Nexus ?", a: ["En créant un nouveau compte", "Avec le code d'invitation sécurisé unique", "En payant un abonnement"], correct: 1 },
+    { q: "Quelle action est obligatoire après avoir accepté une commande ?", a: ["Appeler le patron", "Vérifier le stock réel", "Supprimer le produit"], correct: 1 }
   ];
 
   useEffect(() => {
@@ -88,16 +88,29 @@ export default function GuideModule() {
       ]
     },
     {
+      id: 'rh_acces',
+      category: 'MANAGEMENT',
+      title: 'Fiche #03 : Accès & Collaborateurs',
+      subtitle: 'Cible : Gérants / Administrateurs',
+      icon: Users,
+      color: 'emerald',
+      items: [
+        { text: "Générez un Code d'Invitation Sécurisé dans l'onglet Personnel.", icon: ShieldCheck },
+        { text: "Transmettez-le aux employés pour un accès instantané à la plateforme.", icon: Smartphone },
+        { text: "Renouvelez le code en cas de départ d'un collaborateur pour bloquer les nouveaux accès.", icon: AlertCircle }
+      ]
+    },
+    {
       id: 'finance',
       category: 'FINANCE',
-      title: 'Fiche #03 : Encaissement FCFA/Naira',
+      title: 'Fiche #04 : Encaissement Multidevise',
       subtitle: 'Cible : Magasiniers/Vendeurs',
       icon: Wallet,
       color: 'emerald',
       items: [
-        { text: "Utilisez le convertisseur intégré pour les clients Nigérians.", icon: Calculator },
+        { text: "Utilisez la bascule FCFA/₦ NGN dans le marketplace pour afficher les prix en Naira.", icon: Calculator },
         { text: "Encaisser via MoMo ? Attendez toujours le SMS de confirmation Nexus.", icon: Smartphone },
-        { text: "Espèces : Remise en main propre contre validation QR-Code.", icon: ShieldCheck }
+        { text: "Les produits identiques sont maintenant regroupés (Meilleur Prix Garanti).", icon: Target }
       ]
     }
   ];
@@ -124,7 +137,7 @@ export default function GuideModule() {
             />
          </div>
          <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl overflow-x-auto w-full md:w-auto scrollbar-hide">
-            {['ALL', 'SALES', 'LOGISTICS', 'FINANCE', 'STOCK'].map((cat) => (
+            {['ALL', 'SALES', 'LOGISTICS', 'FINANCE', 'STOCK', 'MANAGEMENT'].map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat as any)}
@@ -150,21 +163,21 @@ export default function GuideModule() {
               </div>
               <div>
                 <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em]">Nexus Intelligence Unit</p>
-                <h1 className="text-4xl font-black italic tracking-tighter uppercase mt-1 leading-none">Guide de Performance</h1>
+                <h1 className="text-4xl font-black italic tracking-tighter uppercase mt-1 leading-none">Guide de Performance V2</h1>
               </div>
             </div>
             <p className="max-w-xl text-slate-400 font-medium leading-relaxed text-lg italic">
-              "La vitesse de réaction est notre plus grand atout à Maroua."
+              "De nouvelles fonctionnalités pour optimiser vos ventes croisées."
             </p>
           </div>
-          <div className="flex gap-8">
-            <div className="text-center">
+          <div className="flex gap-4">
+            <div className="text-center px-6 py-4 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-md">
                <p className="text-3xl font-black text-white italic">100%</p>
                <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mt-1">Opérationnel</p>
             </div>
-            <div className="text-center">
-               <p className="text-3xl font-black text-blue-500 italic">OFF</p>
-               <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mt-1">Mode Offline</p>
+            <div className="text-center px-6 py-4 bg-blue-600/20 rounded-3xl border border-blue-500/20 backdrop-blur-md">
+               <p className="text-3xl font-black text-blue-400 italic">V2</p>
+               <p className="text-[9px] font-black text-white uppercase tracking-widest mt-1">Système à jour</p>
             </div>
           </div>
         </div>
@@ -262,7 +275,7 @@ export default function GuideModule() {
                   <h3 className="text-xl font-black uppercase italic tracking-tight">Outil de Vente : Convertisseur Naira</h3>
                </div>
                <p className="text-slate-400 text-xs font-medium mb-8">
-                 Calculez instantanément le prix pour nos clients transfrontaliers selon le taux NexusERP configuré.
+                 Le Marketplace intègre désormais l'affichage en Naira. Utilisez cet outil pour un calcul manuel ou comme entraînement pour vos équipes de vente.
                </p>
                <div className="grid grid-cols-2 gap-4">
                   <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
