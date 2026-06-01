@@ -49,6 +49,13 @@ import {
   Award,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+
+import { MarketplaceProductDetail } from '../modules/marketplace/components/MarketplaceProductDetail';
+import { MarketplaceHero } from '../modules/marketplace/components/MarketplaceHero';
+import { MarketplaceCategories } from '../modules/marketplace/components/MarketplaceCategories';
+import { MarketplaceProductCard } from '../modules/marketplace/components/MarketplaceProductCard';
+import { MarketplaceCompanyList } from '../modules/marketplace/components/MarketplaceCompanyList';
+
 import { HelpTrigger } from "./ContextualHelp";
 import { cn } from "../lib/utils";
 import { createNotification } from "../lib/notifications";
@@ -703,6 +710,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
   return (
     <div className="relative min-h-screen bg-slate-50/50 pb-24">
+
       {/* Floating WhatsApp Help Button */}
       <motion.button
         initial={{ scale: 0, opacity: 0 }}
@@ -713,66 +721,47 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           const url = `https://wa.me/237640790996?text=${encodeURIComponent("Bonjour Nexus Aide, j'ai besoin d'assistance sur la Marketplace.")}`;
           window.open(url, '_blank');
         }}
-        className="fixed bottom-24 right-6 z-50 bg-emerald-500 text-white p-4 rounded-full shadow-2xl flex items-center justify-center hover:bg-emerald-600 transition-all border-4 border-white group"
+        className="fixed bottom-24 right-6 z-50 bg-emerald-500 text-white p-4 rounded-[2rem] shadow-2xl flex items-center justify-center hover:bg-emerald-600 transition-all border-4 border-white group"
       >
         <MessageCircle size={24} />
-        <span className="max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em]">
-          Aide Nexus
-        </span>
       </motion.button>
-      {/* Search & Navigation Sticky Header */}
-      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-100 flex items-center gap-4 px-6 py-4">
-        <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center gap-4">
-          {/* Back Button */}
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 p-3 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all font-black text-[9px] uppercase tracking-widest hover:border-slate-300 shrink-0"
-            >
-              <ArrowLeft size={18} />
-              <span className="hidden sm:inline">Retour</span>
-            </button>
-          )}
 
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
-              <Store size={22} />
-            </div>
-            <div>
-              <h1 className="text-sm font-black text-slate-900 tracking-tight leading-none italic">
-                NEXUS MARKETPLACE
-              </h1>
-              <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mt-1 italic">
-                Commerce Ouvert d'Excellence
-              </p>
-            </div>
+      {/* Hero Section */}
+      <MarketplaceHero 
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        SUPPORT_NUMBER={SUPPORT_NUMBER}
+        activeOrderCount={activeOrderCount}
+        setShowTracking={setShowTracking}
+        setShowCart={setShowCart}
+        cartCount={cart.reduce((a, b) => a + b.cartQuantity, 0)}
+        nairaEnabled={nairaEnabled}
+        setNairaEnabled={setNairaEnabled}
+      />
+
+      {/* Categories */}
+      <MarketplaceCategories 
+        activeCategory={activeCategory}
+        setActiveCategory={setActiveCategory}
+      />
+
+      {/* Companies / Shops */}
+      <MarketplaceCompanyList 
+        companies={companies}
+        activeCompanyId={activeCompanyId}
+        setActiveCompanyId={setActiveCompanyId}
+        favorites={favorites}
+        toggleFavorite={toggleFavorite}
+      />
+
+      {/* Product Grid */}
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+             <h2 className="text-2xl font-black text-slate-900 tracking-tight italic uppercase">Catalogue Principal</h2>
+             <p className="text-sm font-bold text-slate-500 mt-1 uppercase tracking-widest">{filteredProducts.length} produits disponibles</p>
           </div>
-
-          <div className="flex-1 w-full relative group">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors pointer-events-none"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Riz, ciment, matériel informatique..."
-              className="w-full bg-slate-100/80 border-2 border-transparent rounded-2xl py-3.5 pl-12 pr-12 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              <button 
-                onClick={() => {
-                  const message = "Bonjour, j'ai une question sur Nexus Marketplace.";
-                  window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
-                }}
-                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-              >
-                <MessageCircle size={18} />
-              </button>
-            </div>
-          </div>
-
+          
           <div className="flex items-center gap-2 shrink-0">
             <div className="flex bg-slate-100 p-1 rounded-xl">
               <button 
@@ -793,613 +782,132 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                 <Filter size={18} />
               </button>
             </div>
-
-            <button
-              onClick={() => setNairaEnabled(!nairaEnabled)}
-              className={cn(
-                "px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border",
-                nairaEnabled
-                  ? "bg-amber-100 text-amber-700 border-amber-200"
-                  : "bg-white text-slate-400 border-slate-100",
-              )}
-            >
-              {nairaEnabled ? "Naira (₦)" : "FCFA"}
-            </button>
-            
-            {/* Suivi Commandes Button in Header */}
-            <button
-              onClick={() => setShowTracking(true)}
-              className="relative p-3 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:text-blue-600 transition-all shadow-sm group"
-              title="Suivi de mes commandes"
-            >
-              <Truck size={20} className={cn(activeOrderCount > 0 ? "text-blue-600" : "text-slate-400")} />
-              {activeOrderCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
-                  {activeOrderCount}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setShowCart(true)}
-              className="relative p-3 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:text-blue-600 transition-all shadow-sm"
-            >
-              <ShoppingCart size={20} />
-              {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white animate-bounce">
-                  {cart.reduce((a, b) => a + b.cartQuantity, 0)}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Welcome Back Banner */}
-        <AnimatePresence>
-          {showWelcomeBack && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-[2.5rem] text-white shadow-xl shadow-blue-200 border border-blue-400/30 relative overflow-hidden group"
-            >
-              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
-                <Sparkles size={120} />
-              </div>
-              <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30">
-                    <History size={28} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black italic uppercase tracking-tight">C'est bon de vous revoir !</h3>
-                    <p className="text-xs font-bold text-blue-50 opacity-80 uppercase tracking-widest mt-1">Nous avons conservé votre session intacte.</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  {cart.length > 0 && (
-                    <button 
-                      onClick={() => setShowCart(true)}
-                      className="flex-1 sm:flex-none px-6 py-3 bg-white text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-lg active:scale-95"
-                    >
-                      Voir mon Panier ({cart.length})
-                    </button>
-                  )}
-                  <button 
-                    onClick={() => setShowWelcomeBack(false)}
-                    className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* "Mall" Section */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic">
-                Le "Mall" Virtuel de Maroua
-              </h2>
-              <p className="text-[9px] font-bold text-slate-300 uppercase">
-                Explorez les boutiques de nos partenaires locaux
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setShowTransportCalc(true)}
-                className="flex items-center gap-2 text-[9px] font-black text-blue-600 uppercase bg-blue-50 px-4 py-3 rounded-2xl hover:bg-blue-100 transition-all border border-blue-100 shadow-sm"
-              >
-                <TrendingUp size={14} /> Estimer Livraison
-              </button>
-              <button
-                onClick={() => setShowCatalogue(true)}
-                className="flex items-center gap-2 text-[9px] font-black text-slate-600 uppercase bg-white px-4 py-3 rounded-2xl hover:bg-slate-50 transition-all border border-slate-200 shadow-sm"
-              >
-                <FileText size={14} /> Catalogue Officiel
-              </button>
-            </div>
-          </div>
-
-          <div className="flex gap-4 overflow-x-auto pb-6 pt-2 scrollbar-hide -mx-2 px-2 mask-linear-gradient-x">
-            <motion.div
-              whileHover={{ y: -5 }}
-              onClick={() => setActiveCompanyId("all")}
-              className={cn(
-                "min-w-[100px] aspect-square rounded-[2rem] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all border-2 shrink-0",
-                activeCompanyId === "all"
-                  ? "bg-slate-900 border-slate-900 shadow-2xl shadow-slate-200"
-                  : "bg-white border-slate-100 hover:border-blue-200 shadow-sm",
-              )}
-            >
-              <div
-                className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center transition-all",
-                  activeCompanyId === "all"
-                    ? "bg-white text-slate-900"
-                    : "bg-slate-50 text-slate-400",
-                )}
-              >
-                <Store size={24} />
-              </div>
-              <span
-                className={cn(
-                  "text-[9px] font-black uppercase tracking-widest",
-                  activeCompanyId === "all" ? "text-white" : "text-slate-400",
-                )}
-              >
-                Tous
-              </span>
-            </motion.div>
-
-            {companies.map((company) => (
-              <motion.div
-                whileHover={{ y: -5 }}
-                key={company.id}
-                onClick={() => setActiveCompanyId(company.id)}
-                className={cn(
-                  "min-w-[100px] aspect-square rounded-[2rem] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all border-2 group shrink-0",
-                  activeCompanyId === company.id
-                    ? "bg-blue-600 border-blue-600 shadow-2xl shadow-blue-200"
-                    : "bg-white border-slate-100 hover:border-blue-200 shadow-sm",
-                )}
-              >
-                <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-inner group-hover:scale-110 transition-transform bg-slate-50 flex items-center justify-center relative">
-                  {company.logo ? (
-                    <img
-                      src={company.logo}
-                      className="w-full h-full object-cover"
-                      alt={company.name}
-                    />
-                  ) : (
-                    <span className="text-slate-300 font-black text-xl">
-                      {company.name.charAt(0)}
-                    </span>
-                  )}
-                  {/* Favorite Toggle */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(company.id);
-                    }}
-                    className={cn(
-                      "absolute top-1 right-1 p-1 rounded-full transition-all backdrop-blur-md",
-                      favorites.includes(company.id)
-                        ? "bg-red-500 text-white"
-                        : "bg-white/60 text-slate-400 hover:text-red-500"
-                    )}
-                  >
-                    <Heart size={10} fill={favorites.includes(company.id) ? "currentColor" : "none"} />
-                  </button>
-                </div>
-                <span
-                  className={cn(
-                    "text-[9px] font-black uppercase tracking-tighter truncate w-full px-3 text-center",
-                    activeCompanyId === company.id
-                      ? "text-white"
-                      : "text-slate-400",
-                  )}
-                >
-                  {company.name}
-                </span>
-              </motion.div>
-            ))}
-
-            <motion.div
-              whileHover={{ y: -5 }}
-              onClick={() => {
-                window.location.href = "#login";
-              }}
-              className="min-w-[100px] aspect-square rounded-[2rem] bg-amber-50 border-2 border-dashed border-amber-200 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-amber-100 transition-all shrink-0"
-            >
-              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-amber-600 shadow-sm border border-amber-100">
-                <Plus size={24} />
-              </div>
-              <span className="text-[9px] font-black text-amber-600 uppercase tracking-tighter text-center">
-                Vendre
-              </span>
-            </motion.div>
           </div>
         </div>
 
-        {/* Sectors / Filters */}
-        <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide -mx-2 px-2 mask-linear-gradient-x">
-          {categories.map((cat, idx) => {
-            const isActive = activeCategory === cat;
-            const Icon = categoryIcons[cat] || Package;
-            return (
-              <motion.button
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={cn(
-                  "px-6 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all border shrink-0 flex items-center gap-3",
-                  isActive
-                    ? "bg-slate-900 border-slate-900 text-white shadow-2xl shadow-slate-200 scale-105"
-                    : "bg-white text-slate-400 border-slate-100 hover:border-slate-200 hover:text-slate-600",
-                )}
-              >
-                <div className={cn(
-                  "p-2 rounded-xl transition-all",
-                  isActive ? "bg-white/10 text-white" : "bg-slate-50 text-slate-400"
-                )}>
-                  <Icon size={14} />
-                </div>
-                {cat}
-              </motion.button>
-            );
-          })}
-        </div>
+        {filteredProducts.length === 0 ? (
+          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[3rem] border border-slate-100">
+            <Search size={48} className="text-slate-200 mb-6" />
+            <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest mb-2">Aucun produit trouvé</h3>
+            <p className="text-sm text-slate-500 mb-8 max-w-sm">Désolé, nous n'avons rien trouvé correspondant à vos critères de recherche.</p>
+            <button 
+              onClick={() => { setSearchTerm(""); setActiveCategory("Tous"); setActiveCompanyId("all"); }}
+              className="px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all shadow-xl"
+            >
+              Réinitialiser les filtres
+            </button>
+          </div>
+        ) : (
+          <div className={cn(
+             "transition-all duration-500",
+             viewMode === 'grid' 
+               ? "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6" 
+               : "flex flex-col gap-6"
+          )}>
+            <AnimatePresence mode="popLayout">
+              
+              {(() => {
+                // Group products by identical name to prevent duplicates
+                const groupedMap = new Map();
+                filteredProducts.forEach(product => {
+                  if (!product.name) return;
+                  const key = product.name.trim().toLowerCase();
+                  if (!groupedMap.has(key)) {
+                    groupedMap.set(key, { ...product, originalProduct: product, offers: [product], minPrice: product.price, maxPrice: product.price, totalStock: product.stock, companies: [product.companyId] });
+                  } else {
+                    const existing = groupedMap.get(key);
+                    existing.offers.push(product);
+                    existing.minPrice = Math.min(existing.minPrice, product.price);
+                    existing.maxPrice = Math.max(existing.maxPrice, product.price);
+                    existing.totalStock += product.stock;
+                    if (!existing.companies.includes(product.companyId)) existing.companies.push(product.companyId);
+                  }
+                });
+                const groupedProductsList = Array.from(groupedMap.values());
 
-        {/* Personalized Sections - only on home */}
-        {searchTerm === "" && activeCompanyId === "all" && (
-          <div className="space-y-12">
-            {/* 1. Resume / Cart Reminder */}
-            {cart.length > 0 && (
-              <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8">
-                <div className="flex items-center gap-6">
-                  <div className="relative">
-                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
-                      <ShoppingBag size={32} />
-                    </div>
-                    <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
-                      {cart.length}
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black text-slate-900 uppercase italic">Reprendre mes achats</h3>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Vous avez laissé {cart.length} article(s) dans votre panier.</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setShowCart(true)}
-                  className="w-full md:w-auto px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all flex items-center justify-center gap-3 shadow-xl"
-                >
-                  Finaliser la Commande <ArrowRight size={16} />
-                </button>
-              </div>
-            )}
+                return groupedProductsList.map((groupedProduct) => {
+                  // For the card, we pick the original product but display summary info
+                  const product = groupedProduct.originalProduct;
+                  const company = companies.find((c) => c.id === product.companyId);
+                  const isMultiOffer = groupedProduct.offers.length > 1;
 
-            {/* 2. Favorites / My Shops */}
-            {favorites.length > 0 && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-red-500">
-                    <Heart size={20} fill="currentColor" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest italic">Mes Adresses Favorites</h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vos boutiques les plus consultées</p>
-                  </div>
-                </div>
-                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
-                  {companies.filter(c => favorites.includes(c.id)).map(company => (
-                    <motion.div 
-                      whileHover={{ scale: 1.05 }}
-                      key={company.id}
-                      onClick={() => setActiveCompanyId(company.id)}
-                      className="min-w-[140px] bg-white p-4 rounded-3xl border border-slate-100 flex flex-col items-center gap-4 cursor-pointer shadow-sm hover:shadow-md transition-all group"
-                    >
-                      <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-inner bg-slate-50 flex items-center justify-center">
-                        {company.logo ? <img src={company.logo} className="w-full h-full object-cover" /> : <Store className="text-slate-300" />}
-                      </div>
-                      <span className="text-[10px] font-black text-slate-900 uppercase italic truncate w-full text-center">{company.name}</span>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
+                  // Override the product price/display logic purely visually
+                  const proxyProduct = { ...product };
+                  if (isMultiOffer) {
+                    proxyProduct.price = groupedProduct.minPrice;
+                    proxyProduct.name = `${product.name}`;
+                    proxyProduct.isGrouped = true;
+                    proxyProduct.offers = groupedProduct.offers;
+                  }
 
-            {/* 3. Recently Viewed */}
-            {recentlyViewed.length > 0 && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500">
-                    <History size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest italic">Articles Récemment Vus</h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reprenez là où vous vous êtes arrêté</p>
-                  </div>
-                </div>
-                <div className="flex gap-5 overflow-x-auto pb-6 scrollbar-hide -mx-2 px-2">
-                  {recentlyViewed.map(product => (
-                    <motion.div 
-                      whileHover={{ y: -5 }}
-                      key={`recent-${product.id}`}
-                      onClick={() => {
-                        addToRecentlyViewed(product);
-                        setSelectedProduct(product);
-                      }}
-                      className="min-w-[180px] bg-white rounded-3xl border border-slate-100 overflow-hidden cursor-pointer shadow-sm group"
-                    >
-                      <div className="aspect-[4/3] overflow-hidden">
-                        <img src={product.image} className="w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all" />
-                      </div>
-                      <div className="p-4 space-y-1">
-                        <h4 className="text-[10px] font-black text-slate-900 uppercase italic line-clamp-1">{product.name}</h4>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[9px] font-black text-blue-600">{product.price.toLocaleString()} FCFA</span>
-                          <span className="text-[8px] font-bold text-slate-400 uppercase">{companies.find(c => c.id === product.companyId)?.name}</span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
+                 return (
+                   <motion.div
+                     key={product.id}
+                     layout
+                     initial={{ opacity: 0, y: 20 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     exit={{ opacity: 0, scale: 0.95 }}
+                     className="h-full relative"
+                   >
+                     {isMultiOffer && (
+                       <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 px-3 py-1 bg-indigo-600 text-white rounded-full text-[8px] font-black uppercase tracking-widest shadow-xl flex items-center gap-1 whitespace-nowrap">
+                         Disponible chez {groupedProduct.companies.length} vendeurs
+                       </div>
+                     )}
+                     <MarketplaceProductCard 
+                       product={proxyProduct}
+                       company={company}
+                       nairaEnabled={nairaEnabled}
+                       nairaRate={company?.nairaRate || 1.2}
+                       isFavorite={favorites.includes(company?.id || '')}
+                       onAddToCart={(p) => {
+                         if (p.isGrouped && p.offers.length > 1) {
+                            addToRecentlyViewed(p); 
+                            setSelectedProduct(p);
+                         } else {
+                            addToCart(p);
+                         }
+                       }}
+                       onViewDetails={(p) => { 
+                         addToRecentlyViewed(p); 
+                         setSelectedProduct(p); 
+                       }}
+                       onToggleFavorite={toggleFavorite}
+                       viewMode={viewMode}
+                     />
+                   </motion.div>
+                 );
+                });
+              })()
+              }
+
+            </AnimatePresence>
           </div>
         )}
-
-        {/* Dynamic List Header */}
-        <div className="flex items-center justify-between border-t border-slate-100 pt-8 mt-4">
-          <div className="space-y-0.5">
-            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic">
-              {searchTerm ? `Résultats pour "${searchTerm}"` : activeCompanyId === "all" ? "Toutes les nouveautés" : `Catalogue ${companies.find(c => c.id === activeCompanyId)?.name}`}
-            </h2>
-            <p className="text-[9px] font-bold text-slate-300 uppercase">
-              {filteredProducts.length} articles trouvés • Maroua
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden sm:inline">Vue:</span>
-             <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
-               <button 
-                 onClick={() => setViewMode('grid')}
-                 className={cn("px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", viewMode === 'grid' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}
-               >
-                 Grille
-               </button>
-               <button 
-                 onClick={() => setViewMode('list')}
-                 className={cn("px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", viewMode === 'list' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400")}
-               >
-                 Liste
-               </button>
-             </div>
-          </div>
-        </div>
-
-        {/* Product Grid / List Grouped */}
-        <div className="space-y-12">
-          {Object.entries(groupedProducts).length === 0 ? (
-            <div className="py-20 text-center space-y-6">
-              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300">
-                <Search size={32} />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-black text-slate-900 uppercase">
-                  Aucun résultat
-                </h3>
-                <p className="text-xs font-medium text-slate-400">
-                  Essayez une autre recherche ou un autre partenaire.
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setActiveCompanyId("all");
-                }}
-                className="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-blue-600 hover:text-blue-600 transition-all"
-              >
-                Réinitialiser les filtres
-              </button>
-            </div>
-          ) : (
-            Object.entries(groupedProducts).map(([category, companiesDict]) => {
-              const CategoryIcon = categoryIcons[category] || categoryIcons["Divers"];
-              return (
-                <div key={category} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                  {/* Category Header */}
-                  <div className="flex items-center gap-3">
-                    <div className="h-px bg-slate-200 flex-1" />
-                    <div className="px-5 py-2 bg-white rounded-full border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)] flex items-center gap-2.5">
-                      <CategoryIcon size={14} className="text-blue-600" />
-                      <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{category}</span>
-                    </div>
-                    <div className="h-px bg-slate-200 flex-1" />
-                  </div>
-                  
-                  <div className="space-y-10">
-                    {Object.entries(companiesDict).map(([companyName, companyProducts]) => (
-                      <div key={companyName} className="space-y-6 bg-slate-50/50 p-6 sm:p-8 rounded-[2.5rem] border border-slate-100">
-                        {/* Company Header */}
-                        <div className="flex items-center gap-3">
-                          <div className="w-1.5 h-5 bg-indigo-500 rounded-full" />
-                          <h3 className="text-base font-black text-slate-900 uppercase italic tracking-tight">{companyName}</h3>
-                          <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md ml-auto border border-indigo-100 shadow-sm">{companyProducts.length} Produit{companyProducts.length > 1 ? 's' : ''}</span>
-                        </div>
-                        
-                        <div className={cn(
-                          "transition-all duration-500",
-                          viewMode === 'grid' 
-                            ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6" 
-                            : "flex flex-col gap-4"
-                        )}>
-                          <AnimatePresence mode="popLayout">
-                            {companyProducts.map((product) => {
-                              const company = companies.find((c) => c.id === product.companyId);
-                              const nairaPrice = ((product.price * (company?.nairaRate || GLOBAL_NAIRA_RATE)) / 1000).toFixed(1);
-                              
-                              if (viewMode === 'list') {
-                                return (
-                                  <motion.div
-                                    key={product.id}
-                                    layout
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95 }}
-                                    onClick={() => {
-                                      addToRecentlyViewed(product);
-                                      setSelectedProduct(product);
-                                    }}
-                                    className="group bg-white rounded-3xl border border-slate-100 p-4 flex items-center gap-6 cursor-pointer hover:shadow-xl hover:border-blue-100 transition-all"
-                                  >
-                                    <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
-                                      <img src={product.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                    </div>
-                                    <div className="flex-1 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                      <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <span className="text-[8px] font-black text-blue-600 underline underline-offset-4 decoration-2">{company?.name}</span>
-                                          <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">• {product.category}</span>
-                                        </div>
-                                        <h3 className="text-sm font-black text-slate-900 uppercase italic line-clamp-1">{product.name}</h3>
-                                      </div>
-                                      <div className="flex items-center gap-6">
-                                        <div className="text-right">
-                                          <p className="text-sm font-black text-slate-900 line-none">{product.price.toLocaleString()} F</p>
-                                          <p className={cn("text-[9px] font-black uppercase tracking-widest", nairaEnabled ? "text-amber-500" : "text-slate-300")}>₦ {nairaPrice}k</p>
-                                        </div>
-                                        <div className={cn("hidden sm:block px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border", getStockStatus(product.stock).color)}>
-                                          {getStockStatus(product.stock).label}
-                                        </div>
-                                        <button 
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            addToCart(product);
-                                          }}
-                                          className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-blue-600 transition-all shadow-lg shadow-slate-200"
-                                        >
-                                          <Plus size={18} />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </motion.div>
-                                );
-                              }
-
-                              return (
-                                <motion.div
-                                  key={product.id}
-                                  layout
-                                  initial={{ opacity: 0, scale: 0.9 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  exit={{ opacity: 0, scale: 0.9 }}
-                                  className="group bg-white rounded-[2rem] border border-slate-100 overflow-hidden hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 flex flex-col relative shadow-sm"
-                                >
-                                  <div
-                                    className="aspect-square overflow-hidden relative cursor-pointer"
-                                    onClick={() => {
-                                      addToRecentlyViewed(product);
-                                      setSelectedProduct(product);
-                                    }}
-                                  >
-                                    <img
-                                      src={product.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=60"}
-                                      alt={product.name}
-                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[1.5s] brightness-[0.98] group-hover:brightness-100"
-                                      referrerPolicy="no-referrer"
-                                    />
-
-                                    {/* Progressive Loading Visual Placeholder */}
-                                    <div className="absolute inset-0 bg-slate-100 animate-pulse opacity-0 pointer-events-none" />
-
-                                    <div className="absolute top-4 right-4 flex flex-col gap-2 scale-90 origin-top-right">
-                                      {company?.logo && (
-                                        <div className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-xl p-1.5 shadow-xl border border-white/50 overflow-hidden flex items-center justify-center">
-                                          <img src={company.logo} className="max-w-full max-h-full object-contain" />
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                                      <div className="px-3 py-1.5 bg-slate-900/90 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest text-white shadow-xl flex items-center gap-2">
-                                        <Info size={12} />
-                                        Détails
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="p-5 flex-1 flex flex-col justify-between">
-                                    <div className="space-y-1">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[7px] font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-sm uppercase tracking-widest">{product.category}</span>
-                                        <div className="w-1 h-1 bg-slate-200 rounded-full" />
-                                        <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest truncate">{company?.name}</span>
-                                      </div>
-                                      <h3 className="text-[12px] font-black text-slate-900 tracking-tight leading-tight group-hover:text-blue-600 transition-colors uppercase italic line-clamp-1 mt-1">
-                                        {product.name}
-                                      </h3>
-                                    </div>
-
-                                    <div className="mt-5 space-y-4">
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex flex-col">
-                                          <span className="text-[14px] font-black text-slate-900 leading-none tracking-tight">
-                                            {product.price.toLocaleString()} <span className="text-[7px] opacity-40">F</span>
-                                          </span>
-                                          <span className={cn(
-                                            "text-[7px] font-black uppercase tracking-widest mt-1.5 transition-colors",
-                                            nairaEnabled ? "text-amber-500" : "text-slate-300"
-                                          )}>
-                                            ₦ {nairaPrice}k Naira
-                                          </span>
-                                        </div>
-                                        <div
-                                          className={cn(
-                                            "px-2 py-1 rounded-md text-[7px] font-black uppercase tracking-widest border shadow-sm",
-                                            getStockStatus(product.stock).color,
-                                          )}
-                                        >
-                                          {getStockStatus(product.stock).label}
-                                        </div>
-                                      </div>
-
-                                      <div className="flex gap-2">
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            checkoutWhatsApp(product);
-                                          }}
-                                          className="w-10 h-10 bg-white border border-slate-100 text-emerald-600 rounded-xl flex items-center justify-center hover:bg-emerald-50 transition-all active:scale-95"
-                                        >
-                                          <MessageCircle size={16} />
-                                        </button>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (product.stock > 0) addToCart(product);
-                                          }}
-                                          disabled={product.stock <= 0}
-                                          className={cn(
-                                            "flex-1 h-10 rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-xl group/btn",
-                                            product.stock > 0 
-                                              ? "bg-slate-950 text-white hover:bg-blue-600 shadow-slate-200 group-hover:shadow-blue-600/20" 
-                                              : "bg-slate-50 text-slate-300 cursor-not-allowed border border-slate-100 shadow-none"
-                                          )}
-                                        >
-                                          <Plus size={14} className="mr-1.5 group-hover/btn:rotate-90 transition-transform duration-300" />
-                                          <span className="text-[8px] font-black uppercase tracking-widest">
-                                            {product.stock > 0 ? "Panier" : "Rupture"}
-                                          </span>
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              );
-                            })}
-                          </AnimatePresence>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
       </div>
 
+
+
+      {/* Product Detail Modal */}
+      <AnimatePresence>
+        {selectedProduct && (
+          <MarketplaceProductDetail
+            product={selectedProduct}
+            company={companies.find(c => c.id === selectedProduct.companyId)}
+            onClose={() => setSelectedProduct(null)}
+            onAddToCart={(p) => {
+               addToCart(p);
+               setSelectedProduct(null);
+               setShowCart(true); // Open cart automatically when adding from modal for premium feel
+            }}
+            nairaEnabled={nairaEnabled}
+            nairaRate={1.2}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Cart Drawer */}
+
       <AnimatePresence>
         {showCart && (
           <>
