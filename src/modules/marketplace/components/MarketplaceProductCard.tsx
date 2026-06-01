@@ -62,7 +62,7 @@ export function MarketplaceProductCard({
           </div>
         </div>
         <div className="flex-1 flex flex-col py-2">
-          <div className="flex items-start justify-between gap-4">
+           <div className="flex items-start justify-between gap-4">
              <div>
                <div className="flex items-center gap-2 mb-2">
                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
@@ -82,7 +82,7 @@ export function MarketplaceProductCard({
                </p>
              </div>
              <div className="text-right shrink-0">
-               <div className="text-2xl font-black text-slate-900">{displayPrice}</div>
+               <div className={cn("text-2xl font-black transition-colors", nairaEnabled ? "text-emerald-600" : "text-slate-900")}>{displayPrice}</div>
                {product.originalPrice && <div className="text-xs text-slate-400 line-through">{(product.originalPrice).toLocaleString()} FCFA</div>}
              </div>
           </div>
@@ -165,7 +165,7 @@ export function MarketplaceProductCard({
         
         <div className="mt-auto pt-4 flex items-center justify-between">
           <div>
-            <div className="text-base font-black text-slate-900 tracking-tight">{displayPrice}</div>
+            <div className={cn("text-base font-black tracking-tight transition-colors", nairaEnabled ? "text-emerald-600" : "text-slate-900")}>{displayPrice}</div>
             {product.originalPrice && <div className="text-[10px] text-slate-400 line-through">{(product.originalPrice).toLocaleString()} FCFA</div>}
           </div>
           <button

@@ -1378,7 +1378,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                     <h4 className="text-xs font-black text-slate-900 truncate pr-4 italic leading-tight">
                                       {item.name}
                                     </h4>
-                                    <span className="text-xs font-black text-slate-900 whitespace-nowrap flex flex-col items-end">
+                                    <span className={cn("text-xs font-black whitespace-nowrap flex flex-col items-end transition-colors", nairaEnabled ? "text-emerald-600" : "text-slate-900")}>
                                       {nairaEnabled 
                                         ? <span>₦ {Math.round((item.price * item.cartQuantity) * GLOBAL_NAIRA_RATE).toLocaleString()}</span>
                                         : <span>{(item.price * item.cartQuantity).toLocaleString()} FCFA</span>}
@@ -1462,7 +1462,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                       Total Estimate
                     </span>
                     <div className="flex flex-col items-end gap-1 text-right">
-                      <span className="text-2xl font-black text-slate-900 tracking-tighter">
+                      <span className={cn("text-2xl font-black tracking-tighter transition-colors", nairaEnabled ? "text-emerald-600" : "text-slate-900")}>
                         {nairaEnabled 
                           ? `₦ ${Math.round(cartTotal * GLOBAL_NAIRA_RATE).toLocaleString()}` 
                           : `${cartTotal.toLocaleString()} FCFA`}
