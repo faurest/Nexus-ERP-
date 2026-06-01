@@ -510,7 +510,7 @@ export default function App() {
   }
 
   if (!currentCompany) {
-    return <WorkspaceSelector companies={companies} user={user} onSelect={setCurrentCompany} />;
+    return <WorkspaceSelector companies={companies} user={user} onSelect={setCurrentCompany} onMarketplace={() => setShowMarketplace(true)} onLogout={() => auth.signOut()} />;
   }
 
   if (isBlocked) {
