@@ -92,7 +92,9 @@ export function MarketplaceProductDetail({
                 <div className="space-y-2">
                   {product.offers.map((offer: any, idx: number) => (
                     <div key={idx} className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm border border-indigo-50">
-                       <span className="text-xs font-bold text-slate-700">{offer.price.toLocaleString()} FCFA</span>
+                       <span className="text-xs font-bold text-slate-700">
+                         {nairaEnabled ? `₦ ${Math.round(offer.price * nairaRate).toLocaleString()}` : `${offer.price.toLocaleString()} FCFA`}
+                       </span>
                        <button onClick={() => onAddToCart(offer)} className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-colors">
                          Acheter
                        </button>

@@ -35,6 +35,27 @@ export function MarketplaceHero({
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-12 md:py-20 flex flex-col items-center text-center">
+        <div className="absolute top-4 right-4 flex items-center bg-slate-800/50 rounded-full p-1 backdrop-blur-sm border border-slate-700/50">
+          <button
+            onClick={() => setNairaEnabled(false)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
+              !nairaEnabled ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-white"
+            )}
+          >
+            FCFA
+          </button>
+          <button
+            onClick={() => setNairaEnabled(true)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
+              nairaEnabled ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-white"
+            )}
+          >
+            ₦ NGN
+          </button>
+        </div>
+        
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] mb-8">
           <Sparkles size={14} />
           <span>Nexus Operational</span>

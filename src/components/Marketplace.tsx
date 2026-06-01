@@ -469,7 +469,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
     let message = "";
     if (product) {
-      message = `Bonjour, je suis intéressé par le produit *${product.name}* (${product.price.toLocaleString()} FCFA) vu sur l'application Nexus Marketplace. Est-il toujours disponible ?`;
+      const pPrice = nairaEnabled ? `₦ ${Math.round(product.price * GLOBAL_NAIRA_RATE).toLocaleString()}` : `${product.price.toLocaleString()} FCFA`;
+      message = `Bonjour, je suis intéressé par le produit *${product.name}* (${pPrice}) vu sur l'application Nexus Marketplace. Est-il toujours disponible ?`;
     } else {
       const locationInfo = selectedLocation ? `\nLivraison: ${selectedLocation}` : '';
       message =
@@ -477,10 +478,10 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
         cart
           .map(
             (item) =>
-              `- ${item.name} (x${item.cartQuantity}) : ${(item.price * item.cartQuantity).toLocaleString()} FCFA`,
+              `- ${item.name} (x${item.cartQuantity}) : ${(nairaEnabled ? `₦ ${Math.round((item.price * item.cartQuantity) * GLOBAL_NAIRA_RATE).toLocaleString()}` : `${(item.price * item.cartQuantity).toLocaleString()} FCFA`)}`
           )
           .join("\n") +
-        `\n\n*Total Articles : ${cartTotal.toLocaleString()} FCFA*` +
+        `\n\n*Total Articles : ${(nairaEnabled ? `₦ ${Math.round(cartTotal * GLOBAL_NAIRA_RATE).toLocaleString()} (${cartTotal.toLocaleString()} FCFA)` : `${cartTotal.toLocaleString()} FCFA`)}*` +
         locationInfo +
         `\n\nClient: ${checkoutData.name}\nTél: ${checkoutData.phone}\nQuartier: ${checkoutData.quartier}`;
     }
@@ -1244,7 +1245,10 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                             </div>
                             <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest opacity-60">
                               <span>Sous-total articles</span>
-                              <span>{cartTotal.toLocaleString()} FCFA</span>
+                              <div className="text-right">
+                                <span>{nairaEnabled ? `₦ ${Math.round(cartTotal * GLOBAL_NAIRA_RATE).toLocaleString()}` : `${cartTotal.toLocaleString()} FCFA`}</span>
+                                {nairaEnabled && <div className="text-[10px] opacity-70 italic">({cartTotal.toLocaleString()} FCFA)</div>}
+                              </div>
                             </div>
                             <div className="space-y-2">
                                {Array.from(new Set(cart.map(i => i.companyId))).map(cid => {
@@ -1253,19 +1257,35 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                  return (
                                    <div key={cid} className="flex justify-between items-center text-[10px] font-bold text-blue-300">
                                      <span className="italic">Livraison {company?.name} :</span>
-                                     <span>{fee > 0 ? `+ ${fee.toLocaleString()} FCFA` : 'Inclus'}</span>
+                                     <span>{fee > 0 ? (nairaEnabled ? `+ ₦ ${Math.round(fee * GLOBAL_NAIRA_RATE).toLocaleString()}` : `+ ${fee.toLocaleString()} FCFA`) : 'Inclus'}</span>
                                    </div>
                                  );
                                })}
                             </div>
                             <div className="pt-4 border-t border-white/10 mt-2 flex justify-between items-center relative z-10">
                               <span className="text-xs font-black uppercase">Total Final</span>
-                              <span className="text-2xl font-black text-emerald-400 tracking-tighter">
-                                {(cartTotal + Array.from(new Set(cart.map(i => i.companyId))).reduce((acc, cid) => {
-                                   const company = companies.find(c => c.id === cid);
-                                   return acc + (company?.deliveryFees?.[selectedLocation] || 0);
-                                }, 0)).toLocaleString()} FCFA
-                              </span>
+                              <div className="text-right">
+                                <span className="text-2xl font-black text-emerald-400 tracking-tighter">
+                                  {nairaEnabled 
+                                    ? `₦ ${Math.round((cartTotal + Array.from(new Set(cart.map(i => i.companyId))).reduce((acc, cid) => {
+                                       const company = companies.find(c => c.id === cid);
+                                       return acc + (company?.deliveryFees?.[selectedLocation] || 0);
+                                    }, 0)) * GLOBAL_NAIRA_RATE).toLocaleString()}`
+                                    : `${(cartTotal + Array.from(new Set(cart.map(i => i.companyId))).reduce((acc, cid) => {
+                                       const company = companies.find(c => c.id === cid);
+                                       return acc + (company?.deliveryFees?.[selectedLocation] || 0);
+                                    }, 0)).toLocaleString()} FCFA`
+                                  }
+                                </span>
+                                {nairaEnabled && (
+                                  <div className="text-[10px] text-emerald-400/70 italic">
+                                    {(cartTotal + Array.from(new Set(cart.map(i => i.companyId))).reduce((acc, cid) => {
+                                       const company = companies.find(c => c.id === cid);
+                                       return acc + (company?.deliveryFees?.[selectedLocation] || 0);
+                                    }, 0)).toLocaleString()} FCFA
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         )}
@@ -1358,11 +1378,11 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                     <h4 className="text-xs font-black text-slate-900 truncate pr-4 italic leading-tight">
                                       {item.name}
                                     </h4>
-                                    <span className="text-xs font-black text-slate-900 whitespace-nowrap">
-                                      {(
-                                        item.price * item.cartQuantity
-                                      ).toLocaleString()}{" "}
-                                      FCFA
+                                    <span className="text-xs font-black text-slate-900 whitespace-nowrap flex flex-col items-end">
+                                      {nairaEnabled 
+                                        ? <span>₦ {Math.round((item.price * item.cartQuantity) * GLOBAL_NAIRA_RATE).toLocaleString()}</span>
+                                        : <span>{(item.price * item.cartQuantity).toLocaleString()} FCFA</span>}
+                                      {nairaEnabled && <span className="text-[9px] text-slate-400 font-medium">({(item.price * item.cartQuantity).toLocaleString()} FCFA)</span>}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-3 mt-3">
@@ -1441,13 +1461,19 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                     <span className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
                       Total Estimate
                     </span>
-                    <div className="flex flex-col items-end">
+                    <div className="flex flex-col items-end gap-1 text-right">
                       <span className="text-2xl font-black text-slate-900 tracking-tighter">
-                        {cartTotal.toLocaleString()} FCFA
+                        {nairaEnabled 
+                          ? `₦ ${Math.round(cartTotal * GLOBAL_NAIRA_RATE).toLocaleString()}` 
+                          : `${cartTotal.toLocaleString()} FCFA`}
                       </span>
-                      {nairaEnabled && (
+                      {nairaEnabled ? (
+                        <span className="text-[10px] font-black text-slate-400 italic">
+                          ({cartTotal.toLocaleString()} FCFA)
+                        </span>
+                      ) : (
                         <span className="text-[10px] font-black text-amber-600 italic">
-                          ₦ {(cartTotal * GLOBAL_NAIRA_RATE).toLocaleString()}
+                          ₦ {Math.round(cartTotal * GLOBAL_NAIRA_RATE).toLocaleString()}
                         </span>
                       )}
                     </div>
