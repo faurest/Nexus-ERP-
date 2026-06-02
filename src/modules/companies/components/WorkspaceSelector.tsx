@@ -77,7 +77,7 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
 
       // Create a personnel record for the owner so they show up in RH module
       const { setDoc, doc } = await import('firebase/firestore');
-      await setDoc(doc(db, 'personnel', cleanEmail), {
+      await setDoc(doc(db, 'personnel', `${docRef.id}_${cleanEmail}`), {
         companyId: docRef.id,
         uid: user.uid,
         email: cleanEmail,

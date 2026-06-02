@@ -280,7 +280,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
         }, 1500);
       } else {
         const cleanEmail = newStaff.email.trim().toLowerCase().replace(/\s+/g, '');
-        await setDoc(doc(db, 'personnel', cleanEmail), {
+        await setDoc(doc(db, 'personnel', `${currentCompany.id}_${cleanEmail}`), {
           firstName: newStaff.firstName,
           lastName: newStaff.lastName,
           name: fullName,

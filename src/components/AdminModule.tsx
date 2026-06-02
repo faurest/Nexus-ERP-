@@ -194,7 +194,7 @@ export default function AdminModule() {
       });
 
       const { setDoc, doc } = await import('firebase/firestore');
-      await setDoc(doc(db, 'personnel', cleanEmail), {
+      await setDoc(doc(db, 'personnel', `${snap.id}_${cleanEmail}`), {
         companyId: snap.id,
         uid: 'manual',
         email: cleanEmail,

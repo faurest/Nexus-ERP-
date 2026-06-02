@@ -136,19 +136,23 @@ export default function App() {
         console.log("Nexus Security: Analyse des accès pour", normalizedEmail);
         
         // Use targeted lookups
-        const [personnelDocSnap, clientDocSnap] = await Promise.all([
-          getDoc(doc(db, 'personnel', normalizedEmail)).catch(() => null),
-          getDoc(doc(db, 'clients', normalizedEmail)).catch(() => null)
+        const personnelQ = query(collection(db, 'personnel'), where('email', '==', normalizedEmail), limit(1));
+        const clientQ = query(collection(db, 'clients'), where('email', '==', normalizedEmail), limit(1));
+
+        const [personnelSnap, clientSnap] = await Promise.all([
+          getDocs(personnelQ).catch(() => ({ empty: true, docs: [] })),
+          getDocs(clientQ).catch(() => ({ empty: true, docs: [] }))
         ]);
 
         let hasSpecificAccess = false;
         
-        if (personnelDocSnap?.exists()) {
+        if (!personnelSnap.empty) {
           hasSpecificAccess = true;
-          const pData = personnelDocSnap.data();
+          const pDoc = (personnelSnap as any).docs[0];
+          const pData = pDoc.data();
           if (pData.uid !== user.uid || pData.status === 'invited') {
             try {
-              await updateDoc(doc(db, 'personnel', normalizedEmail), { 
+              await updateDoc(pDoc.ref, { 
                 uid: user.uid, 
                 status: 'active', 
                 updatedAt: serverTimestamp() 
@@ -157,12 +161,13 @@ export default function App() {
           }
         }
 
-        if (clientDocSnap?.exists()) {
+        if (!clientSnap.empty) {
           hasSpecificAccess = true;
-          const cData = clientDocSnap.data();
+          const cDoc = (clientSnap as any).docs[0];
+          const cData = cDoc.data();
           if (cData.uid !== user.uid || cData.status === 'invited') {
             try {
-              await updateDoc(doc(db, 'clients', normalizedEmail), { 
+              await updateDoc(cDoc.ref, { 
                 uid: user.uid, 
                 status: 'active', 
                 updatedAt: serverTimestamp() 
@@ -304,7 +309,34 @@ export default function App() {
                     nexusId: clientData.id || clientSnap.docs[0].id
                   } : null);
                } else {
-                 setIsBlocked(true); // Treat as unauthorized
+                 if ((currentCompany.memberEmails || []).includes(cleanEmail)) {
+                   try {
+                     const newId = `${currentCompany.id}_${cleanEmail}`;
+                     await setDoc(doc(db, 'personnel', newId), {
+                       companyId: currentCompany.id,
+                       uid: user.uid,
+                       email: cleanEmail,
+                       name: user.displayName || cleanEmail.split('@')[0],
+                       role: 'Personnel',
+                       status: 'active',
+                       joinMethod: 'auto_sync',
+                       createdAt: serverTimestamp(),
+                       updatedAt: serverTimestamp()
+                     });
+                     setUser(prev => prev ? { 
+                       ...prev, 
+                       role: 'Personnel',
+                       customPermissions: [],
+                       email: user.email || cleanEmail,
+                       nexusId: newId
+                     } : null);
+                   } catch (err) {
+                     console.error("Auto personnel recovery failed:", err);
+                     setIsBlocked(true);
+                   }
+                 } else {
+                   setIsBlocked(true); // Treat as unauthorized
+                 }
                }
             }
           } catch (err) {

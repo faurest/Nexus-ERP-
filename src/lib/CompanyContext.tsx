@@ -88,7 +88,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
       // Automatically create a personnel record so the user can access the app
       const { setDoc } = await import('firebase/firestore');
-      await setDoc(doc(db, 'personnel', cleanEmail), {
+      await setDoc(doc(db, 'personnel', `${companyId}_${cleanEmail}`), {
         companyId: companyId,
         uid: session.id || (session as any).uid,
         email: cleanEmail,
