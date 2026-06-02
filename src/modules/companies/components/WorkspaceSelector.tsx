@@ -247,20 +247,20 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
                 <div className="relative flex justify-center text-[9px] uppercase font-black tracking-widest"><span className="bg-slate-900 px-4 text-slate-400 italic">Actions d'Infrastructure</span></div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <button
                   onClick={() => setMode('join')}
-                  className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-indigo-600 text-white font-black text-[11px] uppercase tracking-widest hover:bg-indigo-500 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+                  className="w-full flex items-center justify-center gap-3 p-5 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-500 text-white font-black text-[11px] uppercase tracking-widest hover:from-indigo-500 hover:to-indigo-400 shadow-xl shadow-indigo-600/20 transition-all active:scale-95 border border-indigo-400/20 group"
                 >
-                  <Users size={16} />
-                  Rejoindre avec un Code
+                  <Users size={18} className="group-hover:scale-110 transition-transform" />
+                  Rejoindre un Espace 
                 </button>
                 <button
                   onClick={() => setMode('create')}
-                  className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/10 text-slate-300 font-black text-[11px] uppercase tracking-widest hover:border-blue-500/50 hover:text-blue-400 hover:bg-blue-500/10 transition-all active:scale-95"
+                  className="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-transparent border border-white/10 text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:border-blue-500/30 hover:text-blue-400 hover:bg-blue-500/5 transition-all active:scale-95 group"
                 >
-                  <Plus size={16} />
-                  Initialiser un Nouvel Espace
+                  <Plus size={14} className="group-hover:rotate-90 transition-transform" />
+                  Créer mon propre espace
                 </button>
               </div>
             </div>
@@ -287,8 +287,8 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
             </div>
             <button
               type="submit"
-              disabled={submitting}
-              className="w-full bg-blue-600 text-white p-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50"
+              disabled={submitting || newCompanyName.length < 3}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-xl font-black text-xs uppercase tracking-widest hover:from-blue-500 hover:to-indigo-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 active:scale-95 disabled:opacity-50 disabled:grayscale"
             >
               {submitting ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -321,17 +321,17 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
                 type="text"
                 required
                 maxLength={6}
-                placeholder="ABCDEF"
-                className="w-full p-4 border border-white/10 bg-black/20 text-white rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 transition-all text-center text-2xl font-black tracking-[0.5em] uppercase outline-none placeholder:text-slate-600"
+                placeholder="••••••"
+                className="w-full p-6 border border-white/10 bg-black/40 text-white rounded-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 transition-all text-center text-4xl font-mono font-black tracking-[0.5em] uppercase outline-none placeholder:text-slate-700 shadow-inner"
                 value={joinCodeInput}
-                onChange={e => setJoinCodeInput(e.target.value.toUpperCase())}
+                onChange={e => setJoinCodeInput(e.target.value.toUpperCase().replace(/[^ABCDEFGHJKLMNPQRSTUVWXYZ23456789]/g, ''))}
               />
-              <p className="text-[10px] font-medium text-slate-400 mt-2 text-center">Demandez ce code à l'administrateur de l'espace.</p>
+              <p className="text-[10px] font-medium text-slate-400 mt-3 text-center">Les lettres O, I et chiffres 0, 1 sont exclus par sécurité.</p>
             </div>
             <button
               type="submit"
               disabled={submitting || joinCodeInput.length !== 6}
-              className="w-full bg-indigo-600 text-white p-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-indigo-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 active:scale-95 disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-4 rounded-xl font-black text-xs uppercase tracking-widest hover:from-indigo-500 hover:to-blue-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 active:scale-95 disabled:opacity-50 disabled:grayscale"
             >
               {submitting ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -610,11 +610,16 @@ export default function PersonnelModule({ user }: { user?: any }) {
             <div className="space-y-4">
               <p className="text-xs text-slate-300 leading-relaxed font-medium">Partagez ce code avec vos collaborateurs pour qu'ils rejoignent automatiquement votre espace Nexus :</p>
               
-              <div className="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center gap-2">
-                <span className="text-3xl font-black tracking-[0.3em] font-mono text-white">
+              <div className="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center gap-2 relative group cursor-pointer" onClick={() => {
+                if (currentCompany?.joinCode) {
+                  navigator.clipboard.writeText(currentCompany.joinCode);
+                  alert('Code copié !');
+                }
+              }}>
+                <span className="text-3xl font-black tracking-[0.3em] font-mono text-white group-hover:text-indigo-300 transition-colors">
                   {currentCompany?.joinCode || '------'}
                 </span>
-                <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">Code Unique Sécurisé</span>
+                <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest group-hover:text-white transition-colors">Cliquez pour copier</span>
               </div>
               
               <button 
