@@ -316,21 +316,21 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
             onSubmit={handleJoin}
           >
             <div>
-              <label className="block text-xs font-black text-slate-300 uppercase tracking-widest mb-2">Code d'accès (6 caractères)</label>
+              <label className="block text-xs font-black text-slate-300 uppercase tracking-widest mb-2">Code d'accès Entreprise</label>
               <input
                 type="text"
                 required
-                maxLength={6}
-                placeholder="••••••"
-                className="w-full p-6 border border-white/10 bg-black/40 text-white rounded-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 transition-all text-center text-4xl font-mono font-black tracking-[0.5em] uppercase outline-none placeholder:text-slate-700 shadow-inner"
+                maxLength={12}
+                placeholder="EX: JET7-2026"
+                className="w-full p-6 border border-white/10 bg-black/40 text-white rounded-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 transition-all text-center text-4xl font-mono font-black tracking-widest uppercase outline-none placeholder:text-slate-700 shadow-inner"
                 value={joinCodeInput}
-                onChange={e => setJoinCodeInput(e.target.value.toUpperCase().replace(/[^ABCDEFGHJKLMNPQRSTUVWXYZ23456789]/g, ''))}
+                onChange={e => setJoinCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''))}
               />
-              <p className="text-[10px] font-medium text-slate-400 mt-3 text-center">Les lettres O, I et chiffres 0, 1 sont exclus par sécurité.</p>
+              <p className="text-[10px] font-medium text-slate-400 mt-3 text-center">Saisissez le code fourni par l'administrateur de l'espace.</p>
             </div>
             <button
               type="submit"
-              disabled={submitting || joinCodeInput.length !== 6}
+              disabled={submitting || joinCodeInput.length < 5}
               className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-4 rounded-xl font-black text-xs uppercase tracking-widest hover:from-indigo-500 hover:to-blue-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 active:scale-95 disabled:opacity-50 disabled:grayscale"
             >
               {submitting ? (
