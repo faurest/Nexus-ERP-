@@ -34,6 +34,7 @@ import {
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
+const secondaryApp = initializeApp(firebaseConfig, "Secondary");
 
 // Improved Firestore initialization with resilience settings
 export const db = initializeFirestore(app, {
@@ -43,6 +44,18 @@ export const db = initializeFirestore(app, {
 }, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth(app);
+export const secondaryAuth = getAuth(secondaryApp);
+
+export const registerUserWithoutLogin = async (email: string, pass: string) => {
+  try {
+    const result = await createUserWithEmailAndPassword(secondaryAuth, email, pass);
+    await signOut(secondaryAuth);
+    return { user: result.user };
+  } catch (error) {
+    console.error("Secondary auth creation error:", error);
+    throw error;
+  }
+};
 
 export enum OperationType {
   CREATE = 'create',

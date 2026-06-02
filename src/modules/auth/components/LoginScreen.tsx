@@ -14,8 +14,6 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
   const [password, setPassword] = useState('');
   const [loginMode, setLoginMode] = useState<'google' | 'email'>('email');
 
-  const [isRegistering, setIsRegistering] = useState(false);
-
   useEffect(() => {
     import('../../../lib/firebase').then(({ testFirestoreConnection }) => {
       testFirestoreConnection().then((ok: boolean) => setConnStatus(ok ? 'ok' : 'fail'));
@@ -40,15 +38,10 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
     setAuthError('');
     setLoading(true);
     try {
-      let user;
-      if (isRegistering) {
-          user = await authService.registerWithEmail({ email, password });
-      } else {
-          user = await authService.loginWithEmail({ email, password });
-      }
+      const user = await authService.loginWithEmail({ email, password });
       
       if (!user) {
-        setAuthError(isRegistering ? 'Échec de la création du compte. Vérifiez les informations.' : 'Identifiants incorrects ou échec de connexion.');
+        setAuthError('Identifiants incorrects ou échec de connexion.');
       } else {
         // Trigger a fake Firebase user event or reload to pick up the local session
         window.location.reload(); 
@@ -57,10 +50,8 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
       console.error(err);
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
         setAuthError('Identifiants incorrects ou compte inexistant.');
-      } else if (err.code === 'auth/email-already-in-use') {
-        setAuthError('Cette adresse email est déjà utilisée.');
-      } else if (err.code === 'auth/weak-password') {
-        setAuthError('Le mot de passe doit contenir au moins 6 caractères.');
+      } else if (err.code === 'auth/wrong-password') {
+        setAuthError('Clé d\'accès incorrecte.');
       } else {
         setAuthError('Erreur de connexion : ' + (err.message || 'Serveur indisponible.'));
       }
@@ -126,33 +117,24 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
                 </div>
               </div>
               
-              {!isRegistering && (
-                <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg flex flex-col gap-1 text-xs text-blue-800">
-                  <span className="font-bold">Compte de test disponible :</span>
-                  <div className="flex justify-between">
-                    <span>Email: <span className="font-mono bg-blue-100 px-1 rounded">demonstration@nexus.com</span></span>
-                    <span>Mot de passe: <span className="font-mono bg-blue-100 px-1 rounded">nexus2026</span></span>
-                  </div>
+              <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg flex flex-col gap-1 text-xs text-blue-800">
+                <span className="font-bold mb-1">Authentification Standard</span>
+                <span className="opacity-90 leading-relaxed">
+                  Connectez-vous à l'aide de l'identifiant et la clé d'accès fournis par votre département RH.
+                </span>
+                <div className="flex justify-between mt-2 pt-2 border-t border-blue-200/50">
+                  <span>Demo: <span className="font-mono bg-blue-100 px-1 rounded">demonstration@nexus.com</span></span>
+                  <span>Clé: <span className="font-mono bg-blue-100 px-1 rounded">nexus2026</span></span>
                 </div>
-              )}
+              </div>
 
               <button 
                 type="submit"
                 disabled={loading}
                 className="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center justify-center gap-4 shadow-lg shadow-blue-600/10 disabled:opacity-50 mt-2"
               >
-                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : (isRegistering ? 'Créer le compte' : 'Connexion Serveur')}
+                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Connexion Serveur'}
               </button>
-              
-              <div className="text-center mt-2">
-                <button 
-                  type="button" 
-                  onClick={() => setIsRegistering(!isRegistering)}
-                  className="text-[10px] text-slate-500 hover:text-blue-600 uppercase tracking-widest font-bold"
-                >
-                  {isRegistering ? 'Déjà un compte ? Se connecter' : 'Créer un nouveau compte local'}
-                </button>
-              </div>
             </form>
           ) : (
           <button 

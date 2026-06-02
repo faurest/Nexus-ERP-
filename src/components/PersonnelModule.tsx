@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, setDoc, updateDoc, doc, arrayUnion, deleteDoc, getDocs, addDoc, serverTimestamp } from '../lib/firebase';
+import { collection, onSnapshot, query, where, setDoc, updateDoc, doc, arrayUnion, deleteDoc, getDocs, addDoc, serverTimestamp, registerUserWithoutLogin } from '../lib/firebase';
 import { db } from '../lib/firebase';
-import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save, Ban, Clock, CalendarRange, CheckCircle2, XCircle, Timer, FileText } from 'lucide-react';
+import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save, Ban, Clock, CalendarRange, CheckCircle2, XCircle, Timer, FileText, Key } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { cn } from '../lib/utils';
@@ -85,7 +85,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', assignedTo: '', startDate: '', endDate: '' });
-  const [newStaff, setNewStaff] = useState({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général' });
+  const [newStaff, setNewStaff] = useState({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général', accessKey: '' });
   const [creationMessage, setCreationMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   
@@ -280,6 +280,28 @@ export default function PersonnelModule({ user }: { user?: any }) {
         }, 1500);
       } else {
         const cleanEmail = newStaff.email.trim().toLowerCase().replace(/\s+/g, '');
+        
+        // 1. Create the Auth account
+        if (!newStaff.accessKey || newStaff.accessKey.length < 6) {
+          setCreationMessage('Erreur : La clé d\'accès initiale doit contenir au moins 6 caractères.');
+          setSubmitting(false);
+          return;
+        }
+        
+        try {
+          await registerUserWithoutLogin(cleanEmail, newStaff.accessKey);
+        } catch (authErr: any) {
+          if (authErr.code === 'auth/email-already-in-use') {
+            console.log("Compte Firebase Auth existant. Le compte de connexion est déjà actif.");
+          } else {
+            console.error("Auth creation failed:", authErr);
+            setCreationMessage(`Erreur de création de compte : ${authErr.message || "Impossible de créer le compte de connexion."}`);
+            setSubmitting(false);
+            return;
+          }
+        }
+
+        // 2. Create the personnel record
         await setDoc(doc(db, 'personnel', `${currentCompany.id}_${cleanEmail}`), {
           firstName: newStaff.firstName,
           lastName: newStaff.lastName,
@@ -312,8 +334,8 @@ export default function PersonnelModule({ user }: { user?: any }) {
         await setDoc(doc(db, 'companies', currentCompany.id), {
           memberEmails: arrayUnion(cleanEmail)
         }, { merge: true });
-        setCreationMessage(`Employé ajouté avec succès ! Il peut désormais se connecter avec Google via l'adresse : ${cleanEmail}`);
-        setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général' });
+        setCreationMessage(`Employé ajouté avec succès ! Il peut se connecter avec sa Clé d'Accès Initiale.`);
+        setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général', accessKey: '' });
       }
     } catch (err: any) {
       console.error(err);
@@ -566,7 +588,8 @@ export default function PersonnelModule({ user }: { user?: any }) {
                         notes: staff.notes || '',
                         email: staff.email, 
                         role: staff.role, 
-                        department: staff.department
+                        department: staff.department,
+                        accessKey: ''
                       });
                       setIsAdding(true);
                     }}
@@ -1325,6 +1348,23 @@ export default function PersonnelModule({ user }: { user?: any }) {
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" 
                   />
                 </div>
+                {!editingStaff && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 flex items-center gap-1">
+                      <Key size={12} className="text-blue-500" />
+                      Clé d'Accès Initiale
+                    </label>
+                    <input 
+                      type="password"
+                      value={newStaff.accessKey} 
+                      onChange={e => setNewStaff({...newStaff, accessKey: e.target.value})}
+                      placeholder="Mot de passe initial (min. 6 car.)"
+                      required
+                      minLength={6}
+                      className="w-full bg-blue-50/50 border border-blue-200 rounded-lg p-3 text-sm focus:border-blue-500 outline-none placeholder:text-blue-300" 
+                    />
+                  </div>
+                )}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Poste / Rôle</label>
                   <select 
@@ -1361,7 +1401,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                 onClick={() => { 
                   setIsAdding(false); 
                   setEditingStaff(null);
-                  setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général' });
+                  setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général', accessKey: '' });
                   setCreationMessage(''); 
                 }} 
                 className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"
