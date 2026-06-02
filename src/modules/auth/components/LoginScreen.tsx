@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, AlertCircle, Key, User, ArrowLeft } from 'lucide-react';
 import { motion } from 'motion/react';
-import { loginWithGoogle } from '../../../lib/firebase';
+import { loginWithGoogle, registerUserWithoutLogin } from '../../../lib/firebase';
 import { NexusLogo } from '../../../components/NexusLogo';
 import { authService } from '../../../core/auth/AuthService';
 
@@ -49,6 +49,19 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
+        if (email.trim().toLowerCase() === 'demonstration@nexus.com') {
+          // Create the demo user on the fly if it doesn't exist
+          try {
+            await registerUserWithoutLogin(email, password);
+            const retryUser = await authService.loginWithEmail({ email, password });
+            if (retryUser) {
+              window.location.reload();
+              return;
+            }
+          } catch (createErr) {
+            console.error("Failed to auto-create demo user", createErr);
+          }
+        }
         setAuthError('Identifiants incorrects ou compte inexistant.');
       } else if (err.code === 'auth/wrong-password') {
         setAuthError('Clé d\'accès incorrecte.');

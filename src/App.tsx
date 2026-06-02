@@ -271,6 +271,7 @@ export default function App() {
                   email: user.email || memberData.email,
                   nexusId: memberData.id || memberDoc.id
                 } : null);
+                setIsBlocked(false);
               }
             } else {
                // Match as client
@@ -308,6 +309,7 @@ export default function App() {
                     email: user.email || clientData.email,
                     nexusId: clientData.id || clientSnap.docs[0].id
                   } : null);
+                  setIsBlocked(false);
                } else {
                  if ((currentCompany.memberEmails || []).includes(cleanEmail)) {
                    try {
@@ -330,6 +332,7 @@ export default function App() {
                        email: user.email || cleanEmail,
                        nexusId: newId
                      } : null);
+                     setIsBlocked(false);
                    } catch (err) {
                      console.error("Auto personnel recovery failed:", err);
                      setIsBlocked(true);
