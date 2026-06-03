@@ -114,11 +114,11 @@ export default function CommunicationModule() {
   useEffect(() => {
     if (!currentCompany || !auth.currentUser) return;
 
-    const myUid = auth.currentUser.uid;
+    const myEmail = auth.currentUser.email?.toLowerCase().trim() || '';
     const qUnread = query(
       collection(db, 'messages'),
       where('companyId', '==', currentCompany.id),
-      where('recipientId', '==', myUid)
+      where('recipientEmail', '==', myEmail)
     );
 
     const unsub = onSnapshot(qUnread, (snap) => {
@@ -126,7 +126,8 @@ export default function CommunicationModule() {
       snap.docs.forEach(doc => {
         const data = doc.data();
         if (data.isRead === false) {
-          const senderId = data.senderId;
+          // Use email to match with contact.email
+          const senderId = data.senderEmail || data.senderId;
           counts[senderId] = (counts[senderId] || 0) + 1;
         }
       });
@@ -180,9 +181,9 @@ export default function CommunicationModule() {
   useEffect(() => {
     if (!currentCompany || !selectedContact || activeTab !== 'direct' || !auth.currentUser) return;
 
-    const myUid = auth.currentUser.uid;
-    const contactUid = selectedContact.uid || selectedContact.id; // Use UID if available, fallback to doc ID
-    const conversationId = [myUid, contactUid].sort().join('_');
+    const myEmail = auth.currentUser.email?.toLowerCase().trim() || '';
+    const contactEmail = selectedContact.email?.toLowerCase().trim() || '';
+    const conversationId = [myEmail, contactEmail].sort().join('_');
 
     // Direct messages are stored in a simple collection, we filter for conversationId
     const qMessages = query(
@@ -198,10 +199,9 @@ export default function CommunicationModule() {
 
       // Mark unread messages as read
       if (auth.currentUser) {
-        const myUid = auth.currentUser.uid;
         snap.docs.forEach(async (d) => {
           const data = d.data();
-          if (data.recipientId === myUid && !data.isRead) {
+          if (data.recipientEmail === myEmail && !data.isRead) {
             try {
               await updateDoc(doc(db, 'messages', d.id), { isRead: true });
             } catch (err) {
@@ -249,14 +249,17 @@ export default function CommunicationModule() {
     setIsTyping(false);
     try {
       if (activeTab === 'direct' && selectedContact) {
-        const recipientUid = selectedContact.uid || selectedContact.id;
-        const conversationId = [auth.currentUser.uid, recipientUid].sort().join('_');
+        const myEmail = auth.currentUser.email?.toLowerCase().trim() || '';
+        const contactEmail = selectedContact.email?.toLowerCase().trim() || '';
+        const conversationId = [myEmail, contactEmail].sort().join('_');
         
         await addDoc(collection(db, 'messages'), {
           companyId: currentCompany.id,
           conversationId,
           senderId: auth.currentUser.uid,
-          recipientId: recipientUid,
+          senderEmail: myEmail,
+          recipientId: selectedContact.uid || selectedContact.id,
+          recipientEmail: contactEmail,
           senderName: auth.currentUser.displayName || 'Utilisateur',
           content: newMessage.trim(),
           timestamp: serverTimestamp(),
@@ -380,9 +383,9 @@ export default function CommunicationModule() {
                   <p className="text-[11px] font-black text-slate-900 line-clamp-1">{contact.name}</p>
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{contact.role}</p>
                 </div>
-                {unreadCounts[contact.id] > 0 && (
+                {((contact.email && unreadCounts[contact.email.toLowerCase().trim()]) || unreadCounts[contact.id]) > 0 && (
                   <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-lg animate-bounce">
-                    {unreadCounts[contact.id]}
+                    {(contact.email && unreadCounts[contact.email.toLowerCase().trim()]) || unreadCounts[contact.id]}
                   </div>
                 )}
                 {selectedContact?.id === contact.id && (
@@ -495,7 +498,7 @@ export default function CommunicationModule() {
                   </div>
                   
                   {msgs.map((msg, i) => {
-                    const isMe = msg.senderId === auth.currentUser?.uid;
+                    const isMe = msg.senderId === auth.currentUser?.uid || ('senderEmail' in msg && msg.senderEmail === auth.currentUser?.email?.toLowerCase().trim());
                     return (
                       <div key={msg.id} className={cn(
                         "flex flex-col max-w-[80%] gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300",
