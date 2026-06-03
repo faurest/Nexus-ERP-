@@ -502,17 +502,39 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     try {
       setSubmitting(true);
       
-      // Calculate total with exactly the delivery fees for each unique vendor
+      // Calculate total with delivery fees and multi-vendor grouped discount
       const uniqueCompanyIds = Array.from(new Set(cart.map(i => i.companyId)));
-      const totalDeliveryFees = uniqueCompanyIds.reduce((acc, cid) => {
+      const vendorFees = uniqueCompanyIds.map(cid => {
         const company = companies.find(c => c.id === cid);
-        return acc + (company?.deliveryFees?.[selectedLocation] || 0);
-      }, 0);
+        return {
+          cid,
+          fee: company?.deliveryFees?.[selectedLocation] || 0
+        };
+      });
+      
+      // Sort fees descending: first vendor (highest fee) pays full, subsequent vendors get 50% delivery discount (grouped route)
+      vendorFees.sort((a, b) => b.fee - a.fee);
+      
+      let totalDeliveryFees = 0;
+      let deliveryDiscount = 0;
+      
+      vendorFees.forEach((vendor, index) => {
+        if (index === 0) {
+          totalDeliveryFees += vendor.fee;
+        } else {
+          totalDeliveryFees += (vendor.fee * 0.5);
+          deliveryDiscount += (vendor.fee * 0.5);
+        }
+      });
+      
       const grandTotal = cartTotal + totalDeliveryFees;
 
       // 1. Create a Global Order first
       const globalOrderRef = await addDoc(collection(db, "global_orders"), {
         total: grandTotal,
+        cartTotal,
+        totalDeliveryFees,
+        deliveryDiscount,
         status: "PENDING",
         paymentMethod: selectedPaymentMethod === 'CASH' ? 'CASH' : (paymentOperator === 'MTN' ? 'MTN MoMo' : 'Orange Money'),
         paymentStatus: selectedPaymentMethod === 'CASH' ? "UNPAID" : "PENDING_MOMO",
@@ -802,8 +824,8 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           <div className={cn(
              "transition-all duration-500",
              viewMode === 'grid' 
-               ? "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6" 
-               : "flex flex-col gap-6"
+               ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4" 
+               : "flex flex-col gap-4"
           )}>
             <AnimatePresence mode="popLayout">
               
@@ -1250,43 +1272,69 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                 {nairaEnabled && <div className="text-[10px] opacity-70 italic">({cartTotal.toLocaleString()} FCFA)</div>}
                               </div>
                             </div>
-                            <div className="space-y-2">
-                               {Array.from(new Set(cart.map(i => i.companyId))).map(cid => {
-                                 const company = companies.find(c => c.id === cid);
-                                 const fee = company?.deliveryFees?.[selectedLocation] || 0;
-                                 return (
-                                   <div key={cid} className="flex justify-between items-center text-[10px] font-bold text-blue-300">
-                                     <span className="italic">Livraison {company?.name} :</span>
-                                     <span>{fee > 0 ? (nairaEnabled ? `+ ₦ ${Math.round(fee * GLOBAL_NAIRA_RATE).toLocaleString()}` : `+ ${fee.toLocaleString()} FCFA`) : 'Inclus'}</span>
-                                   </div>
-                                 );
-                               })}
-                            </div>
-                            <div className="pt-4 border-t border-white/10 mt-2 flex justify-between items-center relative z-10">
-                              <span className="text-xs font-black uppercase">Total Final</span>
-                              <div className="text-right">
-                                <span className="text-2xl font-black text-emerald-400 tracking-tighter">
-                                  {nairaEnabled 
-                                    ? `₦ ${Math.round((cartTotal + Array.from(new Set(cart.map(i => i.companyId))).reduce((acc, cid) => {
-                                       const company = companies.find(c => c.id === cid);
-                                       return acc + (company?.deliveryFees?.[selectedLocation] || 0);
-                                    }, 0)) * GLOBAL_NAIRA_RATE).toLocaleString()}`
-                                    : `${(cartTotal + Array.from(new Set(cart.map(i => i.companyId))).reduce((acc, cid) => {
-                                       const company = companies.find(c => c.id === cid);
-                                       return acc + (company?.deliveryFees?.[selectedLocation] || 0);
-                                    }, 0)).toLocaleString()} FCFA`
-                                  }
-                                </span>
-                                {nairaEnabled && (
-                                  <div className="text-[10px] text-emerald-400/70 italic">
-                                    {(cartTotal + Array.from(new Set(cart.map(i => i.companyId))).reduce((acc, cid) => {
-                                       const company = companies.find(c => c.id === cid);
-                                       return acc + (company?.deliveryFees?.[selectedLocation] || 0);
-                                    }, 0)).toLocaleString()} FCFA
+                            {(() => {
+                              const uniqueCompanyIds = Array.from(new Set(cart.map(i => i.companyId)));
+                              const vendorFees = uniqueCompanyIds.map(cid => {
+                                const company = companies.find(c => c.id === cid);
+                                return {
+                                  cid,
+                                  name: company?.name || "Boutique",
+                                  fee: company?.deliveryFees?.[selectedLocation] || 0
+                                };
+                              });
+                              
+                              let totalDeliveryFeesDiscounted = 0;
+                              let deliveryDiscount = 0;
+                              
+                              // Sort by fee descending
+                              const sortedFees = [...vendorFees].sort((a, b) => b.fee - a.fee);
+                              
+                              sortedFees.forEach((v, index) => {
+                                if (index === 0) {
+                                  totalDeliveryFeesDiscounted += v.fee;
+                                } else {
+                                  totalDeliveryFeesDiscounted += (v.fee * 0.5);
+                                  deliveryDiscount += (v.fee * 0.5);
+                                }
+                              });
+                              
+                              const finalTotal = cartTotal + totalDeliveryFeesDiscounted;
+                              
+                              return (
+                                <>
+                                  <div className="space-y-2">
+                                    {vendorFees.map(({ cid, name, fee }) => (
+                                      <div key={cid} className="flex justify-between items-center text-[10px] font-bold text-blue-300">
+                                        <span className="italic">Livraison {name} :</span>
+                                        <span>{fee > 0 ? (nairaEnabled ? `+ ₦ ${Math.round(fee * GLOBAL_NAIRA_RATE).toLocaleString()}` : `+ ${fee.toLocaleString()} FCFA`) : 'Inclus'}</span>
+                                      </div>
+                                    ))}
+                                    {deliveryDiscount > 0 && (
+                                       <div className="flex justify-between items-center text-[10px] font-black text-emerald-400 p-2 mt-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                                          <span className="uppercase tracking-widest">Remise Achats Groupés :</span>
+                                          <span>- {nairaEnabled ? `₦ ${Math.round(deliveryDiscount * GLOBAL_NAIRA_RATE).toLocaleString()}` : `${deliveryDiscount.toLocaleString()} FCFA`}</span>
+                                       </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            </div>
+                                  <div className="pt-4 border-t border-white/10 mt-2 flex justify-between items-center relative z-10">
+                                    <span className="text-xs font-black uppercase">Total Final</span>
+                                    <div className="text-right">
+                                      <span className="text-2xl font-black text-emerald-400 tracking-tighter">
+                                        {nairaEnabled 
+                                          ? `₦ ${Math.round(finalTotal * GLOBAL_NAIRA_RATE).toLocaleString()}`
+                                          : `${finalTotal.toLocaleString()} FCFA`
+                                        }
+                                      </span>
+                                      {nairaEnabled && (
+                                        <div className="text-[10px] text-emerald-400/70 italic">
+                                          {finalTotal.toLocaleString()} FCFA
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
                         )}
 
@@ -1457,6 +1505,17 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                     </button>
                   </div>
 
+                  {Array.from(new Set(cart.map(i => i.companyId))).length > 1 && (
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                        <TrendingUp size={14} />
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-black text-blue-900 uppercase tracking-widest leading-none mb-1">Achats Groupés Débloqués</p>
+                        <p className="text-[8px] font-medium text-blue-600 italic">Jusqu'à -50% sur les frais de livraison des boutiques supplémentaires !</p>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
                       Total Estimate
