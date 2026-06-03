@@ -50,7 +50,7 @@ interface Collaboration {
 
 export default function CollaborationModule() {
   const { currentCompany } = useCompany();
-  const [activeView, setActiveView] = useState<'transfers' | 'chat'>('transfers');
+  const [activeView, setActiveView] = useState<'transfers' | 'chat'>('chat');
   const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [formData, setFormData] = useState({

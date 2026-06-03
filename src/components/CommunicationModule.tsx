@@ -117,18 +117,18 @@ export default function CommunicationModule() {
     const myUid = auth.currentUser.uid;
     const qUnread = query(
       collection(db, 'messages'),
-      and(
-        where('companyId', '==', currentCompany.id),
-        where('recipientId', '==', myUid),
-        where('isRead', '==', false)
-      )
+      where('companyId', '==', currentCompany.id),
+      where('recipientId', '==', myUid)
     );
 
     const unsub = onSnapshot(qUnread, (snap) => {
       const counts: { [key: string]: number } = {};
       snap.docs.forEach(doc => {
-        const senderId = doc.data().senderId;
-        counts[senderId] = (counts[senderId] || 0) + 1;
+        const data = doc.data();
+        if (data.isRead === false) {
+          const senderId = data.senderId;
+          counts[senderId] = (counts[senderId] || 0) + 1;
+        }
       });
       setUnreadCounts(counts);
     });
@@ -182,22 +182,18 @@ export default function CommunicationModule() {
 
     const myUid = auth.currentUser.uid;
     const contactUid = selectedContact.uid || selectedContact.id; // Use UID if available, fallback to doc ID
+    const conversationId = [myUid, contactUid].sort().join('_');
 
-    // Direct messages are stored in a simple collection, we filter for both directions
+    // Direct messages are stored in a simple collection, we filter for conversationId
     const qMessages = query(
       collection(db, 'messages'),
-      and(
-        where('companyId', '==', currentCompany.id),
-        or(
-          and(where('senderId', '==', myUid), where('recipientId', '==', contactUid)),
-          and(where('senderId', '==', contactUid), where('recipientId', '==', myUid))
-        )
-      ),
-      orderBy('timestamp', 'asc')
+      where('companyId', '==', currentCompany.id),
+      where('conversationId', '==', conversationId)
     );
 
     const unsub = onSnapshot(qMessages, (snap) => {
       const fetchedMessages = snap.docs.map(d => ({ id: d.id, ...d.data() } as DirectMessage));
+      fetchedMessages.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
       setMessages(fetchedMessages);
 
       // Mark unread messages as read
@@ -225,15 +221,14 @@ export default function CommunicationModule() {
 
     const qProjectMessages = query(
       collection(db, 'project_discussions'),
-      and(
-        where('companyId', '==', currentCompany.id),
-        where('projectId', '==', selectedProject.id)
-      ),
-      orderBy('timestamp', 'asc')
+      where('companyId', '==', currentCompany.id),
+      where('projectId', '==', selectedProject.id)
     );
 
     const unsub = onSnapshot(qProjectMessages, (snap) => {
-      setProjectMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as ProjectDiscussion)));
+      const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as ProjectDiscussion));
+      msgs.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+      setProjectMessages(msgs);
     }, err => handleFirestoreError(err, OperationType.LIST, 'project_discussions'));
 
     return () => unsub();
@@ -255,8 +250,11 @@ export default function CommunicationModule() {
     try {
       if (activeTab === 'direct' && selectedContact) {
         const recipientUid = selectedContact.uid || selectedContact.id;
+        const conversationId = [auth.currentUser.uid, recipientUid].sort().join('_');
+        
         await addDoc(collection(db, 'messages'), {
           companyId: currentCompany.id,
+          conversationId,
           senderId: auth.currentUser.uid,
           recipientId: recipientUid,
           senderName: auth.currentUser.displayName || 'Utilisateur',
