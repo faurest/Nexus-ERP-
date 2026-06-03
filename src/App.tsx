@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion, setDoc, serverTimestamp, limit } from './lib/firebase';
+import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion, setDoc, serverTimestamp, limit, onSnapshot } from './lib/firebase';
 type User = any;
 import { 
   LayoutDashboard, 
@@ -229,69 +229,73 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (user && currentCompany && !user.role) {
-      if (currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid || user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') {
+    let unsubscribeRole: any = null;
+    let unsubscribeClientRole: any = null;
+
+    if (user?.uid && currentCompany?.id) {
+      const cleanEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '');
+      const isMaster = currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid || user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com';
+
+      if (isMaster) {
         setUser(prev => prev ? { ...prev, role: 'owner' } : null);
         setIsBlocked(false);
-      } else {
+      } else if (cleanEmail) {
         // Try to find the user in the personnel collection for this company
-        const findRole = async () => {
-          try {
-            const cleanEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '');
-            if (!cleanEmail) {
+        const q = query(
+          collection(db, 'personnel'), 
+          where('companyId', '==', currentCompany.id),
+          where('email', '==', cleanEmail),
+          limit(1)
+        );
+
+        unsubscribeRole = onSnapshot(q, async (snap) => {
+          if (!snap.empty) {
+            const memberDoc = snap.docs[0];
+            const memberData = memberDoc.data();
+            if (memberData.status === 'blocked') {
               setIsBlocked(true);
-              return;
-            }
-            const q = query(
-              collection(db, 'personnel'), 
-              where('companyId', '==', currentCompany.id),
-              where('email', '==', cleanEmail),
-              limit(1)
-            );
-            const snap = await getDocs(q);
-            if (!snap.empty) {
-              const memberDoc = snap.docs[0];
-              const memberData = memberDoc.data();
-              if (memberData.status === 'blocked') {
-                setIsBlocked(true);
-              } else {
-                // Sync the UID and status if not present
-                if (memberData.uid !== user.uid || memberData.status !== 'active') {
+            } else {
+              // Sync the UID and status if not present
+              if (memberData.uid !== user.uid || memberData.status !== 'active') {
+                try {
                   await updateDoc(memberDoc.ref, { 
                     uid: user.uid,
                     status: 'active',
                     updatedAt: serverTimestamp()
                   });
-                }
-
-                setUser(prev => prev ? { 
-                  ...prev, 
-                  role: memberData.role || 'Personnel',
-                  customPermissions: memberData.customPermissions || [],
-                  email: user.email || memberData.email,
-                  nexusId: memberData.id || memberDoc.id
-                } : null);
-                setIsBlocked(false);
+                } catch (e) { /* ignore */ }
               }
-            } else {
-               // Match as client
-               const clientQ = query(
-                 collection(db, 'clients'),
-                 where('companyId', '==', currentCompany.id),
-                 where('email', '==', cleanEmail),
-                 limit(1)
-               );
-               const clientSnap = await getDocs(clientQ);
+
+              setUser(prev => prev ? { 
+                ...prev, 
+                role: memberData.role || 'Personnel',
+                customPermissions: memberData.customPermissions || [],
+                email: user.email || memberData.email,
+                nexusId: memberData.id || memberDoc.id
+              } : null);
+              setIsBlocked(false);
+            }
+          } else {
+             // Match as client
+             const clientQ = query(
+               collection(db, 'clients'),
+               where('companyId', '==', currentCompany.id),
+               where('email', '==', cleanEmail),
+               limit(1)
+             );
+             
+             unsubscribeClientRole = onSnapshot(clientQ, async (clientSnap) => {
                if (!clientSnap.empty) {
-                  // Important: Sync the UID and status if not present to ensure security rules work better
                   const clientRef = clientSnap.docs[0].ref;
                   const clientData = clientSnap.docs[0].data();
                   if (clientData.uid !== user.uid || clientData.status !== 'active') {
-                    await updateDoc(clientRef, { 
-                      uid: user.uid,
-                      status: 'active',
-                      updatedAt: serverTimestamp()
-                    });
+                    try {
+                      await updateDoc(clientRef, { 
+                        uid: user.uid,
+                        status: 'active',
+                        updatedAt: serverTimestamp()
+                      });
+                    } catch (e) { /* ignore */ }
                   }
                   
                   // Double check membership in the company document
@@ -325,14 +329,7 @@ export default function App() {
                        createdAt: serverTimestamp(),
                        updatedAt: serverTimestamp()
                      });
-                     setUser(prev => prev ? { 
-                       ...prev, 
-                       role: 'Personnel',
-                       customPermissions: [],
-                       email: user.email || cleanEmail,
-                       nexusId: newId
-                     } : null);
-                     setIsBlocked(false);
+                     // The personnel snapshot will trigger and update the role
                    } catch (err) {
                      console.error("Auto personnel recovery failed:", err);
                      setIsBlocked(true);
@@ -341,15 +338,21 @@ export default function App() {
                    setIsBlocked(true); // Treat as unauthorized
                  }
                }
-            }
-          } catch (err) {
-            console.error("Role lookup failed:", err);
+             }, (err) => {
+               console.error("Client role sub error:", err);
+             });
           }
-        };
-        findRole();
+        }, (err) => {
+          console.error("Personnel role sub error:", err);
+        });
       }
     }
-  }, [user, currentCompany]);
+
+    return () => {
+      if (unsubscribeRole) unsubscribeRole();
+      if (unsubscribeClientRole) unsubscribeClientRole();
+    };
+  }, [user?.uid, currentCompany?.id, currentCompany?.ownerEmail, currentCompany?.ownerId, currentCompany?.memberEmails]);
 
   useEffect(() => {
     // Handle master switch from AdminModule
