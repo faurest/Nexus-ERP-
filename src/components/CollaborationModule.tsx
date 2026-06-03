@@ -291,7 +291,7 @@ export default function CollaborationModule() {
                       </div>
                     </div>
                     <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
-                      {item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'En cours...'}
+                      {(item.createdAt && item.createdAt.seconds) ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'En cours...'}
                     </span>
                   </div>
 

@@ -68,9 +68,18 @@ interface Contact {
   role: string;
 }
 
-const formatDate = (timestamp: any) => {
-  if (!timestamp) return '';
+const parseTimestamp = (timestamp: any): Date | null => {
+  if (!timestamp) return new Date(); // Fallback for pending serverTimestamp
+  if (timestamp.toDate) return timestamp.toDate();
+  if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
   const date = new Date(timestamp);
+  return isNaN(date.getTime()) ? new Date() : date;
+};
+
+const formatDate = (timestamp: any) => {
+  const date = parseTimestamp(timestamp);
+  if (!date) return '';
+  
   const now = new Date();
   
   if (date.toDateString() === now.toDateString()) return "Aujourd'hui";
@@ -194,7 +203,11 @@ export default function CommunicationModule() {
 
     const unsub = onSnapshot(qMessages, (snap) => {
       const fetchedMessages = snap.docs.map(d => ({ id: d.id, ...d.data() } as DirectMessage));
-      fetchedMessages.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+      fetchedMessages.sort((a, b) => {
+        const timeA = parseTimestamp(a.timestamp)?.getTime() || Date.now();
+        const timeB = parseTimestamp(b.timestamp)?.getTime() || Date.now();
+        return timeA - timeB;
+      });
       setMessages(fetchedMessages);
 
       // Mark unread messages as read
@@ -227,7 +240,11 @@ export default function CommunicationModule() {
 
     const unsub = onSnapshot(qProjectMessages, (snap) => {
       const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as ProjectDiscussion));
-      msgs.sort((a, b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+      msgs.sort((a, b) => {
+        const timeA = parseTimestamp(a.timestamp)?.getTime() || Date.now();
+        const timeB = parseTimestamp(b.timestamp)?.getTime() || Date.now();
+        return timeA - timeB;
+      });
       setProjectMessages(msgs);
     }, err => handleFirestoreError(err, OperationType.LIST, 'project_discussions'));
 
@@ -526,7 +543,7 @@ export default function CommunicationModule() {
                         <div className="flex items-center gap-2 opacity-40 px-2 mt-1">
                           <Clock size={10} />
                           <span className="text-[9px] font-bold">
-                            {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
+                            {msg.timestamp ? parseTimestamp(msg.timestamp)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
                           </span>
                           {isMe && <Check size={10} className="text-blue-500" />}
                         </div>
