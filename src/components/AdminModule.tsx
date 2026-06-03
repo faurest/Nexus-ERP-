@@ -304,7 +304,7 @@ export default function AdminModule() {
     }
   };
 
-  const handleAssignUserToCompany = async (userEmail: string, companyId: string) => {
+  const handleAssignUserToCompany = async (userEmail: string, companyId: string, role: string = 'Collaborateur') => {
     try {
       const company = companies.find(c => c.id === companyId);
       if (!company) return;
@@ -319,9 +319,34 @@ export default function AdminModule() {
         updatedAt: serverTimestamp()
       });
       
+      const cleanEmail = userEmail.trim().toLowerCase().replace(/\s+/g, '');
+      const userData = systemUsers.find(u => u.email === userEmail);
+      
+      const personnelRecord = {
+        firstName: userData?.displayName?.split(' ')[0] || '',
+        lastName: userData?.displayName?.split(' ').slice(1).join(' ') || '',
+        name: userData?.displayName || userEmail.split('@')[0],
+        email: cleanEmail,
+        phone: '',
+        notes: "Affecté via administration globale",
+        role: role,
+        department: "Général",
+        companyId: companyId,
+        status: 'active',
+        tasksAssignedCount: 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      
+      if (userData?.uid) {
+        (personnelRecord as any).uid = userData.uid;
+      }
+      
+      await setDoc(doc(db, 'personnel', `${companyId}_${cleanEmail}`), personnelRecord, { merge: true });
+      
       setShowUserAssignModal(null);
       fetchGlobalData();
-      alert('Utilisateur affecté avec succès');
+      alert('Utilisateur affecté avec le rôle ' + role);
     } catch (err) {
       console.error(err);
       alert('Erreur lors de l\'affectation');
@@ -1854,23 +1879,42 @@ export default function AdminModule() {
 
             <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Choisir une entreprise pour cet utilisateur :</p>
-              {companies.map((comp) => (
-                <button
-                  key={comp.id}
-                  onClick={() => handleAssignUserToCompany(showUserAssignModal.email, comp.id)}
-                  className="w-full text-left p-4 rounded-2xl border bg-white border-slate-100 hover:border-blue-600 hover:shadow-lg transition-all flex items-center justify-between group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                      {comp.name.charAt(0).toUpperCase()}
+              {companies.map((comp) => {
+                const roles = Object.keys(comp.roles || { Collaborateur: [], Manager: [] }).filter(r => r !== 'owner');
+                return (
+                  <div
+                    key={comp.id}
+                    className="w-full text-left p-4 rounded-2xl border bg-white border-slate-100 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-slate-400">
+                        {comp.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">{comp.name}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">{comp.name}</p>
+                    <div className="flex items-center gap-2">
+                      <select 
+                        id={`role-select-${comp.id}`} 
+                        className="text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 outline-none focus:border-blue-400"
+                        defaultValue={roles[0]}
+                      >
+                        {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                      <button 
+                        onClick={() => {
+                          const role = (document.getElementById(`role-select-${comp.id}`) as HTMLSelectElement).value;
+                          handleAssignUserToCompany(showUserAssignModal.email, comp.id, role);
+                        }}
+                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                      >
+                        Affecter
+                      </button>
                     </div>
                   </div>
-                  <Plus size={18} className="text-slate-200 group-hover:text-blue-600" />
-                </button>
-              ))}
+                );
+              })}
             </div>
           </motion.div>
         </div>
