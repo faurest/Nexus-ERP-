@@ -72,6 +72,9 @@ export default function PersonnelModule({ user }: { user?: any }) {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [salaryAdvances, setSalaryAdvances] = useState<SalaryAdvance[]>([]);
   const [activeTimeSubTab, setActiveTimeSubTab] = useState<'leave' | 'timesheet'>('leave');
+  const companyRoles = currentCompany?.roles || DEFAULT_ROLES;
+  const roleOptions = Object.keys(companyRoles).filter(r => r !== 'owner');
+
   const [isAddingLeave, setIsAddingLeave] = useState(false);
   const [newLeave, setNewLeave] = useState({ staffId: '', startDate: '', endDate: '', type: 'leave', reason: '' });
   const [isAddingTime, setIsAddingTime] = useState(false);
@@ -85,7 +88,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', assignedTo: '', startDate: '', endDate: '' });
-  const [newStaff, setNewStaff] = useState({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général', accessKey: '' });
+  const [newStaff, setNewStaff] = useState({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: roleOptions[0] || 'Collaborateur', department: 'Général', accessKey: '' });
   const [creationMessage, setCreationMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   
@@ -108,9 +111,6 @@ export default function PersonnelModule({ user }: { user?: any }) {
       setSubmitting(false);
     }
   };
-
-  const companyRoles = currentCompany?.roles || DEFAULT_ROLES;
-  const roleOptions = Object.keys(companyRoles).filter(r => r !== 'owner');
 
   const [editingRoles, setEditingRoles] = useState<Record<string, string[]>>(companyRoles);
 
@@ -335,7 +335,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
           memberEmails: arrayUnion(cleanEmail)
         }, { merge: true });
         setCreationMessage(`Employé ajouté avec succès ! Il peut se connecter avec sa Clé d'Accès Initiale.`);
-        setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général', accessKey: '' });
+        setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: roleOptions[0] || 'Collaborateur', department: 'Général', accessKey: '' });
       }
     } catch (err: any) {
       console.error(err);
@@ -1401,7 +1401,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                 onClick={() => { 
                   setIsAdding(false); 
                   setEditingStaff(null);
-                  setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: 'Collaborateur', department: 'Général', accessKey: '' });
+                  setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: roleOptions[0] || 'Collaborateur', department: 'Général', accessKey: '' });
                   setCreationMessage(''); 
                 }} 
                 className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"

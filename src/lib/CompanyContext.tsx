@@ -86,19 +86,31 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         updatedAt: serverTimestamp()
       });
 
-      // Automatically create a personnel record so the user can access the app
-      const { setDoc } = await import('firebase/firestore');
-      await setDoc(doc(db, 'personnel', `${companyId}_${cleanEmail}`), {
-        companyId: companyId,
-        uid: session.id || (session as any).uid,
-        email: cleanEmail,
-        name: session.displayName || cleanEmail.split('@')[0],
-        role: 'Personnel',
-        status: 'active',
-        joinMethod: 'invite_code',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
+      // Check if personnel record already exists (invited by admin)
+      const { setDoc, getDoc } = await import('firebase/firestore');
+      const personnelRef = doc(db, 'personnel', `${companyId}_${cleanEmail}`);
+      const personnelSnap = await getDoc(personnelRef);
+      
+      if (personnelSnap.exists()) {
+        await setDoc(personnelRef, {
+          uid: session.id || (session as any).uid,
+          status: 'active',
+          joinMethod: 'invite_code',
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      } else {
+        await setDoc(personnelRef, {
+          companyId: companyId,
+          uid: session.id || (session as any).uid,
+          email: cleanEmail,
+          name: session.displayName || cleanEmail.split('@')[0],
+          role: 'Personnel',
+          status: 'active',
+          joinMethod: 'invite_code',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      }
 
       return { success: true, message: `Bienvenue chez ${data.name} !` };
     } catch (error) {
