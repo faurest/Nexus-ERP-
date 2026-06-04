@@ -237,7 +237,11 @@ export default function App() {
       const isMaster = currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid || user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com';
 
       if (isMaster) {
-        setUser(prev => prev ? { ...prev, role: 'owner' } : null);
+        setUser(prev => {
+          if (!prev) return null;
+          if (prev.role === 'owner') return prev;
+          return { ...prev, role: 'owner' };
+        });
         setIsBlocked(false);
       } else if (cleanEmail) {
         // Try to find the user in the personnel collection for this company
@@ -266,13 +270,31 @@ export default function App() {
                 } catch (e) { /* ignore */ }
               }
 
-              setUser(prev => prev ? { 
-                ...prev, 
-                role: memberData.role || 'Personnel',
-                customPermissions: memberData.customPermissions || [],
-                email: user.email || memberData.email,
-                nexusId: memberData.id || memberDoc.id
-              } : null);
+              setUser(prev => {
+                if (!prev) return null;
+                const newRole = memberData.role || 'Personnel';
+                const newPermissions = memberData.customPermissions || [];
+                const newEmail = user.email || memberData.email;
+                const newNexusId = memberData.id || memberDoc.id;
+                
+                // Shallow compare to prevent unnecessary rerenders
+                if (
+                  prev.role === newRole && 
+                  prev.nexusId === newNexusId && 
+                  prev.email === newEmail &&
+                  JSON.stringify(prev.customPermissions || []) === JSON.stringify(newPermissions)
+                ) {
+                   return prev;
+                }
+                
+                return { 
+                  ...prev, 
+                  role: newRole,
+                  customPermissions: newPermissions,
+                  email: newEmail,
+                  nexusId: newNexusId
+                };
+              });
               setIsBlocked(false);
             }
           } else {
@@ -307,12 +329,23 @@ export default function App() {
                     }, { merge: true }).catch(e => console.error("Client auto-enroll sync failed", e));
                   }
                   
-                  setUser(prev => prev ? { 
-                    ...prev, 
-                    role: 'Client',
-                    email: user.email || clientData.email,
-                    nexusId: clientData.id || clientSnap.docs[0].id
-                  } : null);
+                  setUser(prev => {
+                    if (!prev) return null;
+                    const newRole = 'Client';
+                    const newEmail = user.email || clientData.email;
+                    const newNexusId = clientData.id || clientSnap.docs[0].id;
+                    
+                    if (prev.role === newRole && prev.email === newEmail && prev.nexusId === newNexusId) {
+                      return prev;
+                    }
+                    
+                    return { 
+                      ...prev, 
+                      role: newRole,
+                      email: newEmail,
+                      nexusId: newNexusId
+                    };
+                  });
                   setIsBlocked(false);
                } else {
                  if ((currentCompany.memberEmails || []).includes(cleanEmail)) {
@@ -372,7 +405,18 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = authService.observeAuthState(async (u) => {
       if (u) {
-        setUser(u);
+        setUser(prev => {
+          // Merge to preserve role, nexusId, etc.
+          if (prev) {
+            return {
+              ...u,
+              role: prev.role,
+              customPermissions: prev.customPermissions,
+              nexusId: prev.nexusId
+            };
+          }
+          return u;
+        });
         // Sync user profile to Firestore for notification lookups
         try {
           const rawEmail = u.email || u.providerData?.find((p: any) => p?.email)?.email;
