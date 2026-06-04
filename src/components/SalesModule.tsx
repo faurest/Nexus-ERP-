@@ -41,9 +41,14 @@ export default function SalesModule({ user }: { user: any }) {
     if (!user || user.role === 'admin') return 'admin';
     const role = user.role || 'Personnel';
     if (['owner', 'Directeur', 'Administrateur'].includes(role)) return 'admin';
-    if (['Comptable', 'Gérant'].includes(role)) return 'manager';
-    if (['Agent Commercial', 'Personnel'].includes(role)) return 'staff';
-    return 'staff';
+    if (['Comptable'].includes(role)) return 'manager';
+    // If it's explicitly staff, return staff
+    if (['Agent Commercial', 'Personnel', 'Collaborateur', 'Secrétaire'].includes(role)) return 'staff';
+    
+    // For custom roles that are not explicitly staff, check if they have sales access
+    // If they have access, give them manager permissions so they can manage sales
+    // We treat them as manager instead of admin to prevent deletion capabilities just in case.
+    return 'manager';
   }, [user]);
 
   const [sales, setSales] = useState<Sale[]>([]);

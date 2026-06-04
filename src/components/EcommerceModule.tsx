@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDocs, getDoc, serverTimestamp, handleFirestoreError, OperationType, orderBy, limit } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
+import { DEFAULT_ROLES } from '../core/permissions/roles';
 import { HelpTrigger } from './ContextualHelp';
 import { 
   ShoppingBag, 
@@ -206,9 +207,14 @@ export default function EcommerceModule({ user }: { user: any }) {
     }
   };
 
-  const canManage = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
+  const allowedByRole = (currentCompany?.roles || DEFAULT_ROLES)[user?.role] || [];
+  const customPermissions = user?.customPermissions || [];
+  const hasModule = allowedByRole.includes('ecommerce') || customPermissions.includes('ecommerce');
+  const isClient = user?.role === 'Client';
+  
+  const canManage = hasModule && !isClient;
   const isAdmin = canManage;
-  const isSuperAdmin = ['owner', 'Administrateur', 'Directeur'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
+  const isSuperAdmin = canManage;
 
   // Hardware back button support
   useEffect(() => {

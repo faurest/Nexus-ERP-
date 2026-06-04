@@ -54,8 +54,6 @@ export default function ResourceModule({ user }: { user: any }) {
   const [submitting, setSubmitting] = useState(false);
   const [movementLogs, setMovementLogs] = useState<any[]>([]);
 
-  const canManageEcom = ['owner', 'Administrateur', 'Directeur', 'Personnel', 'Collaborateur', 'Agent Commercial'].includes(user?.role) || user?.customPermissions?.includes('ecommerce');
-
   useEffect(() => {
     if (!currentCompany) return;
     const q = query(collection(db, 'resources'), where('companyId', '==', currentCompany.id));
