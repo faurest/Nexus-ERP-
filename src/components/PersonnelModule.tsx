@@ -1372,6 +1372,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                     onChange={e => setNewStaff({...newStaff, role: e.target.value})}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm appearance-none outline-none focus:border-blue-400"
                   >
+                    {(!roleOptions.includes(newStaff.role) && newStaff.role) && <option value={newStaff.role}>{newStaff.role}</option>}
                     {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
