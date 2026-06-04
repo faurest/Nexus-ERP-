@@ -95,12 +95,12 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white z-[101] shadow-2xl flex flex-col"
+            className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-nexus-surface z-[101] shadow-2xl flex flex-col"
           >
             {/* Header */}
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-nexus-accent text-white">
                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-600 rounded-xl">
+                  <div className="p-2 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-xl">
                     <BookOpen size={20} />
                   </div>
                   <div>
@@ -122,7 +122,7 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
               {activeStep && (
                 <div className="bg-blue-50 rounded-3xl p-6 border border-blue-100 shadow-sm animate-in fade-in slide-in-from-top-4">
                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2 bg-blue-600 text-white rounded-lg"><Zap size={16} /></div>
+                      <div className="p-2 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-lg"><Zap size={16} /></div>
                       <h3 className="text-sm font-black uppercase text-blue-900">{activeStep.title}</h3>
                    </div>
                    <div className="text-xs font-bold text-blue-800 leading-relaxed whitespace-pre-wrap">
@@ -134,13 +134,13 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
               {/* Search */}
               <div className="space-y-4">
                  <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-nexus-text-muted" size={18} />
                     <input 
                       type="text"
                       value={search}
                       onChange={e => setSearch(e.target.value)}
                       placeholder="Besoin d'aide ? Taper 'Naira', 'Stock'..."
-                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-[11px] font-black outline-none focus:bg-white focus:border-blue-500 transition-all"
+                      className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-[11px] font-black outline-none focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent transition-all text-nexus-text placeholder-white/40"
                     />
                  </div>
               </div>
@@ -152,7 +152,7 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
                     {(search ? filteredSteps : steps).length > 0 ? (search ? filteredSteps : steps).map(step => (
                       <div 
                         key={step.id} 
-                        className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-300 transition-all cursor-pointer group"
+                        className="p-4 bg-nexus-surface border border-white/5 rounded-2xl shadow-sm hover:border-blue-300 transition-all cursor-pointer group"
                       >
                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -161,7 +161,7 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
                                  step.category === 'LOGISTICS' ? "bg-blue-500" :
                                  step.category === 'FINANCE' ? "bg-violet-500" : "bg-emerald-500"
                                )} />
-                               <p className="text-[11px] font-black uppercase text-slate-900">{step.title}</p>
+                               <p className="text-[11px] font-black uppercase text-nexus-text">{step.title}</p>
                             </div>
                             <ChevronRight size={16} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
                          </div>
@@ -175,7 +175,7 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
                     {loading && (
                       <div className="space-y-3">
                         {[1,2,3].map(i => (
-                          <div key={i} className="h-14 bg-slate-50 rounded-2xl animate-pulse" />
+                          <div key={i} className="h-14 bg-white/5 rounded-2xl animate-pulse" />
                         ))}
                       </div>
                     )}
@@ -184,14 +184,14 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-slate-100 bg-slate-50">
+            <div className="p-6 border-t border-white/5 bg-white/5">
                <button 
                  onClick={() => {
                    // Navigate to full guide in App
                    onClose();
                    window.dispatchEvent(new CustomEvent('NAVIGATE_TAB', { detail: 'guide' }));
                  }}
-                 className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg hover:bg-black transition-all"
+                 className="w-full py-4 bg-nexus-accent text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg hover:bg-black transition-all"
                >
                  Consulter le Guide Complet <ExternalLink size={16} />
                </button>
@@ -219,7 +219,7 @@ export function HelpTrigger({ topic, className }: { topic: string, className?: s
           window.dispatchEvent(new CustomEvent('OPEN_HELP', { detail: topic }));
         }
       }}
-      className={cn("p-1 text-slate-400 hover:text-blue-600 transition-colors inline-flex items-center cursor-pointer", className)}
+      className={cn("p-1 text-nexus-text-muted hover:text-blue-600 transition-colors inline-flex items-center cursor-pointer", className)}
       title="Besoin d'aide ?"
     >
       <HelpCircle size={14} />

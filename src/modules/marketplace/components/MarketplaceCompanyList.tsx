@@ -38,7 +38,7 @@ export function MarketplaceCompanyList({
             className={cn(
               "w-[160px] p-5 rounded-[2rem] flex flex-col items-center justify-center gap-4 cursor-pointer transition-all border-2 shrink-0",
               activeCompanyId === "all"
-                ? "bg-slate-900 border-slate-900 shadow-2xl shadow-slate-900/20"
+                ? "bg-nexus-accent border-slate-900 shadow-2xl shadow-slate-900/20"
                 : "bg-white border-slate-100 hover:border-blue-200 shadow-sm"
             )}
           >
@@ -72,7 +72,7 @@ export function MarketplaceCompanyList({
                 className={cn(
                   "w-[200px] p-5 rounded-[2rem] flex flex-col cursor-pointer transition-all border-2 shrink-0 relative group",
                   isActive
-                    ? "bg-blue-600 border-blue-600 shadow-2xl shadow-blue-600/20"
+                    ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 border-blue-600 shadow-2xl shadow-blue-600/20"
                     : "bg-white border-slate-100 hover:border-blue-200 shadow-sm"
                 )}
               >

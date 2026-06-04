@@ -198,13 +198,13 @@ export default function ProjectModule() {
         {projects.map(p => <option key={p.id} value={p.name} />)}
       </datalist>
 
-      <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
+      <div className="relative overflow-hidden bg-nexus-accent rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
               Nexus <span className="text-blue-500">Projects</span>
             </h1>
-            <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
+            <p className="text-nexus-text-muted text-sm sm:text-lg font-medium leading-relaxed">
               Gérez vos projets complexes, collaborez avec vos partenaires et suivez vos engagements financiers.
             </p>
           </div>
@@ -220,7 +220,7 @@ export default function ProjectModule() {
                  className={cn(
                    "px-6 py-2.5 rounded-xl text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap", 
                    activeView === item.id 
-                    ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
+                    ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white shadow-xl shadow-blue-600/20" 
                     : "text-slate-300 hover:text-white hover:bg-white/5"
                  )}
                >
@@ -233,16 +233,16 @@ export default function ProjectModule() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-6">
-          <div className="flex gap-4 p-2 bg-white rounded-[2rem] shadow-sm border border-slate-100">
-            <div className="flex-1 bg-slate-50/50 rounded-2xl px-4 py-3 flex items-center gap-3 border border-slate-100 transition-all focus-within:border-blue-400 focus-within:bg-white">
-              <Search className="text-slate-400" size={18} />
+          <div className="flex gap-4 p-2 bg-nexus-surface rounded-[2rem] shadow-sm border border-white/5">
+            <div className="flex-1 bg-white/5/50 rounded-2xl px-4 py-3 flex items-center gap-3 border border-white/5 transition-all focus-within:border-blue-400 focus-within:bg-nexus-surface">
+              <Search className="text-nexus-text-muted" size={18} />
               <input 
                 type="text" 
                 placeholder="Scanner les projets ou partenaires..." 
-                className="flex-1 bg-transparent outline-none text-xs font-bold text-slate-600 placeholder:text-slate-300"
+                className="flex-1 bg-transparent outline-none text-xs font-bold text-nexus-text-muted placeholder:text-slate-300"
               />
             </div>
-            <button onClick={() => alert("Indexation avancée...")} className="w-12 h-12 flex items-center justify-center bg-white border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all text-slate-400 shadow-sm">
+            <button onClick={() => alert("Indexation avancée...")} className="w-12 h-12 flex items-center justify-center bg-nexus-surface border border-white/5 rounded-2xl hover:bg-white/5 transition-all text-nexus-text-muted shadow-sm">
               <Filter size={18} />
             </button>
             <button 
@@ -250,7 +250,7 @@ export default function ProjectModule() {
                 if (activeView === 'financials') setIsAddingFinancial('expense');
                 if (activeView === 'projects') setIsAddingProject(true);
               }}
-              className="px-6 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-600 transition-all shadow-xl shadow-slate-200"
+              className="px-6 bg-nexus-accent text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all shadow-xl shadow-slate-200"
             >
               <Plus size={16} /> DATA ENTRY
             </button>
@@ -260,13 +260,13 @@ export default function ProjectModule() {
             <Table headers={['Identifiant', 'Projet', 'Partenaire', 'Échéance', 'Status', 'Budget', 'Actions']}>
               {projects.map((p) => (
                 <TableRow key={p.id}>
-                  <span className="font-mono text-[10px] text-slate-400">#PRJ-{p.id.slice(0, 4).toUpperCase()}</span>
-                  <span className="font-bold text-slate-800">{p.name}</span>
+                  <span className="font-mono text-[10px] text-nexus-text-muted">#PRJ-{p.id.slice(0, 4).toUpperCase()}</span>
+                  <span className="font-bold text-nexus-text">{p.name}</span>
                   <div className="flex items-center gap-2">
                     <Handshake size={14} className="text-slate-300" />
-                    <span className="text-slate-600">{partners.find(part => part.id === p.partnerId)?.name || 'N/A'}</span>
+                    <span className="text-nexus-text-muted">{partners.find(part => part.id === p.partnerId)?.name || 'N/A'}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-nexus-text-muted">
                     <Calendar size={12} />
                     {p.endDate ? new Date((p.endDate.seconds || p.endDate / 1000) * 1000).toLocaleDateString() : 'En attente'}
                   </div>
@@ -276,12 +276,12 @@ export default function ProjectModule() {
                       p.status === 'active' ? "bg-green-100 text-green-700" :
                       p.status === 'completed' ? "bg-blue-100 text-blue-700" :
                       p.status === 'on_hold' ? "bg-amber-100 text-amber-700" :
-                      "bg-slate-100 text-slate-600"
+                      "bg-slate-100 text-nexus-text-muted"
                     )}>
                       {p.status}
                     </span>
                   </div>
-                  <div className="text-right font-mono text-slate-600 font-bold">
+                  <div className="text-right font-mono text-nexus-text-muted font-bold">
                     {p.budget?.toLocaleString()} FCFA
                   </div>
                   <div className="flex items-center gap-2">
@@ -291,7 +291,7 @@ export default function ProjectModule() {
                         setFormData(p);
                         setIsAddingProject(true);
                       }}
-                      className="p-1 px-2 border rounded-md hover:bg-slate-50 text-slate-400 hover:text-blue-600 transition-all font-bold text-[9px] flex items-center gap-1 uppercase"
+                      className="p-1 px-2 border rounded-md hover:bg-white/5 text-nexus-text-muted hover:text-blue-600 transition-all font-bold text-[9px] flex items-center gap-1 uppercase"
                     >
                       <Edit2 size={10} /> Éditer
                     </button>
@@ -305,7 +305,7 @@ export default function ProjectModule() {
                 </TableRow>
               ))}
               {projects.length === 0 && (
-                <div className="p-12 text-center opacity-30 text-slate-400 italic text-xs">
+                <div className="p-12 text-center opacity-30 text-nexus-text-muted italic text-xs">
                   Aucun projet actif à afficher.
                 </div>
               )}
@@ -314,15 +314,15 @@ export default function ProjectModule() {
             <Table headers={['Nom Partenaire', 'Type / Secteur', 'Dossiers', 'Contact Email', 'Lien']}>
               {partners.map((pt) => (
                 <TableRow key={pt.id}>
-                  <span className="font-bold text-slate-800">{pt.name}</span>
+                  <span className="font-bold text-nexus-text">{pt.name}</span>
                   <span className={cn(
                     "text-[10px] font-bold px-2 py-0.5 rounded border",
-                    pt.type === 'Supplier' ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-indigo-50 border-indigo-100 text-indigo-700"
+                    pt.type === 'Supplier' ? "bg-white/5 border-white/10 text-nexus-text-muted" : "bg-indigo-50 border-indigo-100 text-indigo-700"
                   )}>
                     {pt.type === 'Supplier' ? 'FOURNISSEUR' : 'PARTENAIRE'}
                   </span>
-                  <div className="font-bold text-slate-500">{projects.filter(p => p.partnerId === pt.id).length}</div>
-                  <div className="text-slate-400 font-medium truncate">{pt.contactEmail}</div>
+                  <div className="font-bold text-nexus-text-muted/80">{projects.filter(p => p.partnerId === pt.id).length}</div>
+                  <div className="text-nexus-text-muted font-medium truncate">{pt.contactEmail}</div>
                   <button onClick={() => alert("Redirection vers le profil public partenaire")} className="text-blue-600 hover:text-blue-800">
                     <ExternalLink size={14} />
                   </button>
@@ -333,51 +333,51 @@ export default function ProjectModule() {
             <div className="space-y-8">
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                <div className="bg-nexus-surface border border-white/10 p-4 rounded-xl shadow-sm">
                   <div className="flex justify-between items-start mb-2">
                     <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
                       <Receipt size={18} />
                     </div>
                     <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">INVOICED</span>
                   </div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Facturation Totale</p>
-                  <h4 className="text-xl font-bold text-slate-900">{invoices.reduce((acc, inv) => acc + inv.amount, 0).toLocaleString()} FCFA</h4>
+                  <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-wider">Facturation Totale</p>
+                  <h4 className="text-xl font-bold text-nexus-text">{invoices.reduce((acc, inv) => acc + inv.amount, 0).toLocaleString()} FCFA</h4>
                 </div>
-                <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                <div className="bg-nexus-surface border border-white/10 p-4 rounded-xl shadow-sm">
                   <div className="flex justify-between items-start mb-2">
                     <div className="p-2 bg-red-50 text-red-600 rounded-lg">
                       <TrendingDown size={18} />
                     </div>
                     <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">EXPENSES</span>
                   </div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dépenses Projets</p>
-                  <h4 className="text-xl font-bold text-slate-900">{expenses.reduce((acc, exp) => acc + exp.amount, 0).toLocaleString()} FCFA</h4>
+                  <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-wider">Dépenses Projets</p>
+                  <h4 className="text-xl font-bold text-nexus-text">{expenses.reduce((acc, exp) => acc + exp.amount, 0).toLocaleString()} FCFA</h4>
                 </div>
-                <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                <div className="bg-nexus-surface border border-white/10 p-4 rounded-xl shadow-sm">
                   <div className="flex justify-between items-start mb-2">
                     <div className="p-2 bg-green-50 text-green-600 rounded-lg">
                       <CreditCard size={18} />
                     </div>
                     <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">PAYMENTS</span>
                   </div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Paiements Reçus</p>
-                  <h4 className="text-xl font-bold text-slate-900">{payments.filter(p => p.type === 'inbound').reduce((acc, p) => acc + p.amount, 0).toLocaleString()} FCFA</h4>
+                  <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-wider">Paiements Reçus</p>
+                  <h4 className="text-xl font-bold text-nexus-text">{payments.filter(p => p.type === 'inbound').reduce((acc, p) => acc + p.amount, 0).toLocaleString()} FCFA</h4>
                 </div>
               </div>
 
               {/* Invoices Table */}
               <section className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <h3 className="text-sm font-bold text-nexus-text flex items-center gap-2">
                   <Receipt size={16} className="text-blue-600" />
                   Factures Projets
                 </h3>
                 <Table headers={['Projet', 'Partenaire', 'Montant', 'Échéance', 'Statut']}>
                   {invoices.map((inv) => (
                     <TableRow key={inv.id}>
-                      <span className="font-bold text-slate-700">{projects.find(p => p.id === inv.projectId)?.name || 'PRJ-EXP'}</span>
-                      <span className="text-slate-500">{partners.find(p => p.id === inv.partnerId)?.name || 'PART-EXP'}</span>
-                      <span className="font-mono font-bold text-slate-900">{inv.amount.toLocaleString()} FCFA</span>
-                      <span className="text-[11px] text-slate-400">
+                      <span className="font-bold text-nexus-text-muted">{projects.find(p => p.id === inv.projectId)?.name || 'PRJ-EXP'}</span>
+                      <span className="text-nexus-text-muted/80">{partners.find(p => p.id === inv.partnerId)?.name || 'PART-EXP'}</span>
+                      <span className="font-mono font-bold text-nexus-text">{inv.amount.toLocaleString()} FCFA</span>
+                      <span className="text-[11px] text-nexus-text-muted">
                         {inv.dueDate ? new Date(inv.dueDate.seconds * 1000).toLocaleDateString() : 'N/A'}
                       </span>
                       <span className={cn(
@@ -395,16 +395,16 @@ export default function ProjectModule() {
               {/* Expenses & Payments Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <section className="space-y-3">
-                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-nexus-text flex items-center gap-2">
                     <TrendingDown size={16} className="text-red-500" />
                     Dépenses Récentes
                   </h3>
-                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-50">
+                  <div className="bg-nexus-surface border border-white/10 rounded-xl overflow-hidden divide-y divide-slate-50">
                     {expenses.slice(0, 5).map(exp => (
-                      <div key={exp.id} className="p-3 hover:bg-slate-50 transition-all flex justify-between items-center">
+                      <div key={exp.id} className="p-3 hover:bg-white/5 transition-all flex justify-between items-center">
                         <div>
-                          <p className="text-xs font-bold text-slate-700">{exp.description}</p>
-                          <p className="text-[9px] text-slate-400 uppercase font-medium">{exp.category} • {projects.find(p => p.id === exp.projectId)?.name}</p>
+                          <p className="text-xs font-bold text-nexus-text-muted">{exp.description}</p>
+                          <p className="text-[9px] text-nexus-text-muted uppercase font-medium">{exp.category} • {projects.find(p => p.id === exp.projectId)?.name}</p>
                         </div>
                         <span className="text-xs font-bold text-red-600">-{exp.amount.toLocaleString()} FCFA</span>
                       </div>
@@ -413,13 +413,13 @@ export default function ProjectModule() {
                 </section>
 
                 <section className="space-y-3">
-                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-nexus-text flex items-center gap-2">
                     <CreditCard size={16} className="text-green-500" />
                     Flux de Trésorerie
                   </h3>
-                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-50">
+                  <div className="bg-nexus-surface border border-white/10 rounded-xl overflow-hidden divide-y divide-slate-50">
                     {payments.slice(0, 5).map(pay => (
-                      <div key={pay.id} className="p-3 hover:bg-slate-50 transition-all flex justify-between items-center">
+                      <div key={pay.id} className="p-3 hover:bg-white/5 transition-all flex justify-between items-center">
                         <div className="flex items-center gap-3">
                           <div className={cn(
                             "p-1.5 rounded-lg",
@@ -428,8 +428,8 @@ export default function ProjectModule() {
                             {pay.type === 'inbound' ? <ArrowDownRight size={14} /> : <ArrowUpRight size={14} />}
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-slate-700">{pay.type === 'inbound' ? 'Recette' : 'Décaissement'}</p>
-                            <p className="text-[9px] text-slate-400 uppercase font-medium">{projects.find(p => p.id === pay.projectId)?.name}</p>
+                            <p className="text-xs font-bold text-nexus-text-muted">{pay.type === 'inbound' ? 'Recette' : 'Décaissement'}</p>
+                            <p className="text-[9px] text-nexus-text-muted uppercase font-medium">{projects.find(p => p.id === pay.projectId)?.name}</p>
                           </div>
                         </div>
                         <span className={cn(
@@ -448,13 +448,13 @@ export default function ProjectModule() {
         </div>
 
         <div className="lg:col-span-4 space-y-6">
-          <section className="bg-white border border-slate-200 p-5 rounded-lg shadow-sm">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-50 pb-2">Résumé Budgétaire Projets</h3>
+          <section className="bg-nexus-surface border border-white/10 p-5 rounded-lg shadow-sm">
+            <h3 className="text-xs font-bold text-nexus-text-muted uppercase tracking-widest mb-6 border-b border-slate-50 pb-2">Résumé Budgétaire Projets</h3>
             <div className="space-y-6">
               <div className="flex justify-between items-end">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Engagement Annuel</p>
-                  <p className="text-3xl font-bold text-slate-900 tracking-tight">128,400 FCFA</p>
+                  <p className="text-[10px] font-bold text-nexus-text-muted uppercase mb-1">Engagement Annuel</p>
+                  <p className="text-3xl font-bold text-nexus-text tracking-tight">128,400 FCFA</p>
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] font-bold text-green-600 uppercase">+12% vs LY</p>
@@ -462,17 +462,17 @@ export default function ProjectModule() {
               </div>
               
               <div className="space-y-3 pt-4 border-t border-slate-50">
-                <div className="flex justify-between text-[10px] font-bold text-slate-500">
+                <div className="flex justify-between text-[10px] font-bold text-nexus-text-muted/80">
                   <span>RÉPARTITION PAR STATUS</span>
                   <span className="text-blue-600">6 ACTIVE</span>
                 </div>
                 <div className="flex h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-600 w-[60%]" />
+                  <div className="h-full bg-nexus-accent text-white hover:bg-nexus-accent/80 w-[60%]" />
                   <div className="h-full bg-amber-500 w-[25%]" />
                   <div className="h-full bg-slate-300 w-[15%]" />
                 </div>
-                <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
-                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span> Actif (60%)</span>
+                <div className="flex justify-between text-[9px] font-bold text-nexus-text-muted uppercase tracking-tighter">
+                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-nexus-accent text-white hover:bg-nexus-accent/80"></span> Actif (60%)</span>
                   <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Pause (25%)</span>
                   <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span> Autre (15%)</span>
                 </div>
@@ -485,7 +485,7 @@ export default function ProjectModule() {
             <p className="text-sm font-medium mb-6 leading-relaxed relative z-10 opacity-90">
               "La revue trimestrielle avec les partenaires clés est prévue pour la semaine prochaine."
             </p>
-            <button onClick={() => alert("Ouverture du rapport d'audit...")} className="w-full bg-white text-indigo-600 py-2.5 rounded-lg text-xs font-bold shadow-sm relative z-10 hover:bg-slate-50 transition-all">
+            <button onClick={() => alert("Ouverture du rapport d'audit...")} className="w-full bg-nexus-surface text-indigo-600 py-2.5 rounded-lg text-xs font-bold shadow-sm relative z-10 hover:bg-white/5 transition-all">
               OUVRIR LE DOSSIER
             </button>
             <FolderKanban className="absolute -bottom-6 -right-6 opacity-10 rotate-12" size={100} />
@@ -494,28 +494,28 @@ export default function ProjectModule() {
       </div>
       {isAddingProject && (
         <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
-            <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+            <h3 className="text-xl font-bold text-nexus-text mb-6 flex items-center gap-2">
               <FolderKanban size={24} className="text-blue-600" />
               {editingProject ? 'Modifier le Projet' : 'Nouveau Projet'}
             </h3>
             
             <form onSubmit={handleAddProject} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nom du Projet</label>
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Nom du Projet</label>
                 <input 
                   required
                   type="text"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text"
                   value={formData.name || ''}
                   onChange={e => setFormData({...formData, name: e.target.value})}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Description et détails</label>
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Description et détails</label>
                 <textarea 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 h-20"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text h-20"
                   value={formData.description || ''}
                   onChange={e => setFormData({...formData, description: e.target.value})}
                 />
@@ -523,9 +523,9 @@ export default function ProjectModule() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Partenaire</label>
+                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Partenaire</label>
                   <select 
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text"
                     value={formData.partnerId || ''}
                     onChange={e => setFormData({...formData, partnerId: e.target.value})}
                   >
@@ -534,10 +534,10 @@ export default function ProjectModule() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Budget (FCFA)</label>
+                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Budget (FCFA)</label>
                   <input 
                     type="number"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text"
                     value={formData.budget || ''}
                     onChange={e => setFormData({...formData, budget: e.target.value})}
                   />
@@ -546,9 +546,9 @@ export default function ProjectModule() {
 
               {editingProject && (
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Status</label>
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Status</label>
                 <select 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text"
                   value={formData.status || ''}
                   onChange={e => setFormData({...formData, status: e.target.value})}
                 >
@@ -562,19 +562,19 @@ export default function ProjectModule() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Date de début</label>
+                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Date de début</label>
                   <input 
                     type="date"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text"
                     value={formData.startDate || ''}
                     onChange={e => setFormData({...formData, startDate: e.target.value})}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Date de fin</label>
+                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Date de fin</label>
                   <input 
                     type="date"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text"
                     value={formData.endDate || ''}
                     onChange={e => setFormData({...formData, endDate: e.target.value})}
                   />
@@ -589,14 +589,14 @@ export default function ProjectModule() {
                     setEditingProject(null);
                     setFormData({});
                   }}
-                  className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"
+                  className="px-6 py-3 rounded-xl border border-white/10 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all font-mono"
                 >
                   Annuler
                 </button>
                 <button 
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
+                  className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
                 >
                   {submitting ? 'Traitement...' : (editingProject ? 'Enregistrer' : 'Créer')}
                 </button>
@@ -609,18 +609,18 @@ export default function ProjectModule() {
       {/* Modal for adding financials */}
       {isAddingFinancial && (
         <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
-            <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+            <h3 className="text-xl font-bold text-nexus-text mb-6 flex items-center gap-2">
               <DollarSign size={24} className="text-blue-600" />
               Nouveau {isAddingFinancial === 'expense' ? 'Achat / Dépense' : isAddingFinancial === 'invoice' ? 'Facturation' : 'Flux Paiement'}
             </h3>
             
             <form onSubmit={handleAddFinancial} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Projet Concerné</label>
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Projet Concerné</label>
                 <select 
                   required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text"
                   value={formData.projectId || ''}
                   onChange={e => setFormData({...formData, projectId: e.target.value})}
                 >
@@ -631,21 +631,21 @@ export default function ProjectModule() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Montant (FCFA)</label>
+                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Montant (FCFA)</label>
                   <input 
                     required
                     type="number" 
                     step="0.01"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text"
                     value={formData.amount || ''}
                     onChange={e => setFormData({...formData, amount: e.target.value})}
                   />
                 </div>
                 {isAddingFinancial === 'invoice' ? (
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Statut</label>
+                    <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Statut</label>
                     <select 
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text"
                       value={formData.status || 'pending'}
                       onChange={e => setFormData({...formData, status: e.target.value})}
                     >
@@ -656,9 +656,9 @@ export default function ProjectModule() {
                   </div>
                 ) : isAddingFinancial === 'payment' ? (
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Type Flux</label>
+                    <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Type Flux</label>
                     <select 
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text"
                       value={formData.type || 'inbound'}
                       onChange={e => setFormData({...formData, type: e.target.value})}
                     >
@@ -668,10 +668,10 @@ export default function ProjectModule() {
                   </div>
                 ) : (
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Catégorie</label>
+                    <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Catégorie</label>
                     <input 
                       type="text" 
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text"
                       placeholder="e.g. Matériel, Transport"
                       value={formData.category || ''}
                       onChange={e => setFormData({...formData, category: e.target.value})}
@@ -682,10 +682,10 @@ export default function ProjectModule() {
 
               {isAddingFinancial === 'invoice' && (
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Partenaire</label>
+                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Partenaire</label>
                   <select 
                     required
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text"
                     value={formData.partnerId || ''}
                     onChange={e => setFormData({...formData, partnerId: e.target.value})}
                   >
@@ -696,9 +696,9 @@ export default function ProjectModule() {
               )}
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Description</label>
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Description</label>
                 <textarea 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 h-20"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text h-20"
                   value={formData.description || ''}
                   onChange={e => setFormData({...formData, description: e.target.value})}
                 />
@@ -708,14 +708,14 @@ export default function ProjectModule() {
                 <button 
                   type="button"
                   onClick={() => setIsAddingFinancial(null)}
-                  className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"
+                  className="px-6 py-3 rounded-xl border border-white/10 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all font-mono"
                 >
                   Annuler
                 </button>
                 <button 
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
+                  className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
                 >
                   {submitting ? 'Enregistrement...' : 'Enregistrer'}
                 </button>

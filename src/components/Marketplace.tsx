@@ -448,7 +448,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     if (stock <= 0)
       return {
         label: "Rupture de Stock",
-        color: "bg-slate-100 text-slate-500 border-slate-200",
+        color: "bg-slate-100 text-nexus-text-muted/80 border-white/10",
       };
     if (stock <= 10)
       return {
@@ -724,7 +724,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+        <p className="text-nexus-text-muted font-bold uppercase tracking-widest text-[10px]">
           Chargement du Nexus Marketplace...
         </p>
       </div>
@@ -732,7 +732,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   }
 
   return (
-    <div className="relative min-h-screen bg-slate-50/50 pb-24">
+    <div className="relative min-h-screen bg-white/5/50 pb-24">
 
       {/* Floating WhatsApp Help Button */}
       <motion.button
@@ -781,15 +781,15 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
       <div className="max-w-7xl mx-auto px-6 py-12">
         <div className="flex items-center justify-between mb-8">
           <div>
-             <h2 className="text-2xl font-black text-slate-900 tracking-tight italic uppercase">Catalogue Principal</h2>
-             <p className="text-sm font-bold text-slate-500 mt-1 uppercase tracking-widest">{filteredProducts.length} produits disponibles</p>
+             <h2 className="text-2xl font-black text-nexus-text tracking-tight italic uppercase">Catalogue Principal</h2>
+             <p className="text-sm font-bold text-nexus-text-muted/80 mt-1 uppercase tracking-widest">{filteredProducts.length} produits disponibles</p>
           </div>
           
           <div className="flex items-center gap-2 shrink-0">
             <div className="flex bg-slate-100 p-1 rounded-xl">
               <button 
                 onClick={() => setViewMode('grid')}
-                className={cn("p-2 rounded-lg transition-all", viewMode === 'grid' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400")}
+                className={cn("p-2 rounded-lg transition-all", viewMode === 'grid' ? "bg-nexus-surface text-blue-600 shadow-sm" : "text-nexus-text-muted")}
               >
                 <div className="grid grid-cols-2 gap-0.5">
                   <div className="w-1.5 h-1.5 bg-current rounded-sm" />
@@ -800,7 +800,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               </button>
               <button 
                 onClick={() => setViewMode('list')}
-                className={cn("p-2 rounded-lg transition-all", viewMode === 'list' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400")}
+                className={cn("p-2 rounded-lg transition-all", viewMode === 'list' ? "bg-nexus-surface text-blue-600 shadow-sm" : "text-nexus-text-muted")}
               >
                 <Filter size={18} />
               </button>
@@ -809,13 +809,13 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
         </div>
 
         {filteredProducts.length === 0 ? (
-          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[3rem] border border-slate-100">
+          <div className="py-20 flex flex-col items-center justify-center text-center bg-nexus-surface rounded-[3rem] border border-white/5">
             <Search size={48} className="text-slate-200 mb-6" />
-            <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest mb-2">Aucun produit trouvé</h3>
-            <p className="text-sm text-slate-500 mb-8 max-w-sm">Désolé, nous n'avons rien trouvé correspondant à vos critères de recherche.</p>
+            <h3 className="text-xl font-black text-nexus-text uppercase tracking-widest mb-2">Aucun produit trouvé</h3>
+            <p className="text-sm text-nexus-text-muted/80 mb-8 max-w-sm">Désolé, nous n'avons rien trouvé correspondant à vos critères de recherche.</p>
             <button 
               onClick={() => { setSearchTerm(""); setActiveCategory("Tous"); setActiveCompanyId("all"); }}
-              className="px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all shadow-xl"
+              className="px-8 py-4 bg-nexus-accent text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all shadow-xl"
             >
               Réinitialiser les filtres
             </button>
@@ -945,9 +945,9 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white z-[70] shadow-2xl flex flex-col"
+              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-nexus-surface z-[70] shadow-2xl flex flex-col"
             >
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5/50">
                 <div className="flex items-center gap-3">
                   {showCheckoutForm ? (
                     <button
@@ -959,13 +959,13 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                   ) : (
                     <ShoppingCart size={20} className="text-blue-600" />
                   )}
-                  <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                  <h2 className="text-sm font-black text-nexus-text uppercase tracking-widest">
                     {showCheckoutForm ? "Finalisation" : "Votre Panier"}
                   </h2>
                 </div>
                 <button
                   onClick={() => setShowCart(false)}
-                  className="p-2 hover:bg-slate-200 rounded-full transition-all text-slate-400"
+                  className="p-2 hover:bg-slate-200 rounded-full transition-all text-nexus-text-muted"
                 >
                   <X size={20} />
                 </button>
@@ -986,29 +986,29 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                       <motion.div 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="absolute inset-x-0 -top-6 bottom-0 bg-white/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-10 text-center space-y-8"
+                        className="absolute inset-x-0 -top-6 bottom-0 bg-nexus-surface/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-10 text-center space-y-8"
                       >
                         <div className="relative">
                            <div className={cn(
                              "w-24 h-24 rounded-[2rem] flex items-center justify-center text-white shadow-2xl animate-pulse transition-colors duration-1000",
-                             paymentOperator === 'MTN' ? "bg-[#FFCC00]" : (paymentOperator === 'ORANGE' ? "bg-[#FF7900]" : "bg-blue-600")
+                             paymentOperator === 'MTN' ? "bg-[#FFCC00]" : (paymentOperator === 'ORANGE' ? "bg-[#FF7900]" : "bg-nexus-accent text-white hover:bg-nexus-accent/80")
                            )}>
                              <Smartphone size={40} />
                            </div>
-                           <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg border border-slate-100">
+                           <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-nexus-surface rounded-full border border-white/10 flex items-center justify-center shadow-lg border border-white/5">
                              <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
                            </div>
                         </div>
                         
                         <div className="space-y-3">
-                          <h3 className="text-xl font-black text-slate-900 uppercase italic">Validation USSD Push</h3>
-                          <p className="text-xs font-bold text-slate-500 leading-relaxed px-4">
-                            Veuillez consulter votre téléphone <span className="text-slate-900 font-black">({checkoutData.phone})</span> et entrer votre code secret <span className={cn("font-black", paymentOperator === 'MTN' ? "text-[#FFCC00]" : "text-[#FF7900]")}>{paymentOperator}</span> pour autoriser la transaction.
+                          <h3 className="text-xl font-black text-nexus-text uppercase italic">Validation USSD Push</h3>
+                          <p className="text-xs font-bold text-nexus-text-muted/80 leading-relaxed px-4">
+                            Veuillez consulter votre téléphone <span className="text-nexus-text font-black">({checkoutData.phone})</span> et entrer votre code secret <span className={cn("font-black", paymentOperator === 'MTN' ? "text-[#FFCC00]" : "text-[#FF7900]")}>{paymentOperator}</span> pour autoriser la transaction.
                           </p>
                         </div>
                         
-                        <div className="w-full bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                           <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                        <div className="w-full bg-white/5 rounded-2xl p-4 border border-white/5">
+                           <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-nexus-text-muted mb-2">
                              <span>Statut</span>
                              <span className="text-blue-600 animate-pulse">En attente...</span>
                            </div>
@@ -1017,12 +1017,12 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                initial={{ width: 0 }}
                                animate={{ width: "100%" }}
                                transition={{ duration: 8, ease: "linear" }}
-                               className="h-full bg-blue-600"
+                               className="h-full bg-nexus-accent text-white hover:bg-nexus-accent/80"
                              />
                            </div>
                         </div>
 
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic">NE FERMEZ PAS CETTE PAGE</p>
+                        <p className="text-[8px] font-black text-nexus-text-muted uppercase tracking-widest italic">NE FERMEZ PAS CETTE PAGE</p>
                       </motion.div>
                     )}
 
@@ -1030,15 +1030,15 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                       <motion.div 
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="absolute inset-x-0 -top-6 bottom-0 bg-white z-50 flex flex-col items-center justify-center p-10 text-center space-y-8"
+                        className="absolute inset-x-0 -top-6 bottom-0 bg-nexus-surface z-50 flex flex-col items-center justify-center p-10 text-center space-y-8"
                       >
                         <div className="w-24 h-24 bg-emerald-500 rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-emerald-500/30">
                            <CheckCircle2 size={48} />
                         </div>
                         
                         <div className="space-y-2">
-                          <h3 className="text-2xl font-black text-slate-900 uppercase italic">Succès !</h3>
-                          <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                          <h3 className="text-2xl font-black text-nexus-text uppercase italic">Succès !</h3>
+                          <p className="text-xs font-bold text-nexus-text-muted/80 leading-relaxed">
                             Votre commande a été reçue. Nous vous contacterons sous peu pour la confirmation finale.
                           </p>
                         </div>
@@ -1049,7 +1049,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                               setShowTracking(true);
                               // We don't Reset yet, let the timeout handle it or user can do it
                             }}
-                            className="w-full py-5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all"
+                            className="w-full py-5 bg-nexus-accent text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all"
                           >
                             <Truck size={16} /> Suivre ou Annuler
                           </button>
@@ -1065,37 +1065,37 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           </button>
                         </div>
                         
-                        <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                          <p className="text-[8px] font-black text-slate-400 italic uppercase">Redirection automatique dans quelques secondes...</p>
+                        <div className="p-3 bg-white/5 border border-white/5 rounded-xl">
+                          <p className="text-[8px] font-black text-nexus-text-muted italic uppercase">Redirection automatique dans quelques secondes...</p>
                         </div>
                       </motion.div>
                     )}
 
                     <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-3xl border border-blue-100">
-                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm">
+                      <div className="w-12 h-12 bg-nexus-surface rounded-2xl border border-white/10 flex items-center justify-center text-blue-600 shadow-sm">
                         <CheckCircle2 size={24} />
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Étape 2/2</p>
-                        <h4 className="text-sm font-black text-slate-900 uppercase italic">Détails de Livraison</h4>
+                        <h4 className="text-sm font-black text-nexus-text uppercase italic">Détails de Livraison</h4>
                       </div>
                     </div>
 
                     <div className="space-y-4">
-                      <h5 className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Résumé du Panier ({cart.length} articles)</h5>
+                      <h5 className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest px-1">Résumé du Panier ({cart.length} articles)</h5>
                       <div className="grid grid-cols-4 gap-2">
                         {cart.slice(0, 4).map((item) => (
-                          <div key={item.id} className="aspect-square rounded-xl overflow-hidden border border-slate-100 relative group">
+                          <div key={item.id} className="aspect-square rounded-xl overflow-hidden border border-white/5 relative group">
                             <img src={item.image} className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0" alt="" />
                             <div className="absolute inset-0 bg-slate-900/10" />
-                            <span className="absolute bottom-1 right-1 bg-white text-slate-900 text-[8px] font-black px-1.5 rounded-md shadow-sm border border-slate-100">
+                            <span className="absolute bottom-1 right-1 bg-nexus-surface text-nexus-text text-[8px] font-black px-1.5 rounded-md shadow-sm border border-white/5">
                               x{item.cartQuantity}
                             </span>
                           </div>
                         ))}
                         {cart.length > 4 && (
-                          <div className="aspect-square rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center">
-                            <span className="text-[10px] font-black text-slate-400">+{cart.length - 4}</span>
+                          <div className="aspect-square rounded-xl bg-white/5 border border-white/5 flex items-center justify-center">
+                            <span className="text-[10px] font-black text-nexus-text-muted">+{cart.length - 4}</span>
                           </div>
                         )}
                       </div>
@@ -1106,12 +1106,12 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                       <form onSubmit={handleQuickCheckout} className="space-y-8">
                         <div className="grid grid-cols-1 gap-6">
                           <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Votre Nom Complet</label>
+                            <label className="text-[10px] font-black text-nexus-text-muted/80 uppercase tracking-widest px-1">Votre Nom Complet</label>
                             <input
                               required
                               type="text"
                               placeholder="Ex: Amadou Maroua"
-                              className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm"
+                              className="w-full bg-white/5 border-2 border-white/5 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent focus:ring-8 focus:ring-nexus-accent transition-all shadow-sm text-nexus-text placeholder-white/40"
                               value={checkoutData.name}
                               onChange={(e) =>
                                 setCheckoutData({
@@ -1122,12 +1122,12 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                             />
                           </div>
                           <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Numéro WhatsApp</label>
+                            <label className="text-[10px] font-black text-nexus-text-muted/80 uppercase tracking-widest px-1">Numéro WhatsApp</label>
                             <input
                               required
                               type="tel"
                               placeholder="6xx xx xx xx"
-                              className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm"
+                              className="w-full bg-white/5 border-2 border-white/5 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent focus:ring-8 focus:ring-nexus-accent transition-all shadow-sm text-nexus-text placeholder-white/40"
                               value={checkoutData.phone}
                               onChange={(e) =>
                                 setCheckoutData({
@@ -1141,12 +1141,12 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
                         <div className="space-y-6">
                           <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Quartier & Précisions</label>
+                            <label className="text-[10px] font-black text-nexus-text-muted/80 uppercase tracking-widest px-1">Quartier & Précisions</label>
                             <input
                               required
                               type="text"
                               placeholder="Ex: Hardé, face École du Centre"
-                              className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm"
+                              className="w-full bg-white/5 border-2 border-white/5 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent focus:ring-8 focus:ring-nexus-accent transition-all shadow-sm text-nexus-text placeholder-white/40"
                               value={checkoutData.quartier}
                               onChange={(e) =>
                                 setCheckoutData({
@@ -1158,11 +1158,11 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           </div>
                           
                           <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Zone de Livraison</label>
+                            <label className="text-[10px] font-black text-nexus-text-muted/80 uppercase tracking-widest px-1">Zone de Livraison</label>
                             <div className="relative">
                               <select 
                                 required
-                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 pr-12 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 appearance-none transition-all shadow-sm"
+                                className="w-full bg-white/5 border-2 border-white/5 rounded-3xl px-6 py-5 pr-12 text-sm font-bold outline-none focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent appearance-none transition-all shadow-sm text-nexus-text placeholder-white/40"
                                 value={selectedLocation}
                                 onChange={(e) => setSelectedLocation(e.target.value)}
                               >
@@ -1175,7 +1175,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                 ))}
                                 <option value="Autre / Centre-ville">Autre / Centre-ville</option>
                               </select>
-                              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-nexus-text-muted">
                                 <Truck size={20} />
                               </div>
                             </div>
@@ -1183,7 +1183,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                         </div>
 
                         <div className="space-y-6">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1 block">Mode de Paiement</label>
+                          <label className="text-[10px] font-black text-nexus-text-muted/80 uppercase tracking-widest px-1 block">Mode de Paiement</label>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <button
                               type="button"
@@ -1192,18 +1192,18 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                 "p-4 rounded-[1.5rem] border-2 transition-all flex items-center gap-3 text-left group relative overflow-hidden",
                                 selectedPaymentMethod === 'CASH' 
                                   ? "border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-500/10" 
-                                  : "border-slate-100 hover:border-slate-200 bg-white"
+                                  : "border-white/5 hover:border-white/10 bg-nexus-surface"
                               )}
                             >
                               <div className={cn(
                                 "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                                selectedPaymentMethod === 'CASH' ? "bg-emerald-500 text-white" : "bg-slate-50 text-slate-400 group-hover:bg-slate-100"
+                                selectedPaymentMethod === 'CASH' ? "bg-emerald-500 text-white" : "bg-white/5 text-nexus-text-muted group-hover:bg-slate-100"
                               )}>
                                 <History size={20} />
                               </div>
                               <div>
-                                <p className={cn("text-[10px] font-black uppercase leading-none", selectedPaymentMethod === 'CASH' ? "text-emerald-600" : "text-slate-900")}>Espèces (COD)</p>
-                                <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase italic">Payer à la livraison</p>
+                                <p className={cn("text-[10px] font-black uppercase leading-none", selectedPaymentMethod === 'CASH' ? "text-emerald-600" : "text-nexus-text")}>Espèces (COD)</p>
+                                <p className="text-[8px] font-bold text-nexus-text-muted mt-1 uppercase italic">Payer à la livraison</p>
                               </div>
                             </button>
 
@@ -1214,23 +1214,23 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                 "p-4 rounded-[1.5rem] border-2 transition-all flex items-center gap-3 text-left group relative overflow-hidden",
                                 selectedPaymentMethod === 'MOMO' 
                                   ? "border-amber-500 bg-amber-50 shadow-lg shadow-amber-500/10" 
-                                  : "border-slate-100 hover:border-slate-200 bg-white"
+                                  : "border-white/5 hover:border-white/10 bg-nexus-surface"
                               )}
                             >
                               <div className={cn(
                                 "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                                selectedPaymentMethod === 'MOMO' ? "bg-amber-500 text-white" : "bg-slate-50 text-slate-400 group-hover:bg-slate-100"
+                                selectedPaymentMethod === 'MOMO' ? "bg-amber-500 text-white" : "bg-white/5 text-nexus-text-muted group-hover:bg-slate-100"
                               )}>
                                 <Smartphone size={20} />
                               </div>
                               <div>
-                                <p className={cn("text-[10px] font-black uppercase leading-none flex items-center gap-1", selectedPaymentMethod === 'MOMO' ? "text-amber-600" : "text-slate-900")}>
+                                <p className={cn("text-[10px] font-black uppercase leading-none flex items-center gap-1", selectedPaymentMethod === 'MOMO' ? "text-amber-600" : "text-nexus-text")}>
                                   Mobile Money
                                   <HelpTrigger topic="PAYMENT" />
                                 </p>
                                 <div className="flex items-center gap-1.5 mt-1">
                                    <div className="px-1 py-0.5 bg-orange-500 text-white text-[7px] font-black rounded uppercase">Orange</div>
-                                   <div className="px-1 py-0.5 bg-yellow-400 text-slate-900 text-[7px] font-black rounded uppercase">MTN</div>
+                                   <div className="px-1 py-0.5 bg-yellow-400 text-nexus-text text-[7px] font-black rounded uppercase">MTN</div>
                                 </div>
                               </div>
                             </button>
@@ -1261,7 +1261,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                         </div>
 
                         {selectedLocation && (
-                          <div className="p-6 bg-slate-900 rounded-[2rem] text-white space-y-4 shadow-xl shadow-slate-200 overflow-hidden relative">
+                          <div className="p-6 bg-nexus-accent rounded-[2rem] text-white space-y-4 shadow-xl shadow-slate-200 overflow-hidden relative">
                             <div className="absolute top-0 right-0 p-4 opacity-10">
                                <TrendingUp size={80} />
                             </div>
@@ -1346,7 +1346,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                               "w-full py-6 text-white rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl disabled:opacity-50 flex items-center justify-center gap-4 transition-all active:scale-95 group",
                               selectedPaymentMethod === 'CASH' 
                                 ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30" 
-                                : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/30"
+                                : "bg-nexus-accent text-white hover:bg-nexus-accent/80 hover:bg-blue-700 shadow-blue-600/30"
                             )}
                           >
                             {submitting ? "Nexus ERP Traitement..." : (
@@ -1359,13 +1359,13 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           <button
                             type="button"
                             onClick={() => setShowCheckoutForm(false)}
-                            className="w-full py-5 bg-white text-slate-400 rounded-3xl text-[10px] font-black uppercase tracking-widest hover:text-slate-900 transition-all border border-transparent hover:border-slate-100"
+                            className="w-full py-5 bg-nexus-surface text-nexus-text-muted rounded-3xl text-[10px] font-black uppercase tracking-widest hover:text-nexus-text transition-all border border-transparent hover:border-white/5"
                           >
                             Revenir au panier
                           </button>
                         </div>
                         
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest text-center leading-relaxed max-w-[240px] mx-auto">
+                        <p className="text-[8px] font-bold text-nexus-text-muted uppercase tracking-widest text-center leading-relaxed max-w-[240px] mx-auto">
                           En confirmant, l'entreprise recevra votre demande sur sa plateforme de gestion.
                         </p>
                       </form>
@@ -1388,16 +1388,16 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                         <div key={companyId} className="space-y-6">
                           <div className="flex items-center justify-between border-l-4 border-blue-600 pl-3">
                             <div className="flex flex-col">
-                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+                              <span className="text-[8px] font-black text-nexus-text-muted uppercase tracking-widest leading-none mb-1">
                                 Expédié par
                               </span>
-                              <span className="text-xs font-black text-slate-900 uppercase italic">
+                              <span className="text-xs font-black text-nexus-text uppercase italic">
                                 {companyName}
                               </span>
                             </div>
                             {company?.deliveryFees && selectedLocation && (
                               <div className="text-right">
-                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Livraison</span>
+                                <span className="text-[8px] font-black text-nexus-text-muted uppercase tracking-widest block">Livraison</span>
                                 <span className="text-[10px] font-black text-blue-600">
                                   {company.deliveryFees[selectedLocation] 
                                     ? `+ ${company.deliveryFees[selectedLocation].toLocaleString()} FCFA` 
@@ -1409,32 +1409,32 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           <div className="space-y-6">
                             {items.map((item) => (
                               <div key={item.id} className="flex gap-4 group">
-                                <div className="w-16 h-16 rounded-2xl overflow-hidden border border-slate-100 shrink-0 shadow-sm relative">
+                                <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/5 shrink-0 shadow-sm relative">
                                   <img
                                     src={item.image}
                                     className="w-full h-full object-cover"
                                     alt=""
                                   />
                                   {item.cartQuantity > 1 && (
-                                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white">
                                       {item.cartQuantity}
                                     </div>
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex justify-between items-start mb-1">
-                                    <h4 className="text-xs font-black text-slate-900 truncate pr-4 italic leading-tight">
+                                    <h4 className="text-xs font-black text-nexus-text truncate pr-4 italic leading-tight">
                                       {item.name}
                                     </h4>
-                                    <span className={cn("text-xs font-black whitespace-nowrap flex flex-col items-end transition-colors", nairaEnabled ? "text-emerald-600" : "text-slate-900")}>
+                                    <span className={cn("text-xs font-black whitespace-nowrap flex flex-col items-end transition-colors", nairaEnabled ? "text-emerald-600" : "text-nexus-text")}>
                                       {nairaEnabled 
                                         ? <span>₦ {Math.round((item.price * item.cartQuantity) * GLOBAL_NAIRA_RATE).toLocaleString()}</span>
                                         : <span>{(item.price * item.cartQuantity).toLocaleString()} FCFA</span>}
-                                      {nairaEnabled && <span className="text-[9px] text-slate-400 font-medium">({(item.price * item.cartQuantity).toLocaleString()} FCFA)</span>}
+                                      {nairaEnabled && <span className="text-[9px] text-nexus-text-muted font-medium">({(item.price * item.cartQuantity).toLocaleString()} FCFA)</span>}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-3 mt-3">
-                                    <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-1 px-3 border border-slate-100">
+                                    <div className="flex items-center gap-3 bg-white/5 rounded-lg p-1 px-3 border border-white/5">
                                       <button
                                         onClick={() =>
                                           updateQuantity(item.id, -1)
@@ -1484,22 +1484,22 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               </div>
 
               {cart.length > 0 && !showCheckoutForm && (
-                <div className="p-6 border-t border-slate-100 bg-slate-50/50 space-y-6">
+                <div className="p-6 border-t border-white/5 bg-white/5/50 space-y-6">
                   {/* WhatsApp Sync Suggestion for Guests */}
                   <div className="p-5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-3xl border border-emerald-100 flex items-center gap-4 group">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-50 group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 bg-nexus-surface rounded-2xl border border-white/10 flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-50 group-hover:scale-110 transition-transform">
                       <MessageCircle size={24} />
                     </div>
                     <div className="flex-1">
                       <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-tight">Sécuriser mon Panier</p>
-                      <p className="text-[9px] font-medium text-slate-500 mt-1 italic leading-snug">Liez votre activité à votre WhatsApp pour ne jamais perdre vos articles.</p>
+                      <p className="text-[9px] font-medium text-nexus-text-muted/80 mt-1 italic leading-snug">Liez votre activité à votre WhatsApp pour ne jamais perdre vos articles.</p>
                     </div>
                     <button 
                       onClick={() => {
                         const message = "Bonjour Nexus, je souhaite lier mon panier Marketplace à mon compte WhatsApp. [SESSION_GUEST]";
                         window.open(`https://wa.me/237690000000?text=${encodeURIComponent(message)}`, "_blank");
                       }}
-                      className="p-3 bg-white text-emerald-600 rounded-xl shadow-sm hover:bg-emerald-600 hover:text-white transition-all active:scale-95"
+                      className="p-3 bg-nexus-surface text-emerald-600 rounded-xl shadow-sm hover:bg-emerald-600 hover:text-white transition-all active:scale-95"
                     >
                       <Plus size={16} />
                     </button>
@@ -1517,17 +1517,17 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                     </div>
                   )}
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
+                    <span className="text-xs font-black text-nexus-text-muted uppercase tracking-[0.2em]">
                       Total Estimate
                     </span>
                     <div className="flex flex-col items-end gap-1 text-right">
-                      <span className={cn("text-2xl font-black tracking-tighter transition-colors", nairaEnabled ? "text-emerald-600" : "text-slate-900")}>
+                      <span className={cn("text-2xl font-black tracking-tighter transition-colors", nairaEnabled ? "text-emerald-600" : "text-nexus-text")}>
                         {nairaEnabled 
                           ? `₦ ${Math.round(cartTotal * GLOBAL_NAIRA_RATE).toLocaleString()}` 
                           : `${cartTotal.toLocaleString()} FCFA`}
                       </span>
                       {nairaEnabled ? (
-                        <span className="text-[10px] font-black text-slate-400 italic">
+                        <span className="text-[10px] font-black text-nexus-text-muted italic">
                           ({cartTotal.toLocaleString()} FCFA)
                         </span>
                       ) : (
@@ -1539,11 +1539,11 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                   </div>
                   <button
                     onClick={() => setShowCheckoutForm(true)}
-                    className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                    className="w-full flex items-center justify-center gap-3 bg-nexus-accent text-white hover:bg-nexus-accent/80 hover:bg-blue-700 text-white py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20 active:scale-95"
                   >
                     Acheter maintenant <ArrowRight size={18} />
                   </button>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest text-center leading-relaxed">
+                  <p className="text-[8px] font-bold text-nexus-text-muted uppercase tracking-widest text-center leading-relaxed">
                     Sans compte, par WhatsApp. Simple, rapide, Maroua.
                   </p>
                 </div>
@@ -1571,18 +1571,18 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-2xl bg-white z-[90] shadow-2xl flex flex-col"
+              className="fixed right-0 top-0 bottom-0 w-full max-w-2xl bg-nexus-surface z-[90] shadow-2xl flex flex-col"
             >
-              <div className="p-8 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10">
+              <div className="p-8 border-b border-white/5 flex items-center justify-between sticky top-0 bg-nexus-surface/80 backdrop-blur-md z-10">
                  <div className="flex items-center gap-4">
                     <button 
                       onClick={() => setSelectedProduct(null)}
-                      className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"
+                      className="p-3 bg-white/5 text-nexus-text-muted hover:text-nexus-text rounded-2xl transition-all"
                     >
                       <X size={20} />
                     </button>
                     <div>
-                      <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest italic">Détails de l'article</h2>
+                      <h2 className="text-sm font-black text-nexus-text uppercase tracking-widest italic">Détails de l'article</h2>
                       <p className="text-[9px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Nexus Engineering Hub</p>
                     </div>
                  </div>
@@ -1591,7 +1591,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                      onClick={() => toggleFavorite(selectedProduct.companyId)}
                      className={cn(
                        "p-3 rounded-2xl border transition-all",
-                       favorites.includes(selectedProduct.companyId) ? "bg-red-50 border-red-100 text-red-500" : "bg-slate-50 border-slate-100 text-slate-400"
+                       favorites.includes(selectedProduct.companyId) ? "bg-red-50 border-red-100 text-red-500" : "bg-white/5 border-white/5 text-nexus-text-muted"
                      )}
                    >
                      <Heart size={20} fill={favorites.includes(selectedProduct.companyId) ? "currentColor" : "none"} />
@@ -1603,7 +1603,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                 <div className="p-8 space-y-12 pb-24">
                   {/* Hero section with image and key info */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                     <div className="aspect-square rounded-[3rem] overflow-hidden border border-slate-100 shadow-inner group">
+                     <div className="aspect-square rounded-[3rem] overflow-hidden border border-white/5 shadow-inner group">
                         <img 
                           src={selectedProduct.image} 
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
@@ -1613,32 +1613,32 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                      <div className="flex flex-col justify-center space-y-6">
                         <div className="space-y-4">
                           <div className="flex items-center gap-2">
-                             <span className="px-3 py-1 bg-blue-600 text-white text-[9px] font-black uppercase rounded-full tracking-widest shadow-lg shadow-blue-200 italic">
+                             <span className="px-3 py-1 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white text-[9px] font-black uppercase rounded-full tracking-widest shadow-lg shadow-blue-200 italic">
                                {selectedProduct.category}
                              </span>
                              <div className={cn("px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border", getStockStatus(selectedProduct.stock).color)}>
                                {getStockStatus(selectedProduct.stock).label}
                              </div>
                           </div>
-                          <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tight leading-none">
+                          <h1 className="text-3xl font-black text-nexus-text uppercase italic tracking-tight leading-none">
                             {selectedProduct.name}
                           </h1>
                         </div>
 
                         <div className="p-6 bg-slate-950 rounded-[2rem] text-white space-y-4 shadow-xl">
-                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center italic underline underline-offset-8 decoration-blue-500">Dual Pricing Agreement</p>
+                           <p className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest text-center italic underline underline-offset-8 decoration-blue-500">Dual Pricing Agreement</p>
                            <div className="grid grid-cols-2 divide-x divide-white/10 items-center">
                               <div className="text-center group">
-                                 <p className="text-[8px] font-bold text-slate-500 uppercase mb-2">Devise Locale</p>
+                                 <p className="text-[8px] font-bold text-nexus-text-muted/80 uppercase mb-2">Devise Locale</p>
                                  <p className="text-2xl font-black tracking-tighter tabular-nums group-hover:text-blue-400 transition-colors">{selectedProduct.price.toLocaleString()}</p>
-                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FCFA</p>
+                                 <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">FCFA</p>
                               </div>
                               <div className="text-center group">
-                                 <p className="text-[8px] font-bold text-slate-500 uppercase mb-2 group-hover:text-amber-500 transition-colors">Naira Market</p>
+                                 <p className="text-[8px] font-bold text-nexus-text-muted/80 uppercase mb-2 group-hover:text-amber-500 transition-colors">Naira Market</p>
                                  <p className="text-2xl font-black tracking-tighter tabular-nums text-amber-500">
                                    ₦ {((selectedProduct.price * (companies.find(c => c.id === selectedProduct.companyId)?.nairaRate || GLOBAL_NAIRA_RATE)) / 1000).toFixed(1)}k
                                  </p>
-                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Est. Nigeria</p>
+                                 <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Est. Nigeria</p>
                               </div>
                            </div>
                         </div>
@@ -1647,7 +1647,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                            <button 
                              onClick={() => addToCart(selectedProduct)}
                              disabled={selectedProduct.stock <= 0}
-                             className="flex-1 py-5 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-slate-900 transition-all active:scale-95 flex items-center justify-center gap-3"
+                             className="flex-1 py-5 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-200 hover:bg-nexus-accent transition-all active:scale-95 flex items-center justify-center gap-3"
                            >
                              <ShoppingCart size={18} /> Ajouter
                            </button>
@@ -1662,10 +1662,10 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                   </div>
 
                   {/* Company and Detailed Description */}
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-10 border-t border-slate-100 pt-12">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-10 border-t border-white/5 pt-12">
                      <div className="md:col-span-4 space-y-6">
-                        <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-200 flex flex-col items-center text-center space-y-4">
-                           <div className="w-20 h-20 bg-white rounded-3xl shadow-xl shadow-slate-200 border border-slate-100 flex items-center justify-center overflow-hidden p-3">
+                        <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/10 flex flex-col items-center text-center space-y-4">
+                           <div className="w-20 h-20 bg-nexus-surface rounded-3xl border border-white/10 shadow-xl shadow-slate-200 border border-white/5 flex items-center justify-center overflow-hidden p-3">
                               {companies.find(c => c.id === selectedProduct.companyId)?.logo ? (
                                 <img src={companies.find(c => c.id === selectedProduct.companyId)?.logo} className="max-w-full max-h-full object-contain" />
                               ) : (
@@ -1673,41 +1673,41 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                               )}
                            </div>
                            <div className="space-y-1">
-                              <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{companies.find(c => c.id === selectedProduct.companyId)?.name}</h4>
-                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">{companies.find(c => c.id === selectedProduct.companyId)?.category || 'Partenaire Nexus'}</p>
+                              <h4 className="text-sm font-black text-nexus-text uppercase tracking-tight">{companies.find(c => c.id === selectedProduct.companyId)?.name}</h4>
+                              <p className="text-[9px] font-bold text-nexus-text-muted uppercase tracking-[0.2em]">{companies.find(c => c.id === selectedProduct.companyId)?.category || 'Partenaire Nexus'}</p>
                            </div>
                            <button 
                              onClick={() => {
                                setActiveCompanyId(selectedProduct.companyId);
                                setSelectedProduct(null);
                              }}
-                             className="w-full py-3 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-blue-600 hover:text-blue-600 transition-all"
+                             className="w-full py-3 bg-nexus-surface border border-white/10 text-nexus-text-muted rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-blue-600 hover:text-blue-600 transition-all"
                            >
                              Voir la boutique
                            </button>
                         </div>
 
                         <div className="bg-blue-50/50 p-6 rounded-[2rem] border border-blue-100/50 flex items-center gap-4">
-                           <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-blue-100">
+                           <div className="w-12 h-12 bg-nexus-surface rounded-2xl border border-white/10 flex items-center justify-center text-blue-600 shadow-sm border border-blue-100">
                               <Truck size={24} />
                            </div>
                            <div>
                               <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Zones desservies</p>
-                              <p className="text-[11px] font-bold text-slate-600 mt-0.5">Livraison sur tout Maroua et environs</p>
+                              <p className="text-[11px] font-bold text-nexus-text-muted mt-0.5">Livraison sur tout Maroua et environs</p>
                            </div>
                         </div>
                      </div>
 
                      <div className="md:col-span-8 space-y-8">
                         <div className="space-y-4">
-                           <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tight pb-3 border-b-2 border-slate-100 inline-block">Description Technique</h3>
-                           <p className="text-slate-600 font-medium leading-relaxed">
+                           <h3 className="text-xl font-black text-nexus-text uppercase italic tracking-tight pb-3 border-b-2 border-white/5 inline-block">Description Technique</h3>
+                           <p className="text-nexus-text-muted font-medium leading-relaxed">
                              {selectedProduct.description}
                            </p>
                         </div>
 
                         <div className="space-y-4">
-                           <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight">Avantages Nexus</h3>
+                           <h3 className="text-lg font-black text-nexus-text uppercase italic tracking-tight">Avantages Nexus</h3>
                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               {[
                                 { icon: <Sparkles size={16} />, text: 'Garanti Authentique' },
@@ -1715,9 +1715,9 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                 { icon: <ArrowRight size={16} />, text: 'Livraison Rapide (<2h)' },
                                 { icon: <Award size={16} />, text: 'Points de Fidélité' }
                               ].map((adv, idx) => (
-                                <div key={idx} className="p-4 bg-slate-50 rounded-2xl flex items-center gap-3 border border-slate-100">
+                                <div key={idx} className="p-4 bg-white/5 rounded-2xl flex items-center gap-3 border border-white/5">
                                    <div className="text-blue-600">{adv.icon}</div>
-                                   <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{adv.text}</span>
+                                   <span className="text-[10px] font-black text-nexus-text uppercase tracking-widest">{adv.text}</span>
                                 </div>
                               ))}
                            </div>
@@ -1737,7 +1737,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           initial={{ scale: 0, y: 100 }}
           animate={{ scale: 1, y: 0 }}
           onClick={() => setShowCart(true)}
-          className="fixed bottom-8 right-8 w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-2xl shadow-blue-600/40 z-50 active:scale-90"
+          className="fixed bottom-8 right-8 w-16 h-16 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-full flex items-center justify-center shadow-2xl shadow-blue-600/40 z-50 active:scale-90"
         >
           <ShoppingBag size={28} />
           <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-white">
@@ -1761,26 +1761,26 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-white p-8 rounded-[2rem] shadow-2xl z-[110]"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-nexus-surface p-8 rounded-[2rem] shadow-2xl z-[110]"
             >
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest italic">
+                <h3 className="text-sm font-black text-nexus-text uppercase tracking-widest italic">
                   Estimer Livraison
                 </h3>
                 <button
                   onClick={() => setShowTransportCalc(false)}
-                  className="p-2 hover:bg-slate-100 rounded-full text-slate-400"
+                  className="p-2 hover:bg-slate-100 rounded-full text-nexus-text-muted"
                 >
                   <X size={18} />
                 </button>
               </div>
               <div className="space-y-4">
-                <div className="p-4 bg-slate-50 rounded-2xl space-y-2">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">
+                <div className="p-4 bg-white/5 rounded-2xl space-y-2">
+                  <p className="text-[9px] font-bold text-nexus-text-muted uppercase">
                     Moto-Taxi (Petit colis)
                   </p>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-black text-slate-900">
+                    <span className="text-xs font-black text-nexus-text">
                       Centre-ville & Proximité
                     </span>
                     <span className="text-xs font-black text-blue-600">
@@ -1788,7 +1788,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-black text-slate-900">
+                    <span className="text-xs font-black text-nexus-text">
                       Zones éloignées (Dewe, Harde)
                     </span>
                     <span className="text-xs font-black text-blue-600">
@@ -1796,12 +1796,12 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                     </span>
                   </div>
                 </div>
-                <div className="p-4 bg-slate-50 rounded-2xl space-y-2">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">
+                <div className="p-4 bg-white/5 rounded-2xl space-y-2">
+                  <p className="text-[9px] font-bold text-nexus-text-muted uppercase">
                     Tricycle (Matériaux/Lourd)
                   </p>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-black text-slate-900">
+                    <span className="text-xs font-black text-nexus-text">
                       Forfait Standard Maroua
                     </span>
                     <span className="text-xs font-black text-blue-600">
@@ -1812,7 +1812,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               </div>
               <button
                 onClick={() => setShowTransportCalc(false)}
-                className="w-full py-4 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest mt-6"
+                className="w-full py-4 bg-nexus-accent text-white rounded-xl text-[10px] font-black uppercase tracking-widest mt-6"
               >
                 Compris
               </button>
@@ -1835,21 +1835,21 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                initial={{ y: "100%", opacity: 0 }}
                animate={{ y: 0, opacity: 1 }}
                exit={{ y: "100%", opacity: 0 }}
-               className="fixed inset-x-0 bottom-0 top-10 md:top-20 bg-white rounded-t-[3rem] shadow-2xl z-[130] flex flex-col"
+               className="fixed inset-x-0 bottom-0 top-10 md:top-20 bg-nexus-surface rounded-t border border-white/10-[3rem] shadow-2xl z-[130] flex flex-col"
             >
-               <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white rounded-t-[3rem] sticky top-0">
+               <div className="p-8 border-b border-white/5 flex justify-between items-center bg-nexus-surface rounded-t border border-white/10-[3rem] sticky top-0">
                   <div>
-                    <h2 className="text-xl font-black text-slate-900 uppercase italic">Catalogue Complet</h2>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Maroua Nexus Connect • {filteredProducts.length} articles</p>
+                    <h2 className="text-xl font-black text-nexus-text uppercase italic">Catalogue Complet</h2>
+                    <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Maroua Nexus Connect • {filteredProducts.length} articles</p>
                   </div>
                   <div className="flex gap-3">
                     <button 
                       onClick={() => window.print()}
-                      className="px-6 py-3 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                      className="px-6 py-3 bg-slate-100 text-nexus-text-muted rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
                     >
                       Imprimer / PDF
                     </button>
-                    <button onClick={() => setShowCatalogue(false)} className="p-3 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-all"><X size={20} /></button>
+                    <button onClick={() => setShowCatalogue(false)} className="p-3 bg-nexus-accent text-white rounded-xl hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all"><X size={20} /></button>
                   </div>
                </div>
                
@@ -1859,30 +1859,30 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                     if (companyProducts.length === 0) return null;
                     return (
                       <div key={company.id} className="space-y-6">
-                        <div className="flex items-center gap-4 pb-4 border-b-2 border-slate-100">
-                          <div className="w-12 h-12 bg-slate-50 rounded-xl overflow-hidden shadow-inner flex items-center justify-center font-black text-slate-300">
+                        <div className="flex items-center gap-4 pb-4 border-b-2 border-white/5">
+                          <div className="w-12 h-12 bg-white/5 rounded-xl overflow-hidden shadow-inner flex items-center justify-center font-black text-slate-300">
                             {company.logo ? <img src={company.logo} className="w-full h-full object-cover" alt="" /> : company.name.charAt(0)}
                           </div>
                           <div>
-                            <h3 className="text-sm font-black text-slate-900 uppercase">{company.name}</h3>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <h3 className="text-sm font-black text-nexus-text uppercase">{company.name}</h3>
+                            <p className="text-[9px] font-bold text-nexus-text-muted uppercase tracking-widest flex items-center gap-2">
                                <MessageCircle size={10} /> {company.whatsappNumber}
                             </p>
                           </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                            {companyProducts.map(p => (
-                             <div key={p.id} className="flex gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                             <div key={p.id} className="flex gap-4 p-4 bg-white/5 rounded-2xl border border-white/5">
                                <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
                                   <img src={p.image} className="w-full h-full object-cover" alt="" />
                                </div>
                                <div className="flex-1 flex flex-col justify-between">
                                   <div>
-                                    <h4 className="text-xs font-black text-slate-900 uppercase italic leading-tight">{p.name}</h4>
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase">{p.category}</p>
+                                    <h4 className="text-xs font-black text-nexus-text uppercase italic leading-tight">{p.name}</h4>
+                                    <p className="text-[8px] font-bold text-nexus-text-muted uppercase">{p.category}</p>
                                   </div>
                                   <div className="flex items-center justify-between mt-2">
-                                     <span className="text-xs font-black text-slate-900">{p.price.toLocaleString()} FCFA</span>
+                                     <span className="text-xs font-black text-nexus-text">{p.price.toLocaleString()} FCFA</span>
                                      <span className={cn("text-[7px] font-black uppercase px-2 py-0.5 rounded-full", getStockStatus(p.stock).color)}>{getStockStatus(p.stock).label}</span>
                                   </div>
                                 </div>
@@ -1912,19 +1912,19 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                initial={{ x: "100%" }}
                animate={{ x: 0 }}
                exit={{ x: "100%" }}
-               className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl z-[140] flex flex-col"
+               className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-nexus-surface shadow-2xl z-[140] flex flex-col"
             >
-               <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0">
+               <div className="p-8 border-b border-white/5 flex justify-between items-center bg-nexus-surface sticky top-0">
                   <div>
-                    <h2 className="text-xl font-black text-slate-900 uppercase italic">Suivi Commandes</h2>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vos derniers achats sur Nexus</p>
+                    <h2 className="text-xl font-black text-nexus-text uppercase italic">Suivi Commandes</h2>
+                    <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Vos derniers achats sur Nexus</p>
                   </div>
-                  <button onClick={() => setShowTracking(false)} className="p-3 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-all"><X size={20} /></button>
+                  <button onClick={() => setShowTracking(false)} className="p-3 bg-nexus-accent text-white rounded-xl hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all"><X size={20} /></button>
                </div>
                
                <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
                   {/* Notification Settings Section */}
-                  <div className="bg-blue-600 rounded-[2rem] p-6 text-white overflow-hidden relative group">
+                  <div className="bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-[2rem] p-6 text-white overflow-hidden relative group">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                       <Sparkles size={60} />
                     </div>
@@ -1975,7 +1975,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                         const message = "Bonjour, j'ai besoin d'une assistance sur Nexus Marketplace.";
                         window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
                       }}
-                      className="px-4 py-2 bg-white text-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest border border-emerald-100 hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
+                      className="px-4 py-2 bg-nexus-surface text-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest border border-emerald-100 hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
                     >
                       Discuter
                     </button>
@@ -1985,7 +1985,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                     <div className="h-full flex flex-col items-center justify-center space-y-4 opacity-40 py-20 text-center">
                       <ShoppingBag size={48} />
                       <p className="text-sm font-black uppercase tracking-widest">Aucune commande trouvée</p>
-                      <p className="text-[10px] font-medium text-slate-500 max-w-[200px]">Passez une commande pour commencer le suivi en temps réel.</p>
+                      <p className="text-[10px] font-medium text-nexus-text-muted/80 max-w-[200px]">Passez une commande pour commencer le suivi en temps réel.</p>
                     </div>
                   ) : (
                     (Object.entries(
@@ -2003,11 +2003,11 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                       return (
                         <div key={gid} className={cn(
                           "rounded-[2rem] p-6 border space-y-6 transition-all",
-                          isMultiVendor ? "bg-slate-900 text-white border-slate-800 shadow-2xl" : "bg-slate-50 text-slate-900 border-slate-100"
+                          isMultiVendor ? "bg-nexus-accent text-white border-slate-800 shadow-2xl" : "bg-white/5 text-nexus-text border-white/5"
                         )}>
                           <div className="flex justify-between items-start">
                             <div>
-                              <span className={cn("text-[8px] font-black uppercase tracking-widest", isMultiVendor ? "text-slate-500" : "text-slate-400")}>
+                              <span className={cn("text-[8px] font-black uppercase tracking-widest", isMultiVendor ? "text-nexus-text-muted/80" : "text-nexus-text-muted")}>
                                 {isMultiVendor ? "COMMANDE MULTI-BOUTIQUES" : "N° COMMANDE"}
                               </span>
                               <h3 className="text-sm font-black uppercase">
@@ -2015,7 +2015,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                               </h3>
                             </div>
                             {isMultiVendor ? (
-                              <div className="px-3 py-1 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-full text-[9px] font-black uppercase tracking-widest">
+                              <div className="px-3 py-1 bg-nexus-accent text-white hover:bg-nexus-accent/80/20 text-blue-400 border border-blue-600/30 rounded-full text-[9px] font-black uppercase tracking-widest">
                                 {subOrders.length} Expéditions
                               </div>
                             ) : (
@@ -2039,11 +2039,11 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                             {subOrders.map(order => (
                               <div key={order.id} className={cn(
                                 "p-4 rounded-2xl relative",
-                                isMultiVendor ? "bg-white/5 border border-white/10" : "bg-white border border-slate-100"
+                                isMultiVendor ? "bg-white/5 border border-white/10" : "bg-nexus-surface border border-white/5"
                               )}>
                                 <div className="flex justify-between items-center mb-3">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[8px] font-black">
+                                    <div className="w-6 h-6 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-lg flex items-center justify-center text-white text-[8px] font-black">
                                        {companies.find(c => c.id === order.companyId)?.name.charAt(0) || "B"}
                                     </div>
                                     <span className="text-[10px] font-black uppercase truncate max-w-[120px]">
@@ -2072,7 +2072,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                                 )}
                                 
                                 <div className="flex justify-between items-center text-[9px] font-bold">
-                                  <span className={isMultiVendor ? "text-slate-400" : "text-slate-500"}>
+                                  <span className={isMultiVendor ? "text-nexus-text-muted" : "text-nexus-text-muted/80"}>
                                     {order.items?.length || 0} articles • {order.total.toLocaleString()} FCFA
                                   </span>
                                   <button 
@@ -2091,10 +2091,10 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
                           <div className={cn(
                             "pt-4 border-t flex justify-between items-center",
-                            isMultiVendor ? "border-white/10" : "border-slate-100"
+                            isMultiVendor ? "border-white/10" : "border-white/5"
                           )}>
                             <div>
-                               <span className={cn("text-[9px] font-black uppercase block tracking-widest leading-none mb-1", isMultiVendor ? "text-slate-500" : "text-slate-400")}>Total Global</span>
+                               <span className={cn("text-[9px] font-black uppercase block tracking-widest leading-none mb-1", isMultiVendor ? "text-nexus-text-muted/80" : "text-nexus-text-muted")}>Total Global</span>
                                <span className={cn("text-lg font-black", isMultiVendor ? "text-emerald-400" : "text-blue-600")}>{globalTotal.toLocaleString()} FCFA</span>
                             </div>
                             {!isMultiVendor && firstSub.status === 'PENDING' && (
@@ -2125,24 +2125,24 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
         >
           <button
             onClick={() => setShowTracking(true)}
-            className="w-full bg-slate-900 border border-slate-700/50 backdrop-blur-xl p-4 rounded-[2rem] flex items-center justify-between shadow-2xl shadow-blue-900/30 group overflow-hidden"
+            className="w-full bg-nexus-accent border border-slate-700/50 backdrop-blur-xl p-4 rounded-[2rem] flex items-center justify-between shadow-2xl shadow-blue-900/30 group overflow-hidden"
           >
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-emerald-400 to-blue-600 animate-pulse" />
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-600 rounded-[1.25rem] flex items-center justify-center text-white relative shadow-inner">
+              <div className="w-12 h-12 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-[1.25rem] flex items-center justify-center text-white relative shadow-inner">
                  <Truck size={22} className="group-hover:translate-x-1 transition-transform" />
                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900" />
               </div>
               <div className="text-left">
                 <p className="text-[10px] font-black text-white uppercase tracking-tighter">Mes Commandes Maroua</p>
-                <p className="text-[9px] font-bold text-slate-400 uppercase italic">
+                <p className="text-[9px] font-bold text-nexus-text-muted uppercase italic">
                   {activeOrderCount} {activeOrderCount > 1 ? "articles en mouvement" : "colis en cours de livraison"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3 pr-2">
               <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest hidden sm:inline">Détails</span>
-              <div className="p-2 bg-white/10 rounded-xl group-hover:bg-blue-600 transition-colors">
+              <div className="p-2 bg-white/10 rounded-xl group-hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-colors">
                 <ChevronRight size={16} className="text-white" />
               </div>
             </div>
@@ -2165,15 +2165,15 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm bg-white z-[160] rounded-[2.5rem] shadow-2xl p-8 border border-slate-100"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm bg-nexus-surface z-[160] rounded-[2.5rem] shadow-2xl p-8 border border-white/5"
             >
               <div className="text-center space-y-4 mb-8">
                 <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mx-auto">
                   <X size={32} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-slate-900 uppercase italic">Annuler la commande ?</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Dites-nous pourquoi pour nous améliorer</p>
+                  <h3 className="text-lg font-black text-nexus-text uppercase italic">Annuler la commande ?</h3>
+                  <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest mt-1">Dites-nous pourquoi pour nous améliorer</p>
                 </div>
               </div>
 
@@ -2191,7 +2191,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                       setCancelReason(reason);
                       cancelOrder(cancellingOrderId, reason);
                     }}
-                    className="w-full p-4 rounded-2xl border-2 border-slate-50 hover:border-red-100 hover:bg-red-50 text-left text-[10px] font-black text-slate-600 uppercase tracking-widest transition-all"
+                    className="w-full p-4 rounded-2xl border-2 border-slate-50 hover:border-red-100 hover:bg-red-50 text-left text-[10px] font-black text-nexus-text-muted uppercase tracking-widest transition-all"
                   >
                     {reason}
                   </button>
@@ -2200,7 +2200,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
               <button
                 onClick={() => setCancellingOrderId(null)}
-                className="w-full mt-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-all"
+                className="w-full mt-6 py-4 text-[10px] font-black text-nexus-text-muted uppercase tracking-widest hover:text-nexus-text transition-all"
               >
                 Garder la commande
               </button>

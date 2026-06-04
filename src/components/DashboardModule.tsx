@@ -451,7 +451,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                 
                 <button 
                   onClick={() => window.print()}
-                  className="px-6 py-4 rounded-2xl bg-white text-nexus-bg text-[9px] font-black uppercase tracking-[0.15em] hover:bg-blue-50 transition-all shadow-xl flex items-center gap-3 active:scale-95"
+                  className="px-6 py-4 rounded-2xl bg-nexus-surface text-nexus-bg text-[9px] font-black uppercase tracking-[0.15em] hover:bg-blue-50 transition-all shadow-xl flex items-center gap-3 active:scale-95 text-nexus-text placeholder-white/40"
                 >
                   <BarChart3 size={14} />
                   Rapport PDF
@@ -533,7 +533,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                   className="bg-white/5 p-8 rounded-3xl border border-white/5 hover:bg-nexus-accent hover:text-white transition-all text-left flex flex-col h-full group/card"
                 >
                   <div className="flex items-center justify-between mb-6">
-                    <span className="text-[10px] font-black text-nexus-accent bg-nexus-accent/10 px-2 py-1 rounded group-hover/card:bg-white group-hover/card:text-nexus-accent">{s.step}</span>
+                    <span className="text-[10px] font-black text-nexus-accent bg-nexus-accent/10 px-2 py-1 rounded group-hover/card:bg-nexus-surface group-hover/card:text-nexus-accent">{s.step}</span>
                     <s.icon size={20} className="text-nexus-text-muted group-hover/card:text-white" />
                   </div>
                   <h3 className="text-lg font-black uppercase tracking-tight mb-2">{s.title}</h3>
@@ -547,24 +547,24 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
           </div>
 
           {/* Flux Balance Placeholder */}
-          <div className="col-span-12 lg:col-span-6 bg-slate-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden flex flex-col justify-center items-center text-center">
+          <div className="col-span-12 lg:col-span-6 bg-nexus-accent rounded-[2.5rem] p-10 text-white relative overflow-hidden flex flex-col justify-center items-center text-center">
             <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
             <Activity size={48} className="text-emerald-400 mb-6 opacity-40" />
             <h3 className="text-2xl font-black uppercase tracking-tight mb-2">Balance des Flux</h3>
-            <p className="text-slate-400 text-xs font-medium max-w-xs">
+            <p className="text-nexus-text-muted text-xs font-medium max-w-xs">
               Une fois vos premières ventes effectuées, vous visualiserez ici l'équilibre entre vos entrées et sorties de marchandises.
             </p>
           </div>
 
           {/* Performance Placeholder */}
-          <div className="col-span-12 lg:col-span-6 bg-white rounded-[2.5rem] p-10 border border-slate-100 flex flex-col justify-center items-center text-center">
+          <div className="col-span-12 lg:col-span-6 bg-nexus-surface rounded-[2.5rem] p-10 border border-white/5 flex flex-col justify-center items-center text-center">
              <div className="w-full h-32 flex items-end gap-2 mb-8 px-10">
                {[20, 40, 15, 50, 30, 45, 25].map((v, i) => (
-                 <div key={i} className="flex-1 bg-slate-50 rounded-t-lg transition-all animate-pulse" style={{ height: `${v}%` }} />
+                 <div key={i} className="flex-1 bg-white/5 rounded-t-lg transition-all animate-pulse" style={{ height: `${v}%` }} />
                ))}
              </div>
-             <h3 className="text-2xl font-black uppercase tracking-tight text-slate-900 mb-2">Insights Prédictifs</h3>
-             <p className="text-slate-400 text-xs font-medium max-w-xs">
+             <h3 className="text-2xl font-black uppercase tracking-tight text-nexus-text mb-2">Insights Prédictifs</h3>
+             <p className="text-nexus-text-muted text-xs font-medium max-w-xs">
                Nexus AI analysera vos performances après 7 jours d'activité pour vous suggérer des optimisations de stock.
              </p>
           </div>
@@ -646,7 +646,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
            </div>
            <button 
              onClick={() => navigateTo('guide')}
-             className="relative z-10 px-8 py-4 bg-white text-nexus-accent rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg hover:bg-blue-50 transition-colors active:scale-95"
+             className="relative z-10 px-8 py-4 bg-nexus-surface text-nexus-accent rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg hover:bg-blue-50 transition-colors active:scale-95"
            >
               Accéder au Briefing
            </button>
@@ -701,7 +701,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
         </div>
 
         {/* Financial Flow Tracker */}
-        <div className="col-span-12 xl:col-span-4 bg-slate-900 rounded-3xl lg:rounded-[2.5rem] p-7 lg:p-9 text-white shadow-xl relative overflow-hidden flex flex-col justify-between">
+        <div className="col-span-12 xl:col-span-4 bg-nexus-accent rounded-3xl lg:rounded-[2.5rem] p-7 lg:p-9 text-white shadow-xl relative overflow-hidden flex flex-col justify-between">
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/40 via-transparent to-transparent z-0 pointer-events-none" />
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-8">
@@ -722,7 +722,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
               ].map(s => (
                 <div key={s.label}>
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{s.label}</span>
+                    <span className="text-[9px] font-black text-nexus-text-muted/80 uppercase tracking-[0.2em]">{s.label}</span>
                     <span className="text-[11px] font-black text-white">{s.val}</span>
                   </div>
                   <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
@@ -841,23 +841,23 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       )}
 
       {/* Simplified Advantages with ERP Benefits */}
-      <div className="py-12 bg-slate-50 border-y border-slate-100">
+      <div className="py-12 bg-white/5 border-y border-white/5">
         <div className="text-center mb-12">
-          <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">Performance NEXUS ERP</h2>
-          <div className="w-12 h-1 bg-blue-600 rounded-full mx-auto mt-3" />
+          <h2 className="text-xl font-black text-nexus-text tracking-tight uppercase">Performance NEXUS ERP</h2>
+          <div className="w-12 h-1 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-full mx-auto mt-3" />
         </div>
 
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {advantages.map((adv, i) => (
             <div 
               key={i} 
-              className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm"
+              className="p-6 rounded-2xl bg-nexus-surface border border-white/5 shadow-sm"
             >
               <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600 mb-4 font-black text-xs">
                 0{i + 1}
               </div>
-              <h3 className="text-lg font-black text-slate-900 mb-2 uppercase tracking-tight">{adv.title}</h3>
-              <p className="text-xs font-medium text-slate-500 leading-relaxed">{adv.desc}</p>
+              <h3 className="text-lg font-black text-nexus-text mb-2 uppercase tracking-tight">{adv.title}</h3>
+              <p className="text-xs font-medium text-nexus-text-muted/80 leading-relaxed">{adv.desc}</p>
             </div>
           ))}
         </div>
@@ -865,11 +865,11 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
 
       {/* Cross-tenant Global Overview */}
       {companies.filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email).length > 0 && (
-        <div className="mt-12 bg-white rounded-3xl border border-blue-100 p-8 shadow-xl shadow-blue-900/5">
+        <div className="mt-12 bg-nexus-surface rounded-3xl border border-white/10 border border-blue-100 p-8 shadow-xl shadow-blue-900/5">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h3 className="text-xl font-black text-slate-900 tracking-tight">Vue d'ensemble de vos opérations</h3>
-              <p className="text-sm font-medium text-slate-500 mt-1">Status et performances des entités sous votre direction.</p>
+              <h3 className="text-xl font-black text-nexus-text tracking-tight">Vue d'ensemble de vos opérations</h3>
+              <p className="text-sm font-medium text-nexus-text-muted/80 mt-1">Status et performances des entités sous votre direction.</p>
             </div>
             <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
               <Briefcase size={24} />
@@ -880,25 +880,25 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
             {companies
               .filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email)
               .map(c => (
-              <div key={c.id} className="p-5 border border-slate-200 rounded-2xl flex flex-col gap-4 hover:border-blue-300 transition-colors bg-slate-50 relative overflow-hidden group">
+              <div key={c.id} className="p-5 border border-white/10 rounded-2xl flex flex-col gap-4 hover:border-blue-300 transition-colors bg-white/5 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-blue-100/50 rounded-bl-full -mr-12 -mt-12 group-hover:bg-blue-200/50 transition-colors" />
                 <div className="flex items-center gap-4 relative z-10">
-                  <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-200 flex items-center justify-center font-black text-slate-400 group-hover:text-blue-600 transition-colors">
+                  <div className="w-12 h-12 bg-nexus-surface rounded-xl border border-white/10 shadow-sm border border-white/10 flex items-center justify-center font-black text-nexus-text-muted group-hover:text-blue-600 transition-colors">
                     {c.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-900">{c.name}</h4>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{c.joinCode}</span>
+                    <h4 className="font-bold text-nexus-text">{c.name}</h4>
+                    <span className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest">{c.joinCode}</span>
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-between mt-auto relative z-10 pt-4 border-t border-slate-200">
+                <div className="flex items-center justify-between mt-auto relative z-10 pt-4 border-t border-white/10">
                   <div className="flex flex-col">
-                    <span className="text-xs text-slate-500">Membres</span>
-                    <span className="font-bold text-slate-900">{Array.isArray(c.employees) ? c.employees.length : (c.memberEmails?.length || 1)}</span>
+                    <span className="text-xs text-nexus-text-muted/80">Membres</span>
+                    <span className="font-bold text-nexus-text">{Array.isArray(c.employees) ? c.employees.length : (c.memberEmails?.length || 1)}</span>
                   </div>
                   <div className="flex flex-col text-right">
-                    <span className="text-xs text-slate-500">Status</span>
+                    <span className="text-xs text-nexus-text-muted/80">Status</span>
                     <span className="font-bold text-emerald-600">Actif</span>
                   </div>
                 </div>
@@ -911,24 +911,24 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       {/* Service Modal */}
       {isAddingService && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
-            <h3 className="text-xl font-bold text-slate-900 mb-6">{editingService ? 'Modifier Service' : 'Nouveau Service'}</h3>
+          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+            <h3 className="text-xl font-bold text-nexus-text mb-6">{editingService ? 'Modifier Service' : 'Nouveau Service'}</h3>
             <form onSubmit={handleSaveService} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nom du service</label>
-                <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newService.name} onChange={e => setNewService({...newService, name: e.target.value})} required/>
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Nom du service</label>
+                <input type="text" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newService.name} onChange={e => setNewService({...newService, name: e.target.value})} required/>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Prix (ou vide si sur devis)</label>
-                <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newService.price} onChange={e => setNewService({...newService, price: e.target.value})} />
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Prix (ou vide si sur devis)</label>
+                <input type="number" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newService.price} onChange={e => setNewService({...newService, price: e.target.value})} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Description</label>
-                <textarea className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none h-24 resize-none" value={newService.description} onChange={e => setNewService({...newService, description: e.target.value})} />
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Description</label>
+                <textarea className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none h-24 resize-none text-nexus-text placeholder-white/40" value={newService.description} onChange={e => setNewService({...newService, description: e.target.value})} />
               </div>
               <div className="grid grid-cols-2 gap-4 mt-8">
-                <button type="button" onClick={() => setIsAddingService(false)} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
-                <button type="submit" className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all font-mono shadow-md">{editingService ? 'Mettre à jour' : 'Enregistrer'}</button>
+                <button type="button" onClick={() => setIsAddingService(false)} className="px-6 py-3 rounded-xl border border-white/10 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all font-mono">Annuler</button>
+                <button type="submit" className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all font-mono shadow-md">{editingService ? 'Mettre à jour' : 'Enregistrer'}</button>
               </div>
             </form>
           </div>
@@ -938,26 +938,26 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       {/* Intervention Modal */}
       {isAddingIntervention && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
-            <h3 className="text-xl font-bold text-slate-900 mb-6">{editingIntervention ? 'Modifier Intervention/Message' : 'Nouveau Message de Rendez-vous'}</h3>
+          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+            <h3 className="text-xl font-bold text-nexus-text mb-6">{editingIntervention ? 'Modifier Intervention/Message' : 'Nouveau Message de Rendez-vous'}</h3>
             <form onSubmit={handleSaveIntervention} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nom du client</label>
-                  <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newIntervention.client} onChange={e => setNewIntervention({...newIntervention, client: e.target.value})} required/>
+                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Nom du client</label>
+                  <input type="text" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newIntervention.client} onChange={e => setNewIntervention({...newIntervention, client: e.target.value})} required/>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Date</label>
-                  <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newIntervention.date} onChange={e => setNewIntervention({...newIntervention, date: e.target.value})} required/>
+                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Date</label>
+                  <input type="date" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newIntervention.date} onChange={e => setNewIntervention({...newIntervention, date: e.target.value})} required/>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Message / Détails de l'intervention</label>
-                <textarea className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none h-24 resize-none" value={newIntervention.message} onChange={e => setNewIntervention({...newIntervention, message: e.target.value})} required/>
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Message / Détails de l'intervention</label>
+                <textarea className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none h-24 resize-none text-nexus-text placeholder-white/40" value={newIntervention.message} onChange={e => setNewIntervention({...newIntervention, message: e.target.value})} required/>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Statut</label>
-                <select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newIntervention.status} onChange={e => setNewIntervention({...newIntervention, status: e.target.value})}>
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Statut</label>
+                <select className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newIntervention.status} onChange={e => setNewIntervention({...newIntervention, status: e.target.value})}>
                   <option value="Planifié">Planifié</option>
                   <option value="En cours">En cours</option>
                   <option value="Terminé">Terminé</option>
@@ -965,8 +965,8 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4 mt-8">
-                <button type="button" onClick={() => setIsAddingIntervention(false)} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
-                <button type="submit" className="px-6 py-3 rounded-xl bg-slate-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-slate-800 transition-all font-mono shadow-md">{editingIntervention ? 'Mettre à jour' : 'Enregistrer'}</button>
+                <button type="button" onClick={() => setIsAddingIntervention(false)} className="px-6 py-3 rounded-xl border border-white/10 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all font-mono">Annuler</button>
+                <button type="submit" className="px-6 py-3 rounded-xl bg-nexus-accent text-white text-xs font-bold uppercase tracking-widest hover:bg-nexus-accent/80 text-white transition-all font-mono shadow-md">{editingIntervention ? 'Mettre à jour' : 'Enregistrer'}</button>
               </div>
             </form>
           </div>
@@ -976,29 +976,29 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       {/* Task Modal */}
       {isAddingTask && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
-            <h3 className="text-xl font-bold text-slate-900 mb-6">Nouvelle Tâche</h3>
+          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+            <h3 className="text-xl font-bold text-nexus-text mb-6">Nouvelle Tâche</h3>
             <form onSubmit={handleSaveTask} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Titre de la tâche</label>
-                <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})} required/>
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Titre de la tâche</label>
+                <input type="text" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})} required/>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Assigné à</label>
-                  <select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newTask.assignedTo} onChange={e => setNewTask({...newTask, assignedTo: e.target.value})}>
+                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Assigné à</label>
+                  <select className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newTask.assignedTo} onChange={e => setNewTask({...newTask, assignedTo: e.target.value})}>
                     <option value="">Sélectionner...</option>
                     {personnel.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Échéance</label>
-                  <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" value={newTask.endDate} onChange={e => setNewTask({...newTask, endDate: e.target.value})}/>
+                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Échéance</label>
+                  <input type="date" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newTask.endDate} onChange={e => setNewTask({...newTask, endDate: e.target.value})}/>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 mt-8">
-                <button type="button" onClick={() => setIsAddingTask(false)} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>
-                <button type="submit" className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all font-mono shadow-md">Enregistrer</button>
+                <button type="button" onClick={() => setIsAddingTask(false)} className="px-6 py-3 rounded-xl border border-white/10 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all font-mono">Annuler</button>
+                <button type="submit" className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all font-mono shadow-md">Enregistrer</button>
               </div>
             </form>
           </div>

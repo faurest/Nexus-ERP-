@@ -95,7 +95,7 @@ export function MarketplaceProductDetail({
                        <span className={cn("text-xs font-bold transition-colors", nairaEnabled ? "text-emerald-600" : "text-slate-700")}>
                          {nairaEnabled ? `₦ ${Math.round(offer.price * nairaRate).toLocaleString()}` : `${offer.price.toLocaleString()} FCFA`}
                        </span>
-                       <button onClick={() => onAddToCart(offer)} className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-colors">
+                       <button onClick={() => onAddToCart(offer)} className="px-3 py-1.5 bg-nexus-accent text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-colors">
                          Acheter
                        </button>
                     </div>
@@ -125,7 +125,7 @@ export function MarketplaceProductDetail({
                   "flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-xl",
                   product.stock <= 0 && !product.allowBackorder
                     ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
-                    : "bg-slate-900 text-white hover:bg-blue-600 hover:shadow-blue-600/20 active:scale-95"
+                    : "bg-nexus-accent text-white hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 hover:shadow-blue-600/20 active:scale-95"
                 )}
               >
                 <ShoppingCart size={16} /> 

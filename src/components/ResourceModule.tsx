@@ -211,13 +211,13 @@ export default function ResourceModule({ user }: { user: any }) {
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
+      <div className="relative overflow-hidden bg-nexus-accent rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
               Nexus <span className="text-blue-500">Resources</span>
             </h1>
-            <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
+            <p className="text-nexus-text-muted text-sm sm:text-lg font-medium leading-relaxed">
               Propulsez votre logistique vers l'avenir. Gestion de stock en temps réel et orchestration des flux critiques.
             </p>
           </div>
@@ -234,7 +234,7 @@ export default function ResourceModule({ user }: { user: any }) {
                 className={cn(
                   "px-6 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap", 
                   activeTab === tab.id 
-                    ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
+                    ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white shadow-xl shadow-blue-600/20" 
                     : "text-slate-300 hover:text-white hover:bg-white/5"
                 )}
               >
@@ -252,7 +252,7 @@ export default function ResourceModule({ user }: { user: any }) {
             onClick={() => setActiveFilter(filter)}
             className={cn(
               "shrink-0 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all whitespace-nowrap",
-              activeFilter === filter ? "bg-white text-slate-900 shadow-md" : "bg-white border border-slate-100 text-slate-400 hover:text-slate-900 shadow-sm"
+              activeFilter === filter ? "bg-nexus-surface text-nexus-text shadow-md" : "bg-nexus-surface border border-white/5 text-nexus-text-muted hover:text-nexus-text shadow-sm"
             )}
           >
             {filter}
@@ -263,13 +263,13 @@ export default function ResourceModule({ user }: { user: any }) {
       {activeTab === 'inventory' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8 space-y-6">
-            <div className="flex gap-4 p-2 bg-white rounded-[2rem] shadow-sm border border-slate-100">
-              <div className="flex-1 bg-slate-50/50 rounded-2xl px-4 py-3 flex items-center gap-3 border border-slate-100 transition-all focus-within:border-blue-400 focus-within:bg-white">
-                <Search className="text-slate-400" size={18} />
+            <div className="flex gap-4 p-2 bg-nexus-surface rounded-[2rem] shadow-sm border border-white/5">
+              <div className="flex-1 bg-white/5/50 rounded-2xl px-4 py-3 flex items-center gap-3 border border-white/5 transition-all focus-within:border-blue-400 focus-within:bg-nexus-surface">
+                <Search className="text-nexus-text-muted" size={18} />
                 <input 
                   type="text" 
                   placeholder="Rechercher un actif..." 
-                  className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-slate-600 placeholder:text-slate-300"
+                  className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-nexus-text-muted placeholder:text-slate-300"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -280,7 +280,7 @@ export default function ResourceModule({ user }: { user: any }) {
                   setFormData({ type: 'Stock', quantity: 0, status: 'Available', condition: '', duration: '', warranty: '', price: 0 });
                   setIsAdding(true);
                 }}
-                className="px-6 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-600 transition-all shadow-xl shadow-slate-200"
+                className="px-6 bg-nexus-accent text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all shadow-xl shadow-slate-200"
               >
                 <Plus size={16} /> AJOUTER
               </button>
@@ -289,30 +289,30 @@ export default function ResourceModule({ user }: { user: any }) {
             <Table headers={['Identifiant', 'Article', 'Catégorie', 'Stock', 'Zone', 'Status', 'Actions']}>
               {filteredResources.map((res) => (
                 <TableRow key={res.id}>
-                  <span className="font-mono text-[10px] text-slate-400">#RES-{res.id.slice(0, 4).toUpperCase()}</span>
+                  <span className="font-mono text-[10px] text-nexus-text-muted">#RES-{res.id.slice(0, 4).toUpperCase()}</span>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-slate-50 border border-slate-100 rounded flex items-center justify-center">
-                      <Package size={14} className="text-slate-400" />
+                    <div className="w-8 h-8 bg-white/5 border border-white/5 rounded flex items-center justify-center">
+                      <Package size={14} className="text-nexus-text-muted" />
                     </div>
-                    <span className="font-bold text-slate-800">{res.name}</span>
+                    <span className="font-bold text-nexus-text">{res.name}</span>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide bg-slate-100 px-2.5 py-1 rounded">
+                  <span className="text-[10px] font-bold text-nexus-text-muted/80 uppercase tracking-wide bg-slate-100 px-2.5 py-1 rounded">
                     {res.type}
                   </span>
                   <span className={cn(
                     "font-bold font-mono",
-                    res.quantity < 10 ? "text-red-500" : "text-slate-900"
+                    res.quantity < 10 ? "text-red-500" : "text-nexus-text"
                   )}>
                     {res.quantity}
                   </span>
-                  <span className="text-slate-500 font-medium">{res.location}</span>
+                  <span className="text-nexus-text-muted/80 font-medium">{res.location}</span>
                   <div className="flex items-center gap-2">
                     <span className={cn(
                       "w-2 h-2 rounded-full",
                       res.status === 'Available' ? "bg-green-500" : 
                       res.status === 'Low' ? "bg-amber-500" : "bg-red-500"
                     )} />
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">{res.status}</span>
+                    <span className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-tight">{res.status}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button 
@@ -321,7 +321,7 @@ export default function ResourceModule({ user }: { user: any }) {
                         setFormData(res);
                         setIsAdding(true);
                       }}
-                      className="p-1 px-2 border rounded-md hover:bg-slate-50 text-slate-400 hover:text-blue-600 transition-all font-bold text-[9px] flex items-center gap-1 uppercase"
+                      className="p-1 px-2 border rounded-md hover:bg-white/5 text-nexus-text-muted hover:text-blue-600 transition-all font-bold text-[9px] flex items-center gap-1 uppercase"
                     >
                       <Edit2 size={10} />
                     </button>
@@ -338,16 +338,16 @@ export default function ResourceModule({ user }: { user: any }) {
           </div>
 
           <div className="lg:col-span-4 space-y-6">
-            <section className="bg-white border border-slate-200 p-6 rounded-[2rem] shadow-sm">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Nexus Supply Metrics</h3>
+            <section className="bg-nexus-surface border border-white/10 p-6 rounded-[2rem] shadow-sm">
+              <h3 className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.2em] mb-6">Nexus Supply Metrics</h3>
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-1">Disponibilité</p>
-                    <p className="text-xl font-bold text-slate-900">{availabilityRate}%</p>
+                  <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                    <p className="text-[9px] font-black text-nexus-text-muted uppercase tracking-[0.1em] mb-1">Disponibilité</p>
+                    <p className="text-xl font-bold text-nexus-text">{availabilityRate}%</p>
                   </div>
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-1">Ruptures</p>
+                  <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                    <p className="text-[9px] font-black text-nexus-text-muted uppercase tracking-[0.1em] mb-1">Ruptures</p>
                     <p className="text-xl font-bold text-red-600">{stockoutRate}%</p>
                   </div>
                 </div>
@@ -362,7 +362,7 @@ export default function ResourceModule({ user }: { user: any }) {
               </div>
             </section>
 
-            <section className="bg-blue-600 text-white p-8 rounded-[2rem] shadow-xl shadow-blue-600/20 relative overflow-hidden group transition-all">
+            <section className="bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white p-8 rounded-[2rem] shadow-xl shadow-blue-600/20 relative overflow-hidden group transition-all">
               <div className="relative z-10">
                 <h3 className="text-[10px] font-black text-blue-200 uppercase tracking-[0.2em] mb-4 text-center">Gestion des Flux</h3>
                 <p className="text-sm font-bold text-center leading-relaxed mb-6">
@@ -370,7 +370,7 @@ export default function ResourceModule({ user }: { user: any }) {
                 </p>
                 <button
                   onClick={() => setIsRestocking(true)}
-                  className="w-full bg-white text-blue-600 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-lg"
+                  className="w-full bg-nexus-surface text-blue-600 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all flex items-center justify-center gap-2 shadow-lg"
                 >
                   <ArrowRightLeft size={16} /> RÉAPPROVISIONNER
                 </button>
@@ -378,10 +378,10 @@ export default function ResourceModule({ user }: { user: any }) {
               <Package className="absolute -bottom-8 -right-8 text-white/10 group-hover:rotate-12 transition-all duration-700" size={160} />
             </section>
 
-            <section className="bg-slate-900 text-white p-8 rounded-[2rem] shadow-xl relative overflow-hidden">
+            <section className="bg-nexus-accent text-white p-8 rounded-[2rem] shadow-xl relative overflow-hidden">
                <ShieldCheck className="absolute top-4 right-4 text-blue-500 opacity-20" size={48} />
-               <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Audit Nexus</h3>
-               <p className="text-xs font-medium text-slate-400 leading-relaxed mb-6">
+               <h3 className="text-[10px] font-black text-nexus-text-muted/80 uppercase tracking-[0.2em] mb-4">Audit Nexus</h3>
+               <p className="text-xs font-medium text-nexus-text-muted leading-relaxed mb-6">
                  Tous vos mouvements de stock sont tracés et auditables.
                </p>
                <button 
@@ -395,12 +395,12 @@ export default function ResourceModule({ user }: { user: any }) {
         </div>
       ) : activeTab === 'ecommerce' ? (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-           <div className="lg:col-span-1 bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm space-y-6">
+           <div className="lg:col-span-1 bg-nexus-surface rounded-[2rem] p-8 border border-white/5 shadow-sm space-y-6">
              <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
                    <Plus size={20} />
                 </div>
-                <h3 className="text-xl font-black text-slate-900 tracking-tight">Nouvel Article</h3>
+                <h3 className="text-xl font-black text-nexus-text tracking-tight">Nouvel Article</h3>
              </div>
                <form 
                  onSubmit={async (e) => {
@@ -433,59 +433,59 @@ export default function ResourceModule({ user }: { user: any }) {
                  className="space-y-4"
                >
                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Désignation</label>
-                    <input name="name" placeholder="ex: Serveur Nexus V3" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none" required />
+                    <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest ml-1">Désignation</label>
+                    <input name="name" placeholder="ex: Serveur Nexus V3" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" required />
                  </div>
                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Spécifications & Détails</label>
-                    <textarea name="description" placeholder="Détails techniques du produit..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none h-28" required />
+                    <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest ml-1">Spécifications & Détails</label>
+                    <textarea name="description" placeholder="Détails techniques du produit..." className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-nexus-accent outline-none h-28 text-nexus-text placeholder-white/40" required />
                  </div>
                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Options de Configuration (Variantes)</label>
-                    <textarea name="configOptions" placeholder="ex: Couleurs: Noir, Blanc; Stockage: 512GB, 1TB" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[10px] focus:ring-2 focus:ring-blue-600 outline-none h-24" />
+                    <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest ml-1">Options de Configuration (Variantes)</label>
+                    <textarea name="configOptions" placeholder="ex: Couleurs: Noir, Blanc; Stockage: 512GB, 1TB" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[10px] focus:ring-2 focus:ring-nexus-accent outline-none h-24 text-nexus-text placeholder-white/40" />
                  </div>
                  <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Prix (XAF)</label>
-                      <input name="price" type="number" placeholder="0" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                      <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest ml-1">Prix (XAF)</label>
+                      <input name="price" type="number" placeholder="0" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" required />
                    </div>
                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Stock Initial</label>
-                      <input name="stock" type="number" placeholder="0" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                      <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest ml-1">Stock Initial</label>
+                      <input name="stock" type="number" placeholder="0" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" required />
                    </div>
                  </div>
                  <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Secteur</label>
-                      <select name="category" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-600 outline-none">
+                      <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest ml-1">Secteur</label>
+                      <select name="category" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40">
                         {['Hardware', 'Software', 'Office', 'Services'].map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                    </div>
                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Poids Fidélité</label>
-                      <input name="points" type="number" placeholder="Pts" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                      <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest ml-1">Poids Fidélité</label>
+                      <input name="points" type="number" placeholder="Pts" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" required />
                    </div>
                  </div>
                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Image (Pick from Phone)</label>
+                    <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest ml-1">Image (Pick from Phone)</label>
                     <div className="relative group">
                        <input 
                          type="file" 
                          accept="image/*"
                          onChange={handleFileChange}
-                         className="hidden" 
+                         className="hidden text-nexus-text placeholder-white/40" 
                          id="product-image-upload"
                        />
                        <label 
                          htmlFor="product-image-upload"
-                         className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-all hover:border-blue-300 overflow-hidden"
+                         className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/10 rounded-2xl cursor-pointer bg-white/5 hover:bg-slate-100 transition-all hover:border-blue-300 overflow-hidden"
                        >
                          {imagePreview ? (
                            <img src={imagePreview} className="w-full h-full object-cover" alt="Preview" />
                          ) : (
                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
                              <Smartphone className="w-8 h-8 text-slate-300 mb-2" />
-                             <p className="text-[9px] font-black text-slate-400 uppercase">Cliquez pour ajouter une photo</p>
+                             <p className="text-[9px] font-black text-nexus-text-muted uppercase">Cliquez pour ajouter une photo</p>
                            </div>
                          )}
                        </label>
@@ -493,27 +493,27 @@ export default function ResourceModule({ user }: { user: any }) {
                          <button 
                            type="button"
                            onClick={() => setImagePreview(null)}
-                           className="absolute top-2 right-2 p-1 bg-white/80 rounded-full text-red-500 hover:bg-black hover:text-white transition-all shadow-sm"
+                           className="absolute top-2 right-2 p-1 bg-nexus-surface/80 rounded-full text-red-500 hover:bg-black hover:text-white transition-all shadow-sm"
                          >
                            <X size={12} />
                          </button>
                        )}
                     </div>
                  </div>
-                 <button type="submit" disabled={submitting} className="w-full py-4 bg-slate-900 text-white rounded-xl font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-2 shadow-xl shadow-slate-200 disabled:opacity-50">
+                 <button type="submit" disabled={submitting} className="w-full py-4 bg-nexus-accent text-white rounded-xl font-black uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all flex items-center justify-center gap-2 shadow-xl shadow-slate-200 disabled:opacity-50">
                    {submitting ? 'Synchronisation...' : <><Plus size={18} /> Déployer l'article</>}
                  </button>
                </form>
            </div>
 
-           <div className="lg:col-span-3 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col h-fit">
-             <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+           <div className="lg:col-span-3 bg-nexus-surface rounded-[2.5rem] border border-white/5 shadow-sm overflow-hidden flex flex-col h-fit">
+             <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-white/5/30">
                <div>
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Inventaire E-commerce</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Supervision du catalogue boutique</p>
+                  <h3 className="text-xl font-black text-nexus-text tracking-tight">Inventaire E-commerce</h3>
+                  <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mt-1">Supervision du catalogue boutique</p>
                </div>
                <div className="flex items-center gap-3">
-                  <div className="px-4 py-2 bg-white rounded-xl border border-slate-100 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  <div className="px-4 py-2 bg-nexus-surface rounded-xl border border-white/10 border border-white/5 text-[10px] font-black text-nexus-text-muted/80 uppercase tracking-widest">
                      {products.length} Solutions
                   </div>
                </div>
@@ -521,12 +521,12 @@ export default function ResourceModule({ user }: { user: any }) {
              <div className="overflow-x-auto">
                 <table className="w-full">
                    <thead>
-                     <tr className="bg-slate-50/50">
-                       <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Article / Solution</th>
-                       <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Secteur</th>
-                       <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Prix Unitaire</th>
-                       <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Stock Disponible</th>
-                       <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Configuration</th>
+                     <tr className="bg-white/5/50">
+                       <th className="px-8 py-5 text-left text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Article / Solution</th>
+                       <th className="px-8 py-5 text-left text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Secteur</th>
+                       <th className="px-8 py-5 text-left text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Prix Unitaire</th>
+                       <th className="px-8 py-5 text-left text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Stock Disponible</th>
+                       <th className="px-8 py-5 text-right text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Configuration</th>
                      </tr>
                    </thead>
                    <tbody className="divide-y divide-slate-50">
@@ -534,12 +534,12 @@ export default function ResourceModule({ user }: { user: any }) {
                        <tr key={p.id} className="hover:bg-blue-50/30 transition-all group">
                          <td className="px-8 py-5">
                            <div className="flex items-center gap-4">
-                             <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-100 shadow-sm group-hover:scale-110 transition-transform">
+                             <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/5 shadow-sm group-hover:scale-110 transition-transform">
                                 <img src={p.image} className="w-full h-full object-cover" />
                              </div>
                              <div>
-                                <p className="font-black text-slate-900 text-sm">{p.name}</p>
-                                <p className="text-[10px] font-medium text-slate-400 truncate max-w-[150px]">{p.description}</p>
+                                <p className="font-black text-nexus-text text-sm">{p.name}</p>
+                                <p className="text-[10px] font-medium text-nexus-text-muted truncate max-w-[150px]">{p.description}</p>
                                 {p.configOptions && (
                                   <p className="text-[9px] font-black text-blue-600 uppercase mt-1 flex items-center gap-1">
                                     <CheckCircle2 size={10} /> Configuré
@@ -549,12 +549,12 @@ export default function ResourceModule({ user }: { user: any }) {
                            </div>
                          </td>
                          <td className="px-8 py-5">
-                            <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-[9px] font-black uppercase tracking-widest">
+                            <span className="px-3 py-1 bg-slate-100 text-nexus-text-muted/80 rounded-full text-[9px] font-black uppercase tracking-widest">
                                {p.category}
                             </span>
                          </td>
-                         <td className="px-8 py-5 text-sm font-black text-slate-900">
-                            {p.price.toLocaleString()} <span className="text-[10px] text-slate-400 ml-1">XAF</span>
+                         <td className="px-8 py-5 text-sm font-black text-nexus-text">
+                            {p.price.toLocaleString()} <span className="text-[10px] text-nexus-text-muted ml-1">XAF</span>
                          </td>
                          <td className="px-8 py-5">
                             <div className="flex items-center gap-3">
@@ -564,7 +564,7 @@ export default function ResourceModule({ user }: { user: any }) {
                                )} />
                                <span className={cn(
                                  "text-sm font-black",
-                                 p.stock > 10 ? "text-slate-900" : p.stock > 0 ? "text-amber-600" : "text-red-600"
+                                 p.stock > 10 ? "text-nexus-text" : p.stock > 0 ? "text-amber-600" : "text-red-600"
                                )}>{p.stock}</span>
                             </div>
                          </td>
@@ -572,7 +572,7 @@ export default function ResourceModule({ user }: { user: any }) {
                             <div className="flex justify-end gap-3 translate-x-4 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all">
                                <button 
                                  onClick={() => { setEditingProduct(p); setImagePreview(p.image); }}
-                                 className="p-3 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all shadow-sm"
+                                 className="p-3 bg-blue-50 text-blue-600 hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 hover:text-white rounded-xl transition-all shadow-sm"
                                >
                                  <Edit2 size={16} />
                                </button>
@@ -596,18 +596,18 @@ export default function ResourceModule({ user }: { user: any }) {
            </div>
         </div>
       ) : activeTab === 'movements' ? (
-        <div className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-sm">
-          <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+        <div className="bg-nexus-surface border border-white/10 rounded-[2rem] overflow-hidden shadow-sm">
+          <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/5/30">
             <div>
-              <h3 className="text-lg font-bold text-slate-900 leading-none mb-1 text-left">Journal Stratégique des Mouvements</h3>
-              <p className="text-xs font-medium text-slate-400 text-left">Audit complet de tous les flux entrants et sortants.</p>
+              <h3 className="text-lg font-bold text-nexus-text leading-none mb-1 text-left">Journal Stratégique des Mouvements</h3>
+              <p className="text-xs font-medium text-nexus-text-muted text-left">Audit complet de tous les flux entrants et sortants.</p>
             </div>
             <RefreshCw size={24} className="text-blue-200" />
           </div>
           <Table headers={['Date', 'Type', 'Article', 'Quantité', 'Source', 'Opérateur']}>
             {movementLogs.map((log) => (
               <TableRow key={log.id}>
-                <span className="font-mono text-[10px] text-slate-400">
+                <span className="font-mono text-[10px] text-nexus-text-muted">
                   {log.date ? new Date(log.date.seconds * 1000).toLocaleString() : 'PENDING'}
                 </span>
                 <span className={cn(
@@ -616,14 +616,14 @@ export default function ResourceModule({ user }: { user: any }) {
                 )}>
                   {log.type === 'IN' ? 'Entrée' : 'Sortie'}
                 </span>
-                <span className="font-bold text-slate-800">{log.resourceName}</span>
-                <span className="font-black text-slate-900 font-mono">{log.quantity}</span>
-                <span className="text-slate-500 font-medium italic">{log.supplier || 'Interne'}</span>
+                <span className="font-bold text-nexus-text">{log.resourceName}</span>
+                <span className="font-black text-nexus-text font-mono">{log.quantity}</span>
+                <span className="text-nexus-text-muted/80 font-medium italic">{log.supplier || 'Interne'}</span>
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 bg-slate-100 rounded-full flex items-center justify-center text-[8px] font-black">
                     {log.performedBy?.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-[10px] text-slate-400 font-bold truncate max-w-[80px]">{log.performedBy}</span>
+                  <span className="text-[10px] text-nexus-text-muted font-bold truncate max-w-[80px]">{log.performedBy}</span>
                 </div>
               </TableRow>
             ))}
@@ -637,31 +637,31 @@ export default function ResourceModule({ user }: { user: any }) {
       ) : (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 font-sans">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+            <div className="bg-nexus-surface p-8 rounded-[2rem] border border-white/5 shadow-sm relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full translate-x-12 -translate-y-12 transition-transform group-hover:scale-110" />
-              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 relative">Volume Entrant (IN)</p>
+              <p className="text-[10px] font-black uppercase text-nexus-text-muted tracking-widest mb-3 relative">Volume Entrant (IN)</p>
               <div className="flex items-center gap-3 relative">
                 <span className="text-3xl font-black text-emerald-600">{movementsStats.totalIn}</span>
                 <span className="text-[10px] font-bold text-emerald-100 bg-emerald-600 px-2 py-0.5 rounded-full uppercase tracking-tighter">Total</span>
               </div>
             </div>
-            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+            <div className="bg-nexus-surface p-8 rounded-[2rem] border border-white/5 shadow-sm relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full translate-x-12 -translate-y-12 transition-transform group-hover:scale-110" />
-              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 relative">Volume Sortant (OUT)</p>
+              <p className="text-[10px] font-black uppercase text-nexus-text-muted tracking-widest mb-3 relative">Volume Sortant (OUT)</p>
               <div className="flex items-center gap-3 relative">
                 <span className="text-3xl font-black text-red-600">{movementsStats.totalOut}</span>
                 <span className="text-[10px] font-bold text-red-100 bg-red-600 px-2 py-0.5 rounded-full uppercase tracking-tighter">Total</span>
               </div>
             </div>
-            <div className="bg-slate-900 p-8 rounded-[2rem] border border-slate-800 shadow-xl relative overflow-hidden col-span-1 md:col-span-2 group">
-              <div className="absolute bottom-0 right-0 w-48 h-48 bg-blue-600/10 rounded-full translate-x-16 translate-y-16 transition-transform group-hover:scale-110" />
-              <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-3 relative">Balance des Flux (Net)</p>
+            <div className="bg-nexus-accent p-8 rounded-[2rem] border border-slate-800 shadow-xl relative overflow-hidden col-span-1 md:col-span-2 group">
+              <div className="absolute bottom-0 right-0 w-48 h-48 bg-nexus-accent text-white hover:bg-nexus-accent/80/10 rounded-full translate-x-16 translate-y-16 transition-transform group-hover:scale-110" />
+              <p className="text-[10px] font-black uppercase text-nexus-text-muted/80 tracking-widest mb-3 relative">Balance des Flux (Net)</p>
               <div className="flex items-center gap-4 relative">
                 <span className={cn(
                   "text-4xl font-black italic tracking-tighter",
                   fluxBalance >= 0 ? "text-blue-500" : "text-amber-500"
                 )}>
-                  {fluxBalance > 0 ? '+' : ''}{fluxBalance} <span className="text-sm font-black uppercase not-italic text-slate-600">Unités</span>
+                  {fluxBalance > 0 ? '+' : ''}{fluxBalance} <span className="text-sm font-black uppercase not-italic text-nexus-text-muted">Unités</span>
                 </span>
                 <div className="p-3 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
                    <TrendingUp size={24} className={fluxBalance >= 0 ? "text-blue-400" : "text-amber-400"} />
@@ -671,20 +671,20 @@ export default function ResourceModule({ user }: { user: any }) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="bg-white border border-slate-200 p-10 rounded-[2.5rem] shadow-sm flex flex-col items-center justify-center text-center space-y-6">
-              <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-300">
+            <div className="bg-nexus-surface border border-white/10 p-10 rounded-[2.5rem] shadow-sm flex flex-col items-center justify-center text-center space-y-6">
+              <div className="w-20 h-20 bg-white/5 rounded-3xl flex items-center justify-center text-slate-300">
                 <Activity size={40} />
               </div>
-              <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Analyse de Performance</h3>
-              <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-sm">
+              <h3 className="text-2xl font-black text-nexus-text uppercase tracking-tight">Analyse de Performance</h3>
+              <p className="text-nexus-text-muted text-sm font-medium leading-relaxed max-w-sm">
                 Une fois que vous aurez enregistré plus de 10 mouvements IN/OUT, Nexus affichera ici une courbe de tendance prédictive pour anticiper vos besoins de réapprovisionnement.
               </p>
             </div>
-            <div className="bg-white border border-slate-200 p-10 rounded-[2.5rem] shadow-sm space-y-8">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Mouvements Récents</h3>
+            <div className="bg-nexus-surface border border-white/10 p-10 rounded-[2.5rem] shadow-sm space-y-8">
+              <h3 className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.2em] mb-4">Mouvements Récents</h3>
               <div className="space-y-4">
                 {movementLogs.slice(0, 5).map((log, i) => (
-                   <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-all group">
+                   <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-slate-100 transition-all group">
                      <div className="flex items-center gap-4">
                        <div className={cn(
                          "w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:rotate-12",
@@ -693,11 +693,11 @@ export default function ResourceModule({ user }: { user: any }) {
                          {log.type}
                        </div>
                        <div>
-                         <p className="font-bold text-slate-900 text-sm">{log.resourceName}</p>
-                         <p className="text-[10px] font-medium text-slate-400">{log.performedBy}</p>
+                         <p className="font-bold text-nexus-text text-sm">{log.resourceName}</p>
+                         <p className="text-[10px] font-medium text-nexus-text-muted">{log.performedBy}</p>
                        </div>
                      </div>
-                     <span className="font-black text-slate-900">
+                     <span className="font-black text-nexus-text">
                        {log.type === 'IN' ? '+' : '-'}{log.quantity}
                      </span>
                    </div>
@@ -717,10 +717,10 @@ export default function ResourceModule({ user }: { user: any }) {
       {/* Modals for Adding/Restocking/Editing Product */}
       {editingProduct && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2rem] p-6 md:p-8 max-w-2xl w-full max-h-[95vh] overflow-y-auto shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-300 scrollbar-hide">
+          <div className="bg-nexus-surface rounded-[2rem] p-6 md:p-8 max-w-2xl w-full max-h-[95vh] overflow-y-auto shadow-2xl border border-white/5 animate-in fade-in zoom-in duration-300 scrollbar-hide">
             <div className="flex justify-between items-start mb-6">
-              <h2 className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tight">MODIFIER L'ARTICLE</h2>
-              <button onClick={() => { setEditingProduct(null); setImagePreview(null); }} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
+              <h2 className="text-xl md:text-2xl font-black text-nexus-text uppercase tracking-tight">MODIFIER L'ARTICLE</h2>
+              <button onClick={() => { setEditingProduct(null); setImagePreview(null); }} className="p-2 hover:bg-slate-100 rounded-full text-nexus-text-muted transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -754,57 +754,57 @@ export default function ResourceModule({ user }: { user: any }) {
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nom de l'Article</label>
-                  <input name="name" defaultValue={editingProduct.name} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1">Nom de l'Article</label>
+                  <input name="name" defaultValue={editingProduct.name} className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" required />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Catégorie</label>
-                  <select name="category" defaultValue={editingProduct.category} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none">
+                  <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1">Catégorie</label>
+                  <select name="category" defaultValue={editingProduct.category} className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40">
                     {['Hardware', 'Software', 'Office', 'Services'].map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Prix (XAF)</label>
-                  <input name="price" type="number" defaultValue={editingProduct.price} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1">Prix (XAF)</label>
+                  <input name="price" type="number" defaultValue={editingProduct.price} className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" required />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Stock</label>
-                  <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1">Stock</label>
+                  <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" required />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Description Technique</label>
-                <textarea name="description" defaultValue={editingProduct.description} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none h-28" required />
+                <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1">Description Technique</label>
+                <textarea name="description" defaultValue={editingProduct.description} className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-nexus-accent outline-none h-28 text-nexus-text placeholder-white/40" required />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Options & Variantes (Configuration)</label>
-                <textarea name="configOptions" defaultValue={editingProduct.configOptions} placeholder="ex: Couleurs: Rouge, Bleu; Tailles: M, L, XL" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500 outline-none h-24" />
+                <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1">Options & Variantes (Configuration)</label>
+                <textarea name="configOptions" defaultValue={editingProduct.configOptions} placeholder="ex: Couleurs: Rouge, Bleu; Tailles: M, L, XL" className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-nexus-accent outline-none h-24 text-nexus-text placeholder-white/40" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Points Fidélité</label>
-                  <input name="points" type="number" defaultValue={editingProduct.points} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1">Points Fidélité</label>
+                  <input name="points" type="number" defaultValue={editingProduct.points} className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" required />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Visuel de l'Article</label>
+                  <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1 text-left block w-full">Visuel de l'Article</label>
                   <div className="relative h-[100px]">
                     <input 
                       type="file" 
                       accept="image/*"
                       onChange={handleFileChange}
-                      className="hidden" 
+                      className="hidden text-nexus-text placeholder-white/40" 
                       id="edit-product-image-upload"
                     />
                     <label 
                       htmlFor="edit-product-image-upload"
-                      className="flex items-center justify-center w-full h-full border-2 border-dashed border-slate-100 rounded-xl p-2 cursor-pointer bg-slate-50 hover:bg-slate-100 hover:border-blue-300 transition-all overflow-hidden"
+                      className="flex items-center justify-center w-full h-full border-2 border-dashed border-white/5 rounded-xl p-2 cursor-pointer bg-white/5 hover:bg-slate-100 hover:border-blue-300 transition-all overflow-hidden"
                     >
                       {imagePreview ? (
                         <img src={imagePreview} className="h-full object-contain" alt="Preview" />
                       ) : (
                         <div className="flex flex-col items-center">
                           <Smartphone className="w-6 h-6 text-slate-300 mb-1" />
-                          <span className="text-[8px] font-black text-slate-400 uppercase">Modifier l'image</span>
+                          <span className="text-[8px] font-black text-nexus-text-muted uppercase">Modifier l'image</span>
                         </div>
                       )}
                     </label>
@@ -812,8 +812,8 @@ export default function ResourceModule({ user }: { user: any }) {
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                <button type="button" onClick={() => { setEditingProduct(null); setImagePreview(null); }} className="order-2 sm:order-1 px-6 py-4 rounded-xl border border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">ANNULER</button>
-                <button type="submit" disabled={submitting} className="order-1 sm:order-2 px-6 py-4 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-slate-200">
+                <button type="button" onClick={() => { setEditingProduct(null); setImagePreview(null); }} className="order-2 sm:order-1 px-6 py-4 rounded-xl border border-white/5 text-nexus-text-muted text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all">ANNULER</button>
+                <button type="submit" disabled={submitting} className="order-1 sm:order-2 px-6 py-4 rounded-xl bg-nexus-accent text-white text-[10px] font-black uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all shadow-lg shadow-slate-200">
                   {submitting ? 'SYNCHRONISATION...' : 'ENREGISTRER LES MODIFICATIONS'}
                 </button>
               </div>
@@ -823,26 +823,26 @@ export default function ResourceModule({ user }: { user: any }) {
       )}
       {isAdding && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-          <div className="bg-white rounded-[2rem] p-8 max-w-2xl w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
-            <h2 className="text-2xl font-black text-slate-900 mb-6 uppercase tracking-tight">
+          <div className="bg-nexus-surface rounded-[2rem] p-8 max-w-2xl w-full shadow-2xl border border-white/5 animate-in fade-in zoom-in duration-300">
+            <h2 className="text-2xl font-black text-nexus-text mb-6 uppercase tracking-tight">
               {editingResource ? 'MODIFIER L\'ACTIF' : 'NOUVEL ACTIF NEXUS'}
             </h2>
             <form onSubmit={handleSaveResource} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nom de l'Actif</label>
+                  <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1">Nom de l'Actif</label>
                   <input 
                     type="text" 
                     required
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                    className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-nexus-accent outline-none transition-all text-nexus-text placeholder-white/40" 
                     value={formData.name || ''} 
                     onChange={e => setFormData({...formData, name: e.target.value})} 
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Catégorie Nexus</label>
+                  <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1">Catégorie Nexus</label>
                   <select 
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" 
                     value={formData.type} 
                     onChange={e => setFormData({...formData, type: e.target.value})}
                   >
@@ -853,21 +853,21 @@ export default function ResourceModule({ user }: { user: any }) {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Quantité Initialisé</label>
+                  <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1">Quantité Initialisé</label>
                   <input 
                     type="number" 
                     required
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" 
                     value={formData.quantity} 
                     onChange={e => setFormData({...formData, quantity: e.target.value})} 
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Emplacement / Zone</label>
+                  <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1">Emplacement / Zone</label>
                   <input 
                     type="text" 
                     placeholder="Ex: Entrepôt A, Bureau 102"
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" 
                     value={formData.location || ''} 
                     onChange={e => setFormData({...formData, location: e.target.value})} 
                   />
@@ -877,14 +877,14 @@ export default function ResourceModule({ user }: { user: any }) {
                 <button 
                   type="button" 
                   onClick={() => setIsAdding(false)} 
-                  className="px-6 py-4 rounded-xl border border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"
+                  className="px-6 py-4 rounded-xl border border-white/5 text-nexus-text-muted text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all font-mono"
                 >
                   ANNULER
                 </button>
                 <button 
                   type="submit" 
                   disabled={submitting} 
-                  className="px-6 py-4 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all disabled:opacity-50"
+                  className="px-6 py-4 rounded-xl bg-nexus-accent text-white text-[10px] font-black uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all disabled:opacity-50"
                 >
                   {submitting ? 'TRAITEMENT...' : 'SAUVEGARDER L\'ACTIF'}
                 </button>
@@ -896,14 +896,14 @@ export default function ResourceModule({ user }: { user: any }) {
 
       {isRestocking && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-          <div className="bg-white rounded-[2rem] p-8 max-w-xl w-full shadow-2xl border border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <h2 className="text-2xl font-black text-slate-900 mb-6 uppercase tracking-tight text-left">Approvisionnement Nexus</h2>
+          <div className="bg-nexus-surface rounded-[2rem] p-8 max-w-xl w-full shadow-2xl border border-white/5 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <h2 className="text-2xl font-black text-nexus-text mb-6 uppercase tracking-tight text-left">Approvisionnement Nexus</h2>
             <form onSubmit={handleRestock} className="space-y-6">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Sélectionner l'Actif</label>
+                <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1 text-left block w-full">Sélectionner l'Actif</label>
                 <select 
                   required
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                  className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" 
                   value={restockData.resourceId} 
                   onChange={e => setRestockData({...restockData, resourceId: e.target.value})}
                 >
@@ -915,29 +915,29 @@ export default function ResourceModule({ user }: { user: any }) {
               </div>
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Quantité Entrante</label>
+                  <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1 text-left block w-full">Quantité Entrante</label>
                   <input 
                     type="number" 
                     required
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" 
                     value={restockData.quantity} 
                     onChange={e => setRestockData({...restockData, quantity: Number(e.target.value)})} 
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Source / Fournisseur</label>
+                  <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1 text-left block w-full">Source / Fournisseur</label>
                   <input 
                     type="text" 
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" 
                     value={restockData.supplier} 
                     onChange={e => setRestockData({...restockData, supplier: e.target.value})} 
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Notes de Mouvement</label>
+                <label className="text-[10px] font-black text-nexus-text-muted uppercase ml-1 text-left block w-full">Notes de Mouvement</label>
                 <textarea 
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none h-24" 
+                  className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-nexus-accent outline-none h-24 text-nexus-text placeholder-white/40" 
                   value={restockData.notes} 
                   onChange={e => setRestockData({...restockData, notes: e.target.value})}
                   placeholder="Justificatif, numéro de bon, etc."
@@ -947,14 +947,14 @@ export default function ResourceModule({ user }: { user: any }) {
                 <button 
                   type="button" 
                   onClick={() => setIsRestocking(false)} 
-                  className="px-6 py-4 rounded-xl border border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"
+                  className="px-6 py-4 rounded-xl border border-white/5 text-nexus-text-muted text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all font-mono"
                 >
                   ANNULER
                 </button>
                 <button 
                   type="submit" 
                   disabled={submitting} 
-                  className="px-6 py-4 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
+                  className="px-6 py-4 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
                 >
                   {submitting ? 'VALIDATION...' : 'VALIDER L\'ENTRÉE'}
                 </button>

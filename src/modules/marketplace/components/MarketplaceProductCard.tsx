@@ -94,7 +94,7 @@ export function MarketplaceProductCard({
                 "px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all",
                 product.stock <= 0 && !product.allowBackorder
                   ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                  : "bg-slate-900 text-white hover:bg-blue-600 shadow-sm hover:shadow-blue-600/20 active:scale-95"
+                  : "bg-nexus-accent text-white hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 shadow-sm hover:shadow-blue-600/20 active:scale-95"
               )}
             >
               <ShoppingCart size={12} /> Ajouter
@@ -175,7 +175,7 @@ export function MarketplaceProductCard({
               "w-8 h-8 rounded-xl flex items-center justify-center transition-all",
               product.stock <= 0 && !product.allowBackorder
                 ? "bg-slate-50 text-slate-300 cursor-not-allowed"
-                : "bg-slate-900 text-white hover:bg-blue-600 shadow-sm hover:shadow-blue-600/20 active:scale-95"
+                : "bg-nexus-accent text-white hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 shadow-sm hover:shadow-blue-600/20 active:scale-95"
             )}
           >
             <ShoppingCart size={14} />

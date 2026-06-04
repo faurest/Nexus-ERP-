@@ -827,18 +827,18 @@ export default function AdminModule() {
     <div className="relative min-h-[80vh] space-y-8 p-1">
       {/* Background Decor */}
       <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-3xl -tr-1/2" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-nexus-accent text-white hover:bg-nexus-accent/80/5 rounded-full blur-3xl -tr-1/2" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/5 rounded-full blur-3xl -bl-1/2" />
       </div>
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tighter">Console Maître Nexus</h1>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-1 italic">Administration Globale & Supervision des Flux</p>
+          <h1 className="text-3xl font-black text-nexus-text tracking-tighter">Console Maître Nexus</h1>
+          <p className="text-xs font-bold text-nexus-text-muted uppercase tracking-[0.2em] mt-1 italic">Administration Globale & Supervision des Flux</p>
         </div>
-        <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+        <div className="flex items-center gap-3 bg-nexus-surface p-2 rounded-2xl border border-white/5 shadow-sm">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Temps Réel Actif</span>
+          <span className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Temps Réel Actif</span>
         </div>
       </div>
 
@@ -847,13 +847,13 @@ export default function AdminModule() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 flex items-center justify-between group hover:border-blue-200 transition-all"
+          className="bg-nexus-surface p-6 rounded-3xl border border-white/5 shadow-xl shadow-slate-200/50 flex items-center justify-between group hover:border-blue-200 transition-all"
         >
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Actifs Entreprises</p>
-            <h3 className="text-3xl font-black text-slate-900 tracking-tighter">{companies.length}</h3>
+            <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest mb-1">Actifs Entreprises</p>
+            <h3 className="text-3xl font-black text-nexus-text tracking-tighter">{companies.length}</h3>
           </div>
-          <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
+          <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 group-hover:text-white transition-all">
             <Building2 size={24} />
           </div>
         </motion.div>
@@ -862,11 +862,11 @@ export default function AdminModule() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 flex items-center justify-between group hover:border-purple-200 transition-all"
+          className="bg-nexus-surface p-6 rounded-3xl border border-white/5 shadow-xl shadow-slate-200/50 flex items-center justify-between group hover:border-purple-200 transition-all"
         >
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Flux Global (FCFA)</p>
-            <h3 className="text-3xl font-black text-slate-900 tracking-tighter">{totalRevenue.toLocaleString()}</h3>
+            <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest mb-1">Flux Global (FCFA)</p>
+            <h3 className="text-3xl font-black text-nexus-text tracking-tighter">{totalRevenue.toLocaleString()}</h3>
           </div>
           <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all">
             <TrendingUp size={24} />
@@ -877,11 +877,11 @@ export default function AdminModule() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 flex items-center justify-between group hover:border-emerald-200 transition-all"
+          className="bg-nexus-surface p-6 rounded-3xl border border-white/5 shadow-xl shadow-slate-200/50 flex items-center justify-between group hover:border-emerald-200 transition-all"
         >
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Membres Totaux</p>
-            <h3 className="text-3xl font-black text-slate-900 tracking-tighter">
+            <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest mb-1">Membres Totaux</p>
+            <h3 className="text-3xl font-black text-nexus-text tracking-tighter">
               {companies.reduce((acc, curr) => acc + (curr.memberEmails?.length || 0), 0)}
             </h3>
           </div>
@@ -894,10 +894,10 @@ export default function AdminModule() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
-          className="bg-slate-900 p-6 rounded-3xl shadow-2xl shadow-slate-900/30 flex items-center justify-between text-white"
+          className="bg-nexus-accent p-6 rounded-3xl shadow-2xl shadow-slate-900/30 flex items-center justify-between text-white"
         >
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status Réseau</p>
+            <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest mb-1">Status Réseau</p>
             <h3 className="text-xl font-black tracking-tight text-blue-400 flex items-center gap-2">
               <Activity size={20} className="animate-pulse" />
               SÉCURISÉ
@@ -915,12 +915,12 @@ export default function AdminModule() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/40"
+          className="bg-nexus-surface p-8 rounded-[2.5rem] border border-white/5 shadow-xl shadow-slate-200/40"
         >
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h3 className="text-lg font-black text-slate-900 tracking-tight">Analyse des Revenus Écosystème</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Comparaison des performances inter-entreprises</p>
+              <h3 className="text-lg font-black text-nexus-text tracking-tight">Analyse des Revenus Écosystème</h3>
+              <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest mt-1">Comparaison des performances inter-entreprises</p>
             </div>
             <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
               <BarChart3 size={20} />
@@ -950,12 +950,12 @@ export default function AdminModule() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/40"
+          className="bg-nexus-surface p-8 rounded-[2.5rem] border border-white/5 shadow-xl shadow-slate-200/40"
         >
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h3 className="text-lg font-black text-slate-900 tracking-tight">Répartition des Flux</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Part de marché par entité</p>
+              <h3 className="text-lg font-black text-nexus-text tracking-tight">Répartition des Flux</h3>
+              <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest mt-1">Part de marché par entité</p>
             </div>
             <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl">
               <PieChartIcon size={20} />
@@ -981,20 +981,20 @@ export default function AdminModule() {
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute flex flex-col items-center">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Global</span>
-              <span className="text-xl font-black text-slate-900 tracking-tight">{totalRevenue.toLocaleString()}FCFA</span>
+              <span className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest">Global</span>
+              <span className="text-xl font-black text-nexus-text tracking-tight">{totalRevenue.toLocaleString()}FCFA</span>
             </div>
           </div>
         </motion.div>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex gap-4 border-b border-slate-100 pb-1">
+      <div className="flex gap-4 border-b border-white/5 pb-1">
         <button 
           onClick={() => setActiveAdminTab('companies')}
           className={cn(
             "pb-3 px-2 text-sm font-black transition-all border-b-2 uppercase tracking-widest",
-            activeAdminTab === 'companies' ? "text-blue-600 border-blue-600" : "text-slate-400 border-transparent hover:text-slate-600"
+            activeAdminTab === 'companies' ? "text-blue-600 border-blue-600" : "text-nexus-text-muted border-transparent hover:text-nexus-text-muted"
           )}
         >
           Entreprises
@@ -1003,7 +1003,7 @@ export default function AdminModule() {
           onClick={() => setActiveAdminTab('users')}
           className={cn(
             "pb-3 px-2 text-sm font-black transition-all border-b-2 uppercase tracking-widest",
-            activeAdminTab === 'users' ? "text-blue-600 border-blue-600" : "text-slate-400 border-transparent hover:text-slate-600"
+            activeAdminTab === 'users' ? "text-blue-600 border-blue-600" : "text-nexus-text-muted border-transparent hover:text-nexus-text-muted"
           )}
         >
           Utilisateurs
@@ -1012,7 +1012,7 @@ export default function AdminModule() {
           onClick={() => setActiveAdminTab('tools')}
           className={cn(
             "pb-3 px-2 text-sm font-black transition-all border-b-2 uppercase tracking-widest",
-            activeAdminTab === 'tools' ? "text-blue-600 border-blue-600" : "text-slate-400 border-transparent hover:text-slate-600"
+            activeAdminTab === 'tools' ? "text-blue-600 border-blue-600" : "text-nexus-text-muted border-transparent hover:text-nexus-text-muted"
           )}
         >
           Outils & Migration
@@ -1021,7 +1021,7 @@ export default function AdminModule() {
           onClick={() => setActiveAdminTab('guide')}
           className={cn(
             "pb-3 px-2 text-sm font-black transition-all border-b-2 uppercase tracking-widest",
-            activeAdminTab === 'guide' ? "text-blue-600 border-blue-600" : "text-slate-400 border-transparent hover:text-slate-600"
+            activeAdminTab === 'guide' ? "text-blue-600 border-blue-600" : "text-nexus-text-muted border-transparent hover:text-nexus-text-muted"
           )}
         >
           Guide Pratique
@@ -1029,11 +1029,11 @@ export default function AdminModule() {
       </div>
 
       {activeAdminTab === 'companies' && (
-        <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 relative overflow-hidden backdrop-blur-xl bg-white/90">
+        <div className="bg-nexus-surface rounded-[3rem] border border-white/5 shadow-2xl shadow-slate-200/40 relative overflow-hidden backdrop-blur-xl bg-nexus-surface/90">
           <div className="p-10 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Répertoire des Écosystèmes</h2>
-              <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest flex items-center gap-2">
+              <h2 className="text-2xl font-black text-nexus-text tracking-tight leading-none">Répertoire des Écosystèmes</h2>
+              <p className="text-xs font-bold text-nexus-text-muted mt-2 uppercase tracking-widest flex items-center gap-2">
                 <Layers size={14} />
                 Supervision de {companies.length} structures de travail
               </p>
@@ -1041,19 +1041,19 @@ export default function AdminModule() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 transition"
+                className="flex items-center gap-2 px-4 py-2 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 transition"
               >
                 <Plus size={16} /> Créer Entité
               </button>
               
               <div className="relative group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={16} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-nexus-text-muted group-focus-within:text-blue-600 transition-colors" size={16} />
                 <input 
                   type="text" 
                   placeholder="Rechercher..." 
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-11 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-xs font-black w-72 focus:ring-4 focus:ring-blue-50 focus:bg-white transition-all shadow-inner"
+                  className="pl-11 pr-6 py-4 bg-white/5 border border-white/5 rounded-2xl outline-none text-xs font-black w-72 focus:ring-4 focus:ring-nexus-accent focus:bg-nexus-surface transition-all shadow-inner text-nexus-text placeholder-white/40"
                 />
               </div>
             </div>
@@ -1062,21 +1062,21 @@ export default function AdminModule() {
           <div className="overflow-x-auto px-4 pb-8">
             <Table headers={["Institution", "Accès Principal", "Code Nexus", "Équipe", "Actions"]}>
               {filteredCompanies.map((company) => (
-                <TableRow key={company.id} className="group hover:bg-slate-50/80 transition-all border-b border-slate-50 last:border-0 rounded-2xl">
+                <TableRow key={company.id} className="group hover:bg-white/5/80 transition-all border-b border-slate-50 last:border-0 rounded-2xl">
                   <div className="py-7 pl-8">
                     <div className="flex items-center gap-5">
-                      <div className="w-14 h-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center font-black text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all transform group-hover:rotate-3 shadow-md">
+                      <div className="w-14 h-14 bg-nexus-surface border border-white/5 rounded-2xl flex items-center justify-center font-black text-nexus-text-muted group-hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 group-hover:text-white transition-all transform group-hover:rotate-3 shadow-md">
                         {company.name?.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-base font-black text-slate-900 tracking-tight">{company.name}</p>
+                        <p className="text-base font-black text-nexus-text tracking-tight">{company.name}</p>
                         <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Nexus ID: {company.id?.substring(0, 8)}</p>
                       </div>
                     </div>
                   </div>
                   <div>
                     <div className="space-y-1">
-                      <p className="text-xs font-bold text-slate-700">{company.ownerEmail}</p>
+                      <p className="text-xs font-bold text-nexus-text-muted">{company.ownerEmail}</p>
                       <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-all">
                         <ShieldCheck size={10} className="text-emerald-500" />
                         <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Propriétaire</span>
@@ -1084,7 +1084,7 @@ export default function AdminModule() {
                     </div>
                   </div>
                   <div>
-                    <span className="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-900 rounded-xl text-[11px] font-black tracking-[0.2em] uppercase border border-slate-200">
+                    <span className="inline-flex items-center px-4 py-2 bg-slate-100 text-nexus-text rounded-xl text-[11px] font-black tracking-[0.2em] uppercase border border-white/10">
                       {company.joinCode}
                     </span>
                   </div>
@@ -1094,33 +1094,33 @@ export default function AdminModule() {
                         {Array.from({ length: Math.min(3, company.memberEmails?.length || 1) }).map((_, i) => (
                           <div key={i} className={cn(
                             "w-10 h-10 rounded-2xl border-4 border-white flex items-center justify-center text-[11px] font-black shadow-sm",
-                            i === 0 ? "bg-blue-600 text-white" : i === 1 ? "bg-slate-800 text-white" : "bg-slate-200 text-slate-600"
+                            i === 0 ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white" : i === 1 ? "bg-slate-800 text-white" : "bg-slate-200 text-nexus-text-muted"
                           )}>
                             {company.memberEmails?.[i]?.charAt(0).toUpperCase() || 'U'}
                           </div>
                         ))}
                       </div>
-                      <span className="text-[10px] font-black text-slate-400 ml-2">+{company.memberEmails?.length || 0}</span>
+                      <span className="text-[10px] font-black text-nexus-text-muted ml-2">+{company.memberEmails?.length || 0}</span>
                     </div>
                   </div>
                   <div className="pr-8 text-right flex items-center justify-end gap-2">
                     <button 
                       onClick={() => setShowMemberModal(company)}
-                      className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                      className="p-2.5 text-nexus-text-muted hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                       title="Gérer l'équipe"
                     >
                       <Users size={16} />
                     </button>
                     <button 
                       onClick={() => setEditingCompany(company)}
-                      className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
+                      className="p-2.5 text-nexus-text-muted hover:text-nexus-text hover:bg-slate-100 rounded-xl transition-all"
                       title="Modifier"
                     >
                       <Edit2 size={16} />
                     </button>
                     <button 
                       onClick={() => handleDeleteCompany(company.id, company.name)}
-                      className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                      className="p-2.5 text-nexus-text-muted hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                       title="Supprimer"
                     >
                       <Trash2 size={16} />
@@ -1132,7 +1132,7 @@ export default function AdminModule() {
                         window.dispatchEvent(new Event('storage'));
                         window.location.reload();
                       }}
-                      className="group/btn inline-flex items-center gap-3 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-slate-900/10 active:scale-95"
+                      className="group/btn inline-flex items-center gap-3 px-6 py-3 bg-nexus-accent text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all shadow-xl shadow-slate-900/10 active:scale-95"
                     >
                       Ouvrir
                       <ArrowUpRight size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
@@ -1146,11 +1146,11 @@ export default function AdminModule() {
       )}
 
       {activeAdminTab === 'users' && (
-        <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 p-10">
+        <div className="bg-nexus-surface rounded-[3rem] border border-white/5 shadow-2xl shadow-slate-200/40 p-10">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Base Utilisateurs Globale</h2>
-              <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest leading-relaxed">
+              <h2 className="text-2xl font-black text-nexus-text tracking-tight">Base Utilisateurs Globale</h2>
+              <p className="text-xs font-bold text-nexus-text-muted mt-2 uppercase tracking-widest leading-relaxed">
                 Liste exhaustive des comptes enregistrés sur la plateforme.<br />
                 Note: Les utilisateurs sans entreprise rattachée apparaissent ici.
               </p>
@@ -1164,19 +1164,19 @@ export default function AdminModule() {
                   <div className="flex items-center gap-4">
                     <div className={cn(
                       "w-10 h-10 rounded-full flex items-center justify-center font-black text-sm",
-                      u.status === 'connected' ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-400"
+                      u.status === 'connected' ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white" : "bg-slate-100 text-nexus-text-muted"
                     )}>
                       {u.displayName?.charAt(0) || u.email?.charAt(0) || '?'}
                     </div>
                     <div>
-                      <p className="text-sm font-black text-slate-900">{u.displayName || 'Utilisateur'}</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                      <p className="text-sm font-black text-nexus-text">{u.displayName || 'Utilisateur'}</p>
+                      <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-tighter">
                         {u.status === 'connected' ? `Nexus Active: ${u.uid?.substring(0, 8)}` : `Nexus ID: ${u.nexusId || u.id?.substring(0, 8) || '???'}`}
                       </p>
                     </div>
                   </div>
                 </div>
-                <div className="text-xs font-bold text-slate-600">
+                <div className="text-xs font-bold text-nexus-text-muted">
                   {u.email || u.id || '-'}
                 </div>
                 <div>
@@ -1193,13 +1193,13 @@ export default function AdminModule() {
                 <div>
                   <div className="flex flex-wrap gap-1">
                     {companies.filter(c => c.memberEmails?.includes(u.email) || c.ownerEmail === u.email).map(c => (
-                      <span key={c.id} className="px-2 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-bold">
+                      <span key={c.id} className="px-2 py-1 bg-slate-100 text-nexus-text-muted/80 rounded-lg text-[9px] font-bold">
                         {c.name}
                       </span>
                     ))}
                     <button 
                       onClick={() => setShowUserAssignModal(u)}
-                      className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black hover:bg-blue-600 hover:text-white transition-all flex items-center gap-1"
+                      className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 hover:text-white transition-all flex items-center gap-1"
                     >
                       <Plus size={10} /> Affecter
                     </button>
@@ -1208,14 +1208,14 @@ export default function AdminModule() {
                 <div className="flex items-center gap-2 pr-4">
                   <button 
                     onClick={() => setEditingUser(u)}
-                    className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
+                    className="p-2 text-nexus-text-muted hover:text-nexus-text hover:bg-slate-100 rounded-xl transition-all"
                     title="Modifier"
                   >
                     <Edit2 size={14} />
                   </button>
                   <button 
                     onClick={() => handleDeleteUser(u.id, u.email)}
-                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                    className="p-2 text-nexus-text-muted hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                     title="Supprimer"
                   >
                     <Trash2 size={14} />
@@ -1232,37 +1232,37 @@ export default function AdminModule() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
+            className="bg-nexus-surface w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
           >
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl">
+              <div className="w-14 h-14 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-2xl flex items-center justify-center text-white shadow-xl">
                 <Users size={28} />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Modifier Utilisateur</h3>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">{editingUser.email}</p>
+                <h3 className="text-2xl font-black text-nexus-text tracking-tight leading-none">Modifier Utilisateur</h3>
+                <p className="text-xs font-bold text-nexus-text-muted uppercase tracking-widest mt-2">{editingUser.email}</p>
               </div>
             </div>
 
             <form onSubmit={handleUpdateUser} className="space-y-5">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nom Complet</label>
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Nom Complet</label>
                 <input 
                   type="text" 
                   required
                   value={editingUser.displayName || ''}
                   onChange={e => setEditingUser({...editingUser, displayName: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent focus:border-transparent font-bold text-sm transition-all text-nexus-text placeholder-white/40"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Email</label>
                 <input 
                   type="email" 
                   required
                   value={editingUser.email || ''}
                   onChange={e => setEditingUser({...editingUser, email: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent focus:border-transparent font-bold text-sm transition-all text-nexus-text placeholder-white/40"
                 />
               </div>
 
@@ -1270,14 +1270,14 @@ export default function AdminModule() {
                 <button 
                   type="button" 
                   onClick={() => setEditingUser(null)}
-                  className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
+                  className="flex-1 py-4 bg-slate-100 text-nexus-text-muted rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
                 >
                   Annuler
                 </button>
                 <button 
                   type="submit"
                   disabled={submitting}
-                  className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait"
+                  className="flex-[2] py-4 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait"
                 >
                   {submitting ? 'Traitement...' : 'Mettre à jour'}
                 </button>
@@ -1289,10 +1289,10 @@ export default function AdminModule() {
 
       {activeAdminTab === 'tools' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
+          <div className="bg-nexus-surface rounded-[3rem] border border-white/5 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
             <div>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">Diagnostic d'Accès Utilisateur</h2>
-              <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest leading-loose">Vérifiez si un email est correctement configuré dans le système.</p>
+              <h2 className="text-xl font-black text-nexus-text tracking-tight">Diagnostic d'Accès Utilisateur</h2>
+              <p className="text-xs font-bold text-nexus-text-muted mt-1 uppercase tracking-widest leading-loose">Vérifiez si un email est correctement configuré dans le système.</p>
             </div>
 
             <div className="flex gap-3">
@@ -1301,12 +1301,12 @@ export default function AdminModule() {
                 placeholder="Email à diagnostiquer..." 
                 value={diagEmail}
                 onChange={e => setDiagEmail(e.target.value)}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all"
+                className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent focus:border-transparent font-bold text-sm transition-all text-nexus-text placeholder-white/40"
               />
               <button 
                 onClick={handleDiagnostic}
                 disabled={loading || !diagEmail}
-                className="px-6 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl active:scale-95 disabled:opacity-50"
+                className="px-6 py-4 bg-nexus-accent text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all shadow-xl active:scale-95 disabled:opacity-50"
               >
                 Scanner
               </button>
@@ -1316,11 +1316,11 @@ export default function AdminModule() {
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-6 bg-slate-50 rounded-3xl border border-slate-200 space-y-4"
+                className="p-6 bg-white/5 rounded-3xl border border-white/10 space-y-4"
               >
-                <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Résultats pour {diagResult.email}</span>
-                  <button onClick={() => setDiagResult(null)} className="text-slate-400 hover:text-slate-900"><X size={14} /></button>
+                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                  <span className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Résultats pour {diagResult.email}</span>
+                  <button onClick={() => setDiagResult(null)} className="text-nexus-text-muted hover:text-nexus-text"><X size={14} /></button>
                 </div>
 
                 {diagResult.fuzzyMatches && diagResult.fuzzyMatches.length > 0 && (
@@ -1332,7 +1332,7 @@ export default function AdminModule() {
                          <button 
                           key={m} 
                           onClick={() => { setDiagEmail(m); handleDiagnostic(); }}
-                          className="px-2 py-1 bg-white border border-amber-200 rounded hover:bg-amber-100 transition-all font-mono"
+                          className="px-2 py-1 bg-nexus-surface border border-amber-200 rounded hover:bg-amber-100 transition-all font-mono"
                          >
                            {m}
                          </button>
@@ -1342,24 +1342,24 @@ export default function AdminModule() {
                 )}
                 
                   <div className="grid grid-cols-2 gap-4 text-[11px] font-bold">
-                  <div className="p-3 bg-white rounded-xl border border-slate-100 flex flex-col gap-1">
+                  <div className="p-3 bg-nexus-surface rounded-xl border border-white/10 border border-white/5 flex flex-col gap-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Compte Firebase</span>
+                      <span className="text-nexus-text-muted">Compte Firebase</span>
                       {diagResult.inUsers ? <CheckCircle2 size={14} className="text-emerald-500" /> : <X size={14} className="text-red-500" />}
                     </div>
                     {diagResult.inUsers && diagResult.actualUserEmail !== diagResult.email && (
                       <span className="text-[8px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded leading-none">⚠️ Case mismatch: {diagResult.actualUserEmail}</span>
                     )}
                   </div>
-                  <div className="p-3 bg-white rounded-xl border border-slate-100 flex items-center justify-between">
-                    <span className="text-slate-400">Propriétaire Entreprise</span>
+                  <div className="p-3 bg-nexus-surface rounded-xl border border-white/10 border border-white/5 flex items-center justify-between">
+                    <span className="text-nexus-text-muted">Propriétaire Entreprise</span>
                     <span className="text-blue-600">{diagResult.ownedCompanies.length > 0 ? "OUI" : "NON"}</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center ml-1">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Affiliations Personnel ({diagResult.personnelCount})</span>
+                    <span className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest">Affiliations Personnel ({diagResult.personnelCount})</span>
                     {!diagResult.inUsers && diagResult.personnelCount > 0 && (
                       <button 
                         onClick={async () => {
@@ -1386,10 +1386,10 @@ export default function AdminModule() {
                   ) : (
                     <div className="space-y-2">
                       {diagResult.personnelDetails.map((pd: any, i: number) => (
-                        <div key={i} className="p-3 bg-white rounded-xl border border-slate-100 flex justify-between items-center">
+                        <div key={i} className="p-3 bg-nexus-surface rounded-xl border border-white/10 border border-white/5 flex justify-between items-center">
                           <div className="flex flex-col">
-                            <span className="text-slate-700">{pd.company}</span>
-                            <span className="text-[8px] text-slate-400 font-mono tracking-tight">{pd.id}</span>
+                            <span className="text-nexus-text-muted">{pd.company}</span>
+                            <span className="text-[8px] text-nexus-text-muted font-mono tracking-tight">{pd.id}</span>
                             {pd.actualEmail !== diagResult.email && (
                               <span className="text-[8px] text-amber-600 bg-amber-50 px-1 py-0.5 rounded w-fit mt-1">⚠️ {pd.actualEmail}</span>
                             )}
@@ -1417,7 +1417,7 @@ export default function AdminModule() {
                                 }
                                 setLoading(false);
                               }}
-                              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition-all border border-transparent hover:border-slate-200"
+                              className="p-1.5 hover:bg-slate-100 rounded-lg text-nexus-text-muted hover:text-blue-600 transition-all border border-transparent hover:border-white/10"
                               title="Forcer Adhésion"
                             >
                               <Shield size={14} />
@@ -1429,17 +1429,17 @@ export default function AdminModule() {
                   )}
 
                   <div className="flex justify-between items-center ml-1 mt-4">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Affiliations Client ({diagResult.clientCount})</span>
+                    <span className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest">Affiliations Client ({diagResult.clientCount})</span>
                   </div>
                   {diagResult.clientDetails.length === 0 ? (
                     <p className="text-[10px] text-red-500 italic px-1">Aucune affiliation client trouvée.</p>
                   ) : (
                     <div className="space-y-2">
                        {diagResult.clientDetails.map((cd: any, i: number) => (
-                        <div key={i} className="p-3 bg-white rounded-xl border border-slate-100 flex justify-between items-center">
+                        <div key={i} className="p-3 bg-nexus-surface rounded-xl border border-white/10 border border-white/5 flex justify-between items-center">
                           <div className="flex flex-col">
-                            <span className="text-slate-700">{cd.company}</span>
-                            <span className="text-[8px] text-slate-400 font-mono tracking-tight">{cd.id}</span>
+                            <span className="text-nexus-text-muted">{cd.company}</span>
+                            <span className="text-[8px] text-nexus-text-muted font-mono tracking-tight">{cd.id}</span>
                             {cd.actualEmail !== diagResult.email && (
                               <span className="text-[8px] text-amber-600 bg-amber-50 px-1 py-0.5 rounded w-fit mt-1">⚠️ {cd.actualEmail}</span>
                             )}
@@ -1464,7 +1464,7 @@ export default function AdminModule() {
                                 }
                                 setLoading(false);
                               }}
-                              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-600 transition-all border border-transparent hover:border-slate-200"
+                              className="p-1.5 hover:bg-slate-100 rounded-lg text-nexus-text-muted hover:text-emerald-600 transition-all border border-transparent hover:border-white/10"
                               title="Forcer Adhésion"
                             >
                               <Shield size={14} />
@@ -1479,75 +1479,75 @@ export default function AdminModule() {
             )}
           </div>
 
-          <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
+          <div className="bg-nexus-surface rounded-[3rem] border border-white/5 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
             <div>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">Clonage d'Accès Utilisateur</h2>
-              <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest leading-loose">Transférez les permissions d'un email vers un autre.</p>
+              <h2 className="text-xl font-black text-nexus-text tracking-tight">Clonage d'Accès Utilisateur</h2>
+              <p className="text-xs font-bold text-nexus-text-muted mt-1 uppercase tracking-widest leading-loose">Transférez les permissions d'un email vers un autre.</p>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Source (Celui qui a l'accès)</label>
+                <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest ml-1">Email Source (Celui qui a l'accès)</label>
                 <input 
                   type="email" 
                   placeholder="Ex: dangafelicite@gmail.com" 
                   value={cloneSource}
                   onChange={e => setCloneSource(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent font-bold text-sm text-nexus-text placeholder-white/40"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Cible (Celui qui doit recevoir)</label>
+                <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest ml-1">Email Cible (Celui qui doit recevoir)</label>
                 <input 
                   type="email" 
                   placeholder="Ex: hackeurfaurest@gmail.com" 
                   value={cloneTarget}
                   onChange={e => setCloneTarget(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-emerald-600 font-bold text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-emerald-600 font-bold text-sm text-nexus-text placeholder-white/40"
                 />
               </div>
               <button 
                 onClick={handleCloneAccess}
                 disabled={loading || !cloneSource || !cloneTarget}
-                className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-blue-200 active:scale-[0.98] disabled:opacity-50"
+                className="w-full py-5 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent transition-all shadow-xl shadow-blue-200 active:scale-[0.98] disabled:opacity-50"
               >
                 Démarrer le Clonage d'Accès
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
+          <div className="bg-nexus-surface rounded-[3rem] border border-white/5 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
             <div>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">Maintenance Système</h2>
-              <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest leading-loose">Synchronisation et sauvegardes multi-cloud.</p>
+              <h2 className="text-xl font-black text-nexus-text tracking-tight">Maintenance Système</h2>
+              <p className="text-xs font-bold text-nexus-text-muted mt-1 uppercase tracking-widest leading-loose">Synchronisation et sauvegardes multi-cloud.</p>
             </div>
             
             <div className="grid grid-cols-1 gap-4">
               <button 
                 onClick={handleExportData}
-                className="w-full flex items-center justify-between p-6 bg-slate-50 rounded-[2rem] border border-slate-100 hover:border-blue-200 hover:bg-white transition-all group"
+                className="w-full flex items-center justify-between p-6 bg-white/5 rounded-[2rem] border border-white/5 hover:border-blue-200 hover:bg-nexus-surface transition-all group"
               >
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-all">
+                  <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl group-hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 group-hover:text-white transition-all">
                     <Download size={20} />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-black text-slate-900">Backup JSON Complet</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Télécharger toutes les tables</p>
+                    <p className="text-sm font-black text-nexus-text">Backup JSON Complet</p>
+                    <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest">Télécharger toutes les tables</p>
                   </div>
                 </div>
                 <ArrowUpRight size={18} className="text-slate-300 group-hover:text-blue-600 transition-all" />
               </button>
 
-              <label className="w-full flex items-center justify-between p-6 bg-slate-50 rounded-[2rem] border border-slate-100 hover:border-purple-200 hover:bg-white transition-all group cursor-pointer">
-                <input type="file" className="hidden" accept=".json" onChange={handleImportData} />
+              <label className="w-full flex items-center justify-between p-6 bg-white/5 rounded-[2rem] border border-white/5 hover:border-purple-200 hover:bg-nexus-surface transition-all group cursor-pointer">
+                <input type="file" className="hidden text-nexus-text placeholder-white/40" accept=".json" onChange={handleImportData} />
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-purple-100 text-purple-600 rounded-2xl group-hover:bg-purple-600 group-hover:text-white transition-all">
                     <Upload size={20} />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-black text-slate-900">Importer Sauvegarde</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Restaurer des données Firebase</p>
+                    <p className="text-sm font-black text-nexus-text">Importer Sauvegarde</p>
+                    <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest">Restaurer des données Firebase</p>
                   </div>
                 </div>
                 <ArrowUpRight size={18} className="text-slate-300 group-hover:text-purple-600 transition-all" />
@@ -1555,15 +1555,15 @@ export default function AdminModule() {
 
               <button 
                 onClick={handleMigrateFromSQLite}
-                className="w-full flex items-center justify-between p-6 bg-slate-50 rounded-[2rem] border border-slate-100 hover:border-indigo-200 hover:bg-white transition-all group"
+                className="w-full flex items-center justify-between p-6 bg-white/5 rounded-[2rem] border border-white/5 hover:border-indigo-200 hover:bg-nexus-surface transition-all group"
               >
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all">
                     <Database size={20} />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-black text-slate-900">Migration SQLite</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Récupérer les données locales</p>
+                    <p className="text-sm font-black text-nexus-text">Migration SQLite</p>
+                    <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest">Récupérer les données locales</p>
                   </div>
                 </div>
                 <ArrowUpRight size={18} className="text-slate-300 group-hover:text-indigo-600 transition-all" />
@@ -1571,14 +1571,14 @@ export default function AdminModule() {
 
               <button 
                 onClick={handleNormalizeEmails}
-                className="w-full flex items-center justify-between p-6 bg-amber-50/50 rounded-[2rem] border border-amber-100 hover:border-amber-200 hover:bg-white transition-all group"
+                className="w-full flex items-center justify-between p-6 bg-amber-50/50 rounded-[2rem] border border-amber-100 hover:border-amber-200 hover:bg-nexus-surface transition-all group"
               >
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-amber-100 text-amber-600 rounded-2xl group-hover:bg-amber-600 group-hover:text-white transition-all">
                     <Shield size={20} />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-black text-slate-900">Nettoyage Emails Global</p>
+                    <p className="text-sm font-black text-nexus-text">Nettoyage Emails Global</p>
                     <p className="text-[10px] font-bold text-amber-600/60 uppercase tracking-widest">Minuscules & Suppression Espaces</p>
                   </div>
                 </div>
@@ -1587,14 +1587,14 @@ export default function AdminModule() {
 
               <button 
                 onClick={handleDeduplicateUsers}
-                className="w-full flex items-center justify-between p-6 bg-emerald-50/50 rounded-[2rem] border border-emerald-100 hover:border-emerald-200 hover:bg-white transition-all group"
+                className="w-full flex items-center justify-between p-6 bg-emerald-50/50 rounded-[2rem] border border-emerald-100 hover:border-emerald-200 hover:bg-nexus-surface transition-all group"
               >
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-emerald-100 text-emerald-600 rounded-2xl group-hover:bg-emerald-600 group-hover:text-white transition-all">
                     <Users size={20} />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-black text-slate-900">Déduplication Utilisateurs</p>
+                    <p className="text-sm font-black text-nexus-text">Déduplication Utilisateurs</p>
                     <p className="text-[10px] font-bold text-emerald-600/60 uppercase tracking-widest">Fusionner UID et Email IDs</p>
                   </div>
                 </div>
@@ -1603,14 +1603,14 @@ export default function AdminModule() {
 
               <button 
                 onClick={handleStatusCheck}
-                className="w-full flex items-center justify-between p-6 bg-blue-50/50 rounded-[2rem] border border-blue-100 hover:border-blue-200 hover:bg-white transition-all group"
+                className="w-full flex items-center justify-between p-6 bg-blue-50/50 rounded-[2rem] border border-blue-100 hover:border-blue-200 hover:bg-nexus-surface transition-all group"
               >
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-all">
+                  <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl group-hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 group-hover:text-white transition-all">
                     <ShieldAlert size={20} />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-black text-slate-900">Diagnostic Intégrité</p>
+                    <p className="text-sm font-black text-nexus-text">Diagnostic Intégrité</p>
                     <p className="text-[10px] font-bold text-blue-600/60 uppercase tracking-widest">Vérifier les Synchronisations</p>
                   </div>
                 </div>
@@ -1623,11 +1623,11 @@ export default function AdminModule() {
 
       {activeAdminTab === 'guide' && (
         <div className="space-y-8">
-          <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 p-10">
+          <div className="bg-nexus-surface rounded-[3rem] border border-white/5 shadow-2xl shadow-slate-200/40 p-10">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Gestion du Guide Équipe</h2>
-                <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">Configurez les fiches actions et le contenu de formation</p>
+                <h2 className="text-2xl font-black text-nexus-text tracking-tight leading-none">Gestion du Guide Équipe</h2>
+                <p className="text-xs font-bold text-nexus-text-muted mt-2 uppercase tracking-widest">Configurez les fiches actions et le contenu de formation</p>
               </div>
               <button 
                 onClick={async () => {
@@ -1649,27 +1649,27 @@ export default function AdminModule() {
                      alert("Guide initialisé avec succès !");
                    } catch (e) { console.error(e); alert("Erreur d'injection"); }
                 }}
-                className="px-6 py-3 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-200 hover:scale-105 transition-all"
+                className="px-6 py-3 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-200 hover:scale-105 transition-all"
               >
                 Initialiser Guide (Seed)
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                  <h4 className="text-sm font-black text-slate-900 mb-2">Fiches Actions</h4>
-                  <p className="text-xs text-slate-500 leading-relaxed mb-4">Centralisez les procédures standards pour réduire les erreurs de manipulation.</p>
-                  <button onClick={() => alert("Interface de modification en cours...")} className="w-full py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-blue-600 transition-all">Gérer les fiches</button>
+               <div className="p-6 bg-white/5 rounded-3xl border border-white/5">
+                  <h4 className="text-sm font-black text-nexus-text mb-2">Fiches Actions</h4>
+                  <p className="text-xs text-nexus-text-muted/80 leading-relaxed mb-4">Centralisez les procédures standards pour réduire les erreurs de manipulation.</p>
+                  <button onClick={() => alert("Interface de modification en cours...")} className="w-full py-3 bg-nexus-surface border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-blue-600 transition-all">Gérer les fiches</button>
                </div>
                <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100">
                   <h4 className="text-sm font-black text-emerald-900 mb-2">Nexus Academy</h4>
                   <p className="text-xs text-emerald-600 leading-relaxed mb-4">Créez des quiz pour certifier que vos vendeurs maîtrisent l'outil.</p>
-                  <button onClick={() => alert("Lancement Nexus Academy Studio...")} className="w-full py-3 bg-white border border-emerald-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all">Studio Quiz</button>
+                  <button onClick={() => alert("Lancement Nexus Academy Studio...")} className="w-full py-3 bg-nexus-surface border border-emerald-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all">Studio Quiz</button>
                </div>
                <div className="p-6 bg-amber-50 rounded-3xl border border-amber-100">
                   <h4 className="text-sm font-black text-amber-900 mb-2">Support & FAQ</h4>
                   <p className="text-xs text-amber-600 leading-relaxed mb-4">Réponses aux questions les plus fréquentes des clients de Maroua.</p>
-                  <button onClick={() => alert("Edition FAQ...")} className="w-full py-3 bg-white border border-amber-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-amber-600 hover:bg-amber-600 hover:text-white transition-all">Éditer FAQ</button>
+                  <button onClick={() => alert("Edition FAQ...")} className="w-full py-3 bg-nexus-surface border border-amber-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-amber-600 hover:bg-amber-600 hover:text-white transition-all">Éditer FAQ</button>
                </div>
             </div>
           </div>
@@ -1681,84 +1681,84 @@ export default function AdminModule() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
+            className="bg-nexus-surface w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
           >
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl">
+              <div className="w-14 h-14 bg-nexus-accent rounded-2xl flex items-center justify-center text-white shadow-xl">
                 <Edit2 size={28} />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Modifier l'Entité</h3>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">{editingCompany.name}</p>
+                <h3 className="text-2xl font-black text-nexus-text tracking-tight leading-none">Modifier l'Entité</h3>
+                <p className="text-xs font-bold text-nexus-text-muted uppercase tracking-widest mt-2">{editingCompany.name}</p>
               </div>
             </div>
 
             <form onSubmit={handleUpdateCompany} className="space-y-5">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nom de l'entité</label>
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Nom de l'entité</label>
                 <input 
                   type="text" 
                   required
                   value={editingCompany.name}
                   onChange={e => setEditingCompany({...editingCompany, name: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all text-nexus-text placeholder-white/40"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email Propriétaire</label>
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Email Propriétaire</label>
                 <input 
                   type="email" 
                   required
                   value={editingCompany.ownerEmail}
                   onChange={e => setEditingCompany({...editingCompany, ownerEmail: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all text-nexus-text placeholder-white/40"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Code Nexus</label>
+                <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Code Nexus</label>
                 <input 
                   type="text" 
                   required
                   value={editingCompany.joinCode}
                   onChange={e => setEditingCompany({...editingCompany, joinCode: e.target.value.toUpperCase()})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all text-nexus-text placeholder-white/40"
                 />
               </div>
 
-              <div className="pt-4 border-t border-slate-100 space-y-4">
+              <div className="pt-4 border-t border-white/5 space-y-4">
                 <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest italic">Configuration Marketplace</h4>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Numéro WhatsApp</label>
+                    <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Numéro WhatsApp</label>
                     <input 
                       type="text" 
                       placeholder="Ex: 237690000000"
                       value={editingCompany.whatsappNumber || ''}
                       onChange={e => setEditingCompany({...editingCompany, whatsappNumber: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent font-bold text-sm text-nexus-text placeholder-white/40"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Catégorie Marché</label>
+                    <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Catégorie Marché</label>
                     <input 
                       type="text" 
                       placeholder="Ex: IT, BTP, Santé"
                       value={editingCompany.category || ''}
                       onChange={e => setEditingCompany({...editingCompany, category: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent font-bold text-sm text-nexus-text placeholder-white/40"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Lien du Logo (URL)</label>
+                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Lien du Logo (URL)</label>
                   <input 
                     type="text" 
                     placeholder="https://..."
                     value={editingCompany.logo || ''}
                     onChange={e => setEditingCompany({...editingCompany, logo: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent font-bold text-sm text-nexus-text placeholder-white/40"
                   />
                 </div>
               </div>
@@ -1767,14 +1767,14 @@ export default function AdminModule() {
                 <button 
                   type="button" 
                   onClick={() => setEditingCompany(null)}
-                  className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
+                  className="flex-1 py-4 bg-slate-100 text-nexus-text-muted rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
                 >
                   Annuler
                 </button>
                 <button 
                   type="submit"
                   disabled={submitting}
-                  className="flex-[2] py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait"
+                  className="flex-[2] py-4 bg-nexus-accent text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-nexus-accent/80 text-white transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait"
                 >
                   {submitting ? 'Enregistrement...' : 'Sauvegarder'}
                 </button>
@@ -1789,7 +1789,7 @@ export default function AdminModule() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden max-h-[90vh] flex flex-col"
+            className="bg-nexus-surface w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden max-h-[90vh] flex flex-col"
           >
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
@@ -1797,23 +1797,23 @@ export default function AdminModule() {
                   <Users size={28} />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Gestion de l'Équipe</h3>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">{showMemberModal.name}</p>
+                  <h3 className="text-2xl font-black text-nexus-text tracking-tight leading-none">Gestion de l'Équipe</h3>
+                  <p className="text-xs font-bold text-nexus-text-muted uppercase tracking-widest mt-2">{showMemberModal.name}</p>
                 </div>
               </div>
-              <button onClick={() => setShowMemberModal(null)} className="p-2 bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition-all">
+              <button onClick={() => setShowMemberModal(null)} className="p-2 bg-white/5 text-nexus-text-muted rounded-full hover:bg-slate-100 transition-all">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleAddMember} className="mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Ajouter un email utilisateur</label>
+            <form onSubmit={handleAddMember} className="mb-8 p-4 bg-white/5 rounded-2xl border border-white/5">
+              <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-2 block">Ajouter un email utilisateur</label>
               <div className="flex gap-2">
                 <input 
                   type="email" 
                   required
                   placeholder="exemple@mail.com"
-                  className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent font-bold text-sm"
+                  className="flex-1 bg-nexus-surface border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent font-bold text-sm text-nexus-text placeholder-white/40"
                   value={newMemberEmail}
                   onChange={e => setNewMemberEmail(e.target.value)}
                 />
@@ -1829,12 +1829,12 @@ export default function AdminModule() {
             <div className="flex-1 overflow-y-auto pr-2">
               <div className="space-y-2">
                 {showMemberModal.memberEmails?.map((email: string) => (
-                  <div key={email} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl group hover:border-emerald-200 transition-all">
+                  <div key={email} className="flex items-center justify-between p-3 bg-nexus-surface border border-white/5 rounded-xl group hover:border-emerald-200 transition-all">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-[10px] font-black text-slate-400">
+                      <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-[10px] font-black text-nexus-text-muted">
                         {email.charAt(0).toUpperCase()}
                       </div>
-                      <span className="text-xs font-bold text-slate-700">{email}</span>
+                      <span className="text-xs font-bold text-nexus-text-muted">{email}</span>
                       {email === showMemberModal.ownerEmail && (
                         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded-md text-[8px] font-black uppercase tracking-tighter">Proprio</span>
                       )}
@@ -1860,44 +1860,44 @@ export default function AdminModule() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
+            className="bg-nexus-surface w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
           >
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                <div className="w-14 h-14 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-2xl flex items-center justify-center text-white shadow-xl">
                   <UserPlus size={28} />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Affectation Entreprise</h3>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">{showUserAssignModal.email}</p>
+                  <h3 className="text-2xl font-black text-nexus-text tracking-tight leading-none">Affectation Entreprise</h3>
+                  <p className="text-xs font-bold text-nexus-text-muted uppercase tracking-widest mt-2">{showUserAssignModal.email}</p>
                 </div>
               </div>
-              <button onClick={() => setShowUserAssignModal(null)} className="p-2 bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 transition-all">
+              <button onClick={() => setShowUserAssignModal(null)} className="p-2 bg-white/5 text-nexus-text-muted rounded-full hover:bg-slate-100 transition-all">
                 <X size={20} />
               </button>
             </div>
 
             <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Choisir une entreprise pour cet utilisateur :</p>
+              <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest mb-4">Choisir une entreprise pour cet utilisateur :</p>
               {companies.map((comp) => {
                 const roles = Object.keys(comp.roles || { Collaborateur: [], Manager: [] }).filter(r => r !== 'owner');
                 return (
                   <div
                     key={comp.id}
-                    className="w-full text-left p-4 rounded-2xl border bg-white border-slate-100 flex items-center justify-between"
+                    className="w-full text-left p-4 rounded-2xl border bg-nexus-surface border-white/5 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-4 flex-1">
-                      <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-slate-400">
+                      <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-nexus-text-muted">
                         {comp.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-slate-900">{comp.name}</p>
+                        <p className="text-sm font-bold text-nexus-text">{comp.name}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <select 
                         id={`role-select-${comp.id}`} 
-                        className="text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 outline-none focus:border-blue-400"
+                        className="text-xs bg-white/5 border border-white/10 rounded-lg p-2 outline-none focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent text-nexus-text placeholder-white/40"
                         defaultValue={roles[0]}
                       >
                         {roles.map(r => <option key={r} value={r}>{r}</option>)}
@@ -1907,7 +1907,7 @@ export default function AdminModule() {
                           const role = (document.getElementById(`role-select-${comp.id}`) as HTMLSelectElement).value;
                           handleAssignUserToCompany(showUserAssignModal.email, comp.id, role);
                         }}
-                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 hover:text-white transition-all shadow-sm"
                       >
                         Affecter
                       </button>
@@ -1926,52 +1926,52 @@ export default function AdminModule() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
+            className="bg-nexus-surface w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
           >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 rounded-bl-full -mr-16 -mt-16" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-nexus-accent text-white hover:bg-nexus-accent/80/5 rounded-bl-full -mr-16 -mt-16" />
             
                 <div className="flex items-center gap-4 mb-8">
-                  <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-600/30">
+                  <div className="w-14 h-14 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-600/30">
                     <Plus size={28} />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Nouveau Business</h3>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Provisionner un espace Nexus</p>
+                    <h3 className="text-2xl font-black text-nexus-text tracking-tight leading-none">Nouveau Business</h3>
+                    <p className="text-xs font-bold text-nexus-text-muted uppercase tracking-widest mt-2">Provisionner un espace Nexus</p>
                   </div>
                 </div>
 
             <form onSubmit={handleCreateCompany} className="space-y-5">
               <div className="grid grid-cols-1 gap-5">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nom de l'entité</label>
+                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Nom de l'entité</label>
                   <input 
                     type="text" 
                     required
                     value={newCompany.name}
                     onChange={e => setNewCompany({...newCompany, name: e.target.value})}
                     placeholder="Ex: Global Logistics SA"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent focus:border-transparent font-bold text-sm transition-all text-nexus-text placeholder-white/40"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email Propriétaire (Access Maître)</label>
+                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Email Propriétaire (Access Maître)</label>
                   <input 
                     type="email" 
                     required
                     value={newCompany.ownerEmail}
                     onChange={e => setNewCompany({...newCompany, ownerEmail: e.target.value})}
                     placeholder="admin@entreprise.com"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent focus:border-transparent font-bold text-sm transition-all text-nexus-text placeholder-white/40"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Code d'accès Personnalisé (Optionnel)</label>
+                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Code d'accès Personnalisé (Optionnel)</label>
                   <input 
                     type="text" 
                     value={newCompany.joinCode}
                     onChange={e => setNewCompany({...newCompany, joinCode: e.target.value.toUpperCase()})}
                     placeholder="AUTO-GENERATED"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all text-nexus-text placeholder-white/40"
                   />
                 </div>
               </div>
@@ -1980,14 +1980,14 @@ export default function AdminModule() {
                 <button 
                   type="button" 
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
+                  className="flex-1 py-4 bg-slate-100 text-nexus-text-muted rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
                 >
                   Annuler
                 </button>
                 <button 
                   type="submit"
                   disabled={submitting}
-                  className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait"
+                  className="flex-[2] py-4 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait"
                 >
                   {submitting ? 'Initialisation...' : "Créer et Envoyer l'Exclusivité"}
                 </button>

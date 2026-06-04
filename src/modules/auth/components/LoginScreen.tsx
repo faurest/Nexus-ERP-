@@ -119,14 +119,14 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Identifiant Local</label>
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all" placeholder="votre@email.com" />
+                  <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent focus:ring-4 focus:ring-nexus-accent/10 outline-none transition-all text-nexus-text placeholder-white/40" placeholder="votre@email.com" />
                 </div>
               </div>
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Clé d'Accès</label>
                 <div className="relative">
                   <Key size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all" placeholder="••••••••" />
+                  <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent focus:ring-4 focus:ring-nexus-accent/10 outline-none transition-all text-nexus-text placeholder-white/40" placeholder="••••••••" />
                 </div>
               </div>
               
@@ -144,7 +144,7 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center justify-center gap-4 shadow-lg shadow-blue-600/10 disabled:opacity-50 mt-2"
+                className="w-full bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent transition-all flex items-center justify-center gap-4 shadow-lg shadow-blue-600/10 disabled:opacity-50 mt-2"
               >
                 {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Connexion Serveur'}
               </button>
@@ -178,7 +178,7 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
 
           <button 
             onClick={onMarketplace}
-            className="w-full bg-slate-900 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-4 shadow-xl"
+            className="w-full bg-nexus-accent text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all flex items-center justify-center gap-4 shadow-xl"
           >
             <ArrowLeft size={18} />
             <span>Retourner au Marketplace</span>

@@ -53,7 +53,7 @@ export default function CriticalNotificationOverlay({ user }: { user: any }) {
     <>
       {criticalNotif && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60">
-          <div className="w-full max-w-lg bg-white rounded-2xl p-10 shadow-2xl relative overflow-hidden text-center">
+          <div className="w-full max-w-lg bg-nexus-surface rounded-2xl border border-white/10 p-10 shadow-2xl relative overflow-hidden text-center">
             {/* Background Accent */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-2 bg-red-500" />
 
@@ -62,13 +62,13 @@ export default function CriticalNotificationOverlay({ user }: { user: any }) {
                 <AlertCircle size={40} strokeWidth={2.5} />
               </div>
 
-              <h2 className="text-2xl font-black text-slate-900 tracking-tighter leading-tight mb-4">
+              <h2 className="text-2xl font-black text-nexus-text tracking-tighter leading-tight mb-4">
                 Alerte <span className="text-red-600 uppercase">Critique</span>
               </h2>
               
-              <div className="p-6 bg-slate-50 border border-slate-100 rounded-xl mb-8">
-                <h3 className="font-bold text-slate-900 text-lg mb-2">{criticalNotif.title}</h3>
-                <p className="text-sm font-medium text-slate-500 leading-relaxed italic">
+              <div className="p-6 bg-white/5 border border-white/5 rounded-xl mb-8">
+                <h3 className="font-bold text-nexus-text text-lg mb-2">{criticalNotif.title}</h3>
+                <p className="text-sm font-medium text-nexus-text-muted/80 leading-relaxed italic">
                   "{criticalNotif.message}"
                 </p>
               </div>
@@ -76,7 +76,7 @@ export default function CriticalNotificationOverlay({ user }: { user: any }) {
               <div className="flex flex-col gap-3">
                 <button 
                   onClick={dismiss}
-                  className="w-full bg-slate-900 text-white py-4 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-600 transition-all font-mono"
+                  className="w-full bg-nexus-accent text-white py-4 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-600 transition-all font-mono"
                 >
                   J'ai pris connaissance
                 </button>

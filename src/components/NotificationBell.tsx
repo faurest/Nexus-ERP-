@@ -94,7 +94,7 @@ export default function NotificationBell({ user }: { user: any }) {
     <div className="relative" ref={dropdownRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2.5 text-slate-500 hover:text-white bg-white hover:bg-blue-600 rounded-2xl relative transition-all group shadow-sm hover:shadow-blue-200 border border-slate-100 hover:border-blue-500"
+        className="p-2.5 text-nexus-text-muted/80 hover:text-white bg-nexus-surface hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-2xl relative transition-all group shadow-sm hover:shadow-blue-200 border border-white/5 hover:border-blue-500"
       >
         <Bell size={20} className="transition-transform group-hover:rotate-12" />
         {unreadCount > 0 && (
@@ -111,10 +111,10 @@ export default function NotificationBell({ user }: { user: any }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl shadow-slate-200 border border-slate-100 z-50 overflow-hidden flex flex-col max-h-96"
+            className="absolute right-0 top-full mt-2 w-80 bg-nexus-surface rounded-2xl border border-white/10 shadow-xl shadow-slate-200 border border-white/5 z-50 overflow-hidden flex flex-col max-h-96"
           >
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <h3 className="text-sm font-bold text-slate-900">Notifications</h3>
+            <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/5">
+              <h3 className="text-sm font-bold text-nexus-text">Notifications</h3>
               {unreadCount > 0 && (
                 <button 
                   onClick={markAllAsRead}
@@ -127,7 +127,7 @@ export default function NotificationBell({ user }: { user: any }) {
 
             <div className="overflow-y-auto flex-1 p-2 space-y-1">
               {notifications.length === 0 ? (
-                <div className="p-8 text-center text-slate-400">
+                <div className="p-8 text-center text-nexus-text-muted">
                   <Bell size={24} className="mx-auto mb-2 opacity-50" />
                   <p className="text-xs">Aucune notification</p>
                 </div>
@@ -136,11 +136,11 @@ export default function NotificationBell({ user }: { user: any }) {
                   <div 
                     key={notif.id}
                     className={`p-3 rounded-xl flex gap-3 group transition-colors cursor-default ${
-                      notif.isRead ? 'bg-white hover:bg-slate-50' : 'bg-blue-50/50 hover:bg-blue-50 relative'
+                      notif.isRead ? 'bg-nexus-surface hover:bg-white/5' : 'bg-blue-50/50 hover:bg-blue-50 relative'
                     }`}
                   >
                     {!notif.isRead && (
-                      <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-blue-600" />
+                      <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-nexus-accent text-white hover:bg-nexus-accent/80" />
                     )}
                     <div className="pl-2">
                        {notif.type === 'task' ? <CheckCircle size={16} className="text-blue-500 mt-0.5" /> :
@@ -148,23 +148,23 @@ export default function NotificationBell({ user }: { user: any }) {
                         notif.type === 'collab' ? <Box size={16} className="text-amber-500 mt-0.5" /> :
                         notif.type === 'general' ? <MessageSquare size={16} className="text-emerald-500 mt-0.5" /> :
                         notif.type === 'alert' ? <Box size={16} className="text-red-500 mt-0.5" /> :
-                        <Bell size={16} className="text-slate-400 mt-0.5" />}
+                        <Bell size={16} className="text-nexus-text-muted mt-0.5" />}
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs font-bold text-slate-900 leading-tight">
+                      <p className="text-xs font-bold text-nexus-text leading-tight">
                         {notif.title}
                       </p>
-                      <p className="text-[10px] text-slate-500 mt-1 leading-snug">
+                      <p className="text-[10px] text-nexus-text-muted/80 mt-1 leading-snug">
                         {notif.message}
                       </p>
-                      <p className="text-[9px] text-slate-400 mt-1 uppercase font-bold tracking-wider">
+                      <p className="text-[9px] text-nexus-text-muted mt-1 uppercase font-bold tracking-wider">
                         {new Date(notif.date || Date.now()).toLocaleString()}
                       </p>
                     </div>
                     {!notif.isRead && (
                       <button 
                         onClick={(e) => markAsRead(notif.id, e)}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white rounded-lg text-blue-600 transition-all self-start shadow-sm mix-blend-multiply"
+                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-nexus-surface rounded-lg border border-white/10 text-blue-600 transition-all self-start shadow-sm mix-blend-multiply"
                         title="Marquer comme lu"
                       >
                         <Check size={14} />
@@ -175,8 +175,8 @@ export default function NotificationBell({ user }: { user: any }) {
               )}
             </div>
             
-            <div className="p-3 border-t border-slate-100 bg-slate-50 text-center">
-              <span className="text-[9px] text-slate-400 uppercase font-black tracking-widest">Nexus System Alerts</span>
+            <div className="p-3 border-t border-white/5 bg-white/5 text-center">
+              <span className="text-[9px] text-nexus-text-muted uppercase font-black tracking-widest">Nexus System Alerts</span>
             </div>
           </motion.div>
         )}

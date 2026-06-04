@@ -612,14 +612,14 @@ export default function SalesModule({ user }: { user: any }) {
         )}
 
         {activeTab === 'pos' && (
-          <div className="p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 bg-slate-50 border-t border-slate-200">
+          <div className="p-6 grid grid-cols-1 lg:grid-cols-4 gap-6 bg-white/5 border-t border-white/10">
             {/* Commandes en Cours Sidebar */}
-            <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col h-[500px]">
+            <div className="lg:col-span-1 bg-nexus-surface rounded-2xl border border-white/10 border border-white/10 shadow-sm p-4 flex flex-col h-[500px]">
                <div className="flex justify-between items-center mb-4">
-                 <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Commandes</h3>
+                 <h3 className="text-sm font-bold text-nexus-text uppercase tracking-widest">Commandes</h3>
                  <button 
                    onClick={() => setIsAddingOrder(true)}
-                   className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-1.5 rounded-lg transition-all"
+                   className="bg-slate-100 hover:bg-slate-200 text-nexus-text-muted p-1.5 rounded-lg transition-all"
                  >
                    <Plus size={16} />
                  </button>
@@ -630,12 +630,12 @@ export default function SalesModule({ user }: { user: any }) {
                    onClick={() => setActiveOrderId(null)}
                    className={cn(
                      "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between",
-                     activeOrderId === null ? "bg-slate-900 border-slate-900 text-white" : "bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-800"
+                     activeOrderId === null ? "bg-nexus-accent border-slate-900 text-white" : "bg-white/5 border-white/10 hover:border-white/20 text-nexus-text"
                    )}
                  >
                    <div>
                      <span className="text-xs font-bold block">Vente Rapide</span>
-                     <span className={cn("text-[10px]", activeOrderId === null ? "text-slate-300" : "text-slate-500")}>Client de passage</span>
+                     <span className={cn("text-[10px]", activeOrderId === null ? "text-slate-300" : "text-nexus-text-muted/80")}>Client de passage</span>
                    </div>
                  </button>
 
@@ -645,12 +645,12 @@ export default function SalesModule({ user }: { user: any }) {
                      onClick={() => setActiveOrderId(order.id)}
                      className={cn(
                        "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between group",
-                       activeOrderId === order.id ? "bg-blue-600 border-blue-600 text-white" : "bg-white border-slate-200 hover:border-blue-300 text-slate-800"
+                       activeOrderId === order.id ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 border-blue-600 text-white" : "bg-nexus-surface border-white/10 hover:border-blue-300 text-nexus-text"
                      )}
                    >
                      <div>
                        <span className="text-xs font-bold block">{order.clientName || 'Client'} {order.tableNumber ? `- Table ${order.tableNumber}` : ''}</span>
-                       <span className={cn("text-[10px]", activeOrderId === order.id ? "text-blue-200" : "text-slate-500")}>
+                       <span className={cn("text-[10px]", activeOrderId === order.id ? "text-blue-200" : "text-nexus-text-muted/80")}>
                          {order.items?.length || 0} article(s)
                        </span>
                      </div>
@@ -670,7 +670,7 @@ export default function SalesModule({ user }: { user: any }) {
 
             {/* Main Catalogue */}
             <div className="lg:col-span-2 space-y-4">
-               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4">Catalogue (Produits & Boissons)</h3>
+               <h3 className="text-sm font-bold text-nexus-text uppercase tracking-widest mb-4">Catalogue (Produits & Boissons)</h3>
                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3">
                  {resources.filter(r => r.type === 'Stock').map(r => (
                    <button 
@@ -685,36 +685,36 @@ export default function SalesModule({ user }: { user: any }) {
                         }
                         handleUpdateCart(newCart);
                      }}
-                     className="bg-white p-3 rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all text-left flex flex-col justify-between h-24 relative overflow-hidden group"
+                     className="bg-nexus-surface p-3 rounded-xl border border-white/10 hover:border-blue-400 hover:shadow-md transition-all text-left flex flex-col justify-between h-24 relative overflow-hidden group"
                    >
-                     <span className="text-xs font-bold text-slate-700 break-words line-clamp-2">{r.name}</span>
+                     <span className="text-xs font-bold text-nexus-text-muted break-words line-clamp-2">{r.name}</span>
                      <div className="mt-auto flex justify-between items-end">
-                       <span className="text-[10px] font-bold text-slate-400">Stock: {r.quantity}</span>
-                       <span className="text-[10px] font-bold text-slate-900">{r.price ? `${r.price} FCFA` : ''}</span>
+                       <span className="text-[10px] font-bold text-nexus-text-muted">Stock: {r.quantity}</span>
+                       <span className="text-[10px] font-bold text-nexus-text">{r.price ? `${r.price} FCFA` : ''}</span>
                      </div>
-                     <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                     <div className="absolute inset-0 bg-nexus-accent text-white hover:bg-nexus-accent/80/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                    </button>
                  ))}
-                 {resources.length === 0 && <p className="text-xs text-slate-400">Aucun produit en stock.</p>}
+                 {resources.length === 0 && <p className="text-xs text-nexus-text-muted">Aucun produit en stock.</p>}
                </div>
             </div>
             
             {/* Cart */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col h-[500px]">
-               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <div className="bg-nexus-surface rounded-2xl border border-white/10 border border-white/10 shadow-sm p-4 flex flex-col h-[500px]">
+               <h3 className="text-sm font-bold text-nexus-text uppercase tracking-widest mb-4 flex items-center gap-2">
                  <ShoppingCart size={16} /> Panier {activeOrder ? `(${activeOrder.clientName})` : ''}
                </h3>
                
                <div className="flex-1 overflow-y-auto space-y-2 pr-2">
                  {currentCart.length === 0 ? (
-                   <div className="h-full flex items-center justify-center text-slate-400 text-xs italic">
+                   <div className="h-full flex items-center justify-center text-nexus-text-muted text-xs italic">
                      Panier vide
                    </div>
                  ) : (
                    currentCart.map((item: any) => (
-                     <div key={item.id} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+                     <div key={item.id} className="flex justify-between items-center bg-white/5 p-2 rounded-lg border border-white/5">
                        <div className="flex-1 min-w-0 pr-2">
-                         <div className="text-xs font-bold text-slate-800 truncate">{item.name}</div>
+                         <div className="text-xs font-bold text-nexus-text truncate">{item.name}</div>
                          <div className="flex items-center gap-2 mt-1">
                            <button onClick={() => {
                               if (item.quantity > 1) {
@@ -722,16 +722,16 @@ export default function SalesModule({ user }: { user: any }) {
                               } else {
                                 handleUpdateCart(currentCart.filter((c: any) => c.id !== item.id));
                               }
-                           }} className="w-5 h-5 bg-white border border-slate-200 rounded flex items-center justify-center font-bold text-xs hover:bg-slate-100">-</button>
+                           }} className="w-5 h-5 bg-nexus-surface border border-white/10 rounded flex items-center justify-center font-bold text-xs hover:bg-slate-100">-</button>
                            <span className="text-[10px] font-bold w-4 text-center">{item.quantity}</span>
                            <button onClick={() => {
                               handleUpdateCart(currentCart.map((c: any) => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c));
-                           }} className="w-5 h-5 bg-white border border-slate-200 rounded flex items-center justify-center font-bold text-xs hover:bg-slate-100">+</button>
+                           }} className="w-5 h-5 bg-nexus-surface border border-white/10 rounded flex items-center justify-center font-bold text-xs hover:bg-slate-100">+</button>
                          </div>
                        </div>
                        <div className="text-right shrink-0">
-                         <div className="text-xs font-black text-slate-900 border-b border-transparent group-hover:border-slate-200 focus-within:border-blue-400 pb-0.5">
-                           <input type="number" className="w-12 text-right bg-transparent outline-none" value={item.price} onChange={(e) => {
+                         <div className="text-xs font-black text-nexus-text border-b border-transparent group-hover:border-white/10 focus-within:border-blue-400 pb-0.5">
+                           <input type="number" className="w-12 text-right bg-transparent outline-none text-nexus-text placeholder-white/40" value={item.price} onChange={(e) => {
                              handleUpdateCart(currentCart.map((c: any) => c.id === item.id ? { ...c, price: Number(e.target.value) } : c));
                            }} /> FCFA
                          </div>
@@ -742,10 +742,10 @@ export default function SalesModule({ user }: { user: any }) {
                  )}
                </div>
 
-               <div className="mt-4 pt-4 border-t border-slate-100">
+               <div className="mt-4 pt-4 border-t border-white/5">
                  <div className="flex justify-between items-center mb-4">
-                   <span className="text-xs font-bold uppercase text-slate-500">Total à encaisser</span>
-                   <span className="text-2xl font-black text-slate-900">{currentCart.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0).toLocaleString()} FCFA</span>
+                   <span className="text-xs font-bold uppercase text-nexus-text-muted/80">Total à encaisser</span>
+                   <span className="text-2xl font-black text-nexus-text">{currentCart.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0).toLocaleString()} FCFA</span>
                  </div>
                  <button 
                    disabled={currentCart.length === 0}
@@ -818,11 +818,11 @@ export default function SalesModule({ user }: { user: any }) {
                         console.error(e);
                      }
                    }}
-                   className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-slate-800 disabled:opacity-50 transition-all shadow-md active:scale-95 flex justify-center items-center gap-2"
+                   className="w-full bg-nexus-accent text-white py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-nexus-accent/80 text-white disabled:opacity-50 transition-all shadow-md active:scale-95 flex justify-center items-center gap-2"
                  >
                    <CheckCircle2 size={16} /> Valider l'Encaissement
                  </button>
-                 <button onClick={() => handleUpdateCart([])} disabled={currentCart.length === 0} className="w-full mt-2 text-center text-[10px] uppercase font-bold text-slate-400 hover:text-slate-600 disabled:opacity-50 py-2">
+                 <button onClick={() => handleUpdateCart([])} disabled={currentCart.length === 0} className="w-full mt-2 text-center text-[10px] uppercase font-bold text-nexus-text-muted hover:text-nexus-text-muted disabled:opacity-50 py-2">
                    Vider le panier
                  </button>
                </div>

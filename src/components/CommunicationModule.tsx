@@ -93,8 +93,8 @@ const formatDate = (timestamp: any) => {
 
 const getAvatarColor = (name: string) => {
   const colors = [
-    'bg-blue-600', 'bg-indigo-600', 'bg-purple-600', 
-    'bg-emerald-600', 'bg-rose-600', 'bg-amber-600', 'bg-slate-900'
+    'bg-nexus-accent text-white hover:bg-nexus-accent/80', 'bg-indigo-600', 'bg-purple-600', 
+    'bg-emerald-600', 'bg-rose-600', 'bg-amber-600', 'bg-nexus-accent'
   ];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -336,19 +336,19 @@ export default function CommunicationModule() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-160px)] md:h-[calc(100vh-180px)] bg-white rounded-[2rem] lg:rounded-[2.5rem] border border-slate-100 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
+    <div className="flex h-[calc(100vh-160px)] md:h-[calc(100vh-180px)] bg-nexus-surface rounded-[2rem] lg:rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
       {/* Sidebar */}
       <aside className={cn(
-        "w-full lg:w-80 border-r border-slate-100 flex flex-col bg-slate-50/30 transition-all",
+        "w-full lg:w-80 border-r border-white/5 flex flex-col bg-white/5/30 transition-all",
         (selectedContact || selectedProject) && "hidden lg:flex"
       )}>
-        <div className="p-6 lg:p-8 border-b border-slate-100">
+        <div className="p-6 lg:p-8 border-b border-white/5">
           <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl mb-6">
             <button 
               onClick={() => setActiveTab('direct')}
               className={cn(
                 "flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                activeTab === 'direct' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                activeTab === 'direct' ? "bg-nexus-surface text-blue-600 shadow-sm" : "text-nexus-text-muted hover:text-nexus-text-muted"
               )}
             >
               Direct
@@ -357,7 +357,7 @@ export default function CommunicationModule() {
               onClick={() => setActiveTab('project')}
               className={cn(
                 "flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                activeTab === 'project' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                activeTab === 'project' ? "bg-nexus-surface text-blue-600 shadow-sm" : "text-nexus-text-muted hover:text-nexus-text-muted"
               )}
             >
               Projets
@@ -371,7 +371,7 @@ export default function CommunicationModule() {
               placeholder="Rechercher..." 
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 bg-white border border-slate-100 rounded-xl outline-none text-[11px] font-bold text-slate-600 transition-all focus:ring-2 focus:ring-blue-100 placeholder:text-slate-300"
+              className="w-full pl-11 pr-4 py-3 bg-nexus-surface border border-white/5 rounded-xl outline-none text-[11px] font-bold text-nexus-text-muted transition-all focus:ring-2 focus:ring-blue-100 placeholder:text-slate-300"
             />
           </div>
         </div>
@@ -384,7 +384,7 @@ export default function CommunicationModule() {
                 onClick={() => setSelectedContact(contact)}
                 className={cn(
                   "w-full flex items-center gap-4 p-4 rounded-2xl transition-all group",
-                  selectedContact?.id === contact.id ? "bg-white shadow-xl shadow-slate-200/50 border border-slate-100" : "hover:bg-slate-50 border border-transparent"
+                  selectedContact?.id === contact.id ? "bg-nexus-surface shadow-xl shadow-slate-200/50 border border-white/5" : "hover:bg-white/5 border border-transparent"
                 )}
               >
                 <div className="relative">
@@ -397,11 +397,11 @@ export default function CommunicationModule() {
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-4 border-white" />
                 </div>
                 <div className="flex-1 text-left overflow-hidden">
-                  <p className="text-[11px] font-black text-slate-900 line-clamp-1">{contact.name}</p>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{contact.role}</p>
+                  <p className="text-[11px] font-black text-nexus-text line-clamp-1">{contact.name}</p>
+                  <p className="text-[9px] font-bold text-nexus-text-muted uppercase tracking-widest leading-none mt-1">{contact.role}</p>
                 </div>
                 {((contact.email && unreadCounts[contact.email.toLowerCase().trim()]) || unreadCounts[contact.id]) > 0 && (
-                  <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-lg animate-bounce">
+                  <div className="w-5 h-5 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-lg animate-bounce">
                     {(contact.email && unreadCounts[contact.email.toLowerCase().trim()]) || unreadCounts[contact.id]}
                   </div>
                 )}
@@ -417,15 +417,15 @@ export default function CommunicationModule() {
                 onClick={() => setSelectedProject(project)}
                 className={cn(
                   "w-full flex items-center gap-4 p-4 rounded-2xl transition-all group",
-                  selectedProject?.id === project.id ? "bg-white shadow-xl shadow-slate-200/50 border border-slate-100" : "hover:bg-slate-50 border border-transparent"
+                  selectedProject?.id === project.id ? "bg-nexus-surface shadow-xl shadow-slate-200/50 border border-white/5" : "hover:bg-white/5 border border-transparent"
                 )}
               >
-                <div className="w-12 h-12 rounded-[1.25rem] bg-slate-900 flex items-center justify-center text-white border border-slate-800 shadow-lg">
+                <div className="w-12 h-12 rounded-[1.25rem] bg-nexus-accent flex items-center justify-center text-white border border-slate-800 shadow-lg">
                   <Hash size={24} strokeWidth={2.5} />
                 </div>
                 <div className="flex-1 text-left overflow-hidden">
-                  <p className="text-[11px] font-black text-slate-900 line-clamp-1">{project.name}</p>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">Fil du projet</p>
+                  <p className="text-[11px] font-black text-nexus-text line-clamp-1">{project.name}</p>
+                  <p className="text-[9px] font-bold text-nexus-text-muted uppercase tracking-widest leading-none mt-1">Fil du projet</p>
                 </div>
                 {selectedProject?.id === project.id && (
                    <ChevronRight size={16} className="text-blue-500" />
@@ -437,15 +437,15 @@ export default function CommunicationModule() {
       </aside>
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col bg-white overflow-hidden relative">
+      <main className="flex-1 flex flex-col bg-nexus-surface overflow-hidden relative">
         {(selectedContact || selectedProject) ? (
           <>
             {/* Header */}
-            <header className="p-4 lg:p-8 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10 gap-4">
+            <header className="p-4 lg:p-8 border-b border-white/5 flex items-center justify-between bg-nexus-surface/80 backdrop-blur-md sticky top-0 z-10 gap-4">
               <div className="flex items-center gap-3 lg:gap-6">
                 <button 
                   onClick={() => { setSelectedContact(null); setSelectedProject(null); }}
-                  className="lg:hidden p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  className="lg:hidden p-2 rounded-xl bg-slate-100 text-nexus-text-muted hover:bg-slate-200"
                 >
                   <ArrowLeft size={18} />
                 </button>
@@ -458,31 +458,31 @@ export default function CommunicationModule() {
                       {selectedContact?.name.charAt(0)}
                     </div>
                     <div className="min-w-0">
-                      <h2 className="text-base lg:text-xl font-black text-slate-900 tracking-tight leading-none truncate">{selectedContact?.name}</h2>
+                      <h2 className="text-base lg:text-xl font-black text-nexus-text tracking-tight leading-none truncate">{selectedContact?.name}</h2>
                       <div className="flex items-center gap-2 mt-1 lg:mt-2">
                         <div className="w-1.5 lg:w-2 h-1.5 lg:h-2 bg-green-500 rounded-full animate-pulse" />
-                        <span className="text-[8px] lg:text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">{selectedContact?.role} • En ligne</span>
+                        <span className="text-[8px] lg:text-[9px] font-black text-nexus-text-muted uppercase tracking-widest truncate">{selectedContact?.role} • En ligne</span>
                       </div>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="w-10 h-10 lg:w-14 lg:h-14 rounded-xl lg:rounded-[1.5rem] bg-slate-900 flex items-center justify-center text-white shadow-xl">
+                    <div className="w-10 h-10 lg:w-14 lg:h-14 rounded-xl lg:rounded-[1.5rem] bg-nexus-accent flex items-center justify-center text-white shadow-xl">
                       <Briefcase size={20} className="lg:hidden" />
                       <Briefcase size={28} className="hidden lg:block" />
                     </div>
                     <div className="min-w-0">
-                      <h2 className="text-base lg:text-xl font-black text-slate-900 tracking-tight leading-none truncate">{selectedProject?.name}</h2>
+                      <h2 className="text-base lg:text-xl font-black text-nexus-text tracking-tight leading-none truncate">{selectedProject?.name}</h2>
                       <p className="text-[8px] lg:text-[9px] font-black text-blue-600 uppercase tracking-widest mt-1 lg:mt-2 truncate">Flux Projet</p>
                     </div>
                   </>
                 )}
               </div>
               <div className="flex gap-2 lg:gap-4">
-                <button className="hidden sm:flex w-10 h-10 lg:w-12 lg:h-12 items-center justify-center bg-slate-50 text-slate-400 rounded-xl lg:rounded-2xl hover:text-slate-900 hover:bg-slate-100 transition-all border border-slate-100">
+                <button className="hidden sm:flex w-10 h-10 lg:w-12 lg:h-12 items-center justify-center bg-white/5 text-nexus-text-muted rounded-xl lg:rounded-2xl hover:text-nexus-text hover:bg-slate-100 transition-all border border-white/5">
                   <Users size={18} />
                 </button>
-                <button className="w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center bg-slate-50 text-slate-400 rounded-xl lg:rounded-2xl hover:text-slate-900 hover:bg-slate-100 transition-all border border-slate-100">
+                <button className="w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center bg-white/5 text-nexus-text-muted rounded-xl lg:rounded-2xl hover:text-nexus-text hover:bg-slate-100 transition-all border border-white/5">
                   <MoreVertical size={18} />
                 </button>
               </div>
@@ -491,16 +491,16 @@ export default function CommunicationModule() {
             {/* Messages Body */}
             <div 
               ref={scrollRef}
-              className="flex-1 overflow-y-auto p-10 space-y-12 scroll-smooth custom-scrollbar bg-slate-50/20"
+              className="flex-1 overflow-y-auto p-10 space-y-12 scroll-smooth custom-scrollbar bg-white/5/20"
             >
-              <div className="bg-blue-600/5 backdrop-blur-sm p-4 rounded-2xl border border-blue-600/10 flex items-center justify-between mb-4">
+              <div className="bg-nexus-accent text-white hover:bg-nexus-accent/80/5 backdrop-blur-sm p-4 rounded-2xl border border-blue-600/10 flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
+                  <div className="w-8 h-8 rounded-full bg-nexus-accent text-white hover:bg-nexus-accent/80 flex items-center justify-center text-white">
                     <Briefcase size={14} />
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Nexus Smart Canal</p>
-                    <p className="text-[9px] font-bold text-slate-400">Canal chiffré de bout en bout</p>
+                    <p className="text-[9px] font-bold text-nexus-text-muted">Canal chiffré de bout en bout</p>
                   </div>
                 </div>
                 <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Latence: 12ms</span>
@@ -510,7 +510,7 @@ export default function CommunicationModule() {
                 <div key={date} className="space-y-8">
                   <div className="flex items-center gap-4">
                     <div className="flex-1 h-px bg-slate-100" />
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{date}</span>
+                    <span className="text-[9px] font-black text-nexus-text-muted uppercase tracking-[0.2em]">{date}</span>
                     <div className="flex-1 h-px bg-slate-100" />
                   </div>
                   
@@ -529,14 +529,14 @@ export default function CommunicationModule() {
                             )}>
                               {msg.senderName.charAt(0)}
                             </div>
-                            <span className="text-[9px] font-black text-slate-900 uppercase tracking-widest">{msg.senderName}</span>
+                            <span className="text-[9px] font-black text-nexus-text uppercase tracking-widest">{msg.senderName}</span>
                           </div>
                         )}
                         <div className={cn(
                           "px-6 py-4 rounded-[1.75rem] text-sm font-medium leading-relaxed shadow-sm",
                           isMe 
-                            ? "bg-slate-900 text-white rounded-tr-none shadow-xl shadow-slate-200" 
-                            : "bg-white text-slate-700 border border-slate-100 rounded-tl-none"
+                            ? "bg-nexus-accent text-white rounded-tr-none shadow-xl shadow-slate-200" 
+                            : "bg-nexus-surface text-nexus-text-muted border border-white/5 rounded-tl-none"
                         )}>
                           {msg.content}
                         </div>
@@ -556,11 +556,11 @@ export default function CommunicationModule() {
               {isTyping && (
                 <div className="flex items-center gap-3 ml-2 opacity-50 animate-pulse">
                   <div className="flex gap-1">
-                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" />
-                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.2s]" />
-                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce [animation-delay:0.4s]" />
+                    <div className="w-1.5 h-1.5 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-full animate-bounce" />
+                    <div className="w-1.5 h-1.5 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-full animate-bounce [animation-delay:0.2s]" />
+                    <div className="w-1.5 h-1.5 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-full animate-bounce [animation-delay:0.4s]" />
                   </div>
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Nexus AI analyse le flux...</span>
+                  <span className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest">Nexus AI analyse le flux...</span>
                 </div>
               )}
               
@@ -569,14 +569,14 @@ export default function CommunicationModule() {
                   <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6 text-slate-300">
                     <MessageSquare size={48} />
                   </div>
-                  <h3 className="text-xl font-black text-slate-400 tracking-tight uppercase">Nexus Comm</h3>
-                  <p className="text-xs font-bold text-slate-400 mt-2">Envoyez le premier message pour débuter la discussion.</p>
+                  <h3 className="text-xl font-black text-nexus-text-muted tracking-tight uppercase">Nexus Comm</h3>
+                  <p className="text-xs font-bold text-nexus-text-muted mt-2">Envoyez le premier message pour débuter la discussion.</p>
                 </div>
               )}
             </div>
 
             {/* Footer / Input */}
-            <footer className="p-8 border-t border-slate-100 bg-white">
+            <footer className="p-8 border-t border-white/5 bg-nexus-surface">
               <form onSubmit={handleSendMessage} className="flex gap-4">
                 <input 
                   type="text" 
@@ -589,18 +589,18 @@ export default function CommunicationModule() {
                     }
                   }}
                   placeholder="Tapez votre message ici..."
-                  className="flex-1 bg-slate-50 border border-slate-100 rounded-[1.5rem] px-8 py-5 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-200 transition-all text-sm font-medium text-slate-800 placeholder:text-slate-300"
+                  className="flex-1 bg-white/5 border border-white/5 rounded-[1.5rem] px-8 py-5 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-nexus-surface focus:border-blue-200 transition-all text-sm font-medium text-nexus-text placeholder:text-slate-300"
                 />
                 <button 
                   disabled={!newMessage.trim() || loading}
-                  className="w-[72px] h-[72px] flex items-center justify-center bg-blue-600 text-white rounded-[1.5rem] hover:bg-black transition-all shadow-xl shadow-blue-600/20 disabled:opacity-50 disabled:grayscale group"
+                  className="w-[72px] h-[72px] flex items-center justify-center bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-[1.5rem] hover:bg-black transition-all shadow-xl shadow-blue-600/20 disabled:opacity-50 disabled:grayscale group"
                 >
                   <Send className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" size={28} />
                 </button>
               </form>
               <div className="mt-4 flex items-center justify-center gap-6">
                  {['Photo', 'Fichier', 'Mouvement', 'Nexus AI'].map(label => (
-                   <button key={label} type="button" className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors">
+                   <button key={label} type="button" className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest hover:text-blue-600 transition-colors">
                      + {label}
                    </button>
                  ))}
@@ -615,21 +615,21 @@ export default function CommunicationModule() {
                 <MessageSquare size={64} strokeWidth={1} className="animate-bounce" />
               </div>
             </div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-tight mb-4">
+            <h1 className="text-4xl font-black text-nexus-text tracking-tighter leading-tight mb-4">
               Nexus <span className="text-blue-600">Connect</span>
             </h1>
-            <p className="text-slate-400 max-w-md mx-auto text-lg font-medium leading-relaxed">
+            <p className="text-nexus-text-muted max-w-md mx-auto text-lg font-medium leading-relaxed">
               Sélectionnez un collègue ou un projet dans la barre latérale pour démarrer une communication sécurisée et synchronisée.
             </p>
             
             <div className="grid grid-cols-2 gap-4 mt-12 w-full max-w-lg">
-              <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-left">
+              <div className="bg-white/5 p-6 rounded-3xl border border-white/5 text-left">
                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">Canaux Directs</p>
-                 <p className="text-xs text-slate-500 font-medium leading-relaxed">Chattez en temps réel avec n'importe quel membre de votre organisation.</p>
+                 <p className="text-xs text-nexus-text-muted/80 font-medium leading-relaxed">Chattez en temps réel avec n'importe quel membre de votre organisation.</p>
               </div>
-              <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 text-left">
+              <div className="bg-white/5 p-6 rounded-3xl border border-white/5 text-left">
                  <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-2">Fils de Projets</p>
-                 <p className="text-xs text-slate-500 font-medium leading-relaxed">Gardez vos discussions contextuelles et liées à vos objectifs stratégiques.</p>
+                 <p className="text-xs text-nexus-text-muted/80 font-medium leading-relaxed">Gardez vos discussions contextuelles et liées à vos objectifs stratégiques.</p>
               </div>
             </div>
           </div>
