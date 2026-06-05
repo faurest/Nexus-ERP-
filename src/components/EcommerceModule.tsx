@@ -973,7 +973,7 @@ export default function EcommerceModule({ user }: { user: any }) {
   return (
     <div className="space-y-6">
       {/* Header with Background */}
-      <div className="relative overflow-hidden bg-nexus-accent rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
+      <div className="relative overflow-hidden bg-nexus-accent rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-nexus-border/30">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
@@ -983,7 +983,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               Simplifiez vos achats professionnels. Catalogue intelligent, paiement sécurisé et programme de fidélité intégré.
             </p>
           </div>
-          <div className="flex bg-slate-950/40 p-1.5 rounded-2xl border border-white/10 shrink-0 overflow-x-auto scrollbar-hide max-w-full">
+          <div className="flex bg-slate-950/40 p-1.5 rounded-2xl border border-nexus-border/50 shrink-0 overflow-x-auto scrollbar-hide max-w-full">
             {[
               { id: 'catalog', label: 'Catalogue', icon: Package },
               { id: 'cart', label: `Panier (${cart.length})`, icon: ShoppingCart },
@@ -1003,8 +1003,8 @@ export default function EcommerceModule({ user }: { user: any }) {
                 className={cn(
                   "px-6 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap relative", 
                   activeView === item.id 
-                    ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white shadow-xl shadow-blue-600/20" 
-                    : "text-slate-300 hover:text-white hover:bg-white/5"
+                    ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white shadow-xl shadow-blue-600/20" 
+                    : "text-nexus-text-muted hover:text-white hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5"
                 )}
               >
                 <item.icon size={14} /> 
@@ -1031,7 +1031,7 @@ export default function EcommerceModule({ user }: { user: any }) {
           >
             <div className="bg-gradient-to-r from-red-600 to-red-500 text-white p-4 rounded-3xl shadow-xl shadow-red-200 border border-red-400 flex flex-col sm:flex-row items-center justify-between gap-4 animate-pulse">
               <div className="flex items-center gap-3">
-                <div className="bg-white/20 p-2.5 rounded-2xl">
+                <div className="bg-slate-500/20 dark:bg-slate-500/20 dark:bg-white/20 p-2.5 rounded-2xl">
                   <AlertCircle size={24} />
                 </div>
                 <div>
@@ -1041,7 +1041,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               </div>
               <button 
                 onClick={() => setActiveView('admin')}
-                className="w-full sm:w-auto px-6 py-2.5 bg-nexus-surface text-red-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/5 transition-all shadow-lg active:scale-95"
+                className="w-full sm:w-auto px-6 py-2.5 bg-nexus-surface text-red-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all shadow-lg active:scale-95"
               >
                 Gérer les Commandes
               </button>
@@ -1073,7 +1073,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               </div>
               <div className="flex gap-2 overflow-x-auto max-w-full pb-2 md:pb-0 scrollbar-hide">
                 {lowStockAlerts.slice(0, 3).map(p => (
-                  <div key={p.id} className="px-4 py-2 bg-nexus-surface rounded-xl border border-white/10 border border-amber-100 flex items-center gap-2 shrink-0">
+                  <div key={p.id} className="px-4 py-2 bg-nexus-surface rounded-xl border border-nexus-border/50 border border-amber-100 flex items-center gap-2 shrink-0">
                     <span className="text-[10px] font-black text-nexus-text-muted uppercase">{p.name}</span>
                     <span className="px-1.5 py-0.5 bg-amber-500 text-white text-[9px] font-black rounded-md">{p.stock}</span>
                   </div>
@@ -1101,7 +1101,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                    <Smartphone size={150} />
                 </div>
                 <div className="relative z-10 space-y-3">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full w-fit">
+                  <div className="flex items-center gap-2 px-3 py-1 bg-slate-500/20 dark:bg-slate-500/20 dark:bg-white/20 rounded-full w-fit">
                     <Sparkles size={12} className="text-amber-300" />
                     <span className="text-[9px] font-black uppercase tracking-widest">Nouveautés Tech</span>
                   </div>
@@ -1117,7 +1117,7 @@ export default function EcommerceModule({ user }: { user: any }) {
           <aside className="hidden lg:flex flex-col w-64 shrink-0 space-y-8 sticky top-24 h-fit">
             <div className="space-y-4">
               <h3 className="text-xs font-black text-nexus-text-muted uppercase tracking-[0.2em] px-2 italic">Naviguer par Rayon</h3>
-              <div className="flex flex-col gap-1 p-2 bg-nexus-surface rounded-3xl border border-white/10 border border-white/5 shadow-sm">
+              <div className="flex flex-col gap-1 p-2 bg-nexus-surface rounded-3xl border border-nexus-border/50 border border-nexus-border/30 shadow-sm">
                 {categories.map((cat) => {
                   const count = products.filter(p => p.category === cat || cat === 'Tous').length;
                   const Icon = getCategoryIcon(cat);
@@ -1129,18 +1129,18 @@ export default function EcommerceModule({ user }: { user: any }) {
                         "w-full flex items-center justify-between px-4 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all group",
                         activeCategory === cat 
                           ? "bg-nexus-accent text-white shadow-xl shadow-slate-900/20" 
-                          : "text-nexus-text-muted hover:bg-white/5 hover:text-nexus-text"
+                          : "text-nexus-text-muted hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 hover:text-nexus-text"
                       )}
                     >
                       <div className="flex items-center gap-4">
-                         <div className={cn("p-2 rounded-xl transition-all", activeCategory === cat ? "bg-white/10 text-white" : "bg-white/5 text-nexus-text-muted group-hover:bg-nexus-surface group-hover:text-blue-600")}>
+                         <div className={cn("p-2 rounded-xl transition-all", activeCategory === cat ? "bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 text-white" : "bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 text-nexus-text-muted group-hover:bg-nexus-surface group-hover:text-blue-600")}>
                             <Icon size={18} />
                          </div>
                          {cat}
                       </div>
                       <span className={cn(
                         "px-2 py-0.5 rounded-md text-[8px] font-mono",
-                        activeCategory === cat ? "bg-white/20" : "bg-slate-100"
+                        activeCategory === cat ? "bg-slate-500/20 dark:bg-slate-500/20 dark:bg-white/20" : "bg-slate-100"
                       )}>{count}</span>
                     </button>
                   );
@@ -1148,7 +1148,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               </div>
             </div>
 
-            <div className="p-6 bg-slate-950 rounded-[2rem] text-white space-y-4 shadow-xl border border-white/5 relative overflow-hidden group">
+            <div className="p-6 bg-slate-950 rounded-[2rem] text-white space-y-4 shadow-xl border border-nexus-border/30 relative overflow-hidden group">
                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
                   <Database size={60} />
                </div>
@@ -1159,10 +1159,10 @@ export default function EcommerceModule({ user }: { user: any }) {
                       onClick={() => setNairaEnabled(!nairaEnabled)}
                       className={cn(
                         "w-10 h-5 rounded-full p-1 cursor-pointer transition-all",
-                        nairaEnabled ? "bg-nexus-accent text-white hover:bg-nexus-accent/80" : "bg-slate-800"
+                        nairaEnabled ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20" : "bg-slate-800"
                       )}
                     >
-                      <div className={cn("w-3 h-3 bg-nexus-surface rounded-full border border-white/10 transition-all", nairaEnabled ? "translate-x-5" : "translate-x-0")} />
+                      <div className={cn("w-3 h-3 bg-nexus-surface rounded-full border border-nexus-border/50 transition-all", nairaEnabled ? "translate-x-5" : "translate-x-0")} />
                     </div>
                  </div>
                  <div className="space-y-1">
@@ -1175,13 +1175,13 @@ export default function EcommerceModule({ user }: { user: any }) {
 
           <div className="flex-1 space-y-10">
             {/* Control Bar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-nexus-surface p-6 rounded-[2.5rem] border border-white/5 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-nexus-surface p-6 rounded-[2.5rem] border border-nexus-border/30 shadow-sm">
                 <div className="w-full sm:w-96 relative group">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-nexus-text-muted group-focus-within:text-blue-500 transition-colors" size={18} />
                   <input
                     type="text"
                     placeholder="Rechercher une référence..."
-                    className="w-full bg-white/5 border-none rounded-2xl py-4 pl-12 pr-4 text-xs font-bold focus:bg-nexus-surface focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder:text-slate-300 text-nexus-text placeholder-white/40"
+                    className="w-full -none rounded-2xl py-4 pl-12 pr-4 text-xs font-bold focus:bg-nexus-surface transition-all placeholder: hover:-strong nexus-input w-full text-sm"
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                   />
@@ -1203,13 +1203,13 @@ export default function EcommerceModule({ user }: { user: any }) {
                          category: (companyCategories[0] as any)?.name || 'Divers',
                          points: 10
                        })}
-                       className="py-4 px-6 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-nexus-accent transition-all flex items-center gap-2 shadow-xl shadow-blue-100"
+                       className="py-4 px-6 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-nexus-accent transition-all flex items-center gap-2 shadow-xl shadow-blue-100"
                      >
                        <Plus size={16} /> Produit
                      </button>
                    )}
                    {/* Mobile Categories (Horizontal Scroll) */}
-                   <div className="flex lg:hidden bg-white/5 p-1.5 rounded-2xl max-w-[150px] sm:max-w-xs overflow-x-auto scrollbar-hide gap-2 shadow-inner">
+                   <div className="flex lg:hidden bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 p-1.5 rounded-2xl max-w-[150px] sm:max-w-xs overflow-x-auto scrollbar-hide gap-2 shadow-inner">
                       {categories.map(cat => {
                         const Icon = getCategoryIcon(cat);
                         return (
@@ -1230,16 +1230,16 @@ export default function EcommerceModule({ user }: { user: any }) {
                    
                    <div className="h-8 w-px bg-slate-100 hidden sm:block" />
                    
-                   <div className="flex bg-white/5 p-1 rounded-xl shrink-0 shadow-inner">
+                   <div className="flex bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 p-1 rounded-xl shrink-0 shadow-inner">
                      <button 
                        onClick={() => setViewMode('grid')}
-                       className={cn("p-2.5 rounded-lg transition-all", viewMode === 'grid' ? "bg-nexus-surface text-nexus-text shadow-sm" : "text-slate-300 hover:text-nexus-text-muted/80")}
+                       className={cn("p-2.5 rounded-lg transition-all", viewMode === 'grid' ? "bg-nexus-surface text-nexus-text shadow-sm" : "text-nexus-text-muted hover:text-nexus-text-muted/80")}
                      >
                        <LayoutGrid size={18} />
                      </button>
                      <button 
                        onClick={() => setViewMode('list')}
-                       className={cn("p-2.5 rounded-lg transition-all", viewMode === 'list' ? "bg-nexus-surface text-nexus-text shadow-sm" : "text-slate-300 hover:text-nexus-text-muted/80")}
+                       className={cn("p-2.5 rounded-lg transition-all", viewMode === 'list' ? "bg-nexus-surface text-nexus-text shadow-sm" : "text-nexus-text-muted hover:text-nexus-text-muted/80")}
                      >
                        <List size={18} />
                      </button>
@@ -1341,7 +1341,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                               e.stopPropagation();
                               setEditingProduct(product);
                             }}
-                            className="p-4 bg-slate-100 text-nexus-text-muted hover:text-blue-600 hover:bg-blue-100 rounded-2xl transition-all active:scale-95 border border-white/10 shadow-sm"
+                            className="p-4 bg-slate-100 text-nexus-text-muted hover:text-blue-600 hover:bg-blue-100 rounded-2xl transition-all active:scale-95 border border-nexus-border/50 shadow-sm"
                           >
                             <Settings size={20} />
                           </button>
@@ -1349,18 +1349,18 @@ export default function EcommerceModule({ user }: { user: any }) {
                         {product.stock > 0 ? (
                           <button
                             onClick={() => addToCart(product)}
-                            className="flex-1 py-4 bg-nexus-accent text-white hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 active:scale-95 group-hover:shadow-blue-600/20"
+                            className="flex-1 py-4 bg-nexus-accent text-white hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 active:scale-95 group-hover:shadow-blue-600/20"
                           >
                             <ShoppingCart size={18} /> Acheter
                           </button>
                         ) : (
-                          <div className="flex-1 py-4 bg-white/5 text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center italic">
+                          <div className="flex-1 py-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 text-nexus-text-muted rounded-2xl text-[10px] font-black uppercase tracking-widest text-center italic">
                             Stock Épuisé
                           </div>
                         )}
                         <button
                           onClick={() => setSelectedProduct(product)}
-                          className="p-4 bg-white/5 text-nexus-text-muted hover:text-blue-600 hover:bg-blue-100 rounded-2xl transition-all active:scale-95 border border-white/5 shadow-sm"
+                          className="p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 text-nexus-text-muted hover:text-blue-600 hover:bg-blue-100 rounded-2xl transition-all active:scale-95 border border-nexus-border/30 shadow-sm"
                         >
                           <Search size={20} />
                         </button>
@@ -1375,17 +1375,17 @@ export default function EcommerceModule({ user }: { user: any }) {
           {/* Special Loyalty Banner for Clients */}
           {user.role === 'Client' && (
             <div className="mt-12 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-[3rem] p-12 text-white relative overflow-hidden shadow-2xl shadow-blue-200">
-              <div className="absolute -right-20 -top-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
+              <div className="absolute -right-20 -top-20 w-80 h-80 bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 rounded-full blur-3xl" />
               <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-blue-400/20 rounded-full blur-2xl" />
               
               <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
                 <div className="space-y-4 text-center md:text-left">
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-xs font-black uppercase tracking-widest">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-slate-500/20 dark:bg-slate-500/20 dark:bg-white/20 backdrop-blur-md rounded-full text-xs font-black uppercase tracking-widest">
                     <Award size={16} />
                     Programme privilège Nexus
                   </div>
                   <h3 className="text-4xl font-black tracking-tight">Votre Hub de Performance</h3>
-                  <p className="text-blue-100 font-medium max-w-lg">
+                  <p className="text-blue-100 font-medium max-w-2xl">
                     Vous avez actuellement <span className="text-white font-black underline decoration-2 underline-offset-4">{loyaltyPoints || 0} Points Fidélité</span>. 
                     Chaque point vous rapproche de solutions premium gratuites et de remises exclusives.
                   </p>
@@ -1407,7 +1407,7 @@ export default function EcommerceModule({ user }: { user: any }) {
       {activeView === 'cart' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-nexus-surface rounded-3xl border border-white/10 border border-white/5 shadow-sm overflow-hidden">
+            <div className="bg-nexus-surface rounded-3xl border border-nexus-border/50 border border-nexus-border/30 shadow-sm overflow-hidden">
               <div className="p-6 border-b border-slate-50 flex justify-between items-center">
                 <h2 className="font-bold text-nexus-text flex items-center gap-2">
                   <ShoppingCart size={20} className="text-blue-600" />
@@ -1418,7 +1418,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               
               {cart.length === 0 ? (
                 <div className="p-20 text-center space-y-4">
-                  <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto text-slate-300">
+                  <div className="w-16 h-16 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto text-nexus-text-muted">
                     <ShoppingBag size={32} />
                   </div>
                   <p className="text-nexus-text-muted text-sm font-medium uppercase tracking-widest">Le panier est vide</p>
@@ -1428,16 +1428,16 @@ export default function EcommerceModule({ user }: { user: any }) {
                 <div className="divide-y divide-slate-50">
                   {cart.map(item => (
                     <div key={item.id} className="p-6 flex flex-col sm:flex-row items-center gap-6">
-                      <img src={item.image} alt={item.name} className="w-24 h-24 rounded-2xl object-cover border border-white/5" />
+                      <img src={item.image} alt={item.name} className="w-24 h-24 rounded-2xl object-cover border border-nexus-border/30" />
                       <div className="flex-1 space-y-1 text-center sm:text-left">
                         <h4 className="font-bold text-nexus-text">{item.name}</h4>
                         <p className="text-xs text-nexus-text-muted font-medium">{item.category}</p>
                         <p className="text-sm font-black text-blue-600">{item.price.toLocaleString()} FCFA</p>
                       </div>
-                      <div className="flex items-center gap-4 bg-white/5 p-2 rounded-xl">
-                        <button onClick={() => updateQuantity(item.id, -1)} className="p-1 hover:bg-nexus-surface rounded-md border border-white/10 transition-colors"><Minus size={16} /></button>
+                      <div className="flex items-center gap-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 p-2 rounded-xl">
+                        <button onClick={() => updateQuantity(item.id, -1)} className="p-1 hover:bg-nexus-surface rounded-md border border-nexus-border/50 transition-colors"><Minus size={16} /></button>
                         <span className="text-sm font-black w-8 text-center">{item.cartQuantity}</span>
-                        <button onClick={() => updateQuantity(item.id, 1)} className="p-1 hover:bg-nexus-surface rounded-md border border-white/10 transition-colors"><Plus size={16} /></button>
+                        <button onClick={() => updateQuantity(item.id, 1)} className="p-1 hover:bg-nexus-surface rounded-md border border-nexus-border/50 transition-colors"><Plus size={16} /></button>
                       </div>
                       <div className="text-right flex flex-col items-center sm:items-end gap-2">
                         <span className="font-black text-nexus-text">{(item.price * item.cartQuantity).toLocaleString()} FCFA</span>
@@ -1462,7 +1462,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                   <span>Livraison</span>
                   <span className="text-green-400 font-bold uppercase text-[10px] tracking-widest">Gratuite</span>
                 </div>
-                <div className="pt-4 border-t border-white/10 flex justify-between items-center">
+                <div className="pt-4 border-t border-nexus-border/50 flex justify-between items-center">
                   <span className="font-bold uppercase tracking-widest text-xs">Total</span>
                   <span className="text-2xl font-black">{cartTotal.toLocaleString()} FCFA</span>
                 </div>
@@ -1470,14 +1470,14 @@ export default function EcommerceModule({ user }: { user: any }) {
               <button
                 disabled={cart.length === 0}
                 onClick={() => setCheckoutModalOpen(true)}
-                className="w-full py-4 bg-nexus-accent text-white hover:bg-nexus-accent/80 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-blue-900/40 disabled:opacity-50 flex items-center justify-center gap-3"
+                className="w-full py-4 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-blue-900/40 disabled:opacity-50 flex items-center justify-center gap-3"
               >
                 Passer la commande <ChevronRight size={18} />
               </button>
             </div>
 
             <div className="bg-blue-50 rounded-3xl p-6 border border-blue-100 flex items-center gap-4">
-              <div className="p-3 bg-nexus-surface rounded-xl border border-white/10 text-blue-600 shadow-sm">
+              <div className="p-3 bg-nexus-surface rounded-xl border border-nexus-border/50 text-blue-600 shadow-sm">
                 <Award size={24} />
               </div>
               <div>
@@ -1495,7 +1495,7 @@ export default function EcommerceModule({ user }: { user: any }) {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Connection Status & Hub */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 bg-nexus-surface rounded-[2rem] p-8 border border-white/5 shadow-sm flex items-center justify-between">
+            <div className="md:col-span-2 bg-nexus-surface rounded-[2rem] p-8 border border-nexus-border/30 shadow-sm flex items-center justify-between">
                <div className="flex items-center gap-6">
                   <div className={cn(
                     "w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-500",
@@ -1510,13 +1510,13 @@ export default function EcommerceModule({ user }: { user: any }) {
                     </p>
                   </div>
                </div>
-               <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl">
+               <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl">
                   <div className={cn("w-2 h-2 rounded-full", connStatus === 'ok' ? "bg-green-500" : "bg-red-500")} />
                   <span className="text-[10px] font-black text-nexus-text-muted/80 uppercase tracking-widest">{connStatus === 'ok' ? 'LATENCY: 24MS' : 'OFFLINE'}</span>
                </div>
             </div>
 
-            <div className="bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-[2rem] p-8 text-white shadow-xl shadow-blue-600/20 flex flex-col justify-center">
+            <div className="bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 rounded-[2rem] p-8 text-white shadow-xl shadow-blue-600/20 flex flex-col justify-center">
                <div className="flex items-center gap-3 mb-2">
                   <Bell size={18} className="text-blue-200" />
                   <span className="text-[10px] font-black uppercase tracking-widest">Alerte ProActive</span>
@@ -1529,7 +1529,7 @@ export default function EcommerceModule({ user }: { user: any }) {
             </div>
           </div>
 
-          <div className="bg-nexus-surface rounded-[2.5rem] p-10 border border-white/5 shadow-sm">
+          <div className="bg-nexus-surface rounded-[2.5rem] p-10 border border-nexus-border/30 shadow-sm">
             <div className="flex items-center justify-between mb-10">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner">
@@ -1549,7 +1549,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.1 }}
                   key={order.id} 
-                  className="bg-white/5/50 rounded-3xl p-6 border border-white/5 hover:bg-nexus-surface hover:shadow-xl transition-all duration-500 group"
+                  className="bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5/50 rounded-3xl p-6 border border-nexus-border/30 hover:bg-nexus-surface hover:shadow-xl transition-all duration-500 group"
                 >
                   <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center">
                     <div className="flex-1 w-full">
@@ -1568,7 +1568,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                       <div className="relative pt-8 pb-4 px-2">
                         <div className="absolute top-[41px] left-4 right-4 h-1 bg-slate-200 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all duration-1000 shadow-[0_0_10px_rgba(37,99,235,0.5)]" 
+                            className="h-full bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 transition-all duration-1000 shadow-[0_0_10px_rgba(37,99,235,0.5)]" 
                             style={{ width: order.status === 'PENDING' ? '10%' : order.status === 'PROCESSING' ? '40%' : order.status === 'SHIPPED' ? '70%' : '100%' }}
                           />
                         </div>
@@ -1588,7 +1588,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                               <div key={step.id} className="flex flex-col items-center gap-3">
                                 <div className={cn(
                                   "w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 z-10 border-4 border-slate-50 shadow-sm",
-                                  isPast ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white" : "bg-nexus-surface text-slate-300",
+                                  isPast ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white" : "bg-nexus-surface text-nexus-text-muted",
                                   isActive && "ring-4 ring-blue-100 scale-110"
                                 )}>
                                   {step.icon}
@@ -1615,17 +1615,17 @@ export default function EcommerceModule({ user }: { user: any }) {
                       )}
                       <button 
                         onClick={() => setActiveView('loyalty')}
-                        className="flex-1 py-4 bg-nexus-accent text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all flex items-center justify-center gap-2"
+                        className="flex-1 py-4 bg-nexus-accent text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 transition-all flex items-center justify-center gap-2"
                       >
                         <Award size={14} /> Facture
                       </button>
                       <button 
                         onClick={() => setActiveChatOrder(order)}
-                        className="flex-1 py-4 bg-nexus-surface border border-white/10 text-nexus-text-muted rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-white/5 transition-all flex items-center justify-center gap-2 relative group-hover:border-blue-200"
+                        className="flex-1 py-4 bg-nexus-surface border border-nexus-border text-nexus-text-muted rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all flex items-center justify-center gap-2 relative group-hover:border-blue-200"
                       >
                         <MessageCircle size={14} /> Support
                         {unreadMessages[order.id] > 0 && (
-                          <span className="absolute -top-2 -right-2 w-5 h-5 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-lg border-2 border-white animate-pulse">
+                          <span className="absolute -top-2 -right-2 w-5 h-5 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-lg border-2 border-white animate-pulse">
                             {unreadMessages[order.id]}
                           </span>
                         )}
@@ -1635,7 +1635,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                 </motion.div>
               ))}
               {orders.length === 0 && (
-                <div className="p-20 text-center bg-white/5 rounded-[3rem] border-2 border-dashed border-white/5">
+                <div className="p-20 text-center bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-[3rem] border-2 border-dashed border-nexus-border/30">
                   <Truck size={48} className="mx-auto text-slate-200 mb-6" strokeWidth={1} />
                   <h3 className="text-lg font-black text-nexus-text tracking-tight">Flux Initial Inactif</h3>
                   <p className="text-xs font-medium text-nexus-text-muted mt-2 max-w-[240px] mx-auto leading-relaxed">
@@ -1657,7 +1657,7 @@ export default function EcommerceModule({ user }: { user: any }) {
            
            <div className="space-y-4">
               {orders.filter(o => ['PROCESSING', 'SHIPPED', 'DELIVERY_FAILED'].includes(o.status)).map(order => (
-                <div key={`commando-${order.id}`} className="bg-nexus-surface p-6 rounded-3xl border-2 border-white/5 shadow-sm flex flex-col gap-4">
+                <div key={`commando-${order.id}`} className="bg-nexus-surface p-6 rounded-3xl border-2 border-nexus-border/30 shadow-sm flex flex-col gap-4">
                    <div className="flex justify-between items-start">
                       <div>
                         <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">CMD-{order.id.slice(0, 8)}</span>
@@ -1670,7 +1670,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                       </div>
                    </div>
                    
-                   <div className="p-4 bg-white/5 rounded-2xl grid grid-cols-2 gap-4">
+                   <div className="p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-2xl grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-[8px] font-black text-nexus-text-muted uppercase">Contact</p>
                         <p className="text-[11px] font-black text-nexus-text">{order.customerPhone}</p>
@@ -1693,7 +1693,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                       </button>
                       <button 
                          onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'DELIVERED' })}
-                         className="flex-1 py-4 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2"
+                         className="flex-1 py-4 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-2"
                       >
                         <CheckCircle2 size={16} /> Livré !
                       </button>
@@ -1756,7 +1756,7 @@ export default function EcommerceModule({ user }: { user: any }) {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             <div className="lg:col-span-1 space-y-6">
-              <div className="bg-nexus-surface p-8 rounded-[2rem] border border-white/5 shadow-sm space-y-8">
+              <div className="bg-nexus-surface p-8 rounded-[2rem] border border-nexus-border/30 shadow-sm space-y-8">
                 <div>
                   <h3 className="text-sm font-black text-nexus-text uppercase tracking-widest flex items-center gap-2">
                     <Plus size={16} className="text-blue-600" /> Ajouter une Zone
@@ -1770,7 +1770,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                     <input 
                       type="text" 
                       placeholder="Ex: Yaoundé (Omnisport)"
-                      className="w-full bg-white/5 border-2 border-transparent rounded-xl py-4 px-4 text-xs font-bold focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none transition-all placeholder:text-slate-300 shadow-inner text-nexus-text placeholder-white/40"
+                      className="w-full -2 -transparent rounded-xl py-4 text-xs font-bold focus:bg-nexus-surface transition-all placeholder: -inner hover:-strong nexus-input w-full text-sm"
                       value={newLocation}
                       onChange={e => setNewLocation(e.target.value)}
                     />
@@ -1781,11 +1781,11 @@ export default function EcommerceModule({ user }: { user: any }) {
                       <input 
                         type="number" 
                         placeholder="0"
-                        className="w-full bg-white/5 border-2 border-transparent rounded-xl py-4 px-4 pr-12 text-xs font-bold focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none transition-all placeholder:text-slate-300 shadow-inner text-nexus-text placeholder-white/40"
+                        className="w-full -2 -transparent rounded-xl py-4 pr-12 text-xs font-bold focus:bg-nexus-surface transition-all placeholder: -inner hover:-strong nexus-input w-full text-sm"
                         value={newFee}
                         onChange={e => setNewFee(e.target.value)}
                       />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300 uppercase">FCFA</span>
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-nexus-text-muted uppercase">FCFA</span>
                     </div>
                   </div>
                   <button 
@@ -1798,7 +1798,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                       setNewLocation('');
                       setNewFee('');
                     }}
-                    className="w-full py-4 bg-nexus-accent text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-nexus-accent text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 transition-all flex items-center justify-center gap-2"
                   >
                     Confirmer la Zone <CheckCircle2 size={14} />
                   </button>
@@ -1806,7 +1806,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               </div>
 
               {/* Categories Management Panel */}
-              <div className="bg-nexus-surface p-8 rounded-[2rem] border border-white/5 shadow-sm space-y-8">
+              <div className="bg-nexus-surface p-8 rounded-[2rem] border border-nexus-border/30 shadow-sm space-y-8">
                 <div>
                   <h3 className="text-sm font-black text-nexus-text uppercase tracking-widest flex items-center gap-2">
                     <LayoutGrid size={16} className="text-blue-600" /> Gestion des Rayons
@@ -1820,7 +1820,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                     <input 
                       type="text" 
                       placeholder="Ex: Électricité, Plomberie..."
-                      className="w-full bg-white/5 border-2 border-transparent rounded-xl py-4 px-4 text-xs font-bold focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none transition-all placeholder:text-slate-300 shadow-inner text-nexus-text placeholder-white/40"
+                      className="w-full -2 -transparent rounded-xl py-4 text-xs font-bold focus:bg-nexus-surface transition-all placeholder: -inner hover:-strong nexus-input w-full text-sm"
                       value={newCategoryName}
                       onChange={e => setNewCategoryName(e.target.value)}
                     />
@@ -1838,7 +1838,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                       });
                       setNewCategoryName('');
                     }}
-                    className="w-full py-4 bg-nexus-accent text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-nexus-accent text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 transition-all flex items-center justify-center gap-2"
                   >
                     Ajouter le Rayon <Plus size={14} />
                   </button>
@@ -1849,7 +1849,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                        {companyCategories.map((catObj: any) => (
                         <div key={catObj.name} className={cn(
                           "group flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all",
-                          catObj.isPriority ? "bg-blue-50 border-blue-200" : "bg-white/5 border-white/5"
+                          catObj.isPriority ? "bg-blue-50 border-blue-200" : "bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 border-nexus-border/30"
                         )}>
                           <span className={cn("text-[10px] font-bold", catObj.isPriority ? "text-blue-700" : "text-nexus-text-muted")}>{catObj.name}</span>
                           
@@ -1862,7 +1862,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                                 categories: updated
                               });
                             }}
-                            className={cn("p-1 transition-colors", catObj.isPriority ? "text-amber-500" : "text-slate-300 hover:text-amber-500")}
+                            className={cn("p-1 transition-colors", catObj.isPriority ? "text-amber-500" : "text-nexus-text-muted hover:text-amber-500")}
                           >
                             <Star size={10} fill={catObj.isPriority ? "currentColor" : "none"} />
                           </button>
@@ -1874,7 +1874,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                                  categories: updated
                                });
                             }}
-                            className="p-1 hover:text-red-500 text-slate-300 transition-colors"
+                            className="p-1 hover:text-red-500 text-nexus-text-muted transition-colors"
                           >
                             <X size={10} />
                           </button>
@@ -1904,7 +1904,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                           onClick={() => setNotificationConfig({ ...notificationConfig, activeChannel: channel })}
                           className={cn(
                             "py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
-                            notificationConfig?.activeChannel === channel ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 border-blue-600 text-white" : "bg-white/5 border-white/10 text-nexus-text-muted hover:bg-white/10"
+                            notificationConfig?.activeChannel === channel ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 border-blue-600 text-white" : "bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 border-nexus-border/50 text-nexus-text-muted hover:bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10"
                           )}
                         >
                           {channel}
@@ -1917,7 +1917,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                     <div className="space-y-2">
                       <label className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest">Numéro Expéditeur / ID</label>
                       <input 
-                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-xs font-bold text-white focus:bg-white/10 focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none transition-all"
+                        className="w-full rounded-xl text-xs font-bold text-white focus: transition-all hover:-strong nexus-input w-full text-sm"
                         placeholder="+237 ..."
                         value={notificationConfig?.senderNumber || ''}
                         onChange={e => setNotificationConfig({ ...notificationConfig, senderNumber: e.target.value })}
@@ -1926,7 +1926,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                     <div className="space-y-2">
                       <label className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest italic">Template Annulation</label>
                       <textarea 
-                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-[10px] font-medium text-white focus:bg-white/10 focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none transition-all h-24"
+                        className="w-full rounded-xl text-[10px] font-medium text-white focus: transition-all h-24 hover:-strong nexus-input w-full text-sm"
                         placeholder="Utilisez {customerName}, {orderId} et {reason}"
                         value={notificationConfig?.cancelTemplate || ''}
                         onChange={e => setNotificationConfig({ ...notificationConfig, cancelTemplate: e.target.value })}
@@ -1937,7 +1937,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                   <button 
                     disabled={savingSettings}
                     onClick={saveNotificationSettings}
-                    className="w-full py-4 bg-nexus-accent text-white hover:bg-nexus-accent/80 hover:bg-nexus-surface hover:text-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-900/20 active:scale-95"
+                    className="w-full py-4 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 hover:bg-nexus-surface hover:text-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-900/20 active:scale-95"
                   >
                     {savingSettings ? "Synchronisation..." : "Sauvegarder Logic"}
                   </button>
@@ -1946,7 +1946,7 @@ export default function EcommerceModule({ user }: { user: any }) {
             </div>
 
             <div className="lg:col-span-2 space-y-6">
-              <div className="bg-nexus-surface p-8 rounded-[2rem] border border-white/5 shadow-sm">
+              <div className="bg-nexus-surface p-8 rounded-[2rem] border border-nexus-border/30 shadow-sm">
                 <div className="flex justify-between items-center mb-8">
                   <div>
                     <h3 className="text-sm font-black text-nexus-text uppercase tracking-widest">Zones & Tarifs Actuels</h3>
@@ -1956,9 +1956,9 @@ export default function EcommerceModule({ user }: { user: any }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {Object.entries(currentCompany.deliveryFees || {}).map(([loc, price]) => (
-                    <div key={loc} className="flex items-center justify-between p-5 bg-white/5/50 rounded-2xl border border-white/5 group hover:bg-nexus-surface hover:border-blue-100 hover:shadow-md transition-all">
+                    <div key={loc} className="flex items-center justify-between p-5 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5/50 rounded-2xl border border-nexus-border/30 group hover:bg-nexus-surface hover:border-blue-100 hover:shadow-md transition-all">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-nexus-surface rounded-xl border border-white/10 flex items-center justify-center text-blue-600 border border-white/5 shadow-sm">
+                        <div className="w-10 h-10 bg-nexus-surface rounded-xl border border-nexus-border/50 flex items-center justify-center text-blue-600 border border-nexus-border/30 shadow-sm">
                           <MapPin size={18} />
                         </div>
                         <div>
@@ -1974,7 +1974,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                             deliveryFees: fees
                           });
                         }}
-                        className="p-2.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                        className="p-2.5 text-nexus-text-muted hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                       >
                         <X size={16} />
                       </button>
@@ -1982,11 +1982,11 @@ export default function EcommerceModule({ user }: { user: any }) {
                   ))}
                   {(!currentCompany.deliveryFees || Object.keys(currentCompany.deliveryFees).length === 0) && (
                     <div className="col-span-full py-16 text-center">
-                      <div className="w-16 h-16 bg-white/5 rounded-3xl flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-white/5">
+                      <div className="w-16 h-16 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-3xl flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-nexus-border/30">
                         <Truck size={24} className="text-slate-200" />
                       </div>
                       <h4 className="text-xs font-black text-nexus-text-muted uppercase tracking-widest">Aucune Zone Définie</h4>
-                      <p className="text-[10px] text-slate-300 mt-2 font-medium">Commencez par ajouter une zone pour proposer la livraison payante.</p>
+                      <p className="text-[10px] text-nexus-text-muted mt-2 font-medium">Commencez par ajouter une zone pour proposer la livraison payante.</p>
                     </div>
                   )}
                 </div>
@@ -2003,9 +2003,9 @@ export default function EcommerceModule({ user }: { user: any }) {
               <h2 className="text-3xl font-black text-nexus-text tracking-tight">Gestion des Commandes</h2>
               <p className="text-nexus-text-muted/80 font-medium mt-1">Supervisez et traitez les commandes entrantes en temps réel.</p>
             </div>
-            <div className="flex items-center gap-3 bg-nexus-surface p-2 rounded-2xl border border-white/5 shadow-sm">
+            <div className="flex items-center gap-3 bg-nexus-surface p-2 rounded-2xl border border-nexus-border/30 shadow-sm">
               <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl">
-                 <div className="w-2 h-2 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-full animate-ping" />
+                 <div className="w-2 h-2 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 rounded-full animate-ping" />
                  <span className="text-[10px] font-black uppercase">Live Nexus Engine</span>
               </div>
             </div>
@@ -2018,7 +2018,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               { label: 'Marketplace', count: orders.filter(o => o.checkoutSource === 'MARKETPLACE').length, color: 'bg-emerald-500' },
               { label: 'Revenus Est.', count: orders.filter(o => o.status !== 'CANCELLED' && o.status !== 'CANCELLED_BY_SELLER').reduce((a,b) => a+b.total, 0).toLocaleString() + ' F', color: 'bg-nexus-accent' }
             ].map(stat => (
-              <div key={stat.label} className="bg-nexus-surface p-6 rounded-3xl border border-white/5 shadow-sm">
+              <div key={stat.label} className="bg-nexus-surface p-6 rounded-3xl border border-nexus-border/30 shadow-sm">
                 <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-2">{stat.label}</p>
                 <div className="flex items-end justify-between">
                   <span className="text-xl font-black text-nexus-text">{stat.count}</span>
@@ -2030,11 +2030,11 @@ export default function EcommerceModule({ user }: { user: any }) {
             ))}
           </div>
 
-          <div className="bg-nexus-surface rounded-[2rem] p-6 border border-white/5 overflow-x-auto">
+          <div className="bg-nexus-surface rounded-[2rem] p-6 border border-nexus-border/30 overflow-x-auto">
             <h3 className="text-sm font-black uppercase italic mb-4 px-2">Top Performance Produits</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                {products.sort((a,b) => ((b as any).soldCount || 0) - ((a as any).soldCount || 0)).slice(0, 3).map(p => (
-                 <div key={p.id} className="p-4 bg-white/5 rounded-2xl border border-white/5 flex items-center gap-4">
+                 <div key={p.id} className="p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-2xl border border-nexus-border/30 flex items-center gap-4">
                     <img src={p.image} className="w-12 h-12 rounded-xl object-cover" />
                     <div>
                       <p className="text-[10px] font-black uppercase text-nexus-text truncate max-w-[120px]">{p.name}</p>
@@ -2052,7 +2052,7 @@ export default function EcommerceModule({ user }: { user: any }) {
             {orders.map((order) => (
               <div key={order.id} className={cn(
                 "bg-nexus-surface rounded-[2.5rem] p-8 border hover:shadow-2xl transition-all duration-500 group relative overflow-hidden",
-                order.status === 'PENDING' ? "border-amber-200 shadow-lg shadow-amber-50" : "border-white/5 shadow-sm"
+                order.status === 'PENDING' ? "border-amber-200 shadow-lg shadow-amber-50" : "border-nexus-border/30 shadow-sm"
               )}>
                 {order.status === 'PENDING' && (
                   <div className="absolute top-4 left-4 flex gap-2">
@@ -2066,7 +2066,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                   </div>
                 )}
                 {order.globalOrderId && (
-                  <div className="absolute top-0 right-40 px-6 py-2 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white text-[9px] font-black uppercase tracking-widest rounded-bl-2xl flex items-center gap-1.5 shadow-sm">
+                  <div className="absolute top-0 right-40 px-6 py-2 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white text-[9px] font-black uppercase tracking-widest rounded-bl-2xl flex items-center gap-1.5 shadow-sm">
                     <TrendingUp size={10} /> Achat Groupé
                   </div>
                 )}
@@ -2091,10 +2091,10 @@ export default function EcommerceModule({ user }: { user: any }) {
                           <span className={cn(
                             "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
                             order.status === 'PENDING' ? "bg-blue-50 text-blue-600 border-blue-100" :
-                            order.status === 'PROCESSING' ? "bg-white/5 text-nexus-text-muted border-white/5" :
+                            order.status === 'PROCESSING' ? "bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 text-nexus-text-muted border-nexus-border/30" :
                             order.status === 'SHIPPED' ? "bg-amber-50 text-amber-600 border-amber-100" :
                             order.status === 'DELIVERED' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                            "bg-slate-100 text-nexus-text-muted/80 border-white/10"
+                            "bg-slate-100 text-nexus-text-muted/80 border-nexus-border/50"
                           )}>
                             {order.status === 'PENDING' ? 'Reçue' : 
                              order.status === 'SHIPPED' ? 'En route' :
@@ -2113,12 +2113,12 @@ export default function EcommerceModule({ user }: { user: any }) {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-4">
-                        <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                        <h4 className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest flex items-center gap-2">
                           <ShoppingBag size={12} /> Articles ({order.items.length})
                         </h4>
                         <div className="space-y-2">
                           {order.items.map((item, i) => (
-                            <div key={i} className="flex justify-between items-center text-sm p-3 bg-white/5 rounded-xl">
+                            <div key={i} className="flex justify-between items-center text-sm p-3 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl">
                               <span className="font-bold text-nexus-text-muted">{item.name} <span className="text-nexus-text-muted font-medium">x{item.quantity}</span></span>
                               <span className="font-black text-nexus-text">{item.price.toLocaleString()}</span>
                             </div>
@@ -2127,10 +2127,10 @@ export default function EcommerceModule({ user }: { user: any }) {
                       </div>
 
                       <div className="space-y-4">
-                        <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                        <h4 className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest flex items-center gap-2">
                           <CheckCircle2 size={12} /> Client & Livraison
                         </h4>
-                        <div className="bg-white/5 rounded-2xl p-5 space-y-3">
+                        <div className="bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-2xl p-5 space-y-3">
                           <p className="text-sm font-bold text-nexus-text">{order.customerName}</p>
                           <div className="flex flex-col gap-1">
                             {order.customerPhone && (
@@ -2159,7 +2159,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                   </div>
 
                   <div className="lg:w-64 space-y-4">
-                    <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Actions Opérationnelles</h4>
+                    <h4 className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Actions Opérationnelles</h4>
                     <div className="flex flex-col gap-2">
                        <button 
                          onClick={async () => {
@@ -2205,7 +2205,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                          disabled={order.status !== 'PENDING'}
                          className={cn(
                            "w-full py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
-                           order.status === 'PROCESSING' || order.status === 'SHIPPED' || order.status === 'DELIVERED' ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white" : "bg-nexus-accent text-white hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 disabled:opacity-30"
+                           order.status === 'PROCESSING' || order.status === 'SHIPPED' || order.status === 'DELIVERED' ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white" : "bg-nexus-accent text-white hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 disabled:opacity-30"
                          )}
                        >
                          {order.status === 'PENDING' ? 'Prise en charge' : 'En traitement'}
@@ -2213,7 +2213,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                        <button 
                          onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'SHIPPED' })}
                          disabled={['SHIPPED', 'DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status)}
-                         className="w-full py-4 bg-nexus-surface border border-white/10 text-nexus-text-muted rounded-2xl text-[9px] font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all flex items-center justify-center gap-2 disabled:opacity-30"
+                         className="w-full py-4 bg-nexus-surface border border-nexus-border text-nexus-text-muted rounded-2xl text-[9px] font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all flex items-center justify-center gap-2 disabled:opacity-30"
                        >
                          <Truck size={14} /> Expédition
                        </button>
@@ -2255,7 +2255,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               </div>
             ))}
             {orders.length === 0 && (
-              <div className="p-20 text-center bg-white/5 rounded-[3rem] border-2 border-dashed border-white/5">
+              <div className="p-20 text-center bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-[3rem] border-2 border-dashed border-nexus-border/30">
                 <ShoppingBag size={48} className="mx-auto text-slate-200 mb-6" strokeWidth={1} />
                 <h3 className="text-lg font-black text-nexus-text tracking-tight">Aucune Commande Nexus</h3>
                 <p className="text-xs font-medium text-nexus-text-muted mt-2">Votre flux commercial est actuellement vide.</p>
@@ -2284,7 +2284,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                 stock: 0,
                 points: 10
               })}
-              className="px-8 py-5 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-[2rem] text-xs font-black uppercase tracking-widest hover:bg-nexus-accent transition-all flex items-center gap-3 shadow-2xl shadow-blue-200 active:scale-95"
+              className="px-8 py-5 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-[2rem] text-xs font-black uppercase tracking-widest hover:bg-nexus-accent transition-all flex items-center gap-3 shadow-2xl shadow-blue-200 active:scale-95"
             >
               <Plus size={20} /> Créer un nouveau produit
             </button>
@@ -2292,7 +2292,7 @@ export default function EcommerceModule({ user }: { user: any }) {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
             {/* Stock Entry Form */}
-            <div className="bg-nexus-surface p-8 rounded-[3rem] border border-white/5 shadow-sm space-y-8">
+            <div className="bg-nexus-surface p-8 rounded-[3rem] border border-nexus-border/30 shadow-sm space-y-8">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-inner">
                   <Warehouse size={24} />
@@ -2308,11 +2308,11 @@ export default function EcommerceModule({ user }: { user: any }) {
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest px-1">Rechercher le Produit</label>
                   <div className="relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" size={18} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-nexus-text-muted group-focus-within:text-blue-500 transition-colors" size={18} />
                     <input 
                       type="text" 
                       placeholder="Tapez le nom ou la référence..."
-                      className="w-full bg-white/5 border-2 border-transparent rounded-2xl py-5 pl-12 pr-4 text-xs font-bold focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none transition-all shadow-inner text-nexus-text placeholder-white/40"
+                      className="w-full -2 -transparent rounded-2xl py-5 pl-12 pr-4 text-xs font-bold focus:bg-nexus-surface transition-all -inner hover:-strong nexus-input w-full text-sm"
                       onChange={(e) => {
                         const term = e.target.value.toLowerCase();
                         if (term.length > 1) {
@@ -2343,7 +2343,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                       <input 
                         type="number" 
                         placeholder="Ex: 50"
-                        className="w-full bg-white/5 border-2 border-transparent rounded-xl py-4 px-4 text-xs font-bold focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none shadow-inner text-nexus-text placeholder-white/40"
+                        className="w-full -2 -transparent rounded-xl py-4 text-xs font-bold focus:bg-nexus-surface -inner hover:-strong nexus-input w-full text-sm"
                         value={replenishmentQty}
                         onChange={e => setReplenishmentQty(e.target.value)}
                       />
@@ -2354,11 +2354,11 @@ export default function EcommerceModule({ user }: { user: any }) {
                         <input 
                           type="number" 
                           placeholder={replenishmentProduct.purchasePrice?.toString() || "0"}
-                          className="w-full bg-white/5 border-2 border-transparent rounded-xl py-4 px-4 text-xs font-bold focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none shadow-inner text-nexus-text placeholder-white/40"
+                          className="w-full -2 -transparent rounded-xl py-4 text-xs font-bold focus:bg-nexus-surface -inner hover:-strong nexus-input w-full text-sm"
                           value={replenishmentPurchasePrice}
                           onChange={e => setReplenishmentPurchasePrice(e.target.value)}
                         />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-300">FCFA</span>
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-nexus-text-muted">FCFA</span>
                       </div>
                     </div>
                   </div>
@@ -2367,7 +2367,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                 <button 
                   disabled={!replenishmentProduct || !replenishmentQty || submitting}
                   onClick={handleReplenishment}
-                  className="w-full py-5 bg-nexus-accent text-white rounded-[2rem] text-xs font-black uppercase tracking-widest shadow-2xl shadow-slate-900/20 hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 disabled:opacity-30 transition-all flex items-center justify-center gap-3 active:scale-95"
+                  className="w-full py-5 bg-nexus-accent text-white rounded-[2rem] text-xs font-black uppercase tracking-widest shadow-2xl shadow-slate-900/20 hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 disabled:opacity-30 transition-all flex items-center justify-center gap-3 active:scale-95"
                 >
                   {submitting ? "Mise à jour Nexus..." : "Enregistrer l'Entrée"} <ArrowRight size={18} />
                 </button>
@@ -2375,7 +2375,7 @@ export default function EcommerceModule({ user }: { user: any }) {
             </div>
 
             {/* Recent History */}
-            <div className="bg-nexus-accent p-8 rounded-[3rem] text-white shadow-2xl space-y-8 overflow-hidden relative border border-white/5">
+            <div className="bg-nexus-accent p-8 rounded-[3rem] text-white shadow-2xl space-y-8 overflow-hidden relative border border-nexus-border/30">
               <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
                 <History size={200} />
               </div>
@@ -2386,12 +2386,12 @@ export default function EcommerceModule({ user }: { user: any }) {
                    </h3>
                    <p className="text-[9px] font-bold text-nexus-text-muted uppercase tracking-widest mt-1">Traçabilité des 50 derniers mouvements</p>
                 </div>
-                <div className="px-3 py-1 bg-white/5 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/10">ERPsys v2.4</div>
+                <div className="px-3 py-1 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-full text-[9px] font-black uppercase tracking-widest border border-nexus-border/50">ERPsys v2.4</div>
               </div>
 
               <div className="relative z-10 space-y-3 max-h-[500px] overflow-y-auto scrollbar-hide pr-2">
                 {stockHistory.map((log) => (
-                  <div key={log.id} className="p-4 bg-white/5 rounded-2xl border border-white/5 flex items-center justify-between hover:bg-white/10 transition-all">
+                  <div key={log.id} className="p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-2xl border border-nexus-border/30 flex items-center justify-between hover:bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 transition-all">
                     <div className="flex items-center gap-4">
                        <div className={cn("w-2 h-10 rounded-full", log.type === 'ENTREE' ? "bg-emerald-500" : log.type === 'SORTIE' ? "bg-red-500" : "bg-blue-500")} />
                        <div>
@@ -2440,7 +2440,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                   createdAt: serverTimestamp()
                 });
               }}
-              className="px-6 py-4 bg-nexus-accent text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all flex items-center gap-2 shadow-xl shadow-slate-900/20"
+              className="px-6 py-4 bg-nexus-accent text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 transition-all flex items-center gap-2 shadow-xl shadow-slate-900/20"
             >
               <Plus size={16} /> Ajouter une Ressource
             </button>
@@ -2448,7 +2448,7 @@ export default function EcommerceModule({ user }: { user: any }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {internalResources.map((res) => (
-              <div key={res.id} className="bg-nexus-surface p-8 rounded-[3rem] border border-white/5 shadow-sm space-y-6 hover:shadow-xl transition-all group relative overflow-hidden">
+              <div key={res.id} className="bg-nexus-surface p-8 rounded-[3rem] border border-nexus-border/30 shadow-sm space-y-6 hover:shadow-xl transition-all group relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
                    <Briefcase size={80} />
                 </div>
@@ -2457,7 +2457,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                    <div className={cn("px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border", 
                      res.type === 'Véhicule' ? "bg-amber-50 text-amber-600 border-amber-100" :
                      res.type === 'Électronique' ? "bg-blue-50 text-blue-600 border-blue-100" :
-                     "bg-white/5 text-nexus-text-muted/80 border-white/5"
+                     "bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 text-nexus-text-muted/80 border-nexus-border/30"
                    )}>
                      {res.type}
                    </div>
@@ -2472,7 +2472,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                   <p className="text-[10px] font-bold text-nexus-text-muted mt-1 uppercase tracking-widest">Assigné à: {res.assignedTo || 'Non assigné'}</p>
                 </div>
 
-                <div className="p-5 bg-white/5 rounded-2xl space-y-4 relative z-10">
+                <div className="p-5 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-2xl space-y-4 relative z-10">
                    <div className="flex justify-between items-center">
                       <span className="text-[9px] font-black text-nexus-text-muted uppercase">État Actuel</span>
                       <select 
@@ -2487,7 +2487,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                         <option value="En réparation">En réparation</option>
                       </select>
                    </div>
-                   <div className="flex justify-between items-center pt-3 border-t border-white/10">
+                   <div className="flex justify-between items-center pt-3 border-t border-nexus-border/50">
                       <span className="text-[9px] font-black text-nexus-text-muted uppercase">Utilisateur</span>
                       <input 
                         type="text" 
@@ -2507,7 +2507,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                         const val = prompt('Valeur d\'achat (FCFA)', res.purchaseValue?.toString() || '0');
                         if (val) updateDoc(doc(db, 'internal_resources', res.id), { purchaseValue: parseInt(val) });
                      }}
-                     className="flex-1 py-3 bg-nexus-accent text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all"
+                     className="flex-1 py-3 bg-nexus-accent text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 transition-all"
                    >
                      Valeur
                    </button>
@@ -2517,7 +2517,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                          await deleteDoc(doc(db, 'internal_resources', res.id));
                        }
                      }}
-                     className="px-3 py-3 bg-white/5 text-nexus-text-muted hover:text-red-500 rounded-xl transition-all"
+                     className="px-3 py-3 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 text-nexus-text-muted hover:text-red-500 rounded-xl transition-all"
                    >
                      <X size={14} />
                    </button>
@@ -2539,7 +2539,7 @@ export default function EcommerceModule({ user }: { user: any }) {
           <div className="lg:col-span-2 bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
             <div className="relative z-10 space-y-6">
               <div className="flex items-center gap-4">
-                <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl">
+                <div className="p-4 bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 backdrop-blur-md rounded-2xl">
                   <Award size={32} className="text-blue-400" />
                 </div>
                 <div>
@@ -2552,17 +2552,17 @@ export default function EcommerceModule({ user }: { user: any }) {
                   <span className="text-4xl font-black tabular-nums">{loyaltyPoints.toLocaleString()}</span>
                   <span className="text-nexus-text-muted text-sm font-bold uppercase tracking-widest">Points cumulés</span>
                 </div>
-                <div className="h-3 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-nexus-accent text-white hover:bg-nexus-accent/80 shadow-[0_0_15px_rgba(37,99,235,0.6)]" style={{ width: '65%' }} />
+                <div className="h-3 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-full bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 shadow-[0_0_15px_rgba(37,99,235,0.6)]" style={{ width: '65%' }} />
                 </div>
                 <p className="text-[10px] text-nexus-text-muted/80 font-bold uppercase tracking-[0.2em] mt-4">Plus que 750 points pour le palier Platinum</p>
               </div>
             </div>
             {/* Geometric Decors */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-nexus-accent text-white hover:bg-nexus-accent/80/10 rounded-full blur-[100px]" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20/10 rounded-full blur-[100px]" />
           </div>
 
-          <div className="bg-nexus-surface rounded-[2rem] p-8 border border-white/5 shadow-sm flex flex-col justify-between">
+          <div className="bg-nexus-surface rounded-[2rem] p-8 border border-nexus-border/30 shadow-sm flex flex-col justify-between">
             <div className="space-y-4">
               <div className="w-12 h-12 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center">
                 <Smartphone size={24} />
@@ -2575,7 +2575,7 @@ export default function EcommerceModule({ user }: { user: any }) {
             <button className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline text-left">Explorer les bonus</button>
           </div>
 
-          <div className="bg-nexus-surface rounded-[2rem] p-8 border border-white/5 shadow-sm flex flex-col justify-between">
+          <div className="bg-nexus-surface rounded-[2rem] p-8 border border-nexus-border/30 shadow-sm flex flex-col justify-between">
             <div className="space-y-4">
               <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center">
                 <Package size={24} />
@@ -2598,7 +2598,7 @@ export default function EcommerceModule({ user }: { user: any }) {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-nexus-surface rounded-[3rem] p-10 md:p-14 max-w-2xl w-full shadow-2xl border border-white/5 flex flex-col gap-10 relative overflow-hidden max-h-[90vh] overflow-y-auto scrollbar-hide"
+            className="bg-nexus-surface rounded-[3rem] p-10 md:p-14 max-w-2xl w-full shadow-2xl border border-nexus-border/30 flex flex-col gap-10 relative overflow-hidden max-h-[90vh] overflow-y-auto scrollbar-hide"
           >
             <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
               <ShoppingBag size={240} />
@@ -2609,7 +2609,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                 <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] mb-2 leading-none italic">Nexus Secure Checkout</p>
                 <h3 className="text-3xl md:text-4xl font-black text-nexus-text tracking-tight uppercase italic">Finaliser l'achat</h3>
               </div>
-              <button onClick={() => setCheckoutModalOpen(false)} className="p-4 bg-white/5 hover:bg-slate-100 text-nexus-text-muted hover:text-nexus-text rounded-2xl transition-all">
+              <button onClick={() => setCheckoutModalOpen(false)} className="p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 hover:bg-slate-100 text-nexus-text-muted hover:text-nexus-text rounded-2xl transition-all">
                 <X size={24} />
               </button>
             </div>
@@ -2623,18 +2623,18 @@ export default function EcommerceModule({ user }: { user: any }) {
                     onClick={() => setPaymentMethod('MOBILE')}
                     className={cn(
                       "p-8 rounded-[2rem] border-2 transition-all flex items-center gap-6 group text-left",
-                      paymentMethod === 'MOBILE' ? "border-blue-600 bg-blue-50/50 shadow-xl shadow-blue-50" : "border-white/5 hover:border-blue-200 bg-nexus-surface"
+                      paymentMethod === 'MOBILE' ? "border-blue-600 bg-blue-50/50 shadow-xl shadow-blue-50" : "border-nexus-border/30 hover:border-blue-200 bg-nexus-surface"
                     )}
                   >
                     <div className={cn(
                       "w-14 h-14 rounded-2xl flex items-center justify-center transition-all",
-                      paymentMethod === 'MOBILE' ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white scale-110" : "bg-white/5 text-nexus-text-muted group-hover:bg-blue-100 group-hover:text-blue-600"
+                      paymentMethod === 'MOBILE' ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white scale-110" : "bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 text-nexus-text-muted group-hover:bg-blue-100 group-hover:text-blue-600"
                     )}>
                       <Smartphone size={28} />
                     </div>
                     <div>
                       <span className={cn("text-[11px] font-black uppercase tracking-widest block", paymentMethod === 'MOBILE' ? "text-blue-600" : "text-nexus-text-muted")}>Mobile Money</span>
-                      <p className={cn("text-[9px] font-bold mt-1 uppercase opacity-60", paymentMethod === 'MOBILE' ? "text-blue-400" : "text-slate-300")}>OM / MoMo</p>
+                      <p className={cn("text-[9px] font-bold mt-1 uppercase opacity-60", paymentMethod === 'MOBILE' ? "text-blue-400" : "text-nexus-text-muted")}>OM / MoMo</p>
                     </div>
                   </button>
                   <button
@@ -2642,18 +2642,18 @@ export default function EcommerceModule({ user }: { user: any }) {
                     onClick={() => setPaymentMethod('CARD')}
                     className={cn(
                       "p-8 rounded-[2rem] border-2 transition-all flex items-center gap-6 group text-left",
-                      paymentMethod === 'CARD' ? "border-blue-600 bg-blue-50/50 shadow-xl shadow-blue-50" : "border-white/5 hover:border-blue-200 bg-nexus-surface"
+                      paymentMethod === 'CARD' ? "border-blue-600 bg-blue-50/50 shadow-xl shadow-blue-50" : "border-nexus-border/30 hover:border-blue-200 bg-nexus-surface"
                     )}
                   >
                     <div className={cn(
                       "w-14 h-14 rounded-2xl flex items-center justify-center transition-all",
-                      paymentMethod === 'CARD' ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white scale-110" : "bg-white/5 text-nexus-text-muted group-hover:bg-blue-100 group-hover:text-blue-600"
+                      paymentMethod === 'CARD' ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white scale-110" : "bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 text-nexus-text-muted group-hover:bg-blue-100 group-hover:text-blue-600"
                     )}>
                       <CreditCard size={28} />
                     </div>
                     <div>
                       <span className={cn("text-[11px] font-black uppercase tracking-widest block", paymentMethod === 'CARD' ? "text-blue-600" : "text-nexus-text-muted")}>Carte Bancaire</span>
-                      <p className={cn("text-[9px] font-bold mt-1 uppercase opacity-60", paymentMethod === 'CARD' ? "text-blue-400" : "text-slate-300")}>Visa / Master</p>
+                      <p className={cn("text-[9px] font-bold mt-1 uppercase opacity-60", paymentMethod === 'CARD' ? "text-blue-400" : "text-nexus-text-muted")}>Visa / Master</p>
                     </div>
                   </button>
                 </div>
@@ -2666,7 +2666,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                     <select 
                       value={selectedLocation}
                       onChange={(e) => setSelectedLocation(e.target.value)}
-                      className="w-full bg-white/5 border-2 border-white/5 rounded-3xl py-6 px-8 text-sm font-black appearance-none outline-none focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent focus:ring-8 focus:ring-nexus-accent transition-all shadow-sm text-nexus-text placeholder-white/40"
+                      className="w-full -2 rounded-3xl py-6 px-8 text-sm font-black appearance-none focus:bg-nexus-surface transition-all -sm hover:-strong nexus-input w-full text-sm"
                       required
                     >
                       <option value="">Sélectionnez votre ville / zone...</option>
@@ -2682,19 +2682,19 @@ export default function EcommerceModule({ user }: { user: any }) {
                 </div>
               )}
 
-              <div className="bg-slate-950 rounded-[2.5rem] p-10 text-white space-y-6 shadow-2xl relative overflow-hidden border border-white/5">
+              <div className="bg-slate-950 rounded-[2.5rem] p-10 text-white space-y-6 shadow-2xl relative overflow-hidden border border-nexus-border/30">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-indigo-400 to-blue-600 opacity-50" />
                 <div className="flex justify-between items-center text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.2em]">
                   <span>Total Articles ({cart.length})</span>
                   <span className="text-white text-sm">{cartTotal.toLocaleString()} FCFA</span>
                 </div>
                 {selectedLocation && (
-                   <div className="flex justify-between items-center text-[11px] font-black text-blue-400 uppercase tracking-widest pt-2 border-t border-white/5">
+                   <div className="flex justify-between items-center text-[11px] font-black text-blue-400 uppercase tracking-widest pt-2 border-t border-nexus-border/30">
                     <span className="italic">Expédition Nexus</span>
                     <span>{(currentCompany?.deliveryFees?.[selectedLocation] || 0).toLocaleString()} FCFA</span>
                   </div>
                 )}
-                <div className="pt-6 border-t border-white/10 flex justify-between items-center">
+                <div className="pt-6 border-t border-nexus-border/50 flex justify-between items-center">
                   <span className="text-xs font-black text-white uppercase tracking-[0.2em] opacity-60">Montant Final</span>
                   <div className="text-right">
                     <span className="text-3xl font-black text-emerald-400 tracking-tighter shadow-emerald-500/20">
@@ -2702,7 +2702,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10 mt-2">
+                <div className="flex items-center gap-3 p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-2xl border border-nexus-border/50 mt-2">
                    <Award size={20} className="text-blue-400 shrink-0" />
                    <div>
                      <p className="text-[10px] font-black text-white uppercase tracking-widest leading-none">Bonus Nexus Loyalty</p>
@@ -2715,7 +2715,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-7 bg-nexus-accent text-white hover:bg-nexus-accent/80 hover:bg-nexus-surface hover:text-blue-600 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/30 transition-all flex items-center justify-center gap-4 active:scale-95 border-4 border-transparent hover:border-blue-600 group"
+                  className="w-full py-7 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 hover:bg-nexus-surface hover:text-blue-600 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/30 transition-all flex items-center justify-center gap-4 active:scale-95 border-4 border-transparent hover:border-blue-600 group"
                 >
                   {submitting ? "Traitement Nexus ERP..." : (
                     <>
@@ -2736,10 +2736,10 @@ export default function EcommerceModule({ user }: { user: any }) {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-nexus-surface rounded-[3rem] p-10 max-w-lg w-full shadow-2xl relative overflow-hidden"
+            className="bg-nexus-surface rounded-[3rem] p-10 max-w-2xl w-full shadow-2xl relative overflow-hidden"
           >
             <div className={cn("absolute top-0 left-0 w-full h-1.5", 
-              updatingStatusOrder.nextStatus === 'DELIVERY_FAILED' ? "bg-amber-500" : "bg-nexus-accent text-white hover:bg-nexus-accent/80"
+              updatingStatusOrder.nextStatus === 'DELIVERY_FAILED' ? "bg-amber-500" : "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20"
             )} />
             
             <div className="flex justify-between items-center mb-8">
@@ -2752,7 +2752,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               </div>
               <button 
                 onClick={() => setUpdatingStatusOrder(null)}
-                className="p-3 bg-white/5 text-nexus-text-muted hover:text-nexus-text rounded-2xl transition-all"
+                className="p-3 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 text-nexus-text-muted hover:text-nexus-text rounded-2xl transition-all"
               >
                 <X size={20} />
               </button>
@@ -2778,7 +2778,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                       onClick={() => setStatusReason(reason)}
                       className={cn(
                         "w-full p-4 rounded-xl text-[11px] font-black uppercase text-left transition-all border-2",
-                        statusReason === reason ? "bg-blue-50 border-blue-600 text-blue-600 shadow-lg shadow-blue-100" : "bg-nexus-surface border-white/5 text-nexus-text-muted hover:bg-white/5"
+                        statusReason === reason ? "bg-blue-50 border-blue-600 text-blue-600 shadow-lg shadow-blue-100" : "bg-nexus-surface border-nexus-border/30 text-nexus-text-muted hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5"
                       )}
                     >
                       {reason}
@@ -2788,7 +2788,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               </div>
 
               <textarea 
-                className="w-full bg-white/5 border-2 border-white/5 rounded-2xl p-4 text-[11px] font-bold outline-none focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent transition-all h-24 text-nexus-text placeholder-white/40"
+                className="w-full -2 rounded-2xl p-4 text-[11px] font-bold focus:bg-nexus-surface transition-all h-24 hover:-strong nexus-input w-full text-sm"
                 placeholder="Commentaire public pour le client..."
                 value={statusComment}
                 onChange={e => setStatusComment(e.target.value)}
@@ -2797,7 +2797,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest block ml-1 italic">Notes Internes (Privé Nexus)</label>
                 <textarea 
-                  className="w-full bg-slate-100/50 border border-white/10 rounded-2xl p-4 text-[11px] font-black outline-none focus:bg-nexus-surface transition-all h-20 text-nexus-text placeholder-white/40"
+                  className="w-full bg-slate-100/50 border border-nexus-border/50 rounded-2xl p-4 text-[11px] font-black outline-none focus:bg-nexus-surface transition-all h-20 text-nexus-text placeholder-white/40"
                   placeholder="Notes de coordination, détails livreur..."
                   defaultValue={(updatingStatusOrder.order as any).internalNotes || ''}
                   onChange={e => setInternalNotes(e.target.value)}
@@ -2814,7 +2814,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                 <button 
                   disabled={submitting || !statusReason}
                   onClick={() => handleStatusUpdate(updatingStatusOrder.order, updatingStatusOrder.nextStatus, statusReason, statusComment)}
-                  className="flex-[2] py-4 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-nexus-accent transition-all shadow-xl shadow-blue-200 active:scale-95 disabled:opacity-30"
+                  className="flex-[2] py-4 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-nexus-accent transition-all shadow-xl shadow-blue-200 active:scale-95 disabled:opacity-30"
                 >
                   {submitting ? "Mise à jour..." : "Confirmer le Statut"}
                 </button>
@@ -2830,7 +2830,7 @@ export default function EcommerceModule({ user }: { user: any }) {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-nexus-surface rounded-[3rem] p-10 max-w-lg w-full shadow-2xl relative overflow-hidden"
+            className="bg-nexus-surface rounded-[3rem] p-10 max-w-2xl w-full shadow-2xl relative overflow-hidden"
           >
             <div className="absolute top-0 left-0 w-full h-1.5 bg-red-600" />
             
@@ -2841,7 +2841,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               </div>
               <button 
                 onClick={() => setCancellingOrder(null)}
-                className="p-3 bg-white/5 text-nexus-text-muted hover:text-nexus-text rounded-2xl transition-all"
+                className="p-3 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 text-nexus-text-muted hover:text-nexus-text rounded-2xl transition-all"
               >
                 <X size={20} />
               </button>
@@ -2882,7 +2882,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                       onClick={() => setCancellationReason(reason)}
                       className={cn(
                         "w-full p-4 rounded-xl text-[11px] font-black uppercase text-left transition-all border-2",
-                        cancellationReason === reason ? "bg-red-50 border-red-600 text-red-600 shadow-lg shadow-red-100" : "bg-nexus-surface border-white/5 text-nexus-text-muted hover:bg-white/5"
+                        cancellationReason === reason ? "bg-red-50 border-red-600 text-red-600 shadow-lg shadow-red-100" : "bg-nexus-surface border-nexus-border/30 text-nexus-text-muted hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5"
                       )}
                     >
                       {reason}
@@ -2893,7 +2893,7 @@ export default function EcommerceModule({ user }: { user: any }) {
 
               {cancellationReason.includes('Autre') && (
                 <textarea 
-                  className="w-full bg-white/5 border-2 border-white/5 rounded-2xl p-4 text-[11px] font-bold outline-none focus:bg-nexus-surface focus:border-red-600 transition-all h-20 text-nexus-text placeholder-white/40"
+                  className="w-full -2 rounded-2xl p-4 text-[11px] font-bold focus:bg-nexus-surface transition-all h-20 hover:-strong nexus-input w-full text-sm"
                   placeholder="Détails du motif..."
                   value={otherReason}
                   onChange={e => setOtherReason(e.target.value)}
@@ -2926,13 +2926,13 @@ export default function EcommerceModule({ user }: { user: any }) {
       {/* Edit Product Modal */}
       {editingProduct && (
         <div className="fixed inset-0 bg-slate-900/60 z-[120] flex items-center justify-center p-6">
-          <div className="bg-nexus-surface rounded-3xl border border-white/10 p-10 max-w-lg w-full shadow-2xl border border-white/5 animate-in zoom-in-95 duration-300">
+          <div className="bg-nexus-surface rounded-3xl border border-nexus-border/50 p-10 max-w-2xl w-full shadow-2xl border border-nexus-border/30 animate-in zoom-in-95 duration-300">
             <div className="flex justify-between items-center mb-8">
               <div>
                 <h3 className="text-2xl font-bold text-nexus-text">Modifier la Solution</h3>
                 <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mt-1">ID: {editingProduct.id.slice(0,8)}</p>
               </div>
-              <button onClick={() => setEditingProduct(null)} className="p-2 hover:bg-white/5 rounded-xl transition-colors"><X size={20} /></button>
+              <button onClick={() => setEditingProduct(null)} className="p-2 hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl transition-colors"><X size={20} /></button>
             </div>
 
             <form 
@@ -2955,7 +2955,7 @@ export default function EcommerceModule({ user }: { user: any }) {
             >
               <div>
                 <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-1.5 block">Nom de la solution</label>
-                <input name="name" defaultValue={editingProduct.name} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" required />
+                <input name="name" defaultValue={editingProduct.name} className="w-full rounded-xl text-sm hover:-strong nexus-input w-full text-sm" required />
               </div>
               <div className="relative group">
                 <div className="flex justify-between items-center mb-1.5">
@@ -2964,7 +2964,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                     type="button"
                     onClick={() => generateAI('product_doc', editingProduct)}
                     disabled={aiGenerating}
-                    className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 hover:text-white transition-all shadow-sm"
+                    className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 hover:text-white transition-all shadow-sm"
                   >
                     {aiGenerating ? <RefreshCw size={10} className="animate-spin" /> : <Sparkles size={10} />}
                     Magie IA
@@ -2974,7 +2974,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                   name="description" 
                   value={editingProduct.description}
                   onChange={e => setEditingProduct({...editingProduct, description: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-nexus-accent outline-none h-32 resize-none leading-relaxed italic text-nexus-text placeholder-white/40" 
+                  className="w-full rounded-xl text-sm h-32 resize-none leading-relaxed italic hover:-strong nexus-input w-full text-sm" 
                   required 
                 />
                 <div className="absolute bottom-3 right-3 text-[9px] font-black text-nexus-text-muted uppercase tracking-widest opacity-0 group-focus-within:opacity-100 transition-opacity">
@@ -2984,25 +2984,25 @@ export default function EcommerceModule({ user }: { user: any }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-1.5 block">Prix de Vente (FCFA)</label>
-                  <input name="price" type="number" defaultValue={editingProduct.price} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" required />
+                  <input name="price" type="number" defaultValue={editingProduct.price} className="w-full rounded-xl text-sm font-black hover:-strong nexus-input w-full text-sm" required />
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-1.5 block">Prix d'Achat (Confidentiel)</label>
-                  <input name="purchasePrice" type="number" defaultValue={editingProduct.purchasePrice || 0} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" required />
+                  <input name="purchasePrice" type="number" defaultValue={editingProduct.purchasePrice || 0} className="w-full rounded-xl text-sm font-black hover:-strong nexus-input w-full text-sm" required />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-1.5 block">Inventaire / Stock</label>
-                    <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" required />
+                    <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full rounded-xl text-sm font-black hover:-strong nexus-input w-full text-sm" required />
                   </div>
                   <div>
                     <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-1.5 block">Seuil d'Alerte</label>
-                    <input name="stockThreshold" type="number" defaultValue={editingProduct.stockThreshold || 5} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" required />
+                    <input name="stockThreshold" type="number" defaultValue={editingProduct.stockThreshold || 5} className="w-full rounded-xl text-sm font-black hover:-strong nexus-input w-full text-sm" required />
                   </div>
                 </div>
-                <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/10">
+                <div className="flex items-center gap-3 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 p-4 rounded-xl border border-nexus-border/50">
                   <input name="allowBackorder" type="checkbox" defaultChecked={editingProduct.allowBackorder} className="w-5 h-5 rounded-md border-white/20 text-blue-600 focus:ring-nexus-accent text-nexus-text placeholder-white/40" />
                   <div>
                     <label className="text-xs font-black text-nexus-text-muted uppercase tracking-tight">Permettre la surcommande</label>
@@ -3013,13 +3013,13 @@ export default function EcommerceModule({ user }: { user: any }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-1.5 block">Classification</label>
-                  <select name="category" defaultValue={editingProduct.category} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40">
+                  <select name="category" defaultValue={editingProduct.category} className="w-full rounded-xl text-sm font-bold hover:-strong nexus-input w-full text-sm">
                     {(companyCategories as any[]).map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-1.5 block">Allocation Points</label>
-                  <input name="points" type="number" defaultValue={editingProduct.points} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" required />
+                  <input name="points" type="number" defaultValue={editingProduct.points} className="w-full rounded-xl text-sm font-black hover:-strong nexus-input w-full text-sm" required />
                 </div>
               </div>
 
@@ -3029,7 +3029,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                   <motion.div 
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
-                    className="p-6 bg-slate-950 rounded-2xl border border-white/10 space-y-4"
+                    className="p-6 bg-slate-950 rounded-2xl border border-nexus-border/50 space-y-4"
                   >
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
@@ -3054,7 +3054,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                     {aiSuggestion.facebookPost && (
                       <div className="space-y-2">
                         <label className="text-[8px] font-black text-nexus-text-muted/80 uppercase tracking-[0.2em] block italic">Proposition Social Media</label>
-                        <div className="bg-white/5 border border-white/5 p-4 rounded-xl text-[11px] text-slate-300 leading-relaxed italic">
+                        <div className="bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 border border-nexus-border/30 p-4 rounded-xl text-[11px] text-nexus-text-muted leading-relaxed italic">
                           {aiSuggestion.facebookPost}
                         </div>
                       </div>
@@ -3064,14 +3064,14 @@ export default function EcommerceModule({ user }: { user: any }) {
                       <button 
                         type="button" 
                         onClick={() => generateAI('marketing', editingProduct)}
-                        className="flex-1 py-2 bg-white/10 text-[9px] font-black text-white uppercase tracking-widest rounded-lg hover:bg-white/20 transition-all border border-white/5"
+                        className="flex-1 py-2 bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 text-[9px] font-black text-white uppercase tracking-widest rounded-lg hover:bg-slate-500/20 dark:bg-slate-500/20 dark:bg-white/20 transition-all border border-nexus-border/30"
                       >
                         Actualiser Marketing
                       </button>
                       <button 
                         type="button" 
                         onClick={() => generateAI('seo', editingProduct)}
-                        className="flex-1 py-2 bg-white/10 text-[9px] font-black text-white uppercase tracking-widest rounded-lg hover:bg-white/20 transition-all border border-white/5"
+                        className="flex-1 py-2 bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 text-[9px] font-black text-white uppercase tracking-widest rounded-lg hover:bg-slate-500/20 dark:bg-slate-500/20 dark:bg-white/20 transition-all border border-nexus-border/30"
                       >
                         Générer SEO
                       </button>
@@ -3082,7 +3082,7 @@ export default function EcommerceModule({ user }: { user: any }) {
 
               <div className="flex gap-4 pt-4">
                 <button type="button" onClick={() => setEditingProduct(null)} className="flex-1 py-4 bg-slate-100 text-nexus-text-muted rounded-xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all">Annuler</button>
-                <button type="submit" className="flex-[2] py-4 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-xl font-black uppercase tracking-widest hover:bg-nexus-accent shadow-xl shadow-blue-100 transition-all">Mettre à jour Nexus</button>
+                <button type="submit" className="flex-[2] py-4 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-xl font-black uppercase tracking-widest hover:bg-nexus-accent shadow-xl shadow-blue-100 transition-all">Mettre à jour Nexus</button>
               </div>
             </form>
           </div>
@@ -3104,12 +3104,12 @@ export default function EcommerceModule({ user }: { user: any }) {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-lg h-full bg-nexus-surface shadow-2xl flex flex-col"
+              className="relative w-full max-w-2xl h-full bg-nexus-surface shadow-2xl flex flex-col"
             >
               {/* Chat Header */}
-              <div className="p-8 border-b border-white/5 flex items-center justify-between bg-nexus-accent text-white">
+              <div className="p-8 border-b border-nexus-border/30 flex items-center justify-between bg-nexus-accent text-white">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-2xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 rounded-2xl flex items-center justify-center">
                     <MessageCircle size={24} />
                   </div>
                   <div>
@@ -3119,7 +3119,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                 </div>
                 <button 
                   onClick={() => setActiveChatOrder(null)}
-                  className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all"
+                  className="p-3 bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 hover:bg-slate-500/20 dark:bg-slate-500/20 dark:bg-white/20 rounded-xl transition-all"
                 >
                   <X size={20} />
                 </button>
@@ -3128,7 +3128,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               {/* Chat Content */}
               <div 
                 ref={chatScrollRef}
-                className="flex-1 overflow-y-auto p-8 space-y-8 bg-white/5/50 scroll-smooth"
+                className="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5/50 scroll-smooth"
               >
                 <div className="text-center py-4">
                   <div className="inline-block px-4 py-1.5 bg-slate-100 rounded-full text-[9px] font-black text-nexus-text-muted uppercase tracking-widest mb-4">
@@ -3156,7 +3156,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                         "px-6 py-4 rounded-[1.5rem] shadow-sm text-sm font-medium leading-relaxed",
                         isMe 
                           ? "bg-nexus-accent text-white rounded-tr-none shadow-xl shadow-slate-200" 
-                          : "bg-nexus-surface text-nexus-text-muted border border-white/5 rounded-tl-none"
+                          : "bg-nexus-surface text-nexus-text-muted border border-nexus-border/30 rounded-tl-none"
                       )}>
                         {msg.content}
                       </div>
@@ -3173,18 +3173,18 @@ export default function EcommerceModule({ user }: { user: any }) {
               </div>
 
               {/* Chat Input */}
-              <div className="p-8 border-t border-white/5 bg-nexus-surface">
+              <div className="p-8 border-t border-nexus-border/30 bg-nexus-surface">
                 <form onSubmit={sendOrderMessage} className="flex gap-4">
                   <input 
                     type="text" 
                     value={newOrderMessage}
                     onChange={(e) => setNewOrderMessage(e.target.value)}
                     placeholder="Message opérationnel..."
-                    className="flex-1 bg-white/5 border border-white/5 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-nexus-surface focus:border-blue-200 transition-all text-sm font-medium text-nexus-text placeholder-white/40"
+                    className="flex-1 rounded-2xl px-6 py-4 focus:bg-nexus-surface transition-all text-sm font-medium hover:-strong nexus-input w-full text-sm"
                   />
                   <button 
                     disabled={!newOrderMessage.trim() || sendingMessage}
-                    className="w-14 h-14 flex items-center justify-center bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-2xl hover:bg-nexus-accent transition-all shadow-xl shadow-blue-100 disabled:opacity-50"
+                    className="w-14 h-14 flex items-center justify-center bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-2xl hover:bg-nexus-accent transition-all shadow-xl shadow-blue-100 disabled:opacity-50"
                   >
                     <Send size={24} />
                   </button>
@@ -3212,11 +3212,11 @@ export default function EcommerceModule({ user }: { user: any }) {
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="fixed right-0 top-0 bottom-0 w-full max-w-2xl bg-nexus-surface z-[140] shadow-2xl flex flex-col"
             >
-              <div className="p-8 border-b border-white/5 flex items-center justify-between sticky top-0 bg-nexus-surface/80 backdrop-blur-md z-10">
+              <div className="p-8 border-b border-nexus-border/30 flex items-center justify-between sticky top-0 bg-nexus-surface/80 backdrop-blur-md z-10">
                  <div className="flex items-center gap-4">
                     <button 
                       onClick={() => setSelectedProduct(null)}
-                      className="p-3 bg-white/5 text-nexus-text-muted hover:text-nexus-text rounded-2xl transition-all"
+                      className="p-3 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 text-nexus-text-muted hover:text-nexus-text rounded-2xl transition-all"
                     >
                       <X size={20} />
                     </button>
@@ -3236,7 +3236,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               <div className="flex-1 overflow-y-auto scrollbar-hide">
                 <div className="p-8 space-y-12 pb-24">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                     <div className="aspect-square rounded-[3rem] overflow-hidden border border-white/5 shadow-inner bg-white/5">
+                     <div className="aspect-square rounded-[3rem] overflow-hidden border border-nexus-border/30 shadow-inner bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5">
                         <img 
                           src={selectedProduct.image} 
                           className="w-full h-full object-cover" 
@@ -3260,8 +3260,8 @@ export default function EcommerceModule({ user }: { user: any }) {
                           </h1>
                         </div>
 
-                        <div className="p-8 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-[2.5rem] text-white space-y-6 shadow-2xl shadow-blue-200 relative overflow-hidden group">
-                           <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000" />
+                        <div className="p-8 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 rounded-[2.5rem] text-white space-y-6 shadow-2xl shadow-blue-200 relative overflow-hidden group">
+                           <div className="absolute -right-10 -top-10 w-40 h-40 bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000" />
                            <div className="relative z-10">
                               <p className="text-[9px] font-black text-blue-200 uppercase tracking-widest mb-4 italic">Tarification Préférentielle</p>
                               <div className="flex items-baseline gap-3">
@@ -3283,7 +3283,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                                addToCart(selectedProduct);
                                setSelectedProduct(null);
                              }}
-                             className="flex-[2] py-6 bg-nexus-accent text-white rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-slate-200 hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all active:scale-95 flex items-center justify-center gap-3"
+                             className="flex-[2] py-6 bg-nexus-accent text-white rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-slate-200 hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 transition-all active:scale-95 flex items-center justify-center gap-3"
                            >
                              <ShoppingCart size={20} /> Acheter Maintenant
                            </button>
@@ -3291,9 +3291,9 @@ export default function EcommerceModule({ user }: { user: any }) {
                      </div>
                   </div>
 
-                  <div className="space-y-8 border-t border-white/5 pt-12">
+                  <div className="space-y-8 border-t border-nexus-border/30 pt-12">
                      <div className="space-y-4">
-                        <h3 className="text-xl font-black text-nexus-text uppercase italic tracking-tight pb-3 border-b-2 border-white/5 inline-block">Analyse de la Solution</h3>
+                        <h3 className="text-xl font-black text-nexus-text uppercase italic tracking-tight pb-3 border-b-2 border-nexus-border/30 inline-block">Analyse de la Solution</h3>
                         <p className="text-nexus-text-muted font-medium leading-relaxed text-lg italic">
                           {selectedProduct.description}
                         </p>
@@ -3319,9 +3319,9 @@ export default function EcommerceModule({ user }: { user: any }) {
 
                         <div className="space-y-4">
                            <h4 className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Support & Garantie</h4>
-                           <div className="p-6 bg-white/5 rounded-3xl border border-white/5 space-y-4">
+                           <div className="p-6 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-3xl border border-nexus-border/30 space-y-4">
                               <div className="flex items-center gap-4">
-                                 <div className="w-10 h-10 bg-nexus-surface rounded-xl border border-white/10 shadow-sm flex items-center justify-center text-blue-600">
+                                 <div className="w-10 h-10 bg-nexus-surface rounded-xl border border-nexus-border/50 shadow-sm flex items-center justify-center text-blue-600">
                                     <MessageCircle size={20} />
                                  </div>
                                  <div>
@@ -3331,7 +3331,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                               </div>
                               <button 
                                 onClick={() => setActiveView('tracking')}
-                                className="w-full py-3 bg-nexus-surface text-nexus-text-muted rounded-xl text-[9px] font-black uppercase tracking-widest border border-white/10 hover:border-blue-600 transition-all"
+                                className="w-full py-3 bg-nexus-surface text-nexus-text-muted rounded-xl text-[9px] font-black uppercase tracking-widest border border-nexus-border/50 hover:border-blue-600 transition-all"
                               >
                                 Discuter avec un Expert
                               </button>

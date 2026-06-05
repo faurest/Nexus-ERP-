@@ -72,10 +72,10 @@ export default function CommandPalette({ isOpen, onClose, onNavigate, user }: Co
           initial={{ opacity: 0, scale: 0.95, y: -20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -20 }}
-          className="relative w-full max-w-2xl bg-nexus-surface border border-white/10 rounded-[2rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col"
+          className="relative w-full max-w-2xl bg-nexus-surface border border-nexus-border rounded-[2rem] shadow-[0_50px_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col"
         >
           {/* Header */}
-          <div className="p-6 border-b border-white/5 flex items-center gap-4">
+          <div className="p-6 border-b border-nexus-border/30 flex items-center gap-4">
             <Search className="text-nexus-accent" size={24} />
             <input
               ref={inputRef}
@@ -85,7 +85,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate, user }: Co
               placeholder="Rechercher une commande, un module ou une action..."
               className="flex-1 bg-transparent border-none outline-none text-nexus-text text-lg font-medium placeholder:text-nexus-text-muted"
             />
-            <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-xl border border-white/5">
+            <div className="flex items-center gap-2 px-3 py-1 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl border border-nexus-border/30">
               <span className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">ESC</span>
             </div>
           </div>
@@ -106,10 +106,10 @@ export default function CommandPalette({ isOpen, onClose, onNavigate, user }: Co
                             onNavigate(action.id);
                             onClose();
                           }}
-                          className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all group"
+                          className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all group"
                         >
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 flex items-center justify-center bg-white/5 rounded-xl group-hover:bg-nexus-accent group-hover:text-white transition-all">
+                            <div className="w-10 h-10 flex items-center justify-center bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl group-hover:bg-nexus-accent group-hover:text-white transition-all">
                               <action.icon size={20} />
                             </div>
                             <span className="text-sm font-bold text-nexus-text group-hover:translate-x-1 transition-transform">{action.label}</span>
@@ -125,7 +125,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate, user }: Co
               </div>
             ) : (
               <div className="py-20 text-center">
-                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
+                <div className="w-16 h-16 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-nexus-border/30">
                   <X className="text-nexus-text-muted" size={32} />
                 </div>
                 <p className="text-nexus-text-muted text-sm font-medium">Aucun résultat pour "{query}"</p>
@@ -135,14 +135,14 @@ export default function CommandPalette({ isOpen, onClose, onNavigate, user }: Co
           </div>
 
           {/* Footer */}
-          <div className="p-4 bg-slate-950/40 border-t border-white/5 flex items-center justify-between">
+          <div className="p-4 bg-slate-950/40 border-t border-nexus-border/30 flex items-center justify-between">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2 text-[9px] font-black text-nexus-text-muted uppercase tracking-widest">
-                <div className="px-1.5 py-0.5 bg-white/10 rounded border border-white/10">↑↓</div>
+                <div className="px-1.5 py-0.5 bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 rounded border border-nexus-border/50">↑↓</div>
                 Naviguer
               </div>
               <div className="flex items-center gap-2 text-[9px] font-black text-nexus-text-muted uppercase tracking-widest">
-                <div className="px-1.5 py-0.5 bg-white/10 rounded border border-white/10">ENTER</div>
+                <div className="px-1.5 py-0.5 bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 rounded border border-nexus-border/50">ENTER</div>
                 Sélectionner
               </div>
             </div>

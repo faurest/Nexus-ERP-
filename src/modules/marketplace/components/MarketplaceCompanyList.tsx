@@ -44,7 +44,7 @@ export function MarketplaceCompanyList({
           >
             <div className={cn(
               "w-16 h-16 rounded-full flex items-center justify-center transition-all",
-              activeCompanyId === "all" ? "bg-white/10 text-white" : "bg-slate-50 text-slate-400"
+              activeCompanyId === "all" ? "bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 text-white" : "bg-slate-50 text-nexus-text-muted"
             )}>
               <Store size={28} />
             </div>
@@ -55,7 +55,7 @@ export function MarketplaceCompanyList({
               )}>Tous les shops</div>
               <div className={cn(
                 "text-[9px] font-bold uppercase",
-                activeCompanyId === "all" ? "text-slate-400" : "text-slate-400"
+                activeCompanyId === "all" ? "text-nexus-text-muted" : "text-nexus-text-muted"
               )}>Catalogue Global</div>
             </div>
           </motion.div>
@@ -72,7 +72,7 @@ export function MarketplaceCompanyList({
                 className={cn(
                   "w-[200px] p-5 rounded-[2rem] flex flex-col cursor-pointer transition-all border-2 shrink-0 relative group",
                   isActive
-                    ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 border-blue-600 shadow-2xl shadow-blue-600/20"
+                    ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 border-blue-600 shadow-2xl shadow-blue-600/20"
                     : "bg-white border-slate-100 hover:border-blue-200 shadow-sm"
                 )}
               >
@@ -81,7 +81,7 @@ export function MarketplaceCompanyList({
                     {company.logo ? (
                       <img src={company.logo} className="w-full h-full object-cover" alt={company.name} />
                     ) : (
-                      <Store size={24} className="text-slate-300" />
+                      <Store size={24} className="text-nexus-text-muted" />
                     )}
                   </div>
                   <button 
@@ -89,8 +89,8 @@ export function MarketplaceCompanyList({
                     className={cn(
                       "p-2 rounded-full transition-all",
                       isFavorite 
-                        ? (isActive ? "bg-white/20 text-white" : "bg-red-50 text-red-500") 
-                        : (isActive ? "bg-white/10 text-white/50 hover:text-white" : "bg-slate-50 text-slate-300 hover:text-red-500 hover:bg-red-50")
+                        ? (isActive ? "bg-slate-500/20 dark:bg-slate-500/20 dark:bg-white/20 text-white" : "bg-red-50 text-red-500") 
+                        : (isActive ? "bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 text-white/50 hover:text-white" : "bg-slate-50 text-nexus-text-muted hover:text-red-500 hover:bg-red-50")
                     )}
                   >
                     <Heart size={14} fill={isFavorite ? "currentColor" : "none"} />
@@ -106,7 +106,7 @@ export function MarketplaceCompanyList({
                 
                 <div className={cn(
                   "flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest",
-                  isActive ? "text-blue-100" : "text-slate-400"
+                  isActive ? "text-blue-100" : "text-nexus-text-muted"
                 )}>
                   <MapPin size={10} /> {company.location || "Localisation en attente"}
                 </div>
@@ -122,7 +122,7 @@ export function MarketplaceCompanyList({
                   </div>
                   <div className={cn(
                      "text-[9px] font-bold uppercase",
-                     isActive ? "text-blue-200" : "text-slate-400"
+                     isActive ? "text-blue-200" : "text-nexus-text-muted"
                   )}>
                      Visiter <ChevronRight size={10} className="inline" />
                   </div>

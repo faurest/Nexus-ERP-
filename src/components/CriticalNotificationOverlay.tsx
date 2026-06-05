@@ -53,7 +53,7 @@ export default function CriticalNotificationOverlay({ user }: { user: any }) {
     <>
       {criticalNotif && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60">
-          <div className="w-full max-w-lg bg-nexus-surface rounded-2xl border border-white/10 p-10 shadow-2xl relative overflow-hidden text-center">
+          <div className="w-full max-w-2xl bg-nexus-surface rounded-2xl border border-nexus-border/50 p-10 shadow-2xl relative overflow-hidden text-center">
             {/* Background Accent */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-2 bg-red-500" />
 
@@ -66,7 +66,7 @@ export default function CriticalNotificationOverlay({ user }: { user: any }) {
                 Alerte <span className="text-red-600 uppercase">Critique</span>
               </h2>
               
-              <div className="p-6 bg-white/5 border border-white/5 rounded-xl mb-8">
+              <div className="p-6 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 border border-nexus-border/30 rounded-xl mb-8">
                 <h3 className="font-bold text-nexus-text text-lg mb-2">{criticalNotif.title}</h3>
                 <p className="text-sm font-medium text-nexus-text-muted/80 leading-relaxed italic">
                   "{criticalNotif.message}"

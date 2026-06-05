@@ -827,7 +827,7 @@ export default function AdminModule() {
     <div className="relative min-h-[80vh] space-y-8 p-1">
       {/* Background Decor */}
       <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-nexus-accent text-white hover:bg-nexus-accent/80/5 rounded-full blur-3xl -tr-1/2" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20/5 rounded-full blur-3xl -tr-1/2" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/5 rounded-full blur-3xl -bl-1/2" />
       </div>
 
@@ -836,7 +836,7 @@ export default function AdminModule() {
           <h1 className="text-3xl font-black text-nexus-text tracking-tighter">Console Maître Nexus</h1>
           <p className="text-xs font-bold text-nexus-text-muted uppercase tracking-[0.2em] mt-1 italic">Administration Globale & Supervision des Flux</p>
         </div>
-        <div className="flex items-center gap-3 bg-nexus-surface p-2 rounded-2xl border border-white/5 shadow-sm">
+        <div className="flex items-center gap-3 bg-nexus-surface p-2 rounded-2xl border border-nexus-border/30 shadow-sm">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
           <span className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Temps Réel Actif</span>
         </div>
@@ -847,13 +847,13 @@ export default function AdminModule() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-nexus-surface p-6 rounded-3xl border border-white/5 shadow-xl shadow-slate-200/50 flex items-center justify-between group hover:border-blue-200 transition-all"
+          className="bg-nexus-surface p-6 rounded-3xl border border-nexus-border/30 shadow-xl shadow-slate-200/50 flex items-center justify-between group hover:border-blue-200 transition-all"
         >
           <div>
             <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest mb-1">Actifs Entreprises</p>
             <h3 className="text-3xl font-black text-nexus-text tracking-tighter">{companies.length}</h3>
           </div>
-          <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 group-hover:text-white transition-all">
+          <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 group-hover:text-white transition-all">
             <Building2 size={24} />
           </div>
         </motion.div>
@@ -862,7 +862,7 @@ export default function AdminModule() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-nexus-surface p-6 rounded-3xl border border-white/5 shadow-xl shadow-slate-200/50 flex items-center justify-between group hover:border-purple-200 transition-all"
+          className="bg-nexus-surface p-6 rounded-3xl border border-nexus-border/30 shadow-xl shadow-slate-200/50 flex items-center justify-between group hover:border-purple-200 transition-all"
         >
           <div>
             <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest mb-1">Flux Global (FCFA)</p>
@@ -877,7 +877,7 @@ export default function AdminModule() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="bg-nexus-surface p-6 rounded-3xl border border-white/5 shadow-xl shadow-slate-200/50 flex items-center justify-between group hover:border-emerald-200 transition-all"
+          className="bg-nexus-surface p-6 rounded-3xl border border-nexus-border/30 shadow-xl shadow-slate-200/50 flex items-center justify-between group hover:border-emerald-200 transition-all"
         >
           <div>
             <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest mb-1">Membres Totaux</p>
@@ -903,7 +903,7 @@ export default function AdminModule() {
               SÉCURISÉ
             </h3>
           </div>
-          <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white">
+          <div className="w-12 h-12 bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 rounded-2xl flex items-center justify-center text-white">
             <ShieldCheck size={24} />
           </div>
         </motion.div>
@@ -915,7 +915,7 @@ export default function AdminModule() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-nexus-surface p-8 rounded-[2.5rem] border border-white/5 shadow-xl shadow-slate-200/40"
+          className="bg-nexus-surface p-8 rounded-[2.5rem] border border-nexus-border/30 shadow-xl shadow-slate-200/40"
         >
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -950,7 +950,7 @@ export default function AdminModule() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-nexus-surface p-8 rounded-[2.5rem] border border-white/5 shadow-xl shadow-slate-200/40"
+          className="bg-nexus-surface p-8 rounded-[2.5rem] border border-nexus-border/30 shadow-xl shadow-slate-200/40"
         >
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -989,7 +989,7 @@ export default function AdminModule() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex gap-4 border-b border-white/5 pb-1">
+      <div className="flex gap-4 border-b border-nexus-border/30 pb-1">
         <button 
           onClick={() => setActiveAdminTab('companies')}
           className={cn(
@@ -1029,7 +1029,7 @@ export default function AdminModule() {
       </div>
 
       {activeAdminTab === 'companies' && (
-        <div className="bg-nexus-surface rounded-[3rem] border border-white/5 shadow-2xl shadow-slate-200/40 relative overflow-hidden backdrop-blur-xl bg-nexus-surface/90">
+        <div className="bg-nexus-surface rounded-[3rem] border border-nexus-border/30 shadow-2xl shadow-slate-200/40 relative overflow-hidden backdrop-blur-xl bg-nexus-surface/90">
           <div className="p-10 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <h2 className="text-2xl font-black text-nexus-text tracking-tight leading-none">Répertoire des Écosystèmes</h2>
@@ -1041,7 +1041,7 @@ export default function AdminModule() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 transition"
+                className="flex items-center gap-2 px-4 py-2 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 transition"
               >
                 <Plus size={16} /> Créer Entité
               </button>
@@ -1053,7 +1053,7 @@ export default function AdminModule() {
                   placeholder="Rechercher..." 
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-11 pr-6 py-4 bg-white/5 border border-white/5 rounded-2xl outline-none text-xs font-black w-72 focus:ring-4 focus:ring-nexus-accent focus:bg-nexus-surface transition-all shadow-inner text-nexus-text placeholder-white/40"
+                  className="pl-11 pr-6 py-4 rounded-2xl text-xs font-black w-72 focus:bg-nexus-surface transition-all -inner hover:-strong nexus-input w-full text-sm"
                 />
               </div>
             </div>
@@ -1062,10 +1062,10 @@ export default function AdminModule() {
           <div className="overflow-x-auto px-4 pb-8">
             <Table headers={["Institution", "Accès Principal", "Code Nexus", "Équipe", "Actions"]}>
               {filteredCompanies.map((company) => (
-                <TableRow key={company.id} className="group hover:bg-white/5/80 transition-all border-b border-slate-50 last:border-0 rounded-2xl">
+                <TableRow key={company.id} className="group hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5/80 transition-all border-b border-slate-50 last:border-0 rounded-2xl">
                   <div className="py-7 pl-8">
                     <div className="flex items-center gap-5">
-                      <div className="w-14 h-14 bg-nexus-surface border border-white/5 rounded-2xl flex items-center justify-center font-black text-nexus-text-muted group-hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 group-hover:text-white transition-all transform group-hover:rotate-3 shadow-md">
+                      <div className="w-14 h-14 bg-nexus-surface border border-nexus-border/30 rounded-2xl flex items-center justify-center font-black text-nexus-text-muted group-hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 group-hover:text-white transition-all transform group-hover:rotate-3 shadow-md">
                         {company.name?.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -1084,7 +1084,7 @@ export default function AdminModule() {
                     </div>
                   </div>
                   <div>
-                    <span className="inline-flex items-center px-4 py-2 bg-slate-100 text-nexus-text rounded-xl text-[11px] font-black tracking-[0.2em] uppercase border border-white/10">
+                    <span className="inline-flex items-center px-4 py-2 bg-slate-100 text-nexus-text rounded-xl text-[11px] font-black tracking-[0.2em] uppercase border border-nexus-border/50">
                       {company.joinCode}
                     </span>
                   </div>
@@ -1094,7 +1094,7 @@ export default function AdminModule() {
                         {Array.from({ length: Math.min(3, company.memberEmails?.length || 1) }).map((_, i) => (
                           <div key={i} className={cn(
                             "w-10 h-10 rounded-2xl border-4 border-white flex items-center justify-center text-[11px] font-black shadow-sm",
-                            i === 0 ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white" : i === 1 ? "bg-slate-800 text-white" : "bg-slate-200 text-nexus-text-muted"
+                            i === 0 ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white" : i === 1 ? "bg-slate-800 text-white" : "bg-slate-200 text-nexus-text-muted"
                           )}>
                             {company.memberEmails?.[i]?.charAt(0).toUpperCase() || 'U'}
                           </div>
@@ -1132,7 +1132,7 @@ export default function AdminModule() {
                         window.dispatchEvent(new Event('storage'));
                         window.location.reload();
                       }}
-                      className="group/btn inline-flex items-center gap-3 px-6 py-3 bg-nexus-accent text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all shadow-xl shadow-slate-900/10 active:scale-95"
+                      className="group/btn inline-flex items-center gap-3 px-6 py-3 bg-nexus-accent text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 transition-all shadow-xl shadow-slate-900/10 active:scale-95"
                     >
                       Ouvrir
                       <ArrowUpRight size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
@@ -1146,7 +1146,7 @@ export default function AdminModule() {
       )}
 
       {activeAdminTab === 'users' && (
-        <div className="bg-nexus-surface rounded-[3rem] border border-white/5 shadow-2xl shadow-slate-200/40 p-10">
+        <div className="bg-nexus-surface rounded-[3rem] border border-nexus-border/30 shadow-2xl shadow-slate-200/40 p-10">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-2xl font-black text-nexus-text tracking-tight">Base Utilisateurs Globale</h2>
@@ -1164,7 +1164,7 @@ export default function AdminModule() {
                   <div className="flex items-center gap-4">
                     <div className={cn(
                       "w-10 h-10 rounded-full flex items-center justify-center font-black text-sm",
-                      u.status === 'connected' ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white" : "bg-slate-100 text-nexus-text-muted"
+                      u.status === 'connected' ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white" : "bg-slate-100 text-nexus-text-muted"
                     )}>
                       {u.displayName?.charAt(0) || u.email?.charAt(0) || '?'}
                     </div>
@@ -1199,7 +1199,7 @@ export default function AdminModule() {
                     ))}
                     <button 
                       onClick={() => setShowUserAssignModal(u)}
-                      className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 hover:text-white transition-all flex items-center gap-1"
+                      className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 hover:text-white transition-all flex items-center gap-1"
                     >
                       <Plus size={10} /> Affecter
                     </button>
@@ -1232,10 +1232,10 @@ export default function AdminModule() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-nexus-surface w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
+            className="bg-nexus-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
           >
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-14 h-14 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-2xl flex items-center justify-center text-white shadow-xl">
+              <div className="w-14 h-14 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 rounded-2xl flex items-center justify-center text-white shadow-xl">
                 <Users size={28} />
               </div>
               <div>
@@ -1252,7 +1252,7 @@ export default function AdminModule() {
                   required
                   value={editingUser.displayName || ''}
                   onChange={e => setEditingUser({...editingUser, displayName: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent focus:border-transparent font-bold text-sm transition-all text-nexus-text placeholder-white/40"
+                  className="w-full rounded-2xl px-5 py-4 font-bold text-sm transition-all hover:-strong nexus-input w-full text-sm"
                 />
               </div>
               <div className="space-y-1.5">
@@ -1262,7 +1262,7 @@ export default function AdminModule() {
                   required
                   value={editingUser.email || ''}
                   onChange={e => setEditingUser({...editingUser, email: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent focus:border-transparent font-bold text-sm transition-all text-nexus-text placeholder-white/40"
+                  className="w-full rounded-2xl px-5 py-4 font-bold text-sm transition-all hover:-strong nexus-input w-full text-sm"
                 />
               </div>
 
@@ -1277,7 +1277,7 @@ export default function AdminModule() {
                 <button 
                   type="submit"
                   disabled={submitting}
-                  className="flex-[2] py-4 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait"
+                  className="flex-[2] py-4 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait"
                 >
                   {submitting ? 'Traitement...' : 'Mettre à jour'}
                 </button>
@@ -1289,7 +1289,7 @@ export default function AdminModule() {
 
       {activeAdminTab === 'tools' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-nexus-surface rounded-[3rem] border border-white/5 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
+          <div className="bg-nexus-surface rounded-[3rem] border border-nexus-border/30 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
             <div>
               <h2 className="text-xl font-black text-nexus-text tracking-tight">Diagnostic d'Accès Utilisateur</h2>
               <p className="text-xs font-bold text-nexus-text-muted mt-1 uppercase tracking-widest leading-loose">Vérifiez si un email est correctement configuré dans le système.</p>
@@ -1301,12 +1301,12 @@ export default function AdminModule() {
                 placeholder="Email à diagnostiquer..." 
                 value={diagEmail}
                 onChange={e => setDiagEmail(e.target.value)}
-                className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent focus:border-transparent font-bold text-sm transition-all text-nexus-text placeholder-white/40"
+                className="flex-1 rounded-2xl px-5 py-4 font-bold text-sm transition-all hover:-strong nexus-input w-full text-sm"
               />
               <button 
                 onClick={handleDiagnostic}
                 disabled={loading || !diagEmail}
-                className="px-6 py-4 bg-nexus-accent text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all shadow-xl active:scale-95 disabled:opacity-50"
+                className="px-6 py-4 bg-nexus-accent text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 transition-all shadow-xl active:scale-95 disabled:opacity-50"
               >
                 Scanner
               </button>
@@ -1316,9 +1316,9 @@ export default function AdminModule() {
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-6 bg-white/5 rounded-3xl border border-white/10 space-y-4"
+                className="p-6 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-3xl border border-nexus-border/50 space-y-4"
               >
-                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <div className="flex justify-between items-center border-b border-nexus-border/50 pb-3">
                   <span className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest">Résultats pour {diagResult.email}</span>
                   <button onClick={() => setDiagResult(null)} className="text-nexus-text-muted hover:text-nexus-text"><X size={14} /></button>
                 </div>
@@ -1342,7 +1342,7 @@ export default function AdminModule() {
                 )}
                 
                   <div className="grid grid-cols-2 gap-4 text-[11px] font-bold">
-                  <div className="p-3 bg-nexus-surface rounded-xl border border-white/10 border border-white/5 flex flex-col gap-1">
+                  <div className="p-3 bg-nexus-surface rounded-xl border border-nexus-border/50 border border-nexus-border/30 flex flex-col gap-1">
                     <div className="flex items-center justify-between">
                       <span className="text-nexus-text-muted">Compte Firebase</span>
                       {diagResult.inUsers ? <CheckCircle2 size={14} className="text-emerald-500" /> : <X size={14} className="text-red-500" />}
@@ -1351,7 +1351,7 @@ export default function AdminModule() {
                       <span className="text-[8px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded leading-none">⚠️ Case mismatch: {diagResult.actualUserEmail}</span>
                     )}
                   </div>
-                  <div className="p-3 bg-nexus-surface rounded-xl border border-white/10 border border-white/5 flex items-center justify-between">
+                  <div className="p-3 bg-nexus-surface rounded-xl border border-nexus-border/50 border border-nexus-border/30 flex items-center justify-between">
                     <span className="text-nexus-text-muted">Propriétaire Entreprise</span>
                     <span className="text-blue-600">{diagResult.ownedCompanies.length > 0 ? "OUI" : "NON"}</span>
                   </div>
@@ -1386,7 +1386,7 @@ export default function AdminModule() {
                   ) : (
                     <div className="space-y-2">
                       {diagResult.personnelDetails.map((pd: any, i: number) => (
-                        <div key={i} className="p-3 bg-nexus-surface rounded-xl border border-white/10 border border-white/5 flex justify-between items-center">
+                        <div key={i} className="p-3 bg-nexus-surface rounded-xl border border-nexus-border/50 border border-nexus-border/30 flex justify-between items-center">
                           <div className="flex flex-col">
                             <span className="text-nexus-text-muted">{pd.company}</span>
                             <span className="text-[8px] text-nexus-text-muted font-mono tracking-tight">{pd.id}</span>
@@ -1417,7 +1417,7 @@ export default function AdminModule() {
                                 }
                                 setLoading(false);
                               }}
-                              className="p-1.5 hover:bg-slate-100 rounded-lg text-nexus-text-muted hover:text-blue-600 transition-all border border-transparent hover:border-white/10"
+                              className="p-1.5 hover:bg-slate-100 rounded-lg text-nexus-text-muted hover:text-blue-600 transition-all border border-transparent hover:border-nexus-border/50"
                               title="Forcer Adhésion"
                             >
                               <Shield size={14} />
@@ -1436,7 +1436,7 @@ export default function AdminModule() {
                   ) : (
                     <div className="space-y-2">
                        {diagResult.clientDetails.map((cd: any, i: number) => (
-                        <div key={i} className="p-3 bg-nexus-surface rounded-xl border border-white/10 border border-white/5 flex justify-between items-center">
+                        <div key={i} className="p-3 bg-nexus-surface rounded-xl border border-nexus-border/50 border border-nexus-border/30 flex justify-between items-center">
                           <div className="flex flex-col">
                             <span className="text-nexus-text-muted">{cd.company}</span>
                             <span className="text-[8px] text-nexus-text-muted font-mono tracking-tight">{cd.id}</span>
@@ -1464,7 +1464,7 @@ export default function AdminModule() {
                                 }
                                 setLoading(false);
                               }}
-                              className="p-1.5 hover:bg-slate-100 rounded-lg text-nexus-text-muted hover:text-emerald-600 transition-all border border-transparent hover:border-white/10"
+                              className="p-1.5 hover:bg-slate-100 rounded-lg text-nexus-text-muted hover:text-emerald-600 transition-all border border-transparent hover:border-nexus-border/50"
                               title="Forcer Adhésion"
                             >
                               <Shield size={14} />
@@ -1479,7 +1479,7 @@ export default function AdminModule() {
             )}
           </div>
 
-          <div className="bg-nexus-surface rounded-[3rem] border border-white/5 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
+          <div className="bg-nexus-surface rounded-[3rem] border border-nexus-border/30 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
             <div>
               <h2 className="text-xl font-black text-nexus-text tracking-tight">Clonage d'Accès Utilisateur</h2>
               <p className="text-xs font-bold text-nexus-text-muted mt-1 uppercase tracking-widest leading-loose">Transférez les permissions d'un email vers un autre.</p>
@@ -1493,7 +1493,7 @@ export default function AdminModule() {
                   placeholder="Ex: dangafelicite@gmail.com" 
                   value={cloneSource}
                   onChange={e => setCloneSource(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent font-bold text-sm text-nexus-text placeholder-white/40"
+                  className="w-full rounded-2xl px-5 py-4 font-bold text-sm hover:-strong nexus-input w-full text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -1503,20 +1503,20 @@ export default function AdminModule() {
                   placeholder="Ex: hackeurfaurest@gmail.com" 
                   value={cloneTarget}
                   onChange={e => setCloneTarget(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-emerald-600 font-bold text-sm text-nexus-text placeholder-white/40"
+                  className="w-full rounded-2xl px-5 py-4 font-bold text-sm hover:-strong nexus-input w-full text-sm"
                 />
               </div>
               <button 
                 onClick={handleCloneAccess}
                 disabled={loading || !cloneSource || !cloneTarget}
-                className="w-full py-5 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent transition-all shadow-xl shadow-blue-200 active:scale-[0.98] disabled:opacity-50"
+                className="w-full py-5 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent transition-all shadow-xl shadow-blue-200 active:scale-[0.98] disabled:opacity-50"
               >
                 Démarrer le Clonage d'Accès
               </button>
             </div>
           </div>
 
-          <div className="bg-nexus-surface rounded-[3rem] border border-white/5 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
+          <div className="bg-nexus-surface rounded-[3rem] border border-nexus-border/30 shadow-2xl shadow-slate-200/40 p-10 space-y-8">
             <div>
               <h2 className="text-xl font-black text-nexus-text tracking-tight">Maintenance Système</h2>
               <p className="text-xs font-bold text-nexus-text-muted mt-1 uppercase tracking-widest leading-loose">Synchronisation et sauvegardes multi-cloud.</p>
@@ -1525,10 +1525,10 @@ export default function AdminModule() {
             <div className="grid grid-cols-1 gap-4">
               <button 
                 onClick={handleExportData}
-                className="w-full flex items-center justify-between p-6 bg-white/5 rounded-[2rem] border border-white/5 hover:border-blue-200 hover:bg-nexus-surface transition-all group"
+                className="w-full flex items-center justify-between p-6 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-[2rem] border border-nexus-border/30 hover:border-blue-200 hover:bg-nexus-surface transition-all group"
               >
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl group-hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 group-hover:text-white transition-all">
+                  <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl group-hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 group-hover:text-white transition-all">
                     <Download size={20} />
                   </div>
                   <div className="text-left">
@@ -1536,10 +1536,10 @@ export default function AdminModule() {
                     <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest">Télécharger toutes les tables</p>
                   </div>
                 </div>
-                <ArrowUpRight size={18} className="text-slate-300 group-hover:text-blue-600 transition-all" />
+                <ArrowUpRight size={18} className="text-nexus-text-muted group-hover:text-blue-600 transition-all" />
               </button>
 
-              <label className="w-full flex items-center justify-between p-6 bg-white/5 rounded-[2rem] border border-white/5 hover:border-purple-200 hover:bg-nexus-surface transition-all group cursor-pointer">
+              <label className="w-full flex items-center justify-between p-6 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-[2rem] border border-nexus-border/30 hover:border-purple-200 hover:bg-nexus-surface transition-all group cursor-pointer">
                 <input type="file" className="hidden text-nexus-text placeholder-white/40" accept=".json" onChange={handleImportData} />
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-purple-100 text-purple-600 rounded-2xl group-hover:bg-purple-600 group-hover:text-white transition-all">
@@ -1550,12 +1550,12 @@ export default function AdminModule() {
                     <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest">Restaurer des données Firebase</p>
                   </div>
                 </div>
-                <ArrowUpRight size={18} className="text-slate-300 group-hover:text-purple-600 transition-all" />
+                <ArrowUpRight size={18} className="text-nexus-text-muted group-hover:text-purple-600 transition-all" />
               </label>
 
               <button 
                 onClick={handleMigrateFromSQLite}
-                className="w-full flex items-center justify-between p-6 bg-white/5 rounded-[2rem] border border-white/5 hover:border-indigo-200 hover:bg-nexus-surface transition-all group"
+                className="w-full flex items-center justify-between p-6 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-[2rem] border border-nexus-border/30 hover:border-indigo-200 hover:bg-nexus-surface transition-all group"
               >
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all">
@@ -1566,7 +1566,7 @@ export default function AdminModule() {
                     <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest">Récupérer les données locales</p>
                   </div>
                 </div>
-                <ArrowUpRight size={18} className="text-slate-300 group-hover:text-indigo-600 transition-all" />
+                <ArrowUpRight size={18} className="text-nexus-text-muted group-hover:text-indigo-600 transition-all" />
               </button>
 
               <button 
@@ -1606,7 +1606,7 @@ export default function AdminModule() {
                 className="w-full flex items-center justify-between p-6 bg-blue-50/50 rounded-[2rem] border border-blue-100 hover:border-blue-200 hover:bg-nexus-surface transition-all group"
               >
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl group-hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 group-hover:text-white transition-all">
+                  <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl group-hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 group-hover:text-white transition-all">
                     <ShieldAlert size={20} />
                   </div>
                   <div className="text-left">
@@ -1623,7 +1623,7 @@ export default function AdminModule() {
 
       {activeAdminTab === 'guide' && (
         <div className="space-y-8">
-          <div className="bg-nexus-surface rounded-[3rem] border border-white/5 shadow-2xl shadow-slate-200/40 p-10">
+          <div className="bg-nexus-surface rounded-[3rem] border border-nexus-border/30 shadow-2xl shadow-slate-200/40 p-10">
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-2xl font-black text-nexus-text tracking-tight leading-none">Gestion du Guide Équipe</h2>
@@ -1649,17 +1649,17 @@ export default function AdminModule() {
                      alert("Guide initialisé avec succès !");
                    } catch (e) { console.error(e); alert("Erreur d'injection"); }
                 }}
-                className="px-6 py-3 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-200 hover:scale-105 transition-all"
+                className="px-6 py-3 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-200 hover:scale-105 transition-all"
               >
                 Initialiser Guide (Seed)
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               <div className="p-6 bg-white/5 rounded-3xl border border-white/5">
+               <div className="p-6 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-3xl border border-nexus-border/30">
                   <h4 className="text-sm font-black text-nexus-text mb-2">Fiches Actions</h4>
                   <p className="text-xs text-nexus-text-muted/80 leading-relaxed mb-4">Centralisez les procédures standards pour réduire les erreurs de manipulation.</p>
-                  <button onClick={() => alert("Interface de modification en cours...")} className="w-full py-3 bg-nexus-surface border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-blue-600 transition-all">Gérer les fiches</button>
+                  <button onClick={() => alert("Interface de modification en cours...")} className="w-full py-3 bg-nexus-surface border border-nexus-border rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-blue-600 transition-all">Gérer les fiches</button>
                </div>
                <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100">
                   <h4 className="text-sm font-black text-emerald-900 mb-2">Nexus Academy</h4>
@@ -1681,7 +1681,7 @@ export default function AdminModule() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-nexus-surface w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
+            className="bg-nexus-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
           >
             <div className="flex items-center gap-4 mb-8">
               <div className="w-14 h-14 bg-nexus-accent rounded-2xl flex items-center justify-center text-white shadow-xl">
@@ -1701,7 +1701,7 @@ export default function AdminModule() {
                   required
                   value={editingCompany.name}
                   onChange={e => setEditingCompany({...editingCompany, name: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all text-nexus-text placeholder-white/40"
+                  className="w-full rounded-2xl px-5 py-4 font-bold text-sm transition-all hover:-strong nexus-input w-full text-sm"
                 />
               </div>
               <div className="space-y-1.5">
@@ -1711,7 +1711,7 @@ export default function AdminModule() {
                   required
                   value={editingCompany.ownerEmail}
                   onChange={e => setEditingCompany({...editingCompany, ownerEmail: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all text-nexus-text placeholder-white/40"
+                  className="w-full rounded-2xl px-5 py-4 font-bold text-sm transition-all hover:-strong nexus-input w-full text-sm"
                 />
               </div>
               <div className="space-y-1.5">
@@ -1721,11 +1721,11 @@ export default function AdminModule() {
                   required
                   value={editingCompany.joinCode}
                   onChange={e => setEditingCompany({...editingCompany, joinCode: e.target.value.toUpperCase()})}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all text-nexus-text placeholder-white/40"
+                  className="w-full rounded-2xl px-5 py-4 font-mono font-bold text-sm uppercase tracking-widest transition-all hover:-strong nexus-input w-full text-sm"
                 />
               </div>
 
-              <div className="pt-4 border-t border-white/5 space-y-4">
+              <div className="pt-4 border-t border-nexus-border/30 space-y-4">
                 <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest italic">Configuration Marketplace</h4>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -1736,7 +1736,7 @@ export default function AdminModule() {
                       placeholder="Ex: 237690000000"
                       value={editingCompany.whatsappNumber || ''}
                       onChange={e => setEditingCompany({...editingCompany, whatsappNumber: e.target.value})}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent font-bold text-sm text-nexus-text placeholder-white/40"
+                      className="w-full rounded-2xl px-5 py-4 font-bold text-sm hover:-strong nexus-input w-full text-sm"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -1746,7 +1746,7 @@ export default function AdminModule() {
                       placeholder="Ex: IT, BTP, Santé"
                       value={editingCompany.category || ''}
                       onChange={e => setEditingCompany({...editingCompany, category: e.target.value})}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent font-bold text-sm text-nexus-text placeholder-white/40"
+                      className="w-full rounded-2xl px-5 py-4 font-bold text-sm hover:-strong nexus-input w-full text-sm"
                     />
                   </div>
                 </div>
@@ -1758,7 +1758,7 @@ export default function AdminModule() {
                     placeholder="https://..."
                     value={editingCompany.logo || ''}
                     onChange={e => setEditingCompany({...editingCompany, logo: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent font-bold text-sm text-nexus-text placeholder-white/40"
+                    className="w-full rounded-2xl px-5 py-4 font-bold text-sm hover:-strong nexus-input w-full text-sm"
                   />
                 </div>
               </div>
@@ -1789,7 +1789,7 @@ export default function AdminModule() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-nexus-surface w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden max-h-[90vh] flex flex-col"
+            className="bg-nexus-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden max-h-[90vh] flex flex-col"
           >
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
@@ -1801,19 +1801,19 @@ export default function AdminModule() {
                   <p className="text-xs font-bold text-nexus-text-muted uppercase tracking-widest mt-2">{showMemberModal.name}</p>
                 </div>
               </div>
-              <button onClick={() => setShowMemberModal(null)} className="p-2 bg-white/5 text-nexus-text-muted rounded-full hover:bg-slate-100 transition-all">
+              <button onClick={() => setShowMemberModal(null)} className="p-2 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 text-nexus-text-muted rounded-full hover:bg-slate-100 transition-all">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleAddMember} className="mb-8 p-4 bg-white/5 rounded-2xl border border-white/5">
+            <form onSubmit={handleAddMember} className="mb-8 p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-2xl border border-nexus-border/30">
               <label className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-2 block">Ajouter un email utilisateur</label>
               <div className="flex gap-2">
                 <input 
                   type="email" 
                   required
                   placeholder="exemple@mail.com"
-                  className="flex-1 bg-nexus-surface border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent font-bold text-sm text-nexus-text placeholder-white/40"
+                  className="flex-1 bg-nexus-surface border border-nexus-border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent font-bold text-sm text-nexus-text placeholder-white/40"
                   value={newMemberEmail}
                   onChange={e => setNewMemberEmail(e.target.value)}
                 />
@@ -1829,7 +1829,7 @@ export default function AdminModule() {
             <div className="flex-1 overflow-y-auto pr-2">
               <div className="space-y-2">
                 {showMemberModal.memberEmails?.map((email: string) => (
-                  <div key={email} className="flex items-center justify-between p-3 bg-nexus-surface border border-white/5 rounded-xl group hover:border-emerald-200 transition-all">
+                  <div key={email} className="flex items-center justify-between p-3 bg-nexus-surface border border-nexus-border/30 rounded-xl group hover:border-emerald-200 transition-all">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-[10px] font-black text-nexus-text-muted">
                         {email.charAt(0).toUpperCase()}
@@ -1842,7 +1842,7 @@ export default function AdminModule() {
                     {email !== showMemberModal.ownerEmail && (
                       <button 
                         onClick={() => handleRemoveMember(showMemberModal.id, email)}
-                        className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        className="p-1.5 text-nexus-text-muted hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -1860,11 +1860,11 @@ export default function AdminModule() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-nexus-surface w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
+            className="bg-nexus-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
           >
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                <div className="w-14 h-14 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 rounded-2xl flex items-center justify-center text-white shadow-xl">
                   <UserPlus size={28} />
                 </div>
                 <div>
@@ -1872,7 +1872,7 @@ export default function AdminModule() {
                   <p className="text-xs font-bold text-nexus-text-muted uppercase tracking-widest mt-2">{showUserAssignModal.email}</p>
                 </div>
               </div>
-              <button onClick={() => setShowUserAssignModal(null)} className="p-2 bg-white/5 text-nexus-text-muted rounded-full hover:bg-slate-100 transition-all">
+              <button onClick={() => setShowUserAssignModal(null)} className="p-2 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 text-nexus-text-muted rounded-full hover:bg-slate-100 transition-all">
                 <X size={20} />
               </button>
             </div>
@@ -1884,7 +1884,7 @@ export default function AdminModule() {
                 return (
                   <div
                     key={comp.id}
-                    className="w-full text-left p-4 rounded-2xl border bg-nexus-surface border-white/5 flex items-center justify-between"
+                    className="w-full text-left p-4 rounded-2xl border bg-nexus-surface border-nexus-border/30 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-4 flex-1">
                       <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-nexus-text-muted">
@@ -1897,7 +1897,7 @@ export default function AdminModule() {
                     <div className="flex items-center gap-2">
                       <select 
                         id={`role-select-${comp.id}`} 
-                        className="text-xs bg-white/5 border border-white/10 rounded-lg p-2 outline-none focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent text-nexus-text placeholder-white/40"
+                        className="text-xs p-2 hover:-strong nexus-input w-full text-sm"
                         defaultValue={roles[0]}
                       >
                         {roles.map(r => <option key={r} value={r}>{r}</option>)}
@@ -1907,7 +1907,7 @@ export default function AdminModule() {
                           const role = (document.getElementById(`role-select-${comp.id}`) as HTMLSelectElement).value;
                           handleAssignUserToCompany(showUserAssignModal.email, comp.id, role);
                         }}
-                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 hover:text-white transition-all shadow-sm"
+                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 hover:text-white transition-all shadow-sm"
                       >
                         Affecter
                       </button>
@@ -1926,12 +1926,12 @@ export default function AdminModule() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-nexus-surface w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
+            className="bg-nexus-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
           >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-nexus-accent text-white hover:bg-nexus-accent/80/5 rounded-bl-full -mr-16 -mt-16" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20/5 rounded-bl-full -mr-16 -mt-16" />
             
                 <div className="flex items-center gap-4 mb-8">
-                  <div className="w-14 h-14 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-600/30">
+                  <div className="w-14 h-14 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-600/30">
                     <Plus size={28} />
                   </div>
                   <div>
@@ -1950,7 +1950,7 @@ export default function AdminModule() {
                     value={newCompany.name}
                     onChange={e => setNewCompany({...newCompany, name: e.target.value})}
                     placeholder="Ex: Global Logistics SA"
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent focus:border-transparent font-bold text-sm transition-all text-nexus-text placeholder-white/40"
+                    className="w-full rounded-2xl px-5 py-4 font-bold text-sm transition-all hover:-strong nexus-input w-full text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1961,7 +1961,7 @@ export default function AdminModule() {
                     value={newCompany.ownerEmail}
                     onChange={e => setNewCompany({...newCompany, ownerEmail: e.target.value})}
                     placeholder="admin@entreprise.com"
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent focus:border-transparent font-bold text-sm transition-all text-nexus-text placeholder-white/40"
+                    className="w-full rounded-2xl px-5 py-4 font-bold text-sm transition-all hover:-strong nexus-input w-full text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1971,7 +1971,7 @@ export default function AdminModule() {
                     value={newCompany.joinCode}
                     onChange={e => setNewCompany({...newCompany, joinCode: e.target.value.toUpperCase()})}
                     placeholder="AUTO-GENERATED"
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all text-nexus-text placeholder-white/40"
+                    className="w-full rounded-2xl px-5 py-4 font-mono font-bold text-sm uppercase tracking-widest transition-all hover:-strong nexus-input w-full text-sm"
                   />
                 </div>
               </div>
@@ -1987,7 +1987,7 @@ export default function AdminModule() {
                 <button 
                   type="submit"
                   disabled={submitting}
-                  className="flex-[2] py-4 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait"
+                  className="flex-[2] py-4 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-wait"
                 >
                   {submitting ? 'Initialisation...' : "Créer et Envoyer l'Exclusivité"}
                 </button>

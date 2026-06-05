@@ -51,6 +51,7 @@ import Marketplace from './components/Marketplace';
 import GuideModule from './components/GuideModule';
 import ContextualHelp from './components/ContextualHelp';
 import NotificationBell from './components/NotificationBell';
+import ThemeToggle from './components/ThemeToggle';
 import CriticalNotificationOverlay from './components/CriticalNotificationOverlay';
 import CommandPalette from './components/CommandPalette';
 
@@ -872,6 +873,7 @@ export default function App() {
             </div>
             
             <div className="flex items-center gap-2 sm:gap-4 lg:border-l border-white/5 lg:pl-8">
+              <ThemeToggle />
               <NotificationBell user={user} />
               
               <div className="flex items-center gap-2 sm:gap-4">

@@ -8,15 +8,15 @@ type User = any;
 
 function SkeletonCard() {
   return (
-    <div className="w-full flex items-center justify-between p-4 rounded-2xl border border-white/5 bg-white/5 animate-pulse">
+    <div className="w-full flex items-center justify-between p-4 rounded-2xl border border-nexus-border/30 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 animate-pulse">
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-white/10 rounded-2xl" />
+        <div className="w-12 h-12 bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 rounded-2xl" />
         <div className="space-y-2">
-          <div className="h-4 w-32 bg-white/10 rounded" />
-          <div className="h-3 w-16 bg-white/5 rounded" />
+          <div className="h-4 w-32 bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 rounded" />
+          <div className="h-3 w-16 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded" />
         </div>
       </div>
-      <div className="w-4 h-4 bg-white/5 rounded" />
+      <div className="w-4 h-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded" />
     </div>
   );
 }
@@ -124,13 +124,13 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-nexus-accent p-6 text-slate-100 font-sans relative overflow-hidden">
       {/* Background gradients for premium feel */}
       <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-blue-900/20 to-transparent pointer-events-none" />
-      <div className="absolute -top-48 -right-48 w-96 h-96 bg-nexus-accent text-white hover:bg-nexus-accent/80/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute -top-48 -right-48 w-96 h-96 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20/10 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none" />
 
       {/* Top Navigation */}
       <div className="absolute top-0 w-full p-6 flex justify-between items-center max-w-7xl mx-auto z-50">
         <div className="flex items-center gap-3">
-           <div className="w-8 h-8 rounded-lg bg-nexus-accent text-white hover:bg-nexus-accent/80/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black">
+           <div className="w-8 h-8 rounded-lg bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black">
              N
            </div>
            <span className="text-white font-black tracking-widest text-xs uppercase opacity-80">NEXUS ERP</span>
@@ -139,7 +139,7 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
           {onMarketplace && (
             <button 
               onClick={onMarketplace}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all font-sans"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 border border-nexus-border/50 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 transition-all font-sans"
             >
               <Store size={14} /> Marketplace
             </button>
@@ -155,14 +155,14 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
         </div>
       </div>
 
-      <div className="max-w-md w-full bg-slate-900/60 rounded-[2.5rem] p-10 shadow-2xl shadow-black/40 border border-white/10 relative overflow-hidden backdrop-blur-xl z-10">
+      <div className="max-w-md w-full bg-slate-900/60 rounded-[2.5rem] p-10 shadow-2xl shadow-black/40 border border-nexus-border/50 relative overflow-hidden backdrop-blur-xl z-10">
         
         <div className="text-center mb-8 relative z-10">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl mx-auto flex items-center justify-center mb-6 text-white shadow-xl shadow-blue-500/20 rotate-3">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl mx-auto flex items-center justify-center mb-6 text-white shadow-xl shadow-nexus-accent/20 rotate-3">
             <Building2 size={40} />
           </div>
           <h2 className="text-3xl font-black tracking-tighter text-white mb-2 italic">ESPACE NEXUS</h2>
-          <p className="text-slate-400 text-sm font-medium tracking-tight">Accédez à votre intelligence industrielle.</p>
+          <p className="text-nexus-text-muted text-sm font-medium tracking-tight">Accédez à votre intelligence industrielle.</p>
         </div>
 
         {errorMsg && (
@@ -192,14 +192,14 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
             {/* Scénario A: Entreprises existantes */}
             {companyLoading ? (
               <div className="space-y-4">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Synchronisation de vos accès...</h3>
+                <h3 className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.3em]">Synchronisation de vos accès...</h3>
                 <SkeletonCard />
                 <SkeletonCard />
               </div>
             ) : (ownedCompanies.length > 0 || joinedCompanies.length > 0) ? (
               <div className="space-y-4">
                 <div className="flex justify-between items-end px-1">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Mes Espaces de Travail</h3>
+                  <h3 className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.3em]">Mes Espaces de Travail</h3>
                   <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">{ownedCompanies.length + joinedCompanies.length} actif(s)</span>
                 </div>
                 <div className="space-y-3">
@@ -207,10 +207,10 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
                     <button
                       key={c.id}
                       onClick={() => onSelect(c)}
-                      className="w-full flex items-center justify-between p-4 rounded-2xl border border-white/10 bg-black/20 hover:border-blue-500/50 hover:bg-nexus-accent text-white hover:bg-nexus-accent/80/10 transition-all group relative overflow-hidden active:scale-[0.98]"
+                      className="w-full flex items-center justify-between p-4 rounded-2xl border border-nexus-border/50 bg-black/20 hover:border-blue-500/50 hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20/10 transition-all group relative overflow-hidden active:scale-[0.98]"
                     >
                       <div className="flex items-center gap-4 relative z-10">
-                        <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center font-black text-white text-xl group-hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all shadow-sm">
+                        <div className="w-12 h-12 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 border border-nexus-border/50 rounded-2xl flex items-center justify-center font-black text-white text-xl group-hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 transition-all shadow-sm">
                           {c.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="text-left">
@@ -229,13 +229,13 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
                 </div>
               </div>
             ) : (
-              <div className="py-8 px-4 text-center space-y-4 border-2 border-dashed border-white/10 rounded-[2rem] bg-black/20">
-                <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mx-auto shadow-sm text-blue-400">
+              <div className="py-8 px-4 text-center space-y-4 border-2 border-dashed border-nexus-border/50 rounded-[2rem] bg-black/20">
+                <div className="w-16 h-16 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 border border-nexus-border/50 rounded-2xl flex items-center justify-center mx-auto shadow-sm text-blue-400">
                   <Layers size={32} />
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-white tracking-tight">Bienvenue sur Nexus ERP</h3>
-                  <p className="text-xs font-medium text-slate-400 mt-1 max-w-[220px] mx-auto">Vous n'êtes rattaché à aucun espace sécurisé pour le moment.</p>
+                  <p className="text-xs font-medium text-nexus-text-muted mt-1 max-w-[220px] mx-auto">Vous n'êtes rattaché à aucun espace sécurisé pour le moment.</p>
                 </div>
               </div>
             )}
@@ -243,8 +243,8 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
             {/* Scénario B: Rejoindre ou Créer */}
             <div className="pt-4 space-y-4 text-center">
               <div className="relative">
-                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10"></div></div>
-                <div className="relative flex justify-center text-[9px] uppercase font-black tracking-widest"><span className="bg-nexus-accent px-4 text-slate-400 italic">Actions d'Infrastructure</span></div>
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-nexus-border/50"></div></div>
+                <div className="relative flex justify-center text-[9px] uppercase font-black tracking-widest"><span className="bg-nexus-accent px-4 text-nexus-text-muted italic">Actions d'Infrastructure</span></div>
               </div>
 
               <div className="space-y-4">
@@ -257,7 +257,7 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
                 </button>
                 <button
                   onClick={() => setMode('create')}
-                  className="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-transparent border border-white/10 text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:border-blue-500/30 hover:text-blue-400 hover:bg-blue-500/5 transition-all active:scale-95 group"
+                  className="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-transparent border border-nexus-border/50 text-nexus-text-muted font-bold text-[10px] uppercase tracking-widest hover:border-blue-500/30 hover:text-blue-400 hover:bg-blue-500/5 transition-all active:scale-95 group"
                 >
                   <Plus size={14} className="group-hover:rotate-90 transition-transform" />
                   Créer mon propre espace
@@ -275,12 +275,12 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
             onSubmit={handleCreate}
           >
             <div>
-              <label className="block text-xs font-black text-slate-300 uppercase tracking-widest mb-2">Nom de l'Entreprise</label>
+              <label className="block text-xs font-black text-nexus-text-muted uppercase tracking-widest mb-2">Nom de l'Entreprise</label>
               <input
                 type="text"
                 required
                 placeholder="Ex: Nexus Corp"
-                className="w-full p-4 border border-white/10 bg-black/20 text-white rounded-xl focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent focus:ring-4 focus:ring-nexus-accent/20 transition-all text-sm font-medium outline-none placeholder:text-slate-600"
+                className="w-full p-4 bg-black/20 text-white rounded-xl /20 transition-all text-sm font-medium placeholder: hover:-strong nexus-input w-full text-sm"
                 value={newCompanyName}
                 onChange={e => setNewCompanyName(e.target.value)}
               />
@@ -301,7 +301,7 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
             <button 
               type="button" 
               onClick={() => { setMode('select'); setErrorMsg(''); }}
-              className="w-full text-center text-xs font-bold text-slate-400 hover:text-white uppercase tracking-widest mt-4 flex items-center justify-center gap-2"
+              className="w-full text-center text-xs font-bold text-nexus-text-muted hover:text-white uppercase tracking-widest mt-4 flex items-center justify-center gap-2"
             >
               <ArrowLeft size={14} /> Retour à la sélection
             </button>
@@ -316,17 +316,17 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
             onSubmit={handleJoin}
           >
             <div>
-              <label className="block text-xs font-black text-slate-300 uppercase tracking-widest mb-2">Code d'accès Entreprise</label>
+              <label className="block text-xs font-black text-nexus-text-muted uppercase tracking-widest mb-2">Code d'accès Entreprise</label>
               <input
                 type="text"
                 required
                 maxLength={12}
                 placeholder="EX: JET7-2026"
-                className="w-full p-6 border border-white/10 bg-black/40 text-white rounded-2xl focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent focus:ring-4 focus:ring-indigo-500/20 transition-all text-center text-4xl font-mono font-black tracking-widest uppercase outline-none placeholder:text-slate-700 shadow-inner"
+                className="w-full p-6 bg-black/40 text-white rounded-2xl /20 transition-all text-center text-4xl font-mono font-black tracking-widest uppercase placeholder: -inner hover:-strong nexus-input w-full text-sm"
                 value={joinCodeInput}
                 onChange={e => setJoinCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''))}
               />
-              <p className="text-[10px] font-medium text-slate-400 mt-3 text-center">Saisissez le code fourni par l'administrateur de l'espace.</p>
+              <p className="text-[10px] font-medium text-nexus-text-muted mt-3 text-center">Saisissez le code fourni par l'administrateur de l'espace.</p>
             </div>
             <button
               type="submit"
@@ -344,7 +344,7 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
             <button 
               type="button" 
               onClick={() => { setMode('select'); setErrorMsg(''); setSuccessMsg(''); }}
-              className="w-full text-center text-xs font-bold text-slate-400 hover:text-white uppercase tracking-widest mt-4 flex items-center justify-center gap-2"
+              className="w-full text-center text-xs font-bold text-nexus-text-muted hover:text-white uppercase tracking-widest mt-4 flex items-center justify-center gap-2"
             >
               <ArrowLeft size={14} /> Retour à la sélection
             </button>

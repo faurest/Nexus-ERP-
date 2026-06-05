@@ -27,10 +27,10 @@ export function MarketplaceHero({
   setNairaEnabled
 }: HeroProps) {
   return (
-    <div className="relative overflow-hidden bg-nexus-accent border-b border-slate-800">
+    <div className="relative overflow-hidden bg-nexus-accent border-b border-nexus-border">
       {/* Background elements */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full bg-nexus-accent text-white hover:bg-nexus-accent/80/10 blur-3xl"></div>
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20/10 blur-3xl"></div>
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 rounded-full bg-indigo-600/10 blur-3xl"></div>
       </div>
 
@@ -41,12 +41,12 @@ export function MarketplaceHero({
             <span>Nexus Operational</span>
           </div>
           
-          <div className="flex items-center bg-slate-800/50 rounded-full p-1 backdrop-blur-sm border border-slate-700/50 shadow-inner">
+          <div className="flex items-center bg-slate-800/50 rounded-full p-1 backdrop-blur-sm border border-nexus-border/50 shadow-inner">
             <button
               onClick={() => setNairaEnabled(false)}
               className={cn(
                 "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
-                !nairaEnabled ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-white"
+                !nairaEnabled ? "bg-white text-slate-900 shadow-sm" : "text-nexus-text-muted hover:text-white"
               )}
             >
               FCFA
@@ -55,7 +55,7 @@ export function MarketplaceHero({
               onClick={() => setNairaEnabled(true)}
               className={cn(
                 "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center",
-                nairaEnabled ? "bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "text-slate-400 hover:text-white"
+                nairaEnabled ? "bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "text-nexus-text-muted hover:text-white"
               )}
             >
               ₦ NGN
@@ -67,7 +67,7 @@ export function MarketplaceHero({
           Trouvez tout ce dont <br className="hidden md:block" /> vous avez besoin.
         </h1>
         
-        <p className="text-slate-400 text-sm md:text-base max-w-2xl mx-auto mb-12">
+        <p className="text-nexus-text-muted text-sm md:text-base max-w-2xl mx-auto mb-12">
           Le plus grand marché du Sahel. Ciment, matériaux, équipements électriques, appareils informatiques. Plus de 5000+ références disponibles en livraison immédiate.
         </p>
 
@@ -75,17 +75,17 @@ export function MarketplaceHero({
         <div className="w-full max-w-3xl relative group">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-25 group-focus-within:opacity-50 transition-opacity"></div>
           <div className="relative flex items-center bg-white rounded-2xl shadow-2xl p-2 gap-2">
-            <div className="pl-4 text-slate-400">
+            <div className="pl-4 text-nexus-text-muted">
               <Search size={22} />
             </div>
             <input
               type="text"
               placeholder="Rechercher un produit, une marque, une catégorie..."
-              className="flex-1 bg-transparent py-4 px-2 text-slate-900 font-bold outline-none placeholder:text-slate-400 placeholder:font-medium"
+              className="flex-1 bg-transparent py-4 px-2 text-slate-900 font-bold outline-none placeholder:text-nexus-text-muted placeholder:font-medium"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <button className="hidden sm:flex px-8 py-4 bg-nexus-accent hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all items-center gap-2">
+            <button className="hidden sm:flex px-8 py-4 bg-nexus-accent hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all items-center gap-2">
               Rechercher <TrendingUp size={14} />
             </button>
           </div>
@@ -93,22 +93,22 @@ export function MarketplaceHero({
 
         {/* Quick actions for mobile */}
         <div className="flex items-center gap-4 mt-8 sm:hidden">
-          <button onClick={() => setShowTracking(true)} className="flex flex-col items-center gap-2 text-slate-300 hover:text-white transition-colors relative">
+          <button onClick={() => setShowTracking(true)} className="flex flex-col items-center gap-2 text-nexus-text-muted hover:text-white transition-colors relative">
             <Truck size={24} />
             <span className="text-[9px] font-bold uppercase tracking-widest">Suivi</span>
             {activeOrderCount > 0 && <span className="absolute -top-1 -right-2 w-4 h-4 bg-emerald-500 rounded-full border-2 border-slate-900 text-[8px] flex items-center justify-center font-black animate-pulse">{activeOrderCount}</span>}
           </button>
-          <button onClick={() => setShowCart(true)} className="flex flex-col items-center gap-2 text-slate-300 hover:text-white transition-colors relative">
+          <button onClick={() => setShowCart(true)} className="flex flex-col items-center gap-2 text-nexus-text-muted hover:text-white transition-colors relative">
             <ShoppingCart size={24} />
             <span className="text-[9px] font-bold uppercase tracking-widest">Panier</span>
-            {cartCount > 0 && <span className="absolute -top-1 -right-2 w-4 h-4 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-full border-2 border-slate-900 text-[8px] flex items-center justify-center font-black animate-bounce">{cartCount}</span>}
+            {cartCount > 0 && <span className="absolute -top-1 -right-2 w-4 h-4 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 rounded-full border-2 border-slate-900 text-[8px] flex items-center justify-center font-black animate-bounce">{cartCount}</span>}
           </button>
           <button 
              onClick={() => {
                const message = "Bonjour, j'ai une question sur Nexus Marketplace.";
                window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
              }}
-             className="flex flex-col items-center gap-2 text-slate-300 hover:text-white transition-colors"
+             className="flex flex-col items-center gap-2 text-nexus-text-muted hover:text-white transition-colors"
           >
             <MessageCircle size={24} />
             <span className="text-[9px] font-bold uppercase tracking-widest">Aide</span>

@@ -84,12 +84,12 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
           
           <div className="text-center">
             <h1 className="text-4xl font-black tracking-tight text-slate-900">Nexus<span className="text-blue-600">ERP</span></h1>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3">Intelligence Industrielle</p>
+            <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.2em] mt-3">Intelligence Industrielle</p>
           </div>
           
           <div className="mt-2">
             {connStatus === 'testing' && (
-              <span className="px-3 py-1 bg-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full animate-pulse">Syncing...</span>
+              <span className="px-3 py-1 bg-slate-100 text-nexus-text-muted text-[10px] font-black uppercase tracking-widest rounded-full animate-pulse">Syncing...</span>
             )}
             {connStatus === 'ok' && (
               <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[9px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 border border-blue-100">
@@ -109,24 +109,24 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
           )}
 
           <div className="text-center mb-4 flex gap-4 justify-center">
-            <button onClick={() => setLoginMode('email')} className={`text-xs font-black uppercase tracking-widest pb-1 border-b-2 ${loginMode === 'email' ? 'text-blue-600 border-blue-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}>Standard Access</button>
-            <button onClick={() => setLoginMode('google')} className={`text-xs font-black uppercase tracking-widest pb-1 border-b-2 ${loginMode === 'google' ? 'text-blue-600 border-blue-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}>Google SSO</button>
+            <button onClick={() => setLoginMode('email')} className={`text-xs font-black uppercase tracking-widest pb-1 border-b-2 ${loginMode === 'email' ? 'text-blue-600 border-blue-600' : 'text-nexus-text-muted border-transparent hover:text-slate-600'}`}>Standard Access</button>
+            <button onClick={() => setLoginMode('google')} className={`text-xs font-black uppercase tracking-widest pb-1 border-b-2 ${loginMode === 'google' ? 'text-blue-600 border-blue-600' : 'text-nexus-text-muted border-transparent hover:text-slate-600'}`}>Google SSO</button>
           </div>
 
           {loginMode === 'email' ? (
             <form onSubmit={handleEmailLogin} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Identifiant Local</label>
+                <label className="block text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-1">Identifiant Local</label>
                 <div className="relative">
-                  <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent focus:ring-4 focus:ring-nexus-accent/10 outline-none transition-all text-nexus-text placeholder-white/40" placeholder="votre@email.com" />
+                  <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-nexus-text-muted" />
+                  <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-50 -slate-200 rounded-xl pl-10 pr-4 text-sm font-medium /10 transition-all hover:-strong nexus-input w-full text-sm" placeholder="votre@email.com" />
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Clé d'Accès</label>
+                <label className="block text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-1">Clé d'Accès</label>
                 <div className="relative">
-                  <Key size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent focus:ring-4 focus:ring-nexus-accent/10 outline-none transition-all text-nexus-text placeholder-white/40" placeholder="••••••••" />
+                  <Key size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-nexus-text-muted" />
+                  <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-50 -slate-200 rounded-xl pl-10 pr-4 text-sm font-medium /10 transition-all hover:-strong nexus-input w-full text-sm" placeholder="••••••••" />
                 </div>
               </div>
               
@@ -144,7 +144,7 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent transition-all flex items-center justify-center gap-4 shadow-lg shadow-blue-600/10 disabled:opacity-50 mt-2"
+                className="w-full bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent transition-all flex items-center justify-center gap-4 shadow-lg shadow-blue-600/10 disabled:opacity-50 mt-2"
               >
                 {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Connexion Serveur'}
               </button>
@@ -173,12 +173,12 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-            <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest"><span className="bg-white px-4 text-slate-300 italic">Ou explorez</span></div>
+            <div className="relative flex justify-center text-[10px] uppercase font-black tracking-widest"><span className="bg-white px-4 text-nexus-text-muted italic">Ou explorez</span></div>
           </div>
 
           <button 
             onClick={onMarketplace}
-            className="w-full bg-nexus-accent text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 transition-all flex items-center justify-center gap-4 shadow-xl"
+            className="w-full bg-nexus-accent text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 transition-all flex items-center justify-center gap-4 shadow-xl"
           >
             <ArrowLeft size={18} />
             <span>Retourner au Marketplace</span>

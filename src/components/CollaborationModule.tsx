@@ -152,7 +152,7 @@ export default function CollaborationModule() {
 
   return (
     <div className="space-y-8 pb-12">
-      <div className="bg-nexus-surface rounded-[2.5rem] p-8 border border-white/5 shadow-xl flex flex-col md:flex-row justify-between items-center gap-8">
+      <div className="bg-nexus-surface rounded-[2.5rem] p-8 border border-nexus-border/30 shadow-xl flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="flex items-center gap-6">
           <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-200">
             <Handshake size={32} />
@@ -163,7 +163,7 @@ export default function CollaborationModule() {
           </div>
         </div>
 
-        <div className="flex bg-slate-100 p-2 rounded-2xl border border-white/10">
+        <div className="flex bg-slate-100 p-2 rounded-2xl border border-nexus-border/50">
           <button 
             onClick={() => setActiveView('transfers')}
             className={cn(
@@ -204,7 +204,7 @@ export default function CollaborationModule() {
                 { label: 'Documents', value: stats.docs, color: 'bg-blue-500', icon: <FileText size={18} /> },
                 { label: 'Ressources', value: stats.images, color: 'bg-rose-500', icon: <ImageIcon size={18} /> }
               ].map((stat, idx) => (
-                <div key={idx} className="bg-nexus-surface p-6 rounded-[2rem] border border-white/5 shadow-sm flex items-center justify-between group hover:shadow-xl hover:scale-[1.02] transition-all duration-500">
+                <div key={idx} className="bg-nexus-surface p-6 rounded-[2rem] border border-nexus-border/30 shadow-sm flex items-center justify-between group hover:shadow-xl hover:scale-[1.02] transition-all duration-500">
                   <div>
                     <p className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest mb-1">{stat.label}</p>
                     <p className="text-2xl font-black text-nexus-text leading-none">{stat.value}</p>
@@ -219,16 +219,16 @@ export default function CollaborationModule() {
             <div className="flex flex-wrap gap-4 items-center justify-between">
               <div className="flex gap-4">
                 <div className="relative group min-w-[300px]">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" size={18} />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-nexus-text-muted group-focus-within:text-indigo-500 transition-colors" size={18} />
                   <input 
                     type="text" 
                     placeholder="Chercher une collaboration..." 
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-nexus-surface border border-white/5 rounded-2xl outline-none text-xs font-bold text-nexus-text-muted focus:ring-4 focus:ring-indigo-100 shadow-sm"
+                    className="w-full pl-12 pr-4 py-4 bg-nexus-surface border border-nexus-border/30 rounded-2xl outline-none text-xs font-bold text-nexus-text-muted focus:ring-4 focus:ring-indigo-100 shadow-sm"
                   />
                 </div>
-                <div className="flex items-center bg-nexus-surface border border-white/5 rounded-2xl px-2">
+                <div className="flex items-center bg-nexus-surface border border-nexus-border/30 rounded-2xl px-2">
                   {(['all', 'Note', 'Document', 'Image'] as const).map(type => (
                     <button
                       key={type}
@@ -260,7 +260,7 @@ export default function CollaborationModule() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.05 }}
-                  className="bg-nexus-surface rounded-[2.5rem] border border-white/5 p-8 shadow-sm hover:shadow-2xl transition-all duration-500 group relative overflow-hidden"
+                  className="bg-nexus-surface rounded-[2.5rem] border border-nexus-border/30 p-8 shadow-sm hover:shadow-2xl transition-all duration-500 group relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -mr-16 -mt-16 opacity-30 group-hover:bg-indigo-100 transition-colors" />
                   
@@ -290,19 +290,19 @@ export default function CollaborationModule() {
                         </div>
                       </div>
                     </div>
-                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
+                    <span className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest">
                       {(item.createdAt && item.createdAt.seconds) ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'En cours...'}
                     </span>
                   </div>
 
-                  <div className="mb-8 p-6 bg-white/5/50 rounded-[1.5rem] border border-white/5 min-h-[100px] relative z-10">
+                  <div className="mb-8 p-6 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5/50 rounded-[1.5rem] border border-nexus-border/30 min-h-[100px] relative z-10">
                     <p className="text-sm font-medium text-nexus-text-muted leading-relaxed italic">"{item.content}"</p>
                   </div>
 
                   <div className="flex items-center justify-between relative z-10">
                     <div className="flex items-center gap-2">
                        <span className="text-[9px] font-black uppercase text-indigo-400 tracking-widest">Destinataire:</span>
-                       <span className="px-3 py-1 bg-nexus-surface border border-white/5 rounded-full text-[9px] font-black text-nexus-text-muted/80 uppercase">
+                       <span className="px-3 py-1 bg-nexus-surface border border-nexus-border/30 rounded-full text-[9px] font-black text-nexus-text-muted/80 uppercase">
                          {item.recipientEmail === 'all' ? "Toute l'entreprise" : item.recipientEmail}
                        </span>
                     </div>
@@ -310,7 +310,7 @@ export default function CollaborationModule() {
                       <button className="p-3 bg-nexus-accent text-white rounded-xl hover:bg-indigo-600 shadow-lg transition-all">
                         <Download size={16} />
                       </button>
-                      <button className="p-3 bg-white/5 text-slate-300 rounded-xl hover:text-rose-500 transition-all border border-white/5">
+                      <button className="p-3 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 text-nexus-text-muted rounded-xl hover:text-rose-500 transition-all border border-nexus-border/30">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -320,8 +320,8 @@ export default function CollaborationModule() {
             </div>
 
             {filteredItems.length === 0 && (
-              <div className="text-center py-32 bg-white/5/50 rounded-[3rem] border-2 border-dashed border-white/10">
-                <div className="w-24 h-24 bg-nexus-surface rounded-full border border-white/10 flex items-center justify-center mx-auto mb-8 shadow-xl text-slate-300">
+              <div className="text-center py-32 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5/50 rounded-[3rem] border-2 border-dashed border-nexus-border/50">
+                <div className="w-24 h-24 bg-nexus-surface rounded-full border border-nexus-border/50 flex items-center justify-center mx-auto mb-8 shadow-xl text-nexus-text-muted">
                   <Handshake size={48} strokeWidth={1} />
                 </div>
                 <h3 className="text-2xl font-black text-nexus-text tracking-tight mb-2">Aucun transfert actif</h3>
@@ -371,7 +371,7 @@ export default function CollaborationModule() {
                     <select 
                       value={formData.type}
                       onChange={e => setFormData({ ...formData, type: e.target.value as any })}
-                      className="w-full px-6 py-4 bg-white/5 border border-white/5 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-100 font-bold text-sm text-nexus-text-muted appearance-none"
+                      className="w-full px-6 py-4 rounded-2xl font-bold text-sm appearance-none hover:-strong nexus-input w-full text-sm"
                     >
                       <option value="Note">Note Interactive</option>
                       <option value="Document">Document Officiel</option>
@@ -386,7 +386,7 @@ export default function CollaborationModule() {
                       required
                       value={formData.recipientEmail}
                       onChange={e => setFormData({ ...formData, recipientEmail: e.target.value })}
-                      className="w-full px-6 py-4 bg-white/5 border border-white/5 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-100 font-bold text-sm text-nexus-text-muted placeholder:text-slate-300"
+                      className="w-full px-6 py-4 rounded-2xl font-bold text-sm placeholder: hover:-strong nexus-input w-full text-sm"
                     />
                   </div>
                 </div>
@@ -399,7 +399,7 @@ export default function CollaborationModule() {
                     placeholder="Ex: Mise à jour stratégique..." 
                     value={formData.title}
                     onChange={e => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-6 py-4 bg-white/5 border border-white/5 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-100 font-bold text-sm text-nexus-text-muted placeholder:text-slate-300"
+                    className="w-full px-6 py-4 rounded-2xl font-bold text-sm placeholder: hover:-strong nexus-input w-full text-sm"
                   />
                 </div>
 
@@ -411,7 +411,7 @@ export default function CollaborationModule() {
                     placeholder="Détails de l'échange..." 
                     value={formData.content}
                     onChange={e => setFormData({ ...formData, content: e.target.value })}
-                    className="w-full px-6 py-4 bg-white/5 border border-white/5 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-100 font-bold text-sm text-nexus-text-muted placeholder:text-slate-300 resize-none"
+                    className="w-full px-6 py-4 rounded-2xl font-bold text-sm placeholder: resize-none hover:-strong nexus-input w-full text-sm"
                   />
                 </div>
 
@@ -419,7 +419,7 @@ export default function CollaborationModule() {
                   <button 
                     type="button"
                     onClick={() => setIsAdding(false)}
-                    className="flex-1 py-5 rounded-2xl bg-slate-100 text-nexus-text-muted font-black text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-all border border-white/10"
+                    className="flex-1 py-5 rounded-2xl bg-slate-100 text-nexus-text-muted font-black text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-all border border-nexus-border/50"
                   >
                     Annuler
                   </button>

@@ -174,7 +174,7 @@ export default function PrestationsModule() {
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden bg-nexus-accent rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
+      <div className="relative overflow-hidden bg-nexus-accent rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-nexus-border/30">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
@@ -184,7 +184,7 @@ export default function PrestationsModule() {
               Gérez vos guichets, créations graphiques et processus de formation.
             </p>
           </div>
-          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-white/10 shrink-0 gap-1 overflow-x-auto scrollbar-hide max-w-full">
+          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-nexus-border/50 shrink-0 gap-1 overflow-x-auto scrollbar-hide max-w-full">
              {[
                { id: 'pos', label: 'Guichet', icon: Printer },
                { id: 'tracking', label: 'Projets', icon: PenTool },
@@ -196,7 +196,7 @@ export default function PrestationsModule() {
                  onClick={() => setActiveTab(item.id as any)}
                  className={cn(
                    "px-6 py-2.5 rounded-lg text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap flex items-center gap-2", 
-                   activeTab === item.id ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white shadow-lg" : "text-nexus-text-muted hover:text-white"
+                   activeTab === item.id ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white shadow-lg" : "text-nexus-text-muted hover:text-white"
                  )}
                >
                  <item.icon size={14} />
@@ -213,30 +213,30 @@ export default function PrestationsModule() {
           
           {isAddingService && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-nexus-surface rounded-3xl border border-white/10 p-8 max-w-md w-full shadow-2xl border border-white/5 animate-in fade-in zoom-in duration-300">
+          <div className="bg-nexus-surface rounded-3xl border border-nexus-border/50 p-8 max-w-md w-full shadow-2xl border border-nexus-border/30 animate-in fade-in zoom-in duration-300">
             <h3 className="text-xl font-bold text-nexus-text mb-6 flex items-center gap-2">
               <Tags size={24} className="text-purple-600" />
               Nouveau Service
             </h3>
             <form onSubmit={handleAddService} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Nom du service</label>
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Nom du service</label>
                 <input 
                   type="text" 
                   value={serviceForm.name}
                   onChange={e => setServiceForm({...serviceForm, name: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-sm outline-none focus:border-purple-400 text-nexus-text placeholder-white/40"
+                  className="w-full rounded-xl .5 text-sm hover:-strong nexus-input w-full text-sm"
                   placeholder="Ex: Impression Couleur"
                   required
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Prix de vente (F)</label>
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Prix de vente (F)</label>
                 <input 
                   type="number" 
                   value={serviceForm.price}
                   onChange={e => setServiceForm({...serviceForm, price: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-sm outline-none focus:border-purple-400 font-mono text-nexus-text placeholder-white/40"
+                  className="w-full rounded-xl .5 text-sm font-mono hover:-strong nexus-input w-full text-sm"
                   placeholder="Ex: 50"
                   required
                 />
@@ -248,7 +248,7 @@ export default function PrestationsModule() {
                     type="button"
                     onClick={() => generateAI('product_doc', serviceForm)}
                     disabled={aiGenerating}
-                    className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[8px] font-black uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 hover:text-white transition-all shadow-sm"
+                    className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[8px] font-black uppercase tracking-widest hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 hover:text-white transition-all shadow-sm"
                   >
                     {aiGenerating ? <Activity size={10} className="animate-spin" /> : <PenTool size={10} />}
                     Magie IA
@@ -258,12 +258,12 @@ export default function PrestationsModule() {
                   type="text" 
                   value={serviceForm.description}
                   onChange={e => setServiceForm({...serviceForm, description: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-sm outline-none focus:border-purple-400 text-nexus-text placeholder-white/40"
+                  className="w-full rounded-xl .5 text-sm hover:-strong nexus-input w-full text-sm"
                   placeholder="Ex: Par page A4"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Image / Logo (Depuis Mobile)</label>
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Image / Logo (Depuis Mobile)</label>
                 <div className="relative h-24">
                   <input 
                     type="file" 
@@ -274,13 +274,13 @@ export default function PrestationsModule() {
                   />
                   <label 
                     htmlFor="service-image-upload"
-                    className="flex flex-col items-center justify-center w-full h-full border-2 border-dashed border-white/10 rounded-xl cursor-pointer bg-white/5 hover:bg-slate-100 transition-all overflow-hidden"
+                    className="flex flex-col items-center justify-center w-full h-full border-2 border-dashed border-nexus-border/50 rounded-xl cursor-pointer bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 hover:bg-slate-100 transition-all overflow-hidden"
                   >
                     {imagePreview ? (
                       <img src={imagePreview} className="h-full w-full object-cover" alt="Preview" />
                     ) : (
                       <div className="flex flex-col items-center">
-                        <Plus size={20} className="text-slate-300 mb-1" />
+                        <Plus size={20} className="text-nexus-text-muted mb-1" />
                         <span className="text-[8px] font-black text-nexus-text-muted uppercase">Choisir une image</span>
                       </div>
                     )}
@@ -309,7 +309,7 @@ export default function PrestationsModule() {
       )}
 
       {activeTab === 'pos' && (
-            <div className="bg-nexus-surface border text-center border-white/10 p-8 rounded-2xl shadow-sm">
+            <div className="bg-nexus-surface border text-center border-nexus-border/50 p-8 rounded-2xl shadow-sm">
               <h3 className="text-xl font-bold text-nexus-text mb-6">Terminal de Vente Rapide</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {services.map(s => (
@@ -317,7 +317,7 @@ export default function PrestationsModule() {
                     key={s.id}
                     onClick={() => handleCreateSale(s.name, s.price, 1)}
                     disabled={submitting}
-                    className="flex flex-col items-center justify-center p-6 border-2 border-white/5 hover:border-purple-200 rounded-2xl bg-white/5 hover:bg-purple-50 transition-all active:scale-95 disabled:opacity-50"
+                    className="flex flex-col items-center justify-center p-6 border-2 border-nexus-border/30 hover:border-purple-200 rounded-2xl bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 hover:bg-purple-50 transition-all active:scale-95 disabled:opacity-50"
                   >
                     <Plus size={24} className="text-purple-600 mb-2" />
                     <span className="font-bold text-nexus-text text-sm mb-1">{s.name}</span>
@@ -329,11 +329,11 @@ export default function PrestationsModule() {
                 </button>
               </div>
 
-              <div className="mt-8 text-left border-t border-white/5 pt-6">
+              <div className="mt-8 text-left border-t border-nexus-border/30 pt-6">
                 <h4 className="text-sm font-bold text-nexus-text-muted/80 uppercase mb-4">Dernières ventes guichet</h4>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {sales.sort((a,b) => b.date - a.date).slice(0,10).map((sale, i) => (
-                    <div key={i} className="flex justify-between items-center p-3 bg-white/5 rounded-xl">
+                    <div key={i} className="flex justify-between items-center p-3 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl">
                       <span className="text-sm font-bold text-nexus-text-muted">{sale.itemName} <span className="text-nexus-text-muted">x{sale.quantity}</span></span>
                       <span className="font-mono text-sm text-green-700 font-bold">+{sale.amount} F</span>
                     </div>
@@ -346,11 +346,11 @@ export default function PrestationsModule() {
           {activeTab === 'tracking' && (
             <div className="space-y-6">
               <div className="grid sm:grid-cols-2 gap-4">
-                 <div className="bg-nexus-surface border border-white/10 p-6 rounded-2xl shadow-sm">
+                 <div className="bg-nexus-surface border border-nexus-border p-6 rounded-2xl shadow-sm">
                     <h3 className="font-bold text-nexus-text mb-4 flex items-center gap-2"><PenTool size={18} className="text-indigo-600" /> Lancer un Design</h3>
                     <form onSubmit={(e) => handleCreateTask(e, 'Design')} className="space-y-3">
-                      <input name="client" placeholder="Nom du Client / Téléphone" required className="w-full bg-white/5 p-3 rounded-xl border border-white/10 text-sm outline-none focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent text-nexus-text placeholder-white/40" />
-                      <input name="desc" placeholder="Ex: Logo restaurant + charte graphique" required className="w-full bg-white/5 p-3 rounded-xl border border-white/10 text-sm outline-none focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent text-nexus-text placeholder-white/40" />
+                      <input name="client" placeholder="Nom du Client / Téléphone" required className="w-full rounded-xl text-sm hover:-strong nexus-input w-full text-sm" />
+                      <input name="desc" placeholder="Ex: Logo restaurant + charte graphique" required className="w-full rounded-xl text-sm hover:-strong nexus-input w-full text-sm" />
                       <button 
                         disabled={submitting}
                         className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm disabled:opacity-50"
@@ -359,11 +359,11 @@ export default function PrestationsModule() {
                       </button>
                     </form>
                  </div>
-                 <div className="bg-nexus-surface border border-white/10 p-6 rounded-2xl shadow-sm">
+                 <div className="bg-nexus-surface border border-nexus-border p-6 rounded-2xl shadow-sm">
                     <h3 className="font-bold text-nexus-text mb-4 flex items-center gap-2"><PenTool size={18} className="text-teal-600" /> Lancer une Correction</h3>
                     <form onSubmit={(e) => handleCreateTask(e, 'Saisie')} className="space-y-3">
-                      <input name="client" placeholder="Nom de l'étudiant / Client" required className="w-full bg-white/5 p-3 rounded-xl border border-white/10 text-sm outline-none focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent text-nexus-text placeholder-white/40" />
-                      <input name="desc" placeholder="Ex: Rapport de stage de 50 pages" required className="w-full bg-white/5 p-3 rounded-xl border border-white/10 text-sm outline-none focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent text-nexus-text placeholder-white/40" />
+                      <input name="client" placeholder="Nom de l'étudiant / Client" required className="w-full rounded-xl text-sm hover:-strong nexus-input w-full text-sm" />
+                      <input name="desc" placeholder="Ex: Rapport de stage de 50 pages" required className="w-full rounded-xl text-sm hover:-strong nexus-input w-full text-sm" />
                       <button 
                         disabled={submitting}
                         className="w-full py-3 bg-teal-600 text-white font-bold rounded-xl text-sm disabled:opacity-50"
@@ -374,8 +374,8 @@ export default function PrestationsModule() {
                  </div>
               </div>
 
-              <div className="bg-nexus-surface border border-white/10 rounded-2xl shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-white/5 bg-white/5">
+              <div className="bg-nexus-surface border border-nexus-border rounded-2xl shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-nexus-border/30 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5">
                   <h3 className="font-bold text-nexus-text">Projets & Saisies en cours</h3>
                 </div>
                 <Table headers={['Client', 'Description', 'Statut', 'Actions']}>
@@ -402,7 +402,7 @@ export default function PrestationsModule() {
           )}
 
           {activeTab === 'catalog' && (
-            <div className="bg-nexus-surface border border-white/10 p-6 rounded-2xl shadow-sm">
+            <div className="bg-nexus-surface border border-nexus-border p-6 rounded-2xl shadow-sm">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-nexus-text">Catalogue des offres</h3>
                 <button 
@@ -414,10 +414,10 @@ export default function PrestationsModule() {
               </div>
               <div className="grid gap-4">
                 {services.map(s => (
-                  <div key={s.id} className="flex justify-between items-center p-4 border border-white/5 rounded-xl bg-white/5 group">
+                  <div key={s.id} className="flex justify-between items-center p-4 border border-nexus-border/30 rounded-xl bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 group">
                     <div className="flex items-center gap-4">
                       {s.image && (
-                        <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden border border-nexus-border/50">
                           <img src={s.image} className="w-full h-full object-cover" />
                         </div>
                       )}
@@ -442,7 +442,7 @@ export default function PrestationsModule() {
                   </div>
                 ))}
                 {services.length === 0 && (
-                  <div className="text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
+                  <div className="text-center py-12 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-2xl border border-dashed border-nexus-border/50">
                     <p className="text-nexus-text-muted text-sm italic">Aucun service enregistré dans le catalogue.</p>
                   </div>
                 )}
@@ -495,7 +495,7 @@ export default function PrestationsModule() {
 
         {/* Sidebar / KPIS */}
         <div className="space-y-6">
-          <div className="bg-nexus-accent text-white border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+          <div className="bg-nexus-accent text-white border border-nexus-border rounded-2xl p-6 shadow-xl relative overflow-hidden">
              <div className="absolute top-0 right-0 p-4 opacity-10">
                <Activity size={100} />
              </div>
@@ -505,7 +505,7 @@ export default function PrestationsModule() {
                  <p className="text-nexus-text-muted text-sm">Ventes Guichet</p>
                  <p className="text-3xl font-black">{sales.reduce((acc, curr) => acc + (curr.amount || 0), 0)} F</p>
                </div>
-               <div className="pt-4 border-t border-slate-700">
+               <div className="pt-4 border-t border-nexus-border">
                  <p className="text-nexus-text-muted text-sm">Travaux en attente</p>
                  <p className="text-xl font-bold flex items-center gap-2">
                     {interventions.filter(i => i.status !== 'completed').length} Dossiers

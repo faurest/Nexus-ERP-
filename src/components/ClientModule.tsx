@@ -111,7 +111,7 @@ export default function ClientModule() {
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden bg-nexus-accent rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
+      <div className="relative overflow-hidden bg-nexus-accent rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-nexus-border/30">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
@@ -123,7 +123,7 @@ export default function ClientModule() {
           </div>
           <button 
             onClick={() => setIsAdding(true)}
-            className="px-6 py-3 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:bg-blue-700 transition-all shadow-md shadow-blue-600/10 shrink-0"
+            className="px-6 py-3 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:bg-blue-700 transition-all shadow-md shadow-blue-600/10 shrink-0"
           >
             <Plus size={18} />
             Nouveau Partenaire
@@ -133,18 +133,18 @@ export default function ClientModule() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-6">
-          <div className="bg-nexus-surface border border-white/5 rounded-[2rem] p-2 flex items-center gap-3 shadow-xl shadow-slate-200/50 focus-within:border-blue-400 transition-all">
+          <div className="bg-nexus-surface border border-nexus-border/30 rounded-[2rem] p-2 flex items-center gap-3 shadow-xl shadow-slate-200/50 focus-within:border-blue-400 transition-all">
             <div className="pl-4">
-              <Search className="text-slate-300" size={20} />
+              <Search className="text-nexus-text-muted" size={20} />
             </div>
             <input 
               type="text" 
               placeholder="Scanner la base de données clients..." 
-              className="flex-1 bg-transparent py-4 outline-none text-xs font-bold text-nexus-text-muted placeholder:text-slate-300"
+              className="flex-1 bg-transparent py-4 outline-none text-xs font-bold text-nexus-text-muted placeholder:text-nexus-text-muted"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <button onClick={() => alert("Indexation granulée...")} className="w-12 h-12 flex items-center justify-center bg-nexus-surface border border-white/5 rounded-2xl hover:bg-white/5 transition-all text-nexus-text-muted shadow-sm mr-1">
+            <button onClick={() => alert("Indexation granulée...")} className="w-12 h-12 flex items-center justify-center bg-nexus-surface border border-nexus-border/30 rounded-2xl hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all text-nexus-text-muted shadow-sm mr-1">
               <Filter size={18} />
             </button>
           </div>
@@ -204,12 +204,12 @@ export default function ClientModule() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-nexus-surface border border-white/10 rounded-2xl p-6 shadow-sm">
+          <div className="bg-nexus-surface border border-nexus-border rounded-2xl p-6 shadow-sm">
             <h3 className="text-xs font-bold text-nexus-text-muted uppercase tracking-widest mb-6 flex items-center gap-2">
               <TrendingUp size={14} /> Performance Mensuelle
             </h3>
-            <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/5">
-              <div className="w-12 h-12 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-600/20">D</div>
+            <div className="flex items-center gap-4 p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl border border-nexus-border/30">
+              <div className="w-12 h-12 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-600/20">D</div>
               <div>
                 <p className="font-bold text-nexus-text">Danga Felicite</p>
                 <p className="text-[10px] font-bold text-green-600 uppercase">Top Contributeur</p>
@@ -235,7 +235,7 @@ export default function ClientModule() {
 
       {viewingClient && (
         <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-6">
-          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+          <div className="bg-nexus-surface rounded-2xl border border-nexus-border/50 p-8 max-w-2xl w-full shadow-2xl border border-nexus-border/30">
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center font-bold text-xl border border-indigo-100">
@@ -250,21 +250,21 @@ export default function ClientModule() {
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+                <div className="p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl border border-nexus-border/30">
                   <span className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest block mb-1">Email</span>
                   <a href={`mailto:${viewingClient.email}`} className="text-sm font-bold text-blue-600 truncate block">{viewingClient.email}</a>
                 </div>
-                <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+                <div className="p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl border border-nexus-border/30">
                   <span className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest block mb-1">Téléphone</span>
                   <span className="text-sm font-bold text-nexus-text">{viewingClient.phone || 'Non renseigné'}</span>
                 </div>
               </div>
-              <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+              <div className="p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl border border-nexus-border/30">
                 <span className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest block mb-1">Adresse</span>
                 <span className="text-sm font-bold text-nexus-text">{viewingClient.address || 'Non renseignée'}</span>
               </div>
 
-              <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+              <div className="p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl border border-nexus-border/30">
                 <span className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest block mb-2">Évolution & Interactions</span>
                 <p className="text-sm font-medium text-nexus-text-muted whitespace-pre-wrap">{viewingClient.interactions || 'Aucune interaction enregistrée.'}</p>
               </div>
@@ -286,7 +286,7 @@ export default function ClientModule() {
       {isAdding && (
         <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6">
           <div 
-            className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5"
+            className="bg-nexus-surface rounded-2xl border border-nexus-border/50 p-8 max-w-2xl w-full shadow-2xl border border-nexus-border/30"
           >
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
@@ -300,47 +300,47 @@ export default function ClientModule() {
 
             <form onSubmit={handleAddClient} className="space-y-5">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Raison Sociale / Nom</label>
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Raison Sociale / Nom</label>
                 <input 
                   required
                   type="text" 
-                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:bg-nexus-surface outline-none focus:ring-2 focus:ring-blue-100 transition-all text-nexus-text placeholder-white/40"
+                  className="w-full text-sm focus:bg-nexus-surface transition-all hover:-strong nexus-input w-full text-sm"
                   value={newClient.name}
                   onChange={(e) => setNewClient({...newClient, name: e.target.value})}
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Email de Contact</label>
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Email de Contact</label>
                 <input 
                   required
                   type="email" 
-                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:bg-nexus-surface outline-none focus:ring-2 focus:ring-blue-100 transition-all text-nexus-text placeholder-white/40"
+                  className="w-full text-sm focus:bg-nexus-surface transition-all hover:-strong nexus-input w-full text-sm"
                   value={newClient.email}
                   onChange={(e) => setNewClient({...newClient, email: e.target.value})}
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Numéro Téléphonique</label>
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Numéro Téléphonique</label>
                 <input 
                   type="tel" 
-                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:bg-nexus-surface outline-none focus:ring-2 focus:ring-blue-100 transition-all text-nexus-text placeholder-white/40"
+                  className="w-full text-sm focus:bg-nexus-surface transition-all hover:-strong nexus-input w-full text-sm"
                   value={newClient.phone}
                   onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Adresse</label>
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Adresse</label>
                 <input 
                   type="text" 
-                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:bg-nexus-surface outline-none focus:ring-2 focus:ring-blue-100 transition-all text-nexus-text placeholder-white/40"
+                  className="w-full text-sm focus:bg-nexus-surface transition-all hover:-strong nexus-input w-full text-sm"
                   value={newClient.address}
                   onChange={(e) => setNewClient({...newClient, address: e.target.value})}
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Historique d'Interactions / Évolution</label>
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Historique d'Interactions / Évolution</label>
                 <textarea 
-                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:bg-nexus-surface outline-none focus:ring-2 focus:ring-blue-100 transition-all resize-none h-24 text-nexus-text placeholder-white/40"
+                  className="w-full text-sm focus:bg-nexus-surface transition-all resize-none h-24 hover:-strong nexus-input w-full text-sm"
                   value={newClient.interactions}
                   onChange={(e) => setNewClient({...newClient, interactions: e.target.value})}
                   placeholder="Notes sur les rendez-vous, appels, intérêts..."
@@ -354,14 +354,14 @@ export default function ClientModule() {
                     setEditingClient(null);
                     setNewClient({ name: '', email: '', phone: '', address: '', interactions: '' });
                   }}
-                  className="px-6 py-3 rounded-xl border border-white/10 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all"
+                  className="px-6 py-3 rounded-xl border border-nexus-border/50 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all"
                 >
                   Annuler
                 </button>
                 <button 
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50"
+                  className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50"
                 >
                   {submitting ? 'Traitement...' : (editingClient ? 'Mettre à jour' : 'Confirmer')}
                 </button>

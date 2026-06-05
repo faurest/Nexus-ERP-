@@ -412,7 +412,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
   return (
     <div className="space-y-10 pb-20">
       {/* Immersive Command Header */}
-      <div className="relative overflow-hidden bg-nexus-surface rounded-[2rem] lg:rounded-[2.5rem] p-6 lg:p-12 text-nexus-text shadow-2xl border border-white/5 group">
+      <div className="relative overflow-hidden bg-nexus-surface rounded-[2rem] lg:rounded-[2.5rem] p-6 lg:p-12 text-nexus-text shadow-2xl border border-nexus-border/30 group">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-nexus-bg to-nexus-bg z-0 opacity-80" />
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-nexus-accent/5 rounded-full blur-[120px] -mr-48 -mt-48 transition-transform duration-1000 group-hover:scale-110" />
 
@@ -423,7 +423,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-white/5 border border-white/10 rounded-full mb-6">
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 border border-nexus-border/50 rounded-full mb-6">
                 <div className="w-2 h-2 bg-nexus-accent rounded-full shadow-[0_0_8px_rgba(91,140,255,0.6)] animate-pulse" />
                 <span className="text-[9px] font-black uppercase tracking-[0.25em] text-nexus-accent">Nexus OS • Cockpit Intelligence</span>
               </div>
@@ -436,13 +436,13 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
             </motion.div>
           </div>
           
-          <div className="flex flex-wrap gap-4 shrink-0 bg-white/5 backdrop-blur-md p-2 rounded-[2rem] border border-white/10">
+          <div className="flex flex-wrap gap-4 shrink-0 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 backdrop-blur-md p-2 rounded-[2rem] border border-nexus-border/50">
              {(!isNewEnterprise || role === 'owner') && (
               <>
                 <button 
                   onClick={() => document.getElementById('import-json')?.click()}
                   disabled={isImporting || isExporting}
-                  className="px-6 py-4 rounded-2xl text-nexus-text text-[9px] font-black uppercase tracking-[0.15em] hover:bg-white/5 transition-all flex items-center gap-3 group/btn"
+                  className="px-6 py-4 rounded-2xl text-nexus-text text-[9px] font-black uppercase tracking-[0.15em] hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all flex items-center gap-3 group/btn"
                 >
                   <Upload size={14} className="group-hover:-translate-y-1 transition-transform" />
                   {isImporting ? 'Chargement...' : 'Importation'}
@@ -480,7 +480,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
             onClick={() => navigateTo(action.tab)}
-            className="flex flex-col items-center justify-center p-8 bg-nexus-surface border border-white/5 rounded-[2.5rem] hover:border-nexus-accent/50 hover:shadow-2xl hover:shadow-nexus-accent/5 transition-all group active:scale-95"
+            className="flex flex-col items-center justify-center p-8 bg-nexus-surface border border-nexus-border/30 rounded-[2.5rem] hover:border-nexus-accent/50 hover:shadow-2xl hover:shadow-nexus-accent/5 transition-all group active:scale-95"
           >
             <div className={`w-16 h-16 ${action.bg} ${action.color} rounded-3xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
               <action.icon size={32} />
@@ -494,12 +494,12 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       {isEmptyState ? (
         <div className="grid grid-cols-12 gap-8">
           {/* Onboarding Guide - Spans 12 cols */}
-          <div className="col-span-12 bg-nexus-surface rounded-[2.5rem] p-10 border-2 border-dashed border-white/10 flex flex-col items-center text-center group hover:border-nexus-accent/30 transition-all">
+          <div className="col-span-12 bg-nexus-surface rounded-[2.5rem] p-10 border-2 border-dashed border-nexus-border/50 flex flex-col items-center text-center group hover:border-nexus-accent/30 transition-all">
             <div className="w-20 h-20 bg-nexus-accent/10 rounded-3xl flex items-center justify-center text-nexus-accent mb-8 animate-bounce transition-transform group-hover:scale-110">
               <Plus size={40} />
             </div>
             <h2 className="text-3xl font-black text-nexus-text uppercase tracking-tight mb-4 italic">Lancez votre symphonie Nexus</h2>
-            <p className="text-nexus-text-muted max-w-lg font-medium leading-relaxed mb-10">
+            <p className="text-nexus-text-muted max-w-2xl font-medium leading-relaxed mb-10">
               Votre tableau de bord est activé. Suivez ces <span className="text-nexus-accent font-bold">3 protocoles</span> pour initialiser l'écosystème.
             </p>
             
@@ -530,7 +530,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                 <button 
                   key={s.step}
                   onClick={() => window.dispatchEvent(new CustomEvent('NAVIGATE_TAB', { detail: s.tab }))}
-                  className="bg-white/5 p-8 rounded-3xl border border-white/5 hover:bg-nexus-accent hover:text-white transition-all text-left flex flex-col h-full group/card"
+                  className="bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 p-8 rounded-3xl border border-nexus-border/30 hover:bg-nexus-accent hover:text-white transition-all text-left flex flex-col h-full group/card"
                 >
                   <div className="flex items-center justify-between mb-6">
                     <span className="text-[10px] font-black text-nexus-accent bg-nexus-accent/10 px-2 py-1 rounded group-hover/card:bg-nexus-surface group-hover/card:text-nexus-accent">{s.step}</span>
@@ -557,10 +557,10 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
           </div>
 
           {/* Performance Placeholder */}
-          <div className="col-span-12 lg:col-span-6 bg-nexus-surface rounded-[2.5rem] p-10 border border-white/5 flex flex-col justify-center items-center text-center">
+          <div className="col-span-12 lg:col-span-6 bg-nexus-surface rounded-[2.5rem] p-10 border border-nexus-border/30 flex flex-col justify-center items-center text-center">
              <div className="w-full h-32 flex items-end gap-2 mb-8 px-10">
                {[20, 40, 15, 50, 30, 45, 25].map((v, i) => (
-                 <div key={i} className="flex-1 bg-white/5 rounded-t-lg transition-all animate-pulse" style={{ height: `${v}%` }} />
+                 <div key={i} className="flex-1 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-t-lg transition-all animate-pulse" style={{ height: `${v}%` }} />
                ))}
              </div>
              <h3 className="text-2xl font-black uppercase tracking-tight text-nexus-text mb-2">Insights Prédictifs</h3>
@@ -579,7 +579,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.1 }}
-            className="col-span-12 md:col-span-6 lg:col-span-3 bg-nexus-surface p-7 rounded-[2rem] border border-white/5 shadow-2xl hover:border-nexus-accent/30 transition-all group"
+            className="col-span-12 md:col-span-6 lg:col-span-3 bg-nexus-surface p-7 rounded-[2rem] border border-nexus-border/30 shadow-2xl hover:border-nexus-accent/30 transition-all group"
           >
             <div className="flex items-center justify-between mb-4">
               <div className={cn(
@@ -602,7 +602,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
 
         {/* Top Categories Row */}
         <div className="col-span-12">
-          <div className="bg-nexus-surface rounded-[2.5rem] p-8 border border-white/5 shadow-2xl overflow-hidden relative group">
+          <div className="bg-nexus-surface rounded-[2.5rem] p-8 border border-nexus-border/30 shadow-2xl overflow-hidden relative group">
              <div className="absolute top-0 right-0 w-64 h-64 bg-nexus-accent/5 rounded-full blur-3xl opacity-50 -mr-32 -mt-32" />
              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                 <div>
@@ -614,8 +614,8 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                       const Icon = categoryIcons[cat] || Package;
                       const count = products.filter(p => p.category === cat).length;
                       return (
-                         <div key={cat} className="flex items-center gap-4 bg-white/5 px-6 py-4 rounded-3xl border border-white/5 shrink-0 group/cat hover:bg-nexus-accent hover:text-white transition-all cursor-default">
-                            <div className="w-10 h-10 bg-nexus-bg rounded-xl flex items-center justify-center text-nexus-text-muted shadow-sm group-hover/cat:bg-white/10 group-hover/cat:text-white transition-colors">
+                         <div key={cat} className="flex items-center gap-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 px-6 py-4 rounded-3xl border border-nexus-border/30 shrink-0 group/cat hover:bg-nexus-accent hover:text-white transition-all cursor-default">
+                            <div className="w-10 h-10 bg-nexus-bg rounded-xl flex items-center justify-center text-nexus-text-muted shadow-sm group-hover/cat:bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 group-hover/cat:text-white transition-colors">
                                <Icon size={18} />
                             </div>
                             <div>
@@ -632,14 +632,14 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
 
         {/* Operational Guide Quick Link */}
         <div className="col-span-12 bg-nexus-accent rounded-[2rem] p-8 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl shadow-blue-900/20 relative overflow-hidden group">
-           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32 transition-transform duration-700 group-hover:scale-110" />
+           <div className="absolute top-0 right-0 w-64 h-64 bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 rounded-full blur-3xl -mr-32 -mt-32 transition-transform duration-700 group-hover:scale-110" />
            <div className="flex items-center gap-6 relative z-10">
-              <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-md border border-white/20">
+              <div className="p-4 bg-slate-500/20 dark:bg-slate-500/20 dark:bg-white/20 rounded-2xl backdrop-blur-md border border-white/20">
                  <BookOpen size={32} className="text-white" />
               </div>
               <div>
                  <h2 className="text-2xl font-black italic tracking-tighter uppercase mb-1">Nexus Intelligence Briefing</h2>
-                 <p className="text-blue-100 text-xs font-medium max-w-lg">
+                 <p className="text-blue-100 text-xs font-medium max-w-2xl">
                    Consultez vos statistiques prédictives et protocoles de performance pour Maroua.
                  </p>
               </div>
@@ -653,7 +653,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
         </div>
 
         {/* Intelligence Hub (Chart) - Spans 8 cols */}
-        <div className="col-span-12 xl:col-span-8 bg-nexus-surface rounded-[2.5rem] p-10 border border-white/5 shadow-2xl relative overflow-hidden group">
+        <div className="col-span-12 xl:col-span-8 bg-nexus-surface rounded-[2.5rem] p-10 border border-nexus-border/30 shadow-2xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-64 h-64 bg-nexus-accent/5 rounded-full blur-3xl opacity-30 -mr-32 -mt-32 scale-0 group-hover:scale-100 transition-transform duration-1000" />
           
           <div className="flex justify-between items-center mb-10 relative z-10">
@@ -665,7 +665,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
               {['24h', '7j', '30j'].map((t, i) => (
                 <button key={t} className={cn(
                   "px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                  i === 2 ? "bg-nexus-accent text-white shadow-lg" : "text-nexus-text-muted hover:bg-white/5"
+                  i === 2 ? "bg-nexus-accent text-white shadow-lg" : "text-nexus-text-muted hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5"
                 )}>
                   {t}
                 </button>
@@ -686,10 +686,10 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                     style={{ height: `${Math.max(val, 5)}%` }}
                     className={cn(
                       "w-full rounded-t-lg transition-all relative",
-                      i === new Date().getMonth() ? "bg-nexus-accent shadow-[0_0_15px_rgba(91,140,255,0.4)]" : "bg-white/5 group-hover/bar:bg-white/10"
+                      i === new Date().getMonth() ? "bg-nexus-accent shadow-[0_0_15px_rgba(91,140,255,0.4)]" : "bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 group-hover/bar:bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10"
                     )}
                   >
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-nexus-bg text-white text-[8px] font-black px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 whitespace-nowrap border border-white/10">
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-nexus-bg text-white text-[8px] font-black px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 whitespace-nowrap border border-nexus-border/50">
                       {Math.round(val)}k
                     </div>
                   </div>
@@ -725,7 +725,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                     <span className="text-[9px] font-black text-nexus-text-muted/80 uppercase tracking-[0.2em]">{s.label}</span>
                     <span className="text-[11px] font-black text-white">{s.val}</span>
                   </div>
-                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-full overflow-hidden">
                     <div 
                       className={cn("h-full rounded-full w-full opacity-50", s.color)}
                     />
@@ -735,12 +735,12 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
             </div>
           </div>
 
-          <div className="mt-10 p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md relative z-10">
+          <div className="mt-10 p-5 rounded-2xl bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 border border-nexus-border/50 backdrop-blur-md relative z-10">
              <div className="flex items-center gap-2 mb-2">
                <Truck size={14} className="text-blue-400" />
                <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Collecte Terrain</span>
              </div>
-             <p className="text-[11px] font-medium text-slate-300 leading-relaxed italic">
+             <p className="text-[11px] font-medium text-nexus-text-muted leading-relaxed italic">
                "{orders.filter(o => o.status === 'SHIPPED' && o.paymentMethod === 'CASH').length} livreurs sont en route avec des encaissements espèces."
              </p>
           </div>
@@ -748,7 +748,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
 
         {/* Logistics Tracking Center */}
         <div className="col-span-12 xl:col-span-8 space-y-6">
-          <div className="bg-nexus-surface rounded-[2.5rem] p-8 border border-white/5 shadow-2xl">
+          <div className="bg-nexus-surface rounded-[2.5rem] p-8 border border-nexus-border/30 shadow-2xl">
             <div className="flex justify-between items-center mb-8">
                <div>
                   <h3 className="text-xl font-black text-nexus-text uppercase">Logistics Cockpit</h3>
@@ -782,7 +782,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                   </div>
 
                   <div className="flex gap-2">
-                    <button className="flex-1 py-2 bg-white/5 rounded-xl text-[9px] font-black uppercase tracking-widest text-nexus-text-muted border border-white/5 hover:bg-white/10 transition-all">
+                    <button className="flex-1 py-2 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl text-[9px] font-black uppercase tracking-widest text-nexus-text-muted border border-nexus-border/30 hover:bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 transition-all">
                       Logs
                     </button>
                     <button className="flex-1 py-2 bg-nexus-accent rounded-xl text-[9px] font-black uppercase tracking-widest text-white shadow-lg hover:bg-blue-500 transition-all">
@@ -792,7 +792,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                 </div>
               )) : (
                 <div className="col-span-2 py-12 text-center">
-                   <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-nexus-text-muted opacity-20">
+                   <div className="w-16 h-16 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-nexus-text-muted opacity-20">
                       <Truck size={32} />
                    </div>
                    <p className="text-xs font-bold text-nexus-text-muted uppercase tracking-widest italic leading-relaxed">Intelligence Logistique Optimale : Aucun incident critique détecté sur vos flux actuels.</p>
@@ -803,7 +803,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
         </div>
 
         {/* Marketplace Intelligence */}
-        <div className="col-span-12 xl:col-span-4 bg-nexus-surface rounded-[2.5rem] p-8 border border-white/5 shadow-2xl flex flex-col">
+        <div className="col-span-12 xl:col-span-4 bg-nexus-surface rounded-[2.5rem] p-8 border border-nexus-border/30 shadow-2xl flex flex-col">
            <div className="flex justify-between items-center mb-8">
               <div>
                 <h3 className="text-xl font-black text-nexus-text uppercase">Market Intelligence</h3>
@@ -820,7 +820,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                 <div className="space-y-4">
                    {stars.map((p, i) => (
                      <div key={p.id} className="flex items-center gap-4 group/star hover:translate-x-1 transition-transform">
-                        <div className="w-10 h-10 rounded-xl bg-nexus-bg border border-white/10 flex items-center justify-center text-nexus-text font-black text-xs group-hover/star:bg-nexus-accent group-hover/star:text-white transition-colors">
+                        <div className="w-10 h-10 rounded-xl bg-nexus-bg border border-nexus-border/50 flex items-center justify-center text-nexus-text font-black text-xs group-hover/star:bg-nexus-accent group-hover/star:text-white transition-colors">
                           {i + 1}
                         </div>
                         <div className="flex-1">
@@ -841,17 +841,17 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       )}
 
       {/* Simplified Advantages with ERP Benefits */}
-      <div className="py-12 bg-white/5 border-y border-white/5">
+      <div className="py-12 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 border-y border-nexus-border/30">
         <div className="text-center mb-12">
           <h2 className="text-xl font-black text-nexus-text tracking-tight uppercase">Performance NEXUS ERP</h2>
-          <div className="w-12 h-1 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-full mx-auto mt-3" />
+          <div className="w-12 h-1 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 rounded-full mx-auto mt-3" />
         </div>
 
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {advantages.map((adv, i) => (
             <div 
               key={i} 
-              className="p-6 rounded-2xl bg-nexus-surface border border-white/5 shadow-sm"
+              className="p-6 rounded-2xl bg-nexus-surface border border-nexus-border/30 shadow-sm"
             >
               <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600 mb-4 font-black text-xs">
                 0{i + 1}
@@ -865,7 +865,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
 
       {/* Cross-tenant Global Overview */}
       {companies.filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email).length > 0 && (
-        <div className="mt-12 bg-nexus-surface rounded-3xl border border-white/10 border border-blue-100 p-8 shadow-xl shadow-blue-900/5">
+        <div className="mt-12 bg-nexus-surface rounded-3xl border border-nexus-border/50 border border-blue-100 p-8 shadow-xl shadow-blue-900/5">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h3 className="text-xl font-black text-nexus-text tracking-tight">Vue d'ensemble de vos opérations</h3>
@@ -880,10 +880,10 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
             {companies
               .filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email)
               .map(c => (
-              <div key={c.id} className="p-5 border border-white/10 rounded-2xl flex flex-col gap-4 hover:border-blue-300 transition-colors bg-white/5 relative overflow-hidden group">
+              <div key={c.id} className="p-5 border border-nexus-border/50 rounded-2xl flex flex-col gap-4 hover:border-blue-300 transition-colors bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-blue-100/50 rounded-bl-full -mr-12 -mt-12 group-hover:bg-blue-200/50 transition-colors" />
                 <div className="flex items-center gap-4 relative z-10">
-                  <div className="w-12 h-12 bg-nexus-surface rounded-xl border border-white/10 shadow-sm border border-white/10 flex items-center justify-center font-black text-nexus-text-muted group-hover:text-blue-600 transition-colors">
+                  <div className="w-12 h-12 bg-nexus-surface rounded-xl border border-nexus-border/50 shadow-sm border border-nexus-border/50 flex items-center justify-center font-black text-nexus-text-muted group-hover:text-blue-600 transition-colors">
                     {c.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
@@ -892,7 +892,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-between mt-auto relative z-10 pt-4 border-t border-white/10">
+                <div className="flex items-center justify-between mt-auto relative z-10 pt-4 border-t border-nexus-border/50">
                   <div className="flex flex-col">
                     <span className="text-xs text-nexus-text-muted/80">Membres</span>
                     <span className="font-bold text-nexus-text">{Array.isArray(c.employees) ? c.employees.length : (c.memberEmails?.length || 1)}</span>
@@ -911,24 +911,24 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       {/* Service Modal */}
       {isAddingService && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+          <div className="bg-nexus-surface rounded-2xl border border-nexus-border/50 p-8 max-w-2xl w-full shadow-2xl border border-nexus-border/30">
             <h3 className="text-xl font-bold text-nexus-text mb-6">{editingService ? 'Modifier Service' : 'Nouveau Service'}</h3>
             <form onSubmit={handleSaveService} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Nom du service</label>
-                <input type="text" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newService.name} onChange={e => setNewService({...newService, name: e.target.value})} required/>
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Nom du service</label>
+                <input type="text" className="w-full text-sm hover:-strong nexus-input w-full text-sm" value={newService.name} onChange={e => setNewService({...newService, name: e.target.value})} required/>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Prix (ou vide si sur devis)</label>
-                <input type="number" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newService.price} onChange={e => setNewService({...newService, price: e.target.value})} />
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Prix (ou vide si sur devis)</label>
+                <input type="number" className="w-full text-sm hover:-strong nexus-input w-full text-sm" value={newService.price} onChange={e => setNewService({...newService, price: e.target.value})} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Description</label>
-                <textarea className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none h-24 resize-none text-nexus-text placeholder-white/40" value={newService.description} onChange={e => setNewService({...newService, description: e.target.value})} />
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Description</label>
+                <textarea className="w-full text-sm h-24 resize-none hover:-strong nexus-input w-full text-sm" value={newService.description} onChange={e => setNewService({...newService, description: e.target.value})} />
               </div>
               <div className="grid grid-cols-2 gap-4 mt-8">
-                <button type="button" onClick={() => setIsAddingService(false)} className="px-6 py-3 rounded-xl border border-white/10 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all font-mono">Annuler</button>
-                <button type="submit" className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all font-mono shadow-md">{editingService ? 'Mettre à jour' : 'Enregistrer'}</button>
+                <button type="button" onClick={() => setIsAddingService(false)} className="px-6 py-3 rounded-xl border border-nexus-border/50 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all font-mono">Annuler</button>
+                <button type="submit" className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all font-mono shadow-md">{editingService ? 'Mettre à jour' : 'Enregistrer'}</button>
               </div>
             </form>
           </div>
@@ -938,26 +938,26 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       {/* Intervention Modal */}
       {isAddingIntervention && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+          <div className="bg-nexus-surface rounded-2xl border border-nexus-border/50 p-8 max-w-2xl w-full shadow-2xl border border-nexus-border/30">
             <h3 className="text-xl font-bold text-nexus-text mb-6">{editingIntervention ? 'Modifier Intervention/Message' : 'Nouveau Message de Rendez-vous'}</h3>
             <form onSubmit={handleSaveIntervention} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Nom du client</label>
-                  <input type="text" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newIntervention.client} onChange={e => setNewIntervention({...newIntervention, client: e.target.value})} required/>
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Nom du client</label>
+                  <input type="text" className="w-full text-sm hover:-strong nexus-input w-full text-sm" value={newIntervention.client} onChange={e => setNewIntervention({...newIntervention, client: e.target.value})} required/>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Date</label>
-                  <input type="date" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newIntervention.date} onChange={e => setNewIntervention({...newIntervention, date: e.target.value})} required/>
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Date</label>
+                  <input type="date" className="w-full text-sm hover:-strong nexus-input w-full text-sm" value={newIntervention.date} onChange={e => setNewIntervention({...newIntervention, date: e.target.value})} required/>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Message / Détails de l'intervention</label>
-                <textarea className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none h-24 resize-none text-nexus-text placeholder-white/40" value={newIntervention.message} onChange={e => setNewIntervention({...newIntervention, message: e.target.value})} required/>
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Message / Détails de l'intervention</label>
+                <textarea className="w-full text-sm h-24 resize-none hover:-strong nexus-input w-full text-sm" value={newIntervention.message} onChange={e => setNewIntervention({...newIntervention, message: e.target.value})} required/>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Statut</label>
-                <select className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newIntervention.status} onChange={e => setNewIntervention({...newIntervention, status: e.target.value})}>
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Statut</label>
+                <select className="w-full text-sm hover:-strong nexus-input w-full text-sm" value={newIntervention.status} onChange={e => setNewIntervention({...newIntervention, status: e.target.value})}>
                   <option value="Planifié">Planifié</option>
                   <option value="En cours">En cours</option>
                   <option value="Terminé">Terminé</option>
@@ -965,7 +965,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4 mt-8">
-                <button type="button" onClick={() => setIsAddingIntervention(false)} className="px-6 py-3 rounded-xl border border-white/10 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all font-mono">Annuler</button>
+                <button type="button" onClick={() => setIsAddingIntervention(false)} className="px-6 py-3 rounded-xl border border-nexus-border/50 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all font-mono">Annuler</button>
                 <button type="submit" className="px-6 py-3 rounded-xl bg-nexus-accent text-white text-xs font-bold uppercase tracking-widest hover:bg-nexus-accent/80 text-white transition-all font-mono shadow-md">{editingIntervention ? 'Mettre à jour' : 'Enregistrer'}</button>
               </div>
             </form>
@@ -976,29 +976,29 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       {/* Task Modal */}
       {isAddingTask && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+          <div className="bg-nexus-surface rounded-2xl border border-nexus-border/50 p-8 max-w-2xl w-full shadow-2xl border border-nexus-border/30">
             <h3 className="text-xl font-bold text-nexus-text mb-6">Nouvelle Tâche</h3>
             <form onSubmit={handleSaveTask} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Titre de la tâche</label>
-                <input type="text" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})} required/>
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Titre de la tâche</label>
+                <input type="text" className="w-full text-sm hover:-strong nexus-input w-full text-sm" value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})} required/>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Assigné à</label>
-                  <select className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newTask.assignedTo} onChange={e => setNewTask({...newTask, assignedTo: e.target.value})}>
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Assigné à</label>
+                  <select className="w-full text-sm hover:-strong nexus-input w-full text-sm" value={newTask.assignedTo} onChange={e => setNewTask({...newTask, assignedTo: e.target.value})}>
                     <option value="">Sélectionner...</option>
                     {personnel.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Échéance</label>
-                  <input type="date" className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" value={newTask.endDate} onChange={e => setNewTask({...newTask, endDate: e.target.value})}/>
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Échéance</label>
+                  <input type="date" className="w-full text-sm hover:-strong nexus-input w-full text-sm" value={newTask.endDate} onChange={e => setNewTask({...newTask, endDate: e.target.value})}/>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 mt-8">
-                <button type="button" onClick={() => setIsAddingTask(false)} className="px-6 py-3 rounded-xl border border-white/10 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all font-mono">Annuler</button>
-                <button type="submit" className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all font-mono shadow-md">Enregistrer</button>
+                <button type="button" onClick={() => setIsAddingTask(false)} className="px-6 py-3 rounded-xl border border-nexus-border/50 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all font-mono">Annuler</button>
+                <button type="submit" className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all font-mono shadow-md">Enregistrer</button>
               </div>
             </form>
           </div>

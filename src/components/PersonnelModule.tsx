@@ -468,7 +468,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden bg-nexus-accent rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
+      <div className="relative overflow-hidden bg-nexus-accent rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-nexus-border/30">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
@@ -478,7 +478,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
               Gérez votre capital humain et orchestrez les talents de votre organisation.
             </p>
           </div>
-          <div className="flex bg-slate-950/40 p-1.5 rounded-2xl border border-white/10 overflow-x-auto scrollbar-hide max-w-full">
+          <div className="flex bg-slate-950/40 p-1.5 rounded-2xl border border-nexus-border/50 overflow-x-auto scrollbar-hide max-w-full">
             {[
               { id: 'employees', label: 'Employés', icon: User },
               { id: 'time', label: 'Temps & Congés', icon: Clock },
@@ -491,8 +491,8 @@ export default function PersonnelModule({ user }: { user?: any }) {
                 className={cn(
                   "px-6 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap", 
                   activeTab === tab.id 
-                    ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white shadow-xl shadow-blue-600/20" 
-                    : "text-slate-300 hover:text-white hover:bg-white/5"
+                    ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white shadow-xl shadow-blue-600/20" 
+                    : "text-nexus-text-muted hover:text-white hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5"
                 )}
               >
                 <tab.icon size={14} /> {tab.label}
@@ -506,7 +506,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3 space-y-6">
             <div className="flex flex-col sm:flex-row justify-between gap-4">
-              <div className="bg-nexus-surface border border-white/10 rounded-xl p-1.5 flex items-center gap-3 shadow-sm focus-within:border-blue-400 transition-all flex-1">
+              <div className="bg-nexus-surface border border-nexus-border rounded-xl p-1.5 flex items-center gap-3 shadow-sm focus-within:border-blue-400 transition-all flex-1">
                 <div className="pl-3">
                   <Search className="text-nexus-text-muted" size={18} />
                 </div>
@@ -520,7 +520,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
               </div>
               <button 
                 onClick={() => setIsAdding(true)}
-                className="w-full sm:w-auto justify-center bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-sm"
+                className="w-full sm:w-auto justify-center bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-sm"
               >
                 <Plus size={16} /> Recruter
               </button>
@@ -528,7 +528,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
           <Table headers={['Employé', 'Service', 'Poste', 'Activité', 'Status', 'Actions']}>
             {filteredStaff.length === 0 ? (
-              <div className="p-12 text-center bg-white/5 border-t border-white/5 italic text-nexus-text-muted text-sm">
+              <div className="p-12 text-center bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 border-t border-nexus-border/30 italic text-nexus-text-muted text-sm">
                 Aucun collaborateur référencé pour le moment.
               </div>
             ) : filteredStaff.map((staff) => (
@@ -626,14 +626,14 @@ export default function PersonnelModule({ user }: { user?: any }) {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-gradient-to-br from-slate-900 to-indigo-900 border border-slate-800 rounded-xl p-6 shadow-lg text-white">
+          <div className="bg-gradient-to-br from-slate-900 to-indigo-900 border border-nexus-border rounded-xl p-6 shadow-lg text-white">
             <h3 className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-4 flex items-center gap-2">
               <Shield size={14} /> Accès & Invitations
             </h3>
             <div className="space-y-4">
-              <p className="text-xs text-slate-300 leading-relaxed font-medium">Partagez ce code avec vos collaborateurs pour qu'ils rejoignent automatiquement votre espace Nexus :</p>
+              <p className="text-xs text-nexus-text-muted leading-relaxed font-medium">Partagez ce code avec vos collaborateurs pour qu'ils rejoignent automatiquement votre espace Nexus :</p>
               
-              <div className="bg-black/40 border border-white/10 rounded-xl p-4 flex flex-col items-center justify-center gap-2 relative group cursor-pointer" onClick={() => {
+              <div className="bg-black/40 border border-nexus-border/50 rounded-xl p-4 flex flex-col items-center justify-center gap-2 relative group cursor-pointer" onClick={() => {
                 if (currentCompany?.joinCode) {
                   navigator.clipboard.writeText(currentCompany.joinCode);
                   alert('Code copié !');
@@ -648,37 +648,37 @@ export default function PersonnelModule({ user }: { user?: any }) {
               <button 
                 onClick={handleRegenerateJoinCode}
                 disabled={submitting}
-                className="w-full mt-2 bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full mt-2 bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 hover:bg-slate-500/20 dark:bg-slate-500/20 dark:bg-white/20 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <Activity size={14} /> Renouveler le code
               </button>
             </div>
           </div>
 
-          <div className="bg-nexus-surface border border-white/10 rounded-xl p-6 shadow-sm">
+          <div className="bg-nexus-surface border border-nexus-border rounded-xl p-6 shadow-sm">
             <h3 className="text-xs font-bold text-nexus-text-muted uppercase tracking-widest mb-6 flex items-center gap-2">
               <Briefcase size={14} /> Affectation Rapide
             </h3>
             <form onSubmit={handleCreateTask} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Collaborateur</label>
-                <select required value={newTask.assignedTo} onChange={e => setNewTask({...newTask, assignedTo: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text outline-none focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent transition-all">
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Collaborateur</label>
+                <select required value={newTask.assignedTo} onChange={e => setNewTask({...newTask, assignedTo: e.target.value})} className="w-full p-2.5 text-xs transition-all hover:-strong nexus-input w-full text-sm">
                   <option value="">Sélectionner...</option>
                   {staffList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Libellé Tâche</label>
-                <input required value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})} placeholder="Action requise..." className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text outline-none focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent transition-all" />
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Libellé Tâche</label>
+                <input required value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})} placeholder="Action requise..." className="w-full p-2.5 text-xs transition-all hover:-strong nexus-input w-full text-sm" />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Début</label>
-                  <input required type="date" value={newTask.startDate} onChange={e => setNewTask({...newTask, startDate: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text outline-none focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent" />
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Début</label>
+                  <input required type="date" value={newTask.startDate} onChange={e => setNewTask({...newTask, startDate: e.target.value})} className="w-full p-2.5 text-xs hover:-strong nexus-input w-full text-sm" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Fin</label>
-                  <input required type="date" value={newTask.endDate} onChange={e => setNewTask({...newTask, endDate: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-xs text-nexus-text outline-none focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent" />
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Fin</label>
+                  <input required type="date" value={newTask.endDate} onChange={e => setNewTask({...newTask, endDate: e.target.value})} className="w-full p-2.5 text-xs hover:-strong nexus-input w-full text-sm" />
                 </div>
               </div>
               <button type="submit" disabled={submitting} className="w-full bg-nexus-accent text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-nexus-accent/80 text-white transition-all disabled:opacity-50">
@@ -687,14 +687,14 @@ export default function PersonnelModule({ user }: { user?: any }) {
             </form>
           </div>
 
-          <div className="bg-nexus-surface border border-white/10 rounded-xl p-6 shadow-sm space-y-4">
+          <div className="bg-nexus-surface border border-nexus-border rounded-xl p-6 shadow-sm space-y-4">
             <div className="flex items-center gap-2">
               <Activity size={16} className="text-blue-600" />
               <h4 className="font-bold text-nexus-text text-xs uppercase tracking-wider">Tâches Récentes</h4>
             </div>
             <div className="space-y-3">
               {tasks.slice(0, 4).map(t => (
-                <div key={t.id} className="p-3 bg-white/5 rounded-lg border border-white/5 flex flex-col gap-1">
+                <div key={t.id} className="p-3 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-lg border border-nexus-border/30 flex flex-col gap-1">
                   <div className="flex justify-between">
                     <span className="text-xs font-bold text-nexus-text">{t.title}</span>
                     <span className={cn("text-[9px] px-1.5 py-0.5 rounded uppercase font-bold", t.status === 'done' ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700")}>{t.status === 'done' ? 'Terminé' : 'En cours'}</span>
@@ -712,7 +712,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
       ) : activeTab === 'time' ? (
         <div className="space-y-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex bg-slate-100 p-1.5 rounded-xl border border-white/10">
+            <div className="flex bg-slate-100 p-1.5 rounded-xl border border-nexus-border/50">
               <button 
                 onClick={() => setActiveTimeSubTab('leave')}
                 className={cn(
@@ -734,17 +734,17 @@ export default function PersonnelModule({ user }: { user?: any }) {
             </div>
             <button 
               onClick={() => activeTimeSubTab === 'leave' ? setIsAddingLeave(true) : setIsAddingTime(true)}
-              className="bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 transition-all shadow-md"
+              className="bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 transition-all shadow-md"
             >
               <Plus size={16} /> Nouveau
             </button>
           </div>
 
           {activeTimeSubTab === 'leave' ? (
-            <div className="bg-nexus-surface rounded-3xl border border-white/10 border border-white/10 shadow-sm overflow-hidden text-black">
+            <div className="bg-nexus-surface rounded-3xl border border-nexus-border/50 border border-nexus-border/50 shadow-sm overflow-hidden text-black">
                <Table headers={['Collaborateur', 'Période', 'Type', 'Motif', 'Statut', 'Actions']}>
                  {leaveRequests.length === 0 ? (
-                    <div className="p-12 text-center bg-white/5 border-t border-white/5 italic text-nexus-text-muted text-sm">
+                    <div className="p-12 text-center bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 border-t border-nexus-border/30 italic text-nexus-text-muted text-sm">
                       Aucune demande de congé enregistrée.
                     </div>
                  ) : leaveRequests.map(req => {
@@ -802,7 +802,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                </Table>
             </div>
           ) : (
-            <div className="bg-nexus-surface rounded-3xl border border-white/10 border border-white/10 shadow-sm overflow-hidden text-black">
+            <div className="bg-nexus-surface rounded-3xl border border-nexus-border/50 border border-nexus-border/50 shadow-sm overflow-hidden text-black">
                <Table headers={['Collaborateur', 'Date', 'Projet / Description', 'Durée', 'Actions']}>
                   {timeEntries.map(entry => {
                     const staff = staffList.find(s => s.id === entry.staffId);
@@ -849,13 +849,13 @@ export default function PersonnelModule({ user }: { user?: any }) {
             </div>
             <button 
               onClick={() => setIsAddingAdvance(true)}
-              className="bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 transition-all shadow-md shadow-blue-600/10"
+              className="bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 transition-all shadow-md shadow-blue-600/10"
             >
               <Plus size={16} /> Nouvelle Demande
             </button>
           </div>
 
-          <div className="bg-nexus-surface rounded-3xl border border-white/10 border border-white/10 shadow-sm overflow-hidden text-black">
+          <div className="bg-nexus-surface rounded-3xl border border-nexus-border/50 border border-nexus-border/50 shadow-sm overflow-hidden text-black">
              <Table headers={['Collaborateur', 'Date Demande', 'Montant', 'Mois Déduction', 'Motif', 'Statut', 'Actions']}>
                 {salaryAdvances.map(advance => {
                   const staff = staffList.find(s => s.id === advance.staffId);
@@ -909,8 +909,8 @@ export default function PersonnelModule({ user }: { user?: any }) {
           </div>
         </div>
       ) : (
-        <div className="bg-nexus-surface rounded-2xl border border-white/10 border border-white/10 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+        <div className="bg-nexus-surface rounded-2xl border border-nexus-border/50 border border-nexus-border/50 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-nexus-border/30 flex justify-between items-center bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5">
             <div>
               <h3 className="text-lg font-bold text-nexus-text tracking-tight flex items-center gap-2">
                 <Shield size={20} className="text-blue-600" />
@@ -921,14 +921,14 @@ export default function PersonnelModule({ user }: { user?: any }) {
             <div className="flex items-center gap-3">
               <button 
                 onClick={handleCreateNewRole}
-                className="flex items-center gap-2 px-4 py-2 bg-nexus-surface border border-white/10 text-nexus-text-muted rounded-lg text-sm font-bold hover:bg-white/5 hover:text-nexus-text transition-all font-mono"
+                className="flex items-center gap-2 px-4 py-2 bg-nexus-surface border border-nexus-border text-nexus-text-muted rounded-lg text-sm font-bold hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 hover:text-nexus-text transition-all font-mono"
               >
                 <Plus size={16} /> Nouveau Rôle
               </button>
               <button 
                 onClick={handleUpdateRoles}
                 disabled={submitting}
-                className="flex items-center gap-2 px-4 py-2 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-600/20 disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-600/20 disabled:opacity-50"
               >
                 <Save size={16} /> {submitting ? 'Mise à jour...' : 'Sauvegarder'}
               </button>
@@ -938,9 +938,9 @@ export default function PersonnelModule({ user }: { user?: any }) {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr>
-                  <th className="pb-4 pt-2 px-4 font-bold text-nexus-text-muted text-xs uppercase tracking-widest border-b border-white/5">Modules</th>
+                  <th className="pb-4 pt-2 px-4 font-bold text-nexus-text-muted text-xs uppercase tracking-widest border-b border-nexus-border/30">Modules</th>
                   {Object.keys(editingRoles).filter(r => r !== 'owner').map(role => (
-                    <th key={role} className="pb-4 px-4 font-bold text-nexus-text border-b border-white/5 min-w-[140px]">
+                    <th key={role} className="pb-4 px-4 font-bold text-nexus-text border-b border-nexus-border/30 min-w-[140px]">
                       <div className="flex items-center gap-2">
                         <User size={14} className="text-blue-500" />
                         {role}
@@ -962,7 +962,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                   { id: 'accounting', label: 'Rapport Comptable' },
                   { id: 'collaboration', label: 'Collaboration & Comm' }
                 ].map((mod) => (
-                  <tr key={mod.id} className="hover:bg-white/5/50 transition-colors">
+                  <tr key={mod.id} className="hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5/50 transition-colors">
                     <td className="py-4 px-4 font-medium text-sm text-nexus-text-muted">
                       {mod.label}
                     </td>
@@ -980,8 +980,8 @@ export default function PersonnelModule({ user }: { user?: any }) {
                             className={cn(
                               "w-6 h-6 rounded-md flex items-center justify-center transition-all mx-left",
                               hasAccess 
-                                ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 border border-blue-600 text-white shadow-sm shadow-blue-600/20" 
-                                : "bg-nexus-surface border border-white/10 text-transparent hover:border-blue-400"
+                                ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 border border-blue-600 text-white shadow-sm shadow-blue-600/20" 
+                                : "bg-nexus-surface border border-nexus-border text-transparent hover:border-blue-400"
                             )}
                           >
                             {hasAccess && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} className="w-3.5 h-3.5"><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round"/></svg>}
@@ -999,7 +999,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
       {editingPermissionsStaff && (
         <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-center justify-center p-6">
-          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+          <div className="bg-nexus-surface rounded-2xl border border-nexus-border/50 p-8 max-w-2xl w-full shadow-2xl border border-nexus-border/30">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
                 <Shield size={24} />
@@ -1037,7 +1037,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                     "p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between group",
                     selectedPermissions.includes(mod.id) 
                       ? "bg-indigo-50 border-indigo-200" 
-                      : "bg-nexus-surface border-white/5 hover:border-white/10"
+                      : "bg-nexus-surface border-nexus-border/30 hover:border-nexus-border/50"
                   )}
                 >
                   <span className={cn(
@@ -1048,7 +1048,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                   </span>
                   <div className={cn(
                     "w-5 h-5 rounded flex items-center justify-center transition-all",
-                    selectedPermissions.includes(mod.id) ? "bg-indigo-600 text-white" : "border-2 border-white/10 group-hover:border-white/20"
+                    selectedPermissions.includes(mod.id) ? "bg-indigo-600 text-white" : "border-2 border-nexus-border/50 group-hover:border-white/20"
                   )}>
                     {selectedPermissions.includes(mod.id) && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={4} className="w-3 h-3"><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </div>
@@ -1060,7 +1060,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
               <button 
                 type="button" 
                 onClick={() => setEditingPermissionsStaff(null)} 
-                className="px-6 py-3 rounded-xl border border-white/10 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all font-mono"
+                className="px-6 py-3 rounded-xl border border-nexus-border/50 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all font-mono"
               >
                 Annuler
               </button>
@@ -1079,7 +1079,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
       {/* Modals for Time Management */}
       {isAddingLeave && (
         <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-center justify-center p-6">
-          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+          <div className="bg-nexus-surface rounded-2xl border border-nexus-border/50 p-8 max-w-2xl w-full shadow-2xl border border-nexus-border/30">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-amber-100 text-amber-600 rounded-xl">
                 <CalendarRange size={24} />
@@ -1092,37 +1092,37 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
             <form onSubmit={handleCreateLeave} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Collaborateur</label>
-                <select required value={newLeave.staffId} onChange={e => setNewLeave({...newLeave, staffId: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40">
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Collaborateur</label>
+                <select required value={newLeave.staffId} onChange={e => setNewLeave({...newLeave, staffId: e.target.value})} className="w-full text-sm hover:-strong nexus-input w-full text-sm">
                   <option value="">Sélectionner...</option>
                   {staffList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Date début</label>
-                  <input required type="date" value={newLeave.startDate} onChange={e => setNewLeave({...newLeave, startDate: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" />
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Date début</label>
+                  <input required type="date" value={newLeave.startDate} onChange={e => setNewLeave({...newLeave, startDate: e.target.value})} className="w-full text-sm hover:-strong nexus-input w-full text-sm" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Date fin</label>
-                  <input required type="date" value={newLeave.endDate} onChange={e => setNewLeave({...newLeave, endDate: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" />
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Date fin</label>
+                  <input required type="date" value={newLeave.endDate} onChange={e => setNewLeave({...newLeave, endDate: e.target.value})} className="w-full text-sm hover:-strong nexus-input w-full text-sm" />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Type d'absence</label>
-                <select required value={newLeave.type} onChange={e => setNewLeave({...newLeave, type: e.target.value as any})} className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40">
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Type d'absence</label>
+                <select required value={newLeave.type} onChange={e => setNewLeave({...newLeave, type: e.target.value as any})} className="w-full text-sm hover:-strong nexus-input w-full text-sm">
                   <option value="leave">Congé Payé</option>
                   <option value="absence">Absence Injustifiée</option>
                   <option value="medical">Arrêt Maladie</option>
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Motif / Commentaire</label>
-                <textarea value={newLeave.reason} onChange={e => setNewLeave({...newLeave, reason: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none resize-none h-24 text-nexus-text placeholder-white/40" />
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Motif / Commentaire</label>
+                <textarea value={newLeave.reason} onChange={e => setNewLeave({...newLeave, reason: e.target.value})} className="w-full text-sm resize-none h-24 hover:-strong nexus-input w-full text-sm" />
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-6">
-                <button type="button" onClick={() => setIsAddingLeave(false)} className="px-6 py-3 rounded-xl border border-white/10 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all font-mono">Annuler</button>
+                <button type="button" onClick={() => setIsAddingLeave(false)} className="px-6 py-3 rounded-xl border border-nexus-border/50 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all font-mono">Annuler</button>
                 <button type="submit" disabled={submitting} className="px-6 py-3 rounded-xl bg-amber-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-amber-700 transition-all shadow-lg shadow-amber-600/20 font-mono disabled:opacity-50">Confirmer</button>
               </div>
             </form>
@@ -1132,7 +1132,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
       {isAddingTime && (
         <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-center justify-center p-6">
-          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+          <div className="bg-nexus-surface rounded-2xl border border-nexus-border/50 p-8 max-w-2xl w-full shadow-2xl border border-nexus-border/30">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
                 <Timer size={24} />
@@ -1145,37 +1145,37 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
             <form onSubmit={handleCreateTimeEntry} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Collaborateur</label>
-                <select required value={newTimeEntry.staffId} onChange={e => setNewTimeEntry({...newTimeEntry, staffId: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40">
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Collaborateur</label>
+                <select required value={newTimeEntry.staffId} onChange={e => setNewTimeEntry({...newTimeEntry, staffId: e.target.value})} className="w-full text-sm hover:-strong nexus-input w-full text-sm">
                   <option value="">Sélectionner...</option>
                   {staffList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Date</label>
-                  <input required type="date" value={newTimeEntry.date} onChange={e => setNewTimeEntry({...newTimeEntry, date: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" />
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Date</label>
+                  <input required type="date" value={newTimeEntry.date} onChange={e => setNewTimeEntry({...newTimeEntry, date: e.target.value})} className="w-full text-sm hover:-strong nexus-input w-full text-sm" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Heures</label>
-                  <input required type="number" step="0.5" value={newTimeEntry.hours} onChange={e => setNewTimeEntry({...newTimeEntry, hours: Number(e.target.value)})} className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" />
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Heures</label>
+                  <input required type="number" step="0.5" value={newTimeEntry.hours} onChange={e => setNewTimeEntry({...newTimeEntry, hours: Number(e.target.value)})} className="w-full text-sm hover:-strong nexus-input w-full text-sm" />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Projet</label>
-                <select value={newTimeEntry.projectId} onChange={e => setNewTimeEntry({...newTimeEntry, projectId: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40">
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Projet</label>
+                <select value={newTimeEntry.projectId} onChange={e => setNewTimeEntry({...newTimeEntry, projectId: e.target.value})} className="w-full text-sm hover:-strong nexus-input w-full text-sm">
                   <option value="">Hors Projet</option>
                   {projectsList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Description du travail</label>
-                <textarea required value={newTimeEntry.description} onChange={e => setNewTimeEntry({...newTimeEntry, description: e.target.value})} placeholder="Détaillez les tâches accomplies..." className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none resize-none h-24 text-nexus-text placeholder-white/40" />
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Description du travail</label>
+                <textarea required value={newTimeEntry.description} onChange={e => setNewTimeEntry({...newTimeEntry, description: e.target.value})} placeholder="Détaillez les tâches accomplies..." className="w-full text-sm resize-none h-24 hover:-strong nexus-input w-full text-sm" />
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-6">
-                <button type="button" onClick={() => setIsAddingTime(false)} className="px-6 py-3 rounded-xl border border-white/10 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all font-mono">Annuler</button>
-                <button type="submit" disabled={submitting} className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50">Sauvegarder</button>
+                <button type="button" onClick={() => setIsAddingTime(false)} className="px-6 py-3 rounded-xl border border-nexus-border/50 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all font-mono">Annuler</button>
+                <button type="submit" disabled={submitting} className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50">Sauvegarder</button>
               </div>
             </form>
           </div>
@@ -1184,7 +1184,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
       {isAddingAdvance && (
         <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-center justify-center p-6">
-          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+          <div className="bg-nexus-surface rounded-2xl border border-nexus-border/50 p-8 max-w-2xl w-full shadow-2xl border border-nexus-border/30">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
                 <FileText size={24} />
@@ -1197,30 +1197,30 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
             <form onSubmit={handleCreateAdvanceRequest} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Collaborateur</label>
-                <select required value={newAdvance.staffId} onChange={e => setNewAdvance({...newAdvance, staffId: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40">
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Collaborateur</label>
+                <select required value={newAdvance.staffId} onChange={e => setNewAdvance({...newAdvance, staffId: e.target.value})} className="w-full text-sm hover:-strong nexus-input w-full text-sm">
                   <option value="">Sélectionner...</option>
                   {staffList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Montant (FCFA)</label>
-                  <input required type="number" value={newAdvance.amount} onChange={e => setNewAdvance({...newAdvance, amount: Number(e.target.value)})} className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" />
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Montant (FCFA)</label>
+                  <input required type="number" value={newAdvance.amount} onChange={e => setNewAdvance({...newAdvance, amount: Number(e.target.value)})} className="w-full text-sm hover:-strong nexus-input w-full text-sm" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Mois de déduction</label>
-                  <input required type="month" value={newAdvance.deductionMonth} onChange={e => setNewAdvance({...newAdvance, deductionMonth: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" />
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Mois de déduction</label>
+                  <input required type="month" value={newAdvance.deductionMonth} onChange={e => setNewAdvance({...newAdvance, deductionMonth: e.target.value})} className="w-full text-sm hover:-strong nexus-input w-full text-sm" />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Motif de la demande</label>
-                <textarea required value={newAdvance.reason} onChange={e => setNewAdvance({...newAdvance, reason: e.target.value})} placeholder="Expliquez brièvement le besoin..." className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none resize-none h-24 text-nexus-text placeholder-white/40" />
+                <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Motif de la demande</label>
+                <textarea required value={newAdvance.reason} onChange={e => setNewAdvance({...newAdvance, reason: e.target.value})} placeholder="Expliquez brièvement le besoin..." className="w-full text-sm resize-none h-24 hover:-strong nexus-input w-full text-sm" />
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-6">
-                <button type="button" onClick={() => setIsAddingAdvance(false)} className="px-6 py-3 rounded-xl border border-white/10 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all font-mono">Annuler</button>
-                <button type="submit" disabled={submitting} className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50">Soumettre</button>
+                <button type="button" onClick={() => setIsAddingAdvance(false)} className="px-6 py-3 rounded-xl border border-nexus-border/50 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all font-mono">Annuler</button>
+                <button type="submit" disabled={submitting} className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50">Soumettre</button>
               </div>
             </form>
           </div>
@@ -1230,7 +1230,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
       {/* Modal for viewing staff info */}
       {viewingStaff && (
         <div className="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-6">
-          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+          <div className="bg-nexus-surface rounded-2xl border border-nexus-border/50 p-8 max-w-2xl w-full shadow-2xl border border-nexus-border/30">
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-bold text-xl border border-blue-100">
@@ -1253,22 +1253,22 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+                <div className="p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl border border-nexus-border/30">
                   <span className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest block mb-1">Email</span>
                   <a href={`mailto:${viewingStaff.email}`} className="text-sm font-bold text-blue-600 truncate block">{viewingStaff.email}</a>
                 </div>
-                <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+                <div className="p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl border border-nexus-border/30">
                   <span className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest block mb-1">Téléphone</span>
                   <span className="text-sm font-bold text-nexus-text">{viewingStaff.phone || 'Non renseigné'}</span>
                 </div>
               </div>
 
-              <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+              <div className="p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl border border-nexus-border/30">
                 <span className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest block mb-2">Dossier RH / Notes</span>
                 <p className="text-sm font-medium text-nexus-text-muted whitespace-pre-wrap">{viewingStaff.notes || 'Aucun dossier ou note.'}</p>
               </div>
 
-              <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+              <div className="p-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-xl border border-nexus-border/30">
                 <span className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest block mb-2">Activité de tâches</span>
                 <div className="flex items-center gap-2">
                   <Activity size={16} className={viewingStaff.tasksAssignedCount > 5 ? 'text-red-500' : 'text-blue-500'} />
@@ -1292,7 +1292,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
       {/* Modal for recruiting */}
       {isAdding && (
         <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6">
-          <div className="bg-nexus-surface rounded-2xl border border-white/10 p-8 max-w-lg w-full shadow-2xl border border-white/5">
+          <div className="bg-nexus-surface rounded-2xl border border-nexus-border/50 p-8 max-w-2xl w-full shadow-2xl border border-nexus-border/30">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
                 <User size={24} />
@@ -1306,37 +1306,37 @@ export default function PersonnelModule({ user }: { user?: any }) {
             <div className="space-y-4 mb-8">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Prénom</label>
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Prénom</label>
                   <input 
                     value={newStaff.firstName} 
                     onChange={e => setNewStaff({...newStaff, firstName: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" 
+                    className="w-full text-sm hover:-strong nexus-input w-full text-sm" 
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Nom</label>
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Nom</label>
                   <input 
                     value={newStaff.lastName} 
                     onChange={e => setNewStaff({...newStaff, lastName: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" 
+                    className="w-full text-sm hover:-strong nexus-input w-full text-sm" 
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Email Pro</label>
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Email Pro</label>
                   <input 
                     type="email"
                     value={newStaff.email} 
                     onChange={e => setNewStaff({...newStaff, email: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" 
+                    className="w-full text-sm hover:-strong nexus-input w-full text-sm" 
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase ml-1">Téléphone</label>
+                  <label className="text-xs text-nexus-text-muted font-semibold mb-1 ml-1 block">Téléphone</label>
                   <input 
                     type="tel"
                     value={newStaff.phone} 
                     onChange={e => setNewStaff({...newStaff, phone: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" 
+                    className="w-full text-sm hover:-strong nexus-input w-full text-sm" 
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1345,7 +1345,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                     value={newStaff.department} 
                     onChange={e => setNewStaff({...newStaff, department: e.target.value})}
                     placeholder="e.g. Logistique, Commercial"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none text-nexus-text placeholder-white/40" 
+                    className="w-full text-sm hover:-strong nexus-input w-full text-sm" 
                   />
                 </div>
                 {!editingStaff && (
@@ -1361,7 +1361,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                       placeholder="Mot de passe initial (min. 6 car.)"
                       required
                       minLength={6}
-                      className="w-full bg-blue-50/50 border border-blue-200 rounded-lg p-3 text-sm focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent outline-none placeholder:text-blue-300 text-nexus-text placeholder-white/40" 
+                      className="w-full bg-blue-50/50 -blue-200 text-sm placeholder: hover:-strong nexus-input w-full text-sm" 
                     />
                   </div>
                 )}
@@ -1370,7 +1370,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                   <select 
                     value={newStaff.role} 
                     onChange={e => setNewStaff({...newStaff, role: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm appearance-none outline-none focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent text-nexus-text placeholder-white/40"
+                    className="w-full text-sm appearance-none hover:-strong nexus-input w-full text-sm"
                   >
                     {(!roleOptions.includes(newStaff.role) && newStaff.role) && <option value={newStaff.role}>{newStaff.role}</option>}
                     {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
@@ -1382,7 +1382,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                     value={newStaff.notes} 
                     onChange={e => setNewStaff({...newStaff, notes: e.target.value})}
                     placeholder="Informations supplémentaires..."
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent resize-none h-20 text-nexus-text placeholder-white/40"
+                    className="w-full text-sm resize-none h-20 hover:-strong nexus-input w-full text-sm"
                   />
                 </div>
               </div>
@@ -1405,14 +1405,14 @@ export default function PersonnelModule({ user }: { user?: any }) {
                   setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: roleOptions[0] || 'Collaborateur', department: 'Général', accessKey: '' });
                   setCreationMessage(''); 
                 }} 
-                className="px-6 py-3 rounded-xl border border-white/10 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition-all font-mono"
+                className="px-6 py-3 rounded-xl border border-nexus-border/50 text-nexus-text-muted text-xs font-bold uppercase tracking-widest hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all font-mono"
               >
                 Annuler
               </button>
               <button 
                 onClick={handleCreate}
                 disabled={submitting}
-                className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
+                className="px-6 py-3 rounded-xl bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
               >
                 {submitting ? 'Traitement...' : (editingStaff ? 'Mettre à jour' : 'Enregistrer')}
               </button>

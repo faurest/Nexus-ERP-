@@ -201,7 +201,7 @@ export default function AccountingModule() {
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden bg-nexus-accent rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
+      <div className="relative overflow-hidden bg-nexus-accent rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-nexus-border/30">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
@@ -211,16 +211,16 @@ export default function AccountingModule() {
               Analysez la santé financière de votre organisation.
             </p>
           </div>
-          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-white/10 shrink-0 gap-1">
+          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-nexus-border/50 shrink-0 gap-1">
             <button 
               onClick={() => setActiveTab('report')}
-              className={cn("px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'report' ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white shadow-lg" : "text-nexus-text-muted hover:text-white")}
+              className={cn("px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'report' ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white shadow-lg" : "text-nexus-text-muted hover:text-white")}
             >
               Analyse
             </button>
             <button 
               onClick={() => setActiveTab('expenses')}
-              className={cn("px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'expenses' ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white shadow-lg" : "text-nexus-text-muted hover:text-white")}
+              className={cn("px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'expenses' ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white shadow-lg" : "text-nexus-text-muted hover:text-white")}
             >
               Journal
             </button>
@@ -233,7 +233,7 @@ export default function AccountingModule() {
           <div className="flex flex-wrap gap-4">
             <button 
               onClick={exportToCSV}
-              className="flex items-center gap-2 px-6 py-3 bg-nexus-surface border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all shadow-sm"
+              className="flex items-center gap-2 px-6 py-3 bg-nexus-surface border border-nexus-border rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all shadow-sm"
             >
               <Download size={14} /> Exporter en CSV
             </button>
@@ -252,7 +252,7 @@ export default function AccountingModule() {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-nexus-surface p-6 rounded-[2rem] border border-white/5 shadow-xl shadow-slate-200/50 flex items-center justify-between"
+              className="bg-nexus-surface p-6 rounded-[2rem] border border-nexus-border/30 shadow-xl shadow-slate-200/50 flex items-center justify-between"
             >
               <div>
                 <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-1">Recettes (Entrées)</p>
@@ -271,7 +271,7 @@ export default function AccountingModule() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-nexus-surface p-6 rounded-[2rem] border border-white/5 shadow-xl shadow-slate-200/50 flex items-center justify-between"
+              className="bg-nexus-surface p-6 rounded-[2rem] border border-nexus-border/30 shadow-xl shadow-slate-200/50 flex items-center justify-between"
             >
               <div>
                 <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-1">Dépenses (Sorties)</p>
@@ -292,7 +292,7 @@ export default function AccountingModule() {
               transition={{ delay: 0.2 }}
               className={cn(
                 "p-6 rounded-[2rem] border shadow-xl flex items-center justify-between",
-                netIncome >= 0 ? "bg-nexus-accent text-white hover:bg-nexus-accent/80 border-blue-500 text-white shadow-blue-200/50" : "bg-nexus-accent border-slate-800 text-white shadow-slate-200/50"
+                netIncome >= 0 ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 border-blue-500 text-white shadow-blue-200/50" : "bg-nexus-accent border-nexus-border text-white shadow-slate-200/50"
               )}
             >
               <div>
@@ -302,7 +302,7 @@ export default function AccountingModule() {
                   {isRentable ? "Rentabilité positive garantie" : "Déficit d'exploitation détecté"}
                 </p>
               </div>
-              <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-white">
+              <div className="w-14 h-14 bg-slate-500/20 dark:bg-slate-500/20 dark:bg-white/20 rounded-2xl flex items-center justify-center text-white">
                 <DollarSign size={28} />
               </div>
             </motion.div>
@@ -350,7 +350,7 @@ export default function AccountingModule() {
                   </div>
                 </div>
                 <h3 className="text-xl font-black tracking-tight mb-2">Recommandation Opérationnelle</h3>
-                <p className="text-sm font-medium text-slate-300 leading-relaxed max-w-3xl">
+                <p className="text-sm font-medium text-nexus-text-muted leading-relaxed max-w-3xl">
                   {isRentable 
                     ? `L'entreprise affiche une marge nette de ${margeProfit}%. Son modèle d'affaires dégage un bénéfice consistant. Songez à réinvestir ces marges directement dans les ressources ou le marketing pour augmenter le volume d'activité.`
                     : `L'entreprise ne couvre actuellement pas l'ensemble de ses charges (Marge Nette: ${margeProfit}%). Il est prioritaire de réduire les dépenses fixes non essentielles ou d'ajuster vos tarifs.`}
@@ -365,7 +365,7 @@ export default function AccountingModule() {
                 </div>
               </div>
               <div className="shrink-0 relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur border border-white/5 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-2xl bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 backdrop-blur border border-nexus-border/30 flex items-center justify-center">
                   <Activity className={isRentable ? "text-emerald-400" : "text-red-400"} size={32} />
                 </div>
               </div>
@@ -377,7 +377,7 @@ export default function AccountingModule() {
             <motion.div 
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-nexus-surface p-8 rounded-[2.5rem] border border-white/5 shadow-2xl shadow-slate-200/40 h-[400px]"
+              className="bg-nexus-surface p-8 rounded-[2.5rem] border border-nexus-border/30 shadow-2xl shadow-slate-200/40 h-[400px]"
             >
               <div className="flex items-center justify-between mb-8">
                 <div>
@@ -406,7 +406,7 @@ export default function AccountingModule() {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1 }}
-              className="bg-nexus-surface p-8 rounded-[2.5rem] border border-white/5 shadow-2xl shadow-slate-200/40 h-[400px]"
+              className="bg-nexus-surface p-8 rounded-[2.5rem] border border-nexus-border/30 shadow-2xl shadow-slate-200/40 h-[400px]"
             >
               <div className="flex items-center justify-between mb-8">
                 <div>
@@ -443,7 +443,7 @@ export default function AccountingModule() {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-nexus-surface p-8 rounded-[2.5rem] border border-white/5 shadow-2xl shadow-slate-200/40"
+            className="bg-nexus-surface p-8 rounded-[2.5rem] border border-nexus-border/30 shadow-2xl shadow-slate-200/40"
           >
              <div className="flex items-center justify-between mb-8">
                 <div>
@@ -473,7 +473,7 @@ export default function AccountingModule() {
 
       {activeTab === 'expenses' && (
         <div className="space-y-6">
-          <div className="bg-nexus-surface rounded-[2.5rem] border border-white/5 shadow-2xl shadow-slate-200/40 overflow-hidden">
+          <div className="bg-nexus-surface rounded-[2.5rem] border border-nexus-border/30 shadow-2xl shadow-slate-200/40 overflow-hidden">
             <div className="p-8 pb-4 border-b border-slate-50 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-black text-nexus-text uppercase tracking-widest">Journal des Sorties</h3>
@@ -489,11 +489,11 @@ export default function AccountingModule() {
 
             <Table headers={['Date', 'Catégorie', 'Description', 'Montant', 'Actions']}>
               {expenses.sort((a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0)).map(expense => (
-                <TableRow key={expense.id} className="hover:bg-white/5 transition-colors">
+                <TableRow key={expense.id} className="hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-colors">
                   <span className="text-[10px] font-bold text-nexus-text-muted">
                     {expense.date ? new Date((expense.date.seconds || expense.date/1000) * 1000).toLocaleDateString() : 'Auj.'}
                   </span>
-                  <span className="px-3 py-1 bg-slate-100 text-nexus-text-muted rounded-full text-[10px] font-bold uppercase border border-white/10">
+                  <span className="px-3 py-1 bg-slate-100 text-nexus-text-muted rounded-full text-[10px] font-bold uppercase border border-nexus-border/50">
                     {expense.category}
                   </span>
                   <span className="font-bold text-nexus-text">{expense.description}</span>
@@ -503,7 +503,7 @@ export default function AccountingModule() {
                   <div className="flex justify-end">
                     <button 
                       onClick={() => handleDeleteExpense(expense.id)}
-                      className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                      className="p-2 text-nexus-text-muted hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -542,7 +542,7 @@ export default function AccountingModule() {
                   value={newExpense.description}
                   onChange={e => setNewExpense({...newExpense, description: e.target.value})}
                   placeholder="Ex: Facture d'électricité"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-red-600/20 focus:border-red-600 font-bold text-sm transition-all text-nexus-text placeholder-white/40"
+                  className="w-full rounded-2xl px-5 py-4 /20 font-bold text-sm transition-all hover:-strong nexus-input w-full text-sm"
                 />
               </div>
 
@@ -550,7 +550,7 @@ export default function AccountingModule() {
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Catégorie</label>
                   <select 
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-nexus-accent/20 focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent font-bold text-sm appearance-none cursor-pointer text-nexus-text placeholder-white/40"
+                    className="w-full rounded-2xl px-5 py-4 /20 font-bold text-sm appearance-none cursor-pointer hover:-strong nexus-input w-full text-sm"
                     value={newExpense.category}
                     onChange={e => setNewExpense({...newExpense, category: e.target.value})}
                   >
@@ -566,7 +566,7 @@ export default function AccountingModule() {
                     value={newExpense.amount || ''}
                     onChange={e => setNewExpense({...newExpense, amount: Number(e.target.value)})}
                     placeholder="0.00"
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-red-600/20 focus:border-red-600 font-mono font-bold text-sm transition-all text-nexus-text placeholder-white/40"
+                    className="w-full rounded-2xl px-5 py-4 /20 font-mono font-bold text-sm transition-all hover:-strong nexus-input w-full text-sm"
                   />
                 </div>
               </div>

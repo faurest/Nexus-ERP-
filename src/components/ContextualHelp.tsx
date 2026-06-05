@@ -98,9 +98,9 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
             className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-nexus-surface z-[101] shadow-2xl flex flex-col"
           >
             {/* Header */}
-            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-nexus-accent text-white">
+            <div className="p-6 border-b border-nexus-border/30 flex items-center justify-between bg-nexus-accent text-white">
                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-xl">
+                  <div className="p-2 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 rounded-xl">
                     <BookOpen size={20} />
                   </div>
                   <div>
@@ -110,7 +110,7 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
                </div>
                <button 
                  onClick={onClose}
-                 className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                 className="p-2 hover:bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 rounded-xl transition-colors"
                >
                  <X size={20} />
                </button>
@@ -122,7 +122,7 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
               {activeStep && (
                 <div className="bg-blue-50 rounded-3xl p-6 border border-blue-100 shadow-sm animate-in fade-in slide-in-from-top-4">
                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2 bg-nexus-accent text-white hover:bg-nexus-accent/80 text-white rounded-lg"><Zap size={16} /></div>
+                      <div className="p-2 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white rounded-lg"><Zap size={16} /></div>
                       <h3 className="text-sm font-black uppercase text-blue-900">{activeStep.title}</h3>
                    </div>
                    <div className="text-xs font-bold text-blue-800 leading-relaxed whitespace-pre-wrap">
@@ -140,19 +140,19 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
                       value={search}
                       onChange={e => setSearch(e.target.value)}
                       placeholder="Besoin d'aide ? Taper 'Naira', 'Stock'..."
-                      className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-[11px] font-black outline-none focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent transition-all text-nexus-text placeholder-white/40"
+                      className="w-full rounded-2xl py-4 pl-12 pr-4 text-[11px] font-black focus:bg-nexus-surface transition-all hover:-strong nexus-input w-full text-sm"
                     />
                  </div>
               </div>
 
               {/* Action Sheets / Guide Steps */}
               <div className="space-y-4">
-                 <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] px-2 italic">Fiches Actions</h4>
+                 <h4 className="text-[10px] font-black text-nexus-text-muted uppercase tracking-[0.2em] px-2 italic">Fiches Actions</h4>
                  <div className="space-y-3">
                     {(search ? filteredSteps : steps).length > 0 ? (search ? filteredSteps : steps).map(step => (
                       <div 
                         key={step.id} 
-                        className="p-4 bg-nexus-surface border border-white/5 rounded-2xl shadow-sm hover:border-blue-300 transition-all cursor-pointer group"
+                        className="p-4 bg-nexus-surface border border-nexus-border/30 rounded-2xl shadow-sm hover:border-blue-300 transition-all cursor-pointer group"
                       >
                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -163,7 +163,7 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
                                )} />
                                <p className="text-[11px] font-black uppercase text-nexus-text">{step.title}</p>
                             </div>
-                            <ChevronRight size={16} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+                            <ChevronRight size={16} className="text-nexus-text-muted group-hover:text-blue-500 transition-colors" />
                          </div>
                       </div>
                     )) : !loading && (
@@ -175,7 +175,7 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
                     {loading && (
                       <div className="space-y-3">
                         {[1,2,3].map(i => (
-                          <div key={i} className="h-14 bg-white/5 rounded-2xl animate-pulse" />
+                          <div key={i} className="h-14 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-2xl animate-pulse" />
                         ))}
                       </div>
                     )}
@@ -184,7 +184,7 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-white/5 bg-white/5">
+            <div className="p-6 border-t border-nexus-border/30 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5">
                <button 
                  onClick={() => {
                    // Navigate to full guide in App

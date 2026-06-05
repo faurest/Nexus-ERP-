@@ -125,7 +125,7 @@ export default function GuideModule() {
   return (
     <div className="max-w-6xl mx-auto space-y-12 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Search & Filter Header */}
-      <div className="sticky top-4 z-40 bg-nexus-surface/80 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/5 shadow-xl flex flex-col md:flex-row items-center gap-6">
+      <div className="sticky top-4 z-40 bg-nexus-surface/80 backdrop-blur-xl p-6 rounded-[2.5rem] border border-nexus-border/30 shadow-xl flex flex-col md:flex-row items-center gap-6">
          <div className="relative flex-1 w-full">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-nexus-text-muted" size={20} />
             <input 
@@ -133,7 +133,7 @@ export default function GuideModule() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Rechercher une procédure (ex: 'Naira', 'Echec', 'Stock')..."
-              className="w-full bg-white/5 border-2 border-slate-50 rounded-2xl py-5 pl-16 pr-6 text-sm font-black outline-none focus:bg-nexus-surface focus:border-nexus-accent focus:ring-1 focus:ring-nexus-accent transition-all shadow-inner text-nexus-text placeholder-white/40"
+              className="w-full -2 -slate-50 rounded-2xl py-5 pl-16 pr-6 text-sm font-black focus:bg-nexus-surface transition-all -inner hover:-strong nexus-input w-full text-sm"
             />
          </div>
          <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl overflow-x-auto w-full md:w-auto scrollbar-hide">
@@ -154,11 +154,11 @@ export default function GuideModule() {
 
       {/* Hero Header */}
       <div className="bg-nexus-accent rounded-[3rem] p-12 text-white relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-nexus-accent text-white hover:bg-nexus-accent/80/20 rounded-full blur-[100px] -mr-48 -mt-48" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20/20 rounded-full blur-[100px] -mr-48 -mt-48" />
         <div className="relative z-10 flex flex-col md:flex-row items-start justify-between gap-12">
           <div className="flex-1">
             <div className="flex items-center gap-4 mb-6">
-              <div className="p-4 bg-white/10 rounded-2xl border border-white/10 backdrop-blur-md">
+              <div className="p-4 bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 rounded-2xl border border-nexus-border/50 backdrop-blur-md">
                 <BookOpen className="text-blue-400" size={32} />
               </div>
               <div>
@@ -171,11 +171,11 @@ export default function GuideModule() {
             </p>
           </div>
           <div className="flex gap-4">
-            <div className="text-center px-6 py-4 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-md">
+            <div className="text-center px-6 py-4 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-3xl border border-nexus-border/50 backdrop-blur-md">
                <p className="text-3xl font-black text-white italic">100%</p>
                <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mt-1">Opérationnel</p>
             </div>
-            <div className="text-center px-6 py-4 bg-nexus-accent text-white hover:bg-nexus-accent/80/20 rounded-3xl border border-blue-500/20 backdrop-blur-md">
+            <div className="text-center px-6 py-4 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20/20 rounded-3xl border border-blue-500/20 backdrop-blur-md">
                <p className="text-3xl font-black text-blue-400 italic">V2</p>
                <p className="text-[9px] font-black text-white uppercase tracking-widest mt-1">Système à jour</p>
             </div>
@@ -189,7 +189,7 @@ export default function GuideModule() {
         {filteredDbSteps.map(step => (
           <article 
             key={step.id}
-            className="bg-nexus-surface rounded-[2.5rem] p-8 border border-white/5 shadow-sm hover:shadow-2xl transition-all group flex flex-col h-full"
+            className="bg-nexus-surface rounded-[2.5rem] p-8 border border-nexus-border/30 shadow-sm hover:shadow-2xl transition-all group flex flex-col h-full"
           >
              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
@@ -204,12 +204,12 @@ export default function GuideModule() {
                   </div>
                   <h2 className="text-xl font-black text-nexus-text tracking-tight uppercase underline decoration-2 decoration-slate-100 underline-offset-8 decoration-dashed">{step.title}</h2>
                 </div>
-                <div className="px-3 py-1 bg-white/5 rounded-lg text-[8px] font-black text-nexus-text-muted uppercase tracking-widest">
+                <div className="px-3 py-1 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-lg text-[8px] font-black text-nexus-text-muted uppercase tracking-widest">
                    nexus-art-{step.id.slice(0, 4)}
                 </div>
              </div>
              <div className="flex-1 space-y-4">
-               <div className="p-6 bg-white/5/50 rounded-2xl border-2 border-slate-50 text-xs font-bold text-nexus-text-muted leading-relaxed whitespace-pre-wrap">
+               <div className="p-6 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5/50 rounded-2xl border-2 border-slate-50 text-xs font-bold text-nexus-text-muted leading-relaxed whitespace-pre-wrap">
                   {step.content}
                </div>
              </div>
@@ -223,11 +223,11 @@ export default function GuideModule() {
 
         {/* Fallback Static Sections if DB is empty or during filtering */}
         {(dbSteps.length === 0 || activeCategory !== 'ALL' || search) && staticSections.filter(s => activeCategory === 'ALL' || s.category === activeCategory).map(section => (
-          <section key={section.id} className="bg-nexus-surface rounded-[2.5rem] p-8 border border-white/5 shadow-sm hover:shadow-xl transition-all group flex flex-col">
+          <section key={section.id} className="bg-nexus-surface rounded-[2.5rem] p-8 border border-nexus-border/30 shadow-sm hover:shadow-xl transition-all group flex flex-col">
             <div className="flex items-center gap-4 mb-8">
               <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-all shadow-sm", 
                 section.color === 'amber' ? "bg-amber-50 text-amber-500 group-hover:bg-amber-500 group-hover:text-white" : 
-                section.color === 'blue' ? "bg-blue-50 text-blue-500 group-hover:bg-nexus-accent text-white hover:bg-nexus-accent/80 group-hover:text-white" :
+                section.color === 'blue' ? "bg-blue-50 text-blue-500 group-hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 group-hover:text-white" :
                 "bg-emerald-50 text-emerald-500 group-hover:bg-emerald-600 group-hover:text-white"
               )}>
                 <section.icon size={28} />
@@ -241,7 +241,7 @@ export default function GuideModule() {
               {section.items ? (
                 <ul className="space-y-3">
                   {section.items.map((item, i) => (
-                    <li key={i} className="flex gap-4 text-[11px] font-bold text-nexus-text-muted/80 bg-white/5 p-5 rounded-2xl border border-white/5 italic transition-all hover:bg-nexus-surface hover:shadow-md">
+                    <li key={i} className="flex gap-4 text-[11px] font-bold text-nexus-text-muted/80 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 p-5 rounded-2xl border border-nexus-border/30 italic transition-all hover:bg-nexus-surface hover:shadow-md">
                       <item.icon size={18} className="text-nexus-text-muted shrink-0" />
                       {item.text}
                     </li>
@@ -267,7 +267,7 @@ export default function GuideModule() {
 
       {/* Interactive Tool: Exchange Rate Simulator */}
       <div className="bg-slate-950 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden">
-         <div className="absolute top-0 right-0 w-64 h-64 bg-nexus-accent text-white hover:bg-nexus-accent/80/10 rounded-full blur-3xl -mr-32 -mt-32" />
+         <div className="absolute top-0 right-0 w-64 h-64 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20/10 rounded-full blur-3xl -mr-32 -mt-32" />
          <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
             <div className="flex-1">
                <div className="flex items-center gap-4 mb-4">
@@ -278,7 +278,7 @@ export default function GuideModule() {
                  Le Marketplace intègre désormais l'affichage en Naira. Utilisez cet outil pour un calcul manuel ou comme entraînement pour vos équipes de vente.
                </p>
                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
+                  <div className="p-6 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-2xl border border-nexus-border/50">
                      <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-2">Prix CFA</p>
                      <input 
                        type="number"
@@ -291,13 +291,13 @@ export default function GuideModule() {
                        }}
                      />
                   </div>
-                  <div className="p-6 bg-nexus-accent text-white hover:bg-nexus-accent/80/20 rounded-2xl border border-blue-500/30">
+                  <div className="p-6 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20/20 rounded-2xl border border-blue-500/30">
                      <p className="text-[9px] font-black text-blue-200 uppercase tracking-widest mb-2">Equivalent Naira</p>
                      <p id="naira-result" className="text-2xl font-black text-blue-400">0 ₦</p>
                   </div>
                </div>
             </div>
-            <div className="w-full md:w-1/3 p-8 bg-nexus-accent text-white hover:bg-nexus-accent/80 rounded-[2.5rem] shadow-[0_20px_50px_rgba(37,99,235,0.3)]">
+            <div className="w-full md:w-1/3 p-8 bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 rounded-[2.5rem] shadow-[0_20px_50px_rgba(37,99,235,0.3)]">
                <h4 className="text-lg font-black uppercase italic leading-tight mb-4">Rappel Sécurité</h4>
                <ul className="space-y-4">
                   {[
@@ -323,17 +323,17 @@ export default function GuideModule() {
           <h2 className="text-3xl font-black text-nexus-text uppercase italic mb-4 tracking-tighter">Prêt pour le terrain ?</h2>
           <p className="text-nexus-text-muted/80 font-medium mb-10 max-w-md mx-auto">Validez vos connaissances logistiques pour devenir un employé certifié "Performance Nexus".</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-             <div className="p-6 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center">
+             <div className="p-6 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-2xl border border-nexus-border/30 flex flex-col items-center">
                 <Target className="text-blue-600 mb-3" size={24} />
                 <p className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest">Étape 01</p>
                 <p className="text-xs font-black text-nexus-text mt-1">Quiz Livraison</p>
              </div>
-             <div className="p-6 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center opacity-40">
+             <div className="p-6 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-2xl border border-nexus-border/30 flex flex-col items-center opacity-40">
                 <Users className="text-nexus-text-muted mb-3" size={24} />
                 <p className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest">Étape 02</p>
                 <p className="text-xs font-black text-nexus-text mt-1">Client Nexus</p>
              </div>
-             <div className="p-6 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center opacity-40">
+             <div className="p-6 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 rounded-2xl border border-nexus-border/30 flex flex-col items-center opacity-40">
                 <ShieldCheck className="text-nexus-text-muted mb-3" size={24} />
                 <p className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest">Étape 03</p>
                 <p className="text-xs font-black text-nexus-text mt-1">Sécurité Data</p>
@@ -359,7 +359,7 @@ export default function GuideModule() {
              >
                 <div className="absolute top-0 left-0 w-full h-2 bg-slate-100">
                    <motion.div 
-                     className="h-full bg-nexus-accent text-white hover:bg-nexus-accent/80"
+                     className="h-full bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20"
                      initial={{ width: 0 }}
                      animate={{ width: `${((quizStep + 1) / quizQuestions.length) * 100}%` }}
                    />
@@ -388,7 +388,7 @@ export default function GuideModule() {
                               alert(`Certification Terminée ! Votre score : ${score + (i === quizQuestions[quizStep].correct ? 1 : 0)}/${quizQuestions.length}\nFélicitations ! Vous êtes prêt pour le terrain.`);
                            }
                         }}
-                        className="w-full text-left p-6 rounded-2xl border border-white/5 hover:border-blue-600 hover:bg-blue-50 transition-all group"
+                        className="w-full text-left p-6 rounded-2xl border border-nexus-border/30 hover:border-blue-600 hover:bg-blue-50 transition-all group"
                       >
                          <span className="text-sm font-bold text-nexus-text-muted group-hover:text-blue-700">{ans}</span>
                       </button>
@@ -406,7 +406,7 @@ export default function GuideModule() {
             <button className="flex items-center gap-3 px-8 py-4 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-emerald-100">
                <Smartphone size={18} /> Support WhatsApp
             </button>
-            <button className="flex items-center gap-3 px-8 py-4 bg-nexus-surface border border-white/10 text-nexus-text rounded-2xl text-[10px] font-black uppercase tracking-widest">
+            <button className="flex items-center gap-3 px-8 py-4 bg-nexus-surface border border-nexus-border text-nexus-text rounded-2xl text-[10px] font-black uppercase tracking-widest">
                <MessageSquare size={18} /> Chat Interne
             </button>
          </div>
