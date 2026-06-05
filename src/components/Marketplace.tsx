@@ -463,13 +463,9 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
   const checkoutWhatsApp = (product?: Product) => {
     const targetProduct = product || cart[0];
-    
-    // Check if cart has multiple vendors
-    const isGrouped = !product && new Set(cart.map(i => i.companyId)).size > 1;
-    
     const company = companies.find((c) => c.id === targetProduct?.companyId);
-    // Use central support number for grouped orders, else vendor number
-    const phone = isGrouped ? SUPPORT_NUMBER : (company?.whatsappNumber || SUPPORT_NUMBER);
+    // Use company number if available, otherwise global help number
+    const phone = company?.whatsappNumber || "640790996";
 
     let message = "";
     if (product) {
@@ -2007,12 +2003,12 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                       return (
                         <div key={gid} className={cn(
                           "rounded-[2rem] p-6 border space-y-6 transition-all",
-                          isMultiVendor ? "bg-slate-900 text-white border-slate-800 shadow-2xl" : "bg-slate-50 text-slate-900 border-slate-100"
+                          isMultiVendor ? "bg-slate-900 text-white border-slate-800 shadow-2xl" : "bg-white text-slate-900 border-slate-100 shadow-sm"
                         )}>
                           <div className="flex justify-between items-start">
                             <div>
-                              <span className={cn("text-[8px] font-black uppercase tracking-widest", isMultiVendor ? "text-slate-500" : "text-slate-400")}>
-                                {isMultiVendor ? "COMMANDE MULTI-BOUTIQUES" : "N° COMMANDE"}
+                              <span className={cn("text-[8px] font-black uppercase tracking-widest", isMultiVendor ? "text-slate-500" : "text-blue-500")}>
+                                {isMultiVendor ? "FACTURE GROUPÉE" : "FACTURE INDIVIDUELLE"}
                               </span>
                               <h3 className="text-sm font-black uppercase">
                                 {isMultiVendor ? `GRP-${gid.slice(0, 8)}` : `CMD-${firstSub.id.slice(0, 8)}`}
@@ -2020,7 +2016,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                             </div>
                             {isMultiVendor ? (
                               <div className="px-3 py-1 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-full text-[9px] font-black uppercase tracking-widest">
-                                {subOrders.length} Expéditions
+                                {subOrders.length} Boutiques
                               </div>
                             ) : (
                               <div className={cn(
@@ -2040,87 +2036,88 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           </div>
 
                           <div className="space-y-4">
-                            {isMultiVendor ? (
-                              <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                                <div className="space-y-3">
-                                  {subOrders.flatMap(o => (o.items || []).map((item: any, idx: number) => (
-                                    <div key={`${o.id}-${idx}`} className="flex justify-between items-center text-sm">
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-6 h-6 bg-slate-800 rounded flex items-center justify-center text-white text-[8px] font-black shrink-0">
-                                          {companies.find(c => c.id === o.companyId)?.name.charAt(0) || "B"}
-                                        </div>
-                                        <span className="font-bold text-slate-300">
-                                          {item.name} <span className="text-slate-500 font-medium">x{item.quantity}</span>
-                                        </span>
-                                      </div>
-                                      <span className="font-black text-white">{item.price.toLocaleString()}</span>
+                            {isMultiVendor ? subOrders.map(order => (
+                              <div key={order.id} className={cn(
+                                "p-4 rounded-2xl relative",
+                                "bg-white/5 border border-white/10"
+                              )}>
+                                <div className="flex justify-between items-center mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[8px] font-black">
+                                       {companies.find(c => c.id === order.companyId)?.name.charAt(0) || "B"}
                                     </div>
-                                  )))}
+                                    <span className="text-[10px] font-black uppercase text-slate-300 truncate max-w-[120px]">
+                                      {companies.find(c => c.id === order.companyId)?.name || "Boutique"}
+                                    </span>
+                                  </div>
+                                  <span className={cn(
+                                    "text-[9px] font-black uppercase px-2 py-0.5 rounded-md",
+                                    order.status === 'CANCELLED_BY_CUSTOMER' ? "bg-red-500/20 text-red-400" : "bg-blue-500/20 text-blue-400"
+                                  )}>
+                                    {order.status}
+                                  </span>
                                 </div>
-                                <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center text-[9px] font-bold">
+                                
+                                {order.status !== 'CANCELLED_BY_CUSTOMER' && (
+                                  <div className="relative h-1 bg-slate-200/20 rounded-full overflow-hidden mb-3">
+                                    <div 
+                                      className="absolute inset-y-0 left-0 bg-blue-500 transition-all duration-1000"
+                                      style={{ 
+                                        width: order.status === 'PENDING' ? '5%' : 
+                                               order.status === 'PROCESSING' ? '38%' : 
+                                               order.status === 'SHIPPED' ? '72%' : '100%' 
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                                
+                                <div className="flex justify-between items-center text-[9px] font-bold">
                                   <span className="text-slate-400">
-                                    Suivi Logistique Continu
+                                    {order.items?.length || 0} articles • {order.total.toLocaleString()} FCFA
                                   </span>
                                   <button 
                                     onClick={() => {
-                                      const message = `Bonjour, je souhaite des infos sur ma commande groupée ${gid.slice(0,8)}`;
+                                      const message = `Bonjour, je souhaite des infos sur ma commande ${order.id.slice(0,8)} chez ${companies.find(c => c.id === order.companyId)?.name}`;
                                       window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
                                     }}
-                                    className="text-emerald-400 hover:underline flex items-center gap-1"
+                                    className="text-blue-400 hover:text-blue-300 transition-colors"
                                   >
-                                    <MessageCircle size={10} /> WhatsApp Support
+                                    Assistance
                                   </button>
                                 </div>
                               </div>
-                            ) : (
-                              subOrders.map(order => (
-                                <div key={order.id} className="p-4 rounded-2xl relative bg-white border border-slate-100">
-                                  <div className="flex justify-between items-center mb-3">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[8px] font-black">
-                                        {companies.find(c => c.id === order.companyId)?.name.charAt(0) || "B"}
-                                      </div>
-                                      <span className="text-[10px] font-black uppercase truncate max-w-[120px]">
-                                        {companies.find(c => c.id === order.companyId)?.name || "Boutique"}
-                                      </span>
-                                    </div>
-                                    <span className={cn(
-                                      "text-[9px] font-black uppercase px-2 py-0.5 rounded-md",
-                                      order.status === 'CANCELLED_BY_CUSTOMER' ? "bg-red-500/20 text-red-600" : "bg-blue-50 text-blue-600"
-                                    )}>
-                                      {order.status}
-                                    </span>
+                            )) : (
+                              <div className="pt-2">
+                                <div className="flex items-center gap-2 mb-4">
+                                  <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 text-[10px] font-black">
+                                     {companies.find(c => c.id === firstSub.companyId)?.name.charAt(0) || "B"}
                                   </div>
-                                  
-                                  {order.status !== 'CANCELLED_BY_CUSTOMER' && (
-                                    <div className="relative h-1 bg-slate-100 rounded-full overflow-hidden mb-3">
-                                      <div 
-                                        className="absolute inset-y-0 left-0 bg-blue-500 transition-all duration-1000"
-                                        style={{ 
-                                          width: order.status === 'PENDING' ? '5%' : 
-                                                 order.status === 'PROCESSING' ? '38%' : 
-                                                 order.status === 'SHIPPED' ? '72%' : '100%' 
-                                        }}
-                                      />
-                                    </div>
-                                  )}
-                                  
-                                  <div className="flex justify-between items-center text-[9px] font-bold">
-                                    <span className="text-slate-500">
-                                      {order.items?.length || 0} articles • {order.total.toLocaleString()} FCFA
-                                    </span>
-                                    <button 
-                                      onClick={() => {
-                                        const message = `Bonjour, je souhaite des infos sur ma commande ${order.id.slice(0,8)} chez ${companies.find(c => c.id === order.companyId)?.name}`;
-                                        window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
-                                      }}
-                                      className="text-blue-500 hover:underline flex items-center gap-1"
-                                    >
-                                      Assistance
-                                    </button>
-                                  </div>
+                                  <span className="text-xs font-black uppercase text-slate-700">
+                                    {companies.find(c => c.id === firstSub.companyId)?.name || "Boutique"}
+                                  </span>
                                 </div>
-                              ))
+                                <div className="space-y-2 mb-4">
+                                  {firstSub.items?.map((item: any, i: number) => (
+                                    <div key={i} className="flex justify-between items-center text-[10px] p-2 bg-slate-50 rounded-xl">
+                                      <span className="font-bold text-slate-600">{item.name} <span className="text-slate-400">x{item.quantity}</span></span>
+                                      <span className="font-black text-slate-900">{item.price.toLocaleString()} F</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                
+                                {firstSub.status !== 'CANCELLED_BY_CUSTOMER' && (
+                                  <div className="relative h-1.5 bg-slate-100 rounded-full overflow-hidden mb-4">
+                                    <div 
+                                      className="absolute inset-y-0 left-0 bg-blue-500 transition-all duration-1000"
+                                      style={{ 
+                                        width: firstSub.status === 'PENDING' ? '5%' : 
+                                               firstSub.status === 'PROCESSING' ? '38%' : 
+                                               firstSub.status === 'SHIPPED' ? '72%' : '100%' 
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
 
@@ -2129,13 +2126,13 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                             isMultiVendor ? "border-white/10" : "border-slate-100"
                           )}>
                             <div>
-                               <span className={cn("text-[9px] font-black uppercase block tracking-widest leading-none mb-1", isMultiVendor ? "text-slate-500" : "text-slate-400")}>Total Global</span>
+                               <span className={cn("text-[9px] font-black uppercase block tracking-widest leading-none mb-1", isMultiVendor ? "text-slate-500" : "text-slate-400")}>Total Transaction</span>
                                <span className={cn("text-lg font-black", isMultiVendor ? "text-emerald-400" : "text-blue-600")}>{globalTotal.toLocaleString()} FCFA</span>
                             </div>
                             {!isMultiVendor && firstSub.status === 'PENDING' && (
                               <button 
                                 onClick={() => setCancellingOrderId(firstSub.id)}
-                                className="px-4 py-2 bg-red-50 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest border border-red-100"
+                                className="px-4 py-2 bg-red-50 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest border border-red-100 hover:bg-red-500 hover:text-white transition-all"
                               >
                                 Annuler
                               </button>

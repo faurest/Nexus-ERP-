@@ -1608,12 +1608,10 @@ export default function EcommerceModule({ user }: { user: any }) {
                         </button>
                       )}
                       <button 
-                        onClick={() => {
-                          window.print();
-                        }}
-                        className="flex-1 py-4 bg-slate-900 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-2 print:hidden"
+                        onClick={() => setActiveView('loyalty')}
+                        className="flex-1 py-4 bg-slate-900 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
                       >
-                        <Award size={14} className="print:hidden"/> Imprimer Facture
+                        <Award size={14} /> Fidélité
                       </button>
                       <button 
                         onClick={() => setActiveChatOrder(order)}
@@ -2057,26 +2055,21 @@ export default function EcommerceModule({ user }: { user: any }) {
                   </div>
                 )}
                 {order.checkoutSource === 'MARKETPLACE' && (
-                  <div className="absolute top-0 right-0 px-6 py-2 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest rounded-bl-2xl">
-                    Source: Marketplace
-                  </div>
-                )}
-                {order.globalOrderId && (
-                  <div className="absolute top-0 right-40 px-6 py-2 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-bl-2xl flex items-center gap-1.5 shadow-sm">
-                    <TrendingUp size={10} /> Achat Groupé
+                  <div className="absolute top-0 right-0 px-6 py-2 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-bl-2xl">
+                    Portail Nexus
                   </div>
                 )}
                 
                 <div className="flex flex-col lg:flex-row gap-10">
                   <div className="flex-1">
                     {order.globalOrderId && (
-                      <div className="mb-6 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl flex gap-3 items-start">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                      <div className="mb-6 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl flex gap-3 items-start">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
                           <Package size={14} />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black text-blue-900 uppercase tracking-widest leading-none mb-1">Coordination Logistique (Multi-Boutiques)</p>
-                          <p className="text-[10px] font-medium text-blue-700 leading-relaxed">Cette commande fait partie d'un <span className="font-bold">achat groupé</span> avec d'autres entreprises du Marketplace. Préparez vos articles {order.status === 'PENDING' && "dès maintenant "}pour l'enlèvement global par le service logistique de Nexus.</p>
+                          <p className="text-[10px] font-black text-emerald-900 uppercase tracking-widest leading-none mb-1">Partie d'un Achat Sécurisé</p>
+                          <p className="text-[10px] font-medium text-emerald-700 leading-relaxed">Il s'agit de votre <span className="font-bold">facture unique</span> pour cette commande globale. Préparez vos articles {order.status === 'PENDING' && "dès maintenant "}pour l'enlèvement logistique.</p>
                         </div>
                       </div>
                     )}
