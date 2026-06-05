@@ -463,9 +463,13 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
   const checkoutWhatsApp = (product?: Product) => {
     const targetProduct = product || cart[0];
+    
+    // Check if cart has multiple vendors
+    const isGrouped = !product && new Set(cart.map(i => i.companyId)).size > 1;
+    
     const company = companies.find((c) => c.id === targetProduct?.companyId);
-    // Use company number if available, otherwise global help number
-    const phone = company?.whatsappNumber || "640790996";
+    // Use central support number for grouped orders, else vendor number
+    const phone = isGrouped ? SUPPORT_NUMBER : (company?.whatsappNumber || SUPPORT_NUMBER);
 
     let message = "";
     if (product) {
@@ -2036,57 +2040,88 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           </div>
 
                           <div className="space-y-4">
-                            {subOrders.map(order => (
-                              <div key={order.id} className={cn(
-                                "p-4 rounded-2xl relative",
-                                isMultiVendor ? "bg-white/5 border border-white/10" : "bg-white border border-slate-100"
-                              )}>
-                                <div className="flex justify-between items-center mb-3">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[8px] font-black">
-                                       {companies.find(c => c.id === order.companyId)?.name.charAt(0) || "B"}
+                            {isMultiVendor ? (
+                              <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                                <div className="space-y-3">
+                                  {subOrders.flatMap(o => (o.items || []).map((item: any, idx: number) => (
+                                    <div key={`${o.id}-${idx}`} className="flex justify-between items-center text-sm">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-6 h-6 bg-slate-800 rounded flex items-center justify-center text-white text-[8px] font-black shrink-0">
+                                          {companies.find(c => c.id === o.companyId)?.name.charAt(0) || "B"}
+                                        </div>
+                                        <span className="font-bold text-slate-300">
+                                          {item.name} <span className="text-slate-500 font-medium">x{item.quantity}</span>
+                                        </span>
+                                      </div>
+                                      <span className="font-black text-white">{item.price.toLocaleString()}</span>
                                     </div>
-                                    <span className="text-[10px] font-black uppercase truncate max-w-[120px]">
-                                      {companies.find(c => c.id === order.companyId)?.name || "Boutique"}
-                                    </span>
-                                  </div>
-                                  <span className={cn(
-                                    "text-[9px] font-black uppercase px-2 py-0.5 rounded-md",
-                                    order.status === 'CANCELLED_BY_CUSTOMER' ? "bg-red-500/20 text-red-400" : "bg-blue-500/20 text-blue-400"
-                                  )}>
-                                    {order.status}
-                                  </span>
+                                  )))}
                                 </div>
-                                
-                                {order.status !== 'CANCELLED_BY_CUSTOMER' && (
-                                  <div className="relative h-1 bg-slate-200/20 rounded-full overflow-hidden mb-3">
-                                    <div 
-                                      className="absolute inset-y-0 left-0 bg-blue-500 transition-all duration-1000"
-                                      style={{ 
-                                        width: order.status === 'PENDING' ? '5%' : 
-                                               order.status === 'PROCESSING' ? '38%' : 
-                                               order.status === 'SHIPPED' ? '72%' : '100%' 
-                                      }}
-                                    />
-                                  </div>
-                                )}
-                                
-                                <div className="flex justify-between items-center text-[9px] font-bold">
-                                  <span className={isMultiVendor ? "text-slate-400" : "text-slate-500"}>
-                                    {order.items?.length || 0} articles • {order.total.toLocaleString()} FCFA
+                                <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center text-[9px] font-bold">
+                                  <span className="text-slate-400">
+                                    Suivi Logistique Continu
                                   </span>
                                   <button 
                                     onClick={() => {
-                                      const message = `Bonjour, je souhaite des infos sur ma commande ${order.id.slice(0,8)} chez ${companies.find(c => c.id === order.companyId)?.name}`;
+                                      const message = `Bonjour, je souhaite des infos sur ma commande groupée ${gid.slice(0,8)}`;
                                       window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
                                     }}
-                                    className="text-blue-400 hover:underline"
+                                    className="text-emerald-400 hover:underline flex items-center gap-1"
                                   >
-                                    Assistance
+                                    <MessageCircle size={10} /> WhatsApp Support
                                   </button>
                                 </div>
                               </div>
-                            ))}
+                            ) : (
+                              subOrders.map(order => (
+                                <div key={order.id} className="p-4 rounded-2xl relative bg-white border border-slate-100">
+                                  <div className="flex justify-between items-center mb-3">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center text-white text-[8px] font-black">
+                                        {companies.find(c => c.id === order.companyId)?.name.charAt(0) || "B"}
+                                      </div>
+                                      <span className="text-[10px] font-black uppercase truncate max-w-[120px]">
+                                        {companies.find(c => c.id === order.companyId)?.name || "Boutique"}
+                                      </span>
+                                    </div>
+                                    <span className={cn(
+                                      "text-[9px] font-black uppercase px-2 py-0.5 rounded-md",
+                                      order.status === 'CANCELLED_BY_CUSTOMER' ? "bg-red-500/20 text-red-600" : "bg-blue-50 text-blue-600"
+                                    )}>
+                                      {order.status}
+                                    </span>
+                                  </div>
+                                  
+                                  {order.status !== 'CANCELLED_BY_CUSTOMER' && (
+                                    <div className="relative h-1 bg-slate-100 rounded-full overflow-hidden mb-3">
+                                      <div 
+                                        className="absolute inset-y-0 left-0 bg-blue-500 transition-all duration-1000"
+                                        style={{ 
+                                          width: order.status === 'PENDING' ? '5%' : 
+                                                 order.status === 'PROCESSING' ? '38%' : 
+                                                 order.status === 'SHIPPED' ? '72%' : '100%' 
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex justify-between items-center text-[9px] font-bold">
+                                    <span className="text-slate-500">
+                                      {order.items?.length || 0} articles • {order.total.toLocaleString()} FCFA
+                                    </span>
+                                    <button 
+                                      onClick={() => {
+                                        const message = `Bonjour, je souhaite des infos sur ma commande ${order.id.slice(0,8)} chez ${companies.find(c => c.id === order.companyId)?.name}`;
+                                        window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
+                                      }}
+                                      className="text-blue-500 hover:underline flex items-center gap-1"
+                                    >
+                                      Assistance
+                                    </button>
+                                  </div>
+                                </div>
+                              ))
+                            )}
                           </div>
 
                           <div className={cn(

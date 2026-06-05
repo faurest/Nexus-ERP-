@@ -1608,10 +1608,12 @@ export default function EcommerceModule({ user }: { user: any }) {
                         </button>
                       )}
                       <button 
-                        onClick={() => setActiveView('loyalty')}
-                        className="flex-1 py-4 bg-slate-900 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                        onClick={() => {
+                          window.print();
+                        }}
+                        className="flex-1 py-4 bg-slate-900 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-2 print:hidden"
                       >
-                        <Award size={14} /> Facture
+                        <Award size={14} className="print:hidden"/> Imprimer Facture
                       </button>
                       <button 
                         onClick={() => setActiveChatOrder(order)}
