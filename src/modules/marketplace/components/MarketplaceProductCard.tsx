@@ -51,7 +51,7 @@ export function MarketplaceProductCard({
           {product.image ? (
             <img src={product.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={product.name} />
           ) : (
-             <div className="w-full h-full flex items-center justify-center text-nexus-text-muted">
+             <div className="w-full h-full flex items-center justify-center text-slate-300">
                <CategoryIcon size={24} />
              </div>
           )}
@@ -65,11 +65,11 @@ export function MarketplaceProductCard({
            <div className="flex items-start justify-between gap-4">
              <div>
                <div className="flex items-center gap-1.5 mb-1.5">
-                 <div className="flex items-center gap-1 text-[8px] font-bold text-nexus-text-muted uppercase tracking-widest">
+                 <div className="flex items-center gap-1 text-[8px] font-bold text-slate-400 uppercase tracking-widest">
                    <Building2 size={10} /> {company?.name || "Nexus Partner"}
                  </div>
                  {company?.location && (
-                   <div className="flex items-center gap-1 text-[8px] font-bold text-nexus-text-muted uppercase">
+                   <div className="flex items-center gap-1 text-[8px] font-bold text-slate-400 uppercase">
                      • <MapPin size={10} /> {company.location}
                    </div>
                  )}
@@ -83,7 +83,7 @@ export function MarketplaceProductCard({
              </div>
              <div className="text-right shrink-0">
                <div className={cn("text-base font-black transition-colors", nairaEnabled ? "text-emerald-600" : "text-slate-900")}>{displayPrice}</div>
-               {product.originalPrice && <div className="text-[10px] text-nexus-text-muted line-through">{(product.originalPrice).toLocaleString()} FCFA</div>}
+               {product.originalPrice && <div className="text-[10px] text-slate-400 line-through">{(product.originalPrice).toLocaleString()} FCFA</div>}
              </div>
           </div>
           <div className="mt-auto flex items-center gap-2">
@@ -93,8 +93,8 @@ export function MarketplaceProductCard({
               className={cn(
                 "px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all",
                 product.stock <= 0 && !product.allowBackorder
-                  ? "bg-slate-100 text-nexus-text-muted cursor-not-allowed"
-                  : "bg-nexus-accent text-white hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 shadow-sm hover:shadow-blue-600/20 active:scale-95"
+                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                  : "bg-slate-900 text-white hover:bg-blue-600 shadow-sm hover:shadow-blue-600/20 active:scale-95"
               )}
             >
               <ShoppingCart size={12} /> Ajouter
@@ -121,7 +121,7 @@ export function MarketplaceProductCard({
         {product.image ? (
           <img src={product.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={product.name} />
         ) : (
-           <div className="w-full h-full flex items-center justify-center text-nexus-text-muted bg-gradient-to-tr from-slate-100 to-slate-50">
+           <div className="w-full h-full flex items-center justify-center text-slate-300 bg-gradient-to-tr from-slate-100 to-slate-50">
              <CategoryIcon size={32} className="opacity-50" />
            </div>
         )}
@@ -136,7 +136,7 @@ export function MarketplaceProductCard({
         {onToggleFavorite && (
           <button 
             onClick={(e) => { e.stopPropagation(); onToggleFavorite(product.companyId); }}
-            className="absolute top-2 right-2 p-2 bg-white/80 backdrop-blur-md hover:bg-white rounded-lg text-nexus-text-muted hover:text-red-500 transition-all shadow-sm z-10"
+            className="absolute top-2 right-2 p-2 bg-white/80 backdrop-blur-md hover:bg-white rounded-lg text-slate-400 hover:text-red-500 transition-all shadow-sm z-10"
           >
             <Heart size={14} fill={isFavorite ? "currentColor" : "none"} className={isFavorite ? "text-red-500" : ""} />
           </button>
@@ -151,7 +151,7 @@ export function MarketplaceProductCard({
       </div>
       
       <div className="p-3 flex flex-col flex-1">
-        <div className="flex items-center gap-1.5 mb-1.5 text-[8px] font-bold uppercase tracking-widest text-nexus-text-muted">
+        <div className="flex items-center gap-1.5 mb-1.5 text-[8px] font-bold uppercase tracking-widest text-slate-400">
            <Building2 size={10} /> 
            <span className="truncate">{company?.name || "Nexus Partner"}</span>
         </div>
@@ -166,7 +166,7 @@ export function MarketplaceProductCard({
         <div className="mt-auto pt-2 flex items-center justify-between">
           <div>
             <div className={cn("text-sm font-black tracking-tight transition-colors", nairaEnabled ? "text-emerald-600" : "text-slate-900")}>{displayPrice}</div>
-            {product.originalPrice && <div className="text-[9px] text-nexus-text-muted line-through">{(product.originalPrice).toLocaleString()} FCFA</div>}
+            {product.originalPrice && <div className="text-[9px] text-slate-400 line-through">{(product.originalPrice).toLocaleString()} FCFA</div>}
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
@@ -174,8 +174,8 @@ export function MarketplaceProductCard({
             className={cn(
               "w-8 h-8 rounded-xl flex items-center justify-center transition-all",
               product.stock <= 0 && !product.allowBackorder
-                ? "bg-slate-50 text-nexus-text-muted cursor-not-allowed"
-                : "bg-nexus-accent text-white hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 shadow-sm hover:shadow-blue-600/20 active:scale-95"
+                ? "bg-slate-50 text-slate-300 cursor-not-allowed"
+                : "bg-slate-900 text-white hover:bg-blue-600 shadow-sm hover:shadow-blue-600/20 active:scale-95"
             )}
           >
             <ShoppingCart size={14} />

@@ -201,26 +201,26 @@ export default function AccountingModule() {
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden bg-nexus-accent rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-nexus-border/30">
+      <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           <div className="max-w-xl">
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
               Nexus <span className="text-blue-500">Finance</span>
             </h1>
-            <p className="text-nexus-text-muted text-sm sm:text-lg font-medium leading-relaxed">
+            <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
               Analysez la santé financière de votre organisation.
             </p>
           </div>
-          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-nexus-border/50 shrink-0 gap-1">
+          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-white/10 shrink-0 gap-1">
             <button 
               onClick={() => setActiveTab('report')}
-              className={cn("px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'report' ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white shadow-lg" : "text-nexus-text-muted hover:text-white")}
+              className={cn("px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'report' ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white")}
             >
               Analyse
             </button>
             <button 
               onClick={() => setActiveTab('expenses')}
-              className={cn("px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'expenses' ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 text-white shadow-lg" : "text-nexus-text-muted hover:text-white")}
+              className={cn("px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", activeTab === 'expenses' ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white")}
             >
               Journal
             </button>
@@ -233,14 +233,14 @@ export default function AccountingModule() {
           <div className="flex flex-wrap gap-4">
             <button 
               onClick={exportToCSV}
-              className="flex items-center gap-2 px-6 py-3 bg-nexus-surface border border-nexus-border rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-all shadow-sm"
+              className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm"
             >
               <Download size={14} /> Exporter en CSV
             </button>
             <button 
               onClick={fetchAiSuggestions}
               disabled={isAnalyzing}
-              className="flex items-center gap-2 px-6 py-3 bg-nexus-accent text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-nexus-accent/80 text-white transition-all shadow-lg active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95 disabled:opacity-50"
             >
               {isAnalyzing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} className="text-amber-400" />}
               {isAnalyzing ? "Analyse en cours..." : "Générer Conseils IA"}
@@ -252,11 +252,11 @@ export default function AccountingModule() {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-nexus-surface p-6 rounded-[2rem] border border-nexus-border/30 shadow-xl shadow-slate-200/50 flex items-center justify-between"
+              className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 flex items-center justify-between"
             >
               <div>
-                <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-1">Recettes (Entrées)</p>
-                <h3 className="text-2xl font-black text-nexus-text tracking-tighter">{totalRevenue.toLocaleString()} FCFA</h3>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Recettes (Entrées)</p>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{totalRevenue.toLocaleString()} FCFA</h3>
                 <div className="flex items-center gap-1 text-green-500 mt-1">
                   <ArrowUpCircle size={14} />
                   <span className="text-[10px] font-bold">Flux entrant total</span>
@@ -271,11 +271,11 @@ export default function AccountingModule() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-nexus-surface p-6 rounded-[2rem] border border-nexus-border/30 shadow-xl shadow-slate-200/50 flex items-center justify-between"
+              className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 flex items-center justify-between"
             >
               <div>
-                <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mb-1">Dépenses (Sorties)</p>
-                <h3 className="text-2xl font-black text-nexus-text tracking-tighter">{totalExpenses.toLocaleString()} FCFA</h3>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Dépenses (Sorties)</p>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{totalExpenses.toLocaleString()} FCFA</h3>
                 <div className="flex items-center gap-1 text-red-500 mt-1">
                   <ArrowDownCircle size={14} />
                   <span className="text-[10px] font-bold">Charges opérationnelles</span>
@@ -292,7 +292,7 @@ export default function AccountingModule() {
               transition={{ delay: 0.2 }}
               className={cn(
                 "p-6 rounded-[2rem] border shadow-xl flex items-center justify-between",
-                netIncome >= 0 ? "bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 border-blue-500 text-white shadow-blue-200/50" : "bg-nexus-accent border-nexus-border text-white shadow-slate-200/50"
+                netIncome >= 0 ? "bg-blue-600 border-blue-500 text-white shadow-blue-200/50" : "bg-slate-900 border-slate-800 text-white shadow-slate-200/50"
               )}
             >
               <div>
@@ -302,7 +302,7 @@ export default function AccountingModule() {
                   {isRentable ? "Rentabilité positive garantie" : "Déficit d'exploitation détecté"}
                 </p>
               </div>
-              <div className="w-14 h-14 bg-slate-500/20 dark:bg-slate-500/20 dark:bg-white/20 rounded-2xl flex items-center justify-center text-white">
+              <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-white">
                 <DollarSign size={28} />
               </div>
             </motion.div>
@@ -315,7 +315,7 @@ export default function AccountingModule() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="bg-nexus-accent p-8 rounded-[2.5rem] shadow-2xl shadow-slate-900/20 relative overflow-hidden text-white"
+                className="bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl shadow-slate-900/20 relative overflow-hidden text-white"
               >
                 <div className="absolute right-0 top-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
                 <div className="relative z-10">
@@ -328,7 +328,7 @@ export default function AccountingModule() {
                   {isAnalyzing ? (
                     <div className="flex flex-col items-center justify-center py-12 gap-4">
                       <Loader2 className="animate-spin text-amber-400" size={40} />
-                      <p className="text-nexus-text-muted font-bold uppercase tracking-widest text-[10px]">Le Nexus Core analyse vos flux financiers...</p>
+                      <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Le Nexus Core analyse vos flux financiers...</p>
                     </div>
                   ) : (
                     <div className="prose prose-invert max-w-none prose-sm">
@@ -341,7 +341,7 @@ export default function AccountingModule() {
           </AnimatePresence>
 
           {!aiSuggestions && !isAnalyzing && (
-            <div className="bg-nexus-accent p-6 sm:p-8 rounded-[2.5rem] shadow-2xl shadow-slate-900/20 relative overflow-hidden text-white flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="bg-slate-900 p-6 sm:p-8 rounded-[2.5rem] shadow-2xl shadow-slate-900/20 relative overflow-hidden text-white flex flex-col sm:flex-row items-center justify-between gap-6">
               <div className="absolute right-0 top-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
               <div className="relative z-10 flex-1">
                 <div className="flex items-center gap-3 mb-2">
@@ -350,7 +350,7 @@ export default function AccountingModule() {
                   </div>
                 </div>
                 <h3 className="text-xl font-black tracking-tight mb-2">Recommandation Opérationnelle</h3>
-                <p className="text-sm font-medium text-nexus-text-muted leading-relaxed max-w-3xl">
+                <p className="text-sm font-medium text-slate-300 leading-relaxed max-w-3xl">
                   {isRentable 
                     ? `L'entreprise affiche une marge nette de ${margeProfit}%. Son modèle d'affaires dégage un bénéfice consistant. Songez à réinvestir ces marges directement dans les ressources ou le marketing pour augmenter le volume d'activité.`
                     : `L'entreprise ne couvre actuellement pas l'ensemble de ses charges (Marge Nette: ${margeProfit}%). Il est prioritaire de réduire les dépenses fixes non essentielles ou d'ajuster vos tarifs.`}
@@ -365,7 +365,7 @@ export default function AccountingModule() {
                 </div>
               </div>
               <div className="shrink-0 relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-slate-500/10 dark:bg-slate-500/10 dark:bg-white/10 backdrop-blur border border-nexus-border/30 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur border border-white/5 flex items-center justify-center">
                   <Activity className={isRentable ? "text-emerald-400" : "text-red-400"} size={32} />
                 </div>
               </div>
@@ -377,12 +377,12 @@ export default function AccountingModule() {
             <motion.div 
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-nexus-surface p-8 rounded-[2.5rem] border border-nexus-border/30 shadow-2xl shadow-slate-200/40 h-[400px]"
+              className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-200/40 h-[400px]"
             >
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h3 className="text-sm font-black text-nexus-text uppercase tracking-wider">Évolution Réelle</h3>
-                  <p className="text-[10px] text-nexus-text-muted font-bold uppercase mt-1">Comparatif entrées / sorties par mois</p>
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Évolution Réelle</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Comparatif entrées / sorties par mois</p>
                 </div>
                 <BarChartIcon className="text-slate-200" size={24} />
               </div>
@@ -406,12 +406,12 @@ export default function AccountingModule() {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1 }}
-              className="bg-nexus-surface p-8 rounded-[2.5rem] border border-nexus-border/30 shadow-2xl shadow-slate-200/40 h-[400px]"
+              className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-200/40 h-[400px]"
             >
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h3 className="text-sm font-black text-nexus-text uppercase tracking-wider">Structure des Coûts</h3>
-                  <p className="text-[10px] text-nexus-text-muted font-bold uppercase mt-1">Répartition des charges par catégorie</p>
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Structure des Coûts</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Répartition des charges par catégorie</p>
                 </div>
                 <PieChartIcon className="text-slate-200" size={24} />
               </div>
@@ -443,12 +443,12 @@ export default function AccountingModule() {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-nexus-surface p-8 rounded-[2.5rem] border border-nexus-border/30 shadow-2xl shadow-slate-200/40"
+            className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-200/40"
           >
              <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h3 className="text-sm font-black text-nexus-text uppercase tracking-wider">Tendance de Profitabilité</h3>
-                  <p className="text-[10px] text-nexus-text-muted font-bold uppercase mt-1">Évolution linéaire de la performance</p>
+                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Tendance de Profitabilité</h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Évolution linéaire de la performance</p>
                 </div>
                 <TrendingUp className="text-slate-200" size={24} />
               </div>
@@ -473,15 +473,15 @@ export default function AccountingModule() {
 
       {activeTab === 'expenses' && (
         <div className="space-y-6">
-          <div className="bg-nexus-surface rounded-[2.5rem] border border-nexus-border/30 shadow-2xl shadow-slate-200/40 overflow-hidden">
+          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-200/40 overflow-hidden">
             <div className="p-8 pb-4 border-b border-slate-50 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-black text-nexus-text uppercase tracking-widest">Journal des Sorties</h3>
-                <p className="text-[10px] text-nexus-text-muted font-bold uppercase mt-1">Registre chronologique des charges</p>
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Journal des Sorties</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Registre chronologique des charges</p>
               </div>
               <button 
                 onClick={() => setIsAddingExpense(true)}
-                className="bg-nexus-accent text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-nexus-accent/80 text-white transition-all shadow-lg active:scale-95"
+                className="bg-slate-900 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-all shadow-lg active:scale-95"
               >
                 <Plus size={16} /> Enregistrer Charge
               </button>
@@ -489,21 +489,21 @@ export default function AccountingModule() {
 
             <Table headers={['Date', 'Catégorie', 'Description', 'Montant', 'Actions']}>
               {expenses.sort((a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0)).map(expense => (
-                <TableRow key={expense.id} className="hover:bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/5 transition-colors">
-                  <span className="text-[10px] font-bold text-nexus-text-muted">
+                <TableRow key={expense.id} className="hover:bg-slate-50 transition-colors">
+                  <span className="text-[10px] font-bold text-slate-400">
                     {expense.date ? new Date((expense.date.seconds || expense.date/1000) * 1000).toLocaleDateString() : 'Auj.'}
                   </span>
-                  <span className="px-3 py-1 bg-slate-100 text-nexus-text-muted rounded-full text-[10px] font-bold uppercase border border-nexus-border/50">
+                  <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[10px] font-bold uppercase border border-slate-200">
                     {expense.category}
                   </span>
-                  <span className="font-bold text-nexus-text">{expense.description}</span>
+                  <span className="font-bold text-slate-900">{expense.description}</span>
                   <span className="font-black text-red-600 font-mono tracking-tighter">
                     -{expense.amount.toLocaleString()} FCFA
                   </span>
                   <div className="flex justify-end">
                     <button 
                       onClick={() => handleDeleteExpense(expense.id)}
-                      className="p-2 text-nexus-text-muted hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                      className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -521,36 +521,36 @@ export default function AccountingModule() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-nexus-surface w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
+            className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
           >
             <div className="flex items-center gap-4 mb-8">
               <div className="w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center shadow-inner">
                 <Plus size={28} />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-nexus-text tracking-tight leading-none">Nouvelle Charge</h3>
-                <p className="text-xs font-bold text-nexus-text-muted uppercase tracking-widest mt-2">Enregistrement d'un flux de sortie</p>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Nouvelle Charge</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Enregistrement d'un flux de sortie</p>
               </div>
             </div>
 
             <form onSubmit={handleCreateExpense} className="space-y-5">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Libellé / Description</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Libellé / Description</label>
                 <input 
                   type="text" 
                   required
                   value={newExpense.description}
                   onChange={e => setNewExpense({...newExpense, description: e.target.value})}
                   placeholder="Ex: Facture d'électricité"
-                  className="w-full rounded-2xl px-5 py-4 /20 font-bold text-sm transition-all hover:-strong nexus-input w-full text-sm"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-red-600/20 focus:border-red-600 font-bold text-sm transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Catégorie</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Catégorie</label>
                   <select 
-                    className="w-full rounded-2xl px-5 py-4 /20 font-bold text-sm appearance-none cursor-pointer hover:-strong nexus-input w-full text-sm"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 font-bold text-sm appearance-none cursor-pointer"
                     value={newExpense.category}
                     onChange={e => setNewExpense({...newExpense, category: e.target.value})}
                   >
@@ -558,7 +558,7 @@ export default function AccountingModule() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest ml-1">Montant (FCFA)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Montant (FCFA)</label>
                   <input 
                     type="number" 
                     required
@@ -566,7 +566,7 @@ export default function AccountingModule() {
                     value={newExpense.amount || ''}
                     onChange={e => setNewExpense({...newExpense, amount: Number(e.target.value)})}
                     placeholder="0.00"
-                    className="w-full rounded-2xl px-5 py-4 /20 font-mono font-bold text-sm transition-all hover:-strong nexus-input w-full text-sm"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-red-600/20 focus:border-red-600 font-mono font-bold text-sm transition-all"
                   />
                 </div>
               </div>
@@ -575,7 +575,7 @@ export default function AccountingModule() {
                 <button 
                   type="button" 
                   onClick={() => setIsAddingExpense(false)}
-                  className="flex-1 py-4 bg-slate-100 text-nexus-text-muted rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-all shadow-sm"
+                  className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-all shadow-sm"
                 >
                   Annuler
                 </button>

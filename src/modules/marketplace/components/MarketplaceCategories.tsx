@@ -26,7 +26,7 @@ export function MarketplaceCategories({ activeCategory, setActiveCategory }: Cat
     <div className="bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex gap-4 overflow-x-auto py-4 scrollbar-hide -mx-2 px-2 mask-linear-gradient-x items-center">
-          <div className="text-[9px] font-black uppercase tracking-[0.2em] text-nexus-text-muted mr-2 shrink-0">
+          <div className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mr-2 shrink-0">
             Rayons :
           </div>
           {CATEGORY_LIST.map((cat) => {
@@ -39,7 +39,7 @@ export function MarketplaceCategories({ activeCategory, setActiveCategory }: Cat
                 className={cn(
                   "px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border shrink-0 flex items-center gap-2",
                   isActive
-                    ? "bg-nexus-accent border-slate-900 text-white shadow-xl shadow-slate-900/10"
+                    ? "bg-slate-900 border-slate-900 text-white shadow-xl shadow-slate-900/10"
                     : "bg-slate-50 text-slate-500 border-slate-200 hover:border-blue-400 hover:text-blue-600 hover:bg-white"
                 )}
               >

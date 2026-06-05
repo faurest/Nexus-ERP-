@@ -51,7 +51,6 @@ import Marketplace from './components/Marketplace';
 import GuideModule from './components/GuideModule';
 import ContextualHelp from './components/ContextualHelp';
 import NotificationBell from './components/NotificationBell';
-import ThemeToggle from './components/ThemeToggle';
 import CriticalNotificationOverlay from './components/CriticalNotificationOverlay';
 import CommandPalette from './components/CommandPalette';
 
@@ -65,6 +64,9 @@ import { DEFAULT_ROLES } from './core/permissions/roles';
 import { NexusLogo } from './components/NexusLogo';
 
 
+
+import { ThemeToggle } from './components/ThemeToggle';
+import { useThemeStore } from './store/themeStore';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -81,6 +83,15 @@ export default function App() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const { currentCompany, companies, setCurrentCompany, loading: companyLoading } = useCompany();
+  const { isDark } = useThemeStore();
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
   const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
@@ -237,7 +248,14 @@ export default function App() {
       const cleanEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '');
       const isMaster = currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid || user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com';
 
-      if (cleanEmail) {
+      if (isMaster) {
+        setUser(prev => {
+          if (!prev) return null;
+          if (prev.role === 'owner') return prev;
+          return { ...prev, role: 'owner' };
+        });
+        setIsBlocked(false);
+      } else if (cleanEmail) {
         // Try to find the user in the personnel collection for this company
         const q = query(
           collection(db, 'personnel'), 
@@ -250,7 +268,7 @@ export default function App() {
           if (!snap.empty) {
             const memberDoc = snap.docs[0];
             const memberData = memberDoc.data();
-            if (memberData.status === 'blocked' && !isMaster) {
+            if (memberData.status === 'blocked') {
               setIsBlocked(true);
             } else {
               // Sync the UID and status if not present
@@ -266,8 +284,7 @@ export default function App() {
 
               setUser(prev => {
                 if (!prev) return null;
-                // If they are master and have no role, give them owner, else use their assigned role
-                const newRole = isMaster ? (memberData.role && memberData.role !== 'Personnel' ? memberData.role : 'owner') : (memberData.role || 'Personnel');
+                const newRole = memberData.role || 'Personnel';
                 const newPermissions = memberData.customPermissions || [];
                 const newEmail = user.email || memberData.email;
                 const newNexusId = memberData.id || memberDoc.id;
@@ -351,7 +368,7 @@ export default function App() {
                        uid: user.uid,
                        email: cleanEmail,
                        name: user.displayName || cleanEmail.split('@')[0],
-                       role: isMaster ? 'owner' : 'Personnel',
+                       role: 'Personnel',
                        status: 'active',
                        joinMethod: 'auto_sync',
                        createdAt: serverTimestamp(),
@@ -363,17 +380,7 @@ export default function App() {
                      setIsBlocked(true);
                    }
                  } else {
-                   // If not in memberEmails, check if isMaster
-                   if (isMaster) {
-                     setUser(prev => {
-                       if (!prev) return null;
-                       if (prev.role === 'owner') return prev;
-                       return { ...prev, role: 'owner' };
-                     });
-                     setIsBlocked(false);
-                   } else {
-                     setIsBlocked(true); // Treat as unauthorized
-                   }
+                   setIsBlocked(true); // Treat as unauthorized
                  }
                }
              }, (err) => {

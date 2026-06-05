@@ -47,7 +47,7 @@ export function MarketplaceProductDetail({
       >
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 w-10 h-10 bg-slate-500/5 dark:bg-slate-500/5 dark:bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center text-slate-900 shadow-sm border border-slate-200 hover:bg-slate-100 transition-all"
+          className="absolute top-4 right-4 z-20 w-10 h-10 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center text-slate-900 shadow-sm border border-slate-200 hover:bg-slate-100 transition-all"
         >
           <X size={20} />
         </button>
@@ -69,7 +69,7 @@ export function MarketplaceProductDetail({
         {/* Details Section */}
         <div className="w-full md:w-1/2 h-full overflow-y-auto p-6 md:p-10 flex flex-col">
           <div className="space-y-6 flex-1">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-nexus-text-muted">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded-md">{product.category || 'Non classé'}</span>
                {company && <span>• {company.name}</span>}
             </div>
@@ -95,7 +95,7 @@ export function MarketplaceProductDetail({
                        <span className={cn("text-xs font-bold transition-colors", nairaEnabled ? "text-emerald-600" : "text-slate-700")}>
                          {nairaEnabled ? `₦ ${Math.round(offer.price * nairaRate).toLocaleString()}` : `${offer.price.toLocaleString()} FCFA`}
                        </span>
-                       <button onClick={() => onAddToCart(offer)} className="px-3 py-1.5 bg-nexus-accent text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-colors">
+                       <button onClick={() => onAddToCart(offer)} className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-colors">
                          Acheter
                        </button>
                     </div>
@@ -124,8 +124,8 @@ export function MarketplaceProductDetail({
                 className={cn(
                   "flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-xl",
                   product.stock <= 0 && !product.allowBackorder
-                    ? "bg-slate-100 text-nexus-text-muted cursor-not-allowed shadow-none"
-                    : "bg-nexus-accent text-white hover:bg-nexus-accent text-white hover:bg-nexus-accent-hover shadow-lg hover:shadow-nexus-accent/20 hover:shadow-blue-600/20 active:scale-95"
+                    ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
+                    : "bg-slate-900 text-white hover:bg-blue-600 hover:shadow-blue-600/20 active:scale-95"
                 )}
               >
                 <ShoppingCart size={16} /> 
