@@ -1053,7 +1053,7 @@ export default function AdminModule() {
                   placeholder="Rechercher..." 
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-11 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-xs font-black w-72 focus:ring-4 focus:ring-blue-50 focus:bg-white transition-all shadow-inner"
+                  className="pl-11 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-xs font-black w-72 focus:ring-4 focus:ring-blue-50 focus:bg-white transition-all shadow-inner text-slate-900"
                 />
               </div>
             </div>
@@ -1252,7 +1252,7 @@ export default function AdminModule() {
                   required
                   value={editingUser.displayName || ''}
                   onChange={e => setEditingUser({...editingUser, displayName: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all text-slate-900"
                 />
               </div>
               <div className="space-y-1.5">
@@ -1262,7 +1262,7 @@ export default function AdminModule() {
                   required
                   value={editingUser.email || ''}
                   onChange={e => setEditingUser({...editingUser, email: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all text-slate-900"
                 />
               </div>
 
@@ -1301,7 +1301,7 @@ export default function AdminModule() {
                 placeholder="Email à diagnostiquer..." 
                 value={diagEmail}
                 onChange={e => setDiagEmail(e.target.value)}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all"
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all text-slate-900"
               />
               <button 
                 onClick={handleDiagnostic}
@@ -1493,7 +1493,7 @@ export default function AdminModule() {
                   placeholder="Ex: dangafelicite@gmail.com" 
                   value={cloneSource}
                   onChange={e => setCloneSource(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900"
                 />
               </div>
               <div className="space-y-2">
@@ -1503,7 +1503,7 @@ export default function AdminModule() {
                   placeholder="Ex: hackeurfaurest@gmail.com" 
                   value={cloneTarget}
                   onChange={e => setCloneTarget(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-emerald-600 font-bold text-sm"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-emerald-600 font-bold text-sm text-slate-900"
                 />
               </div>
               <button 
@@ -1701,7 +1701,7 @@ export default function AdminModule() {
                   required
                   value={editingCompany.name}
                   onChange={e => setEditingCompany({...editingCompany, name: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all text-slate-900"
                 />
               </div>
               <div className="space-y-1.5">
@@ -1711,7 +1711,7 @@ export default function AdminModule() {
                   required
                   value={editingCompany.ownerEmail}
                   onChange={e => setEditingCompany({...editingCompany, ownerEmail: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all text-slate-900"
                 />
               </div>
               <div className="space-y-1.5">
@@ -1721,7 +1721,7 @@ export default function AdminModule() {
                   required
                   value={editingCompany.joinCode}
                   onChange={e => setEditingCompany({...editingCompany, joinCode: e.target.value.toUpperCase()})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all text-slate-900"
                 />
               </div>
 
@@ -1736,7 +1736,7 @@ export default function AdminModule() {
                       placeholder="Ex: 237690000000"
                       value={editingCompany.whatsappNumber || ''}
                       onChange={e => setEditingCompany({...editingCompany, whatsappNumber: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -1746,7 +1746,7 @@ export default function AdminModule() {
                       placeholder="Ex: IT, BTP, Santé"
                       value={editingCompany.category || ''}
                       onChange={e => setEditingCompany({...editingCompany, category: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900"
                     />
                   </div>
                 </div>
@@ -1758,7 +1758,7 @@ export default function AdminModule() {
                     placeholder="https://..."
                     value={editingCompany.logo || ''}
                     onChange={e => setEditingCompany({...editingCompany, logo: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900"
                   />
                 </div>
               </div>
@@ -1813,7 +1813,7 @@ export default function AdminModule() {
                   type="email" 
                   required
                   placeholder="exemple@mail.com"
-                  className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent font-bold text-sm"
+                  className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent font-bold text-sm text-slate-900"
                   value={newMemberEmail}
                   onChange={e => setNewMemberEmail(e.target.value)}
                 />
@@ -1897,7 +1897,7 @@ export default function AdminModule() {
                     <div className="flex items-center gap-2">
                       <select 
                         id={`role-select-${comp.id}`} 
-                        className="text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 outline-none focus:border-blue-400"
+                        className="text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 outline-none focus:border-blue-400 text-slate-900"
                         defaultValue={roles[0]}
                       >
                         {roles.map(r => <option key={r} value={r}>{r}</option>)}
@@ -1950,7 +1950,7 @@ export default function AdminModule() {
                     value={newCompany.name}
                     onChange={e => setNewCompany({...newCompany, name: e.target.value})}
                     placeholder="Ex: Global Logistics SA"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all text-slate-900"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1961,7 +1961,7 @@ export default function AdminModule() {
                     value={newCompany.ownerEmail}
                     onChange={e => setNewCompany({...newCompany, ownerEmail: e.target.value})}
                     placeholder="admin@entreprise.com"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all text-slate-900"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1971,7 +1971,7 @@ export default function AdminModule() {
                     value={newCompany.joinCode}
                     onChange={e => setNewCompany({...newCompany, joinCode: e.target.value.toUpperCase()})}
                     placeholder="AUTO-GENERATED"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all text-slate-900"
                   />
                 </div>
               </div>

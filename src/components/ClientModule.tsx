@@ -304,7 +304,7 @@ export default function ClientModule() {
                 <input 
                   required
                   type="text" 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all text-slate-900"
                   value={newClient.name}
                   onChange={(e) => setNewClient({...newClient, name: e.target.value})}
                 />
@@ -314,7 +314,7 @@ export default function ClientModule() {
                 <input 
                   required
                   type="email" 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all text-slate-900"
                   value={newClient.email}
                   onChange={(e) => setNewClient({...newClient, email: e.target.value})}
                 />
@@ -323,7 +323,7 @@ export default function ClientModule() {
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Numéro Téléphonique</label>
                 <input 
                   type="tel" 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all text-slate-900"
                   value={newClient.phone}
                   onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
                 />
@@ -332,7 +332,7 @@ export default function ClientModule() {
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Adresse</label>
                 <input 
                   type="text" 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all text-slate-900"
                   value={newClient.address}
                   onChange={(e) => setNewClient({...newClient, address: e.target.value})}
                 />
@@ -340,7 +340,7 @@ export default function ClientModule() {
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Historique d'Interactions / Évolution</label>
                 <textarea 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all resize-none h-24"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all resize-none h-24 text-slate-900"
                   value={newClient.interactions}
                   onChange={(e) => setNewClient({...newClient, interactions: e.target.value})}
                   placeholder="Notes sur les rendez-vous, appels, intérêts..."

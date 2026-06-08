@@ -140,7 +140,7 @@ export default function ContextualHelp({ isOpen, onClose, topic }: ContextualHel
                       value={search}
                       onChange={e => setSearch(e.target.value)}
                       placeholder="Besoin d'aide ? Taper 'Naira', 'Stock'..."
-                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-[11px] font-black outline-none focus:bg-white focus:border-blue-500 transition-all"
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-[11px] font-black outline-none focus:bg-white focus:border-blue-500 transition-all text-slate-900"
                     />
                  </div>
               </div>

@@ -133,7 +133,7 @@ export default function GuideModule() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Rechercher une procédure (ex: 'Naira', 'Echec', 'Stock')..."
-              className="w-full bg-slate-50 border-2 border-slate-50 rounded-2xl py-5 pl-16 pr-6 text-sm font-black outline-none focus:bg-white focus:border-blue-600 transition-all shadow-inner"
+              className="w-full bg-slate-50 border-2 border-slate-50 rounded-2xl py-5 pl-16 pr-6 text-sm font-black outline-none focus:bg-white focus:border-blue-600 transition-all shadow-inner text-slate-900"
             />
          </div>
          <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl overflow-x-auto w-full md:w-auto scrollbar-hide">
@@ -283,7 +283,7 @@ export default function GuideModule() {
                      <input 
                        type="number"
                        placeholder="Ex: 5000"
-                       className="bg-transparent border-none text-2xl font-black w-full outline-none"
+                       className="bg-transparent border-none text-2xl font-black w-full outline-none text-nexus-text"
                        onChange={(e) => {
                          const val = Number(e.target.value);
                          const res = document.getElementById('naira-result');

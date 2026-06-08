@@ -726,7 +726,7 @@ export default function SalesModule({ user }: { user: any }) {
                        </div>
                        <div className="text-right shrink-0">
                          <div className="text-xs font-black text-slate-900 border-b border-transparent group-hover:border-slate-200 focus-within:border-blue-400 pb-0.5">
-                           <input type="number" className="w-12 text-right bg-transparent outline-none" value={item.price} onChange={(e) => {
+                           <input type="number" className="w-12 text-right bg-transparent outline-none text-nexus-text" value={item.price} onChange={(e) => {
                              handleUpdateCart(currentCart.map((c: any) => c.id === item.id ? { ...c, price: Number(e.target.value) } : c));
                            }} /> FCFA
                          </div>

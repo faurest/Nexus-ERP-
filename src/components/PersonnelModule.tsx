@@ -1093,7 +1093,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
             <form onSubmit={handleCreateLeave} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Collaborateur</label>
-                <select required value={newLeave.staffId} onChange={e => setNewLeave({...newLeave, staffId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none">
+                <select required value={newLeave.staffId} onChange={e => setNewLeave({...newLeave, staffId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900">
                   <option value="">Sélectionner...</option>
                   {staffList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
@@ -1101,16 +1101,16 @@ export default function PersonnelModule({ user }: { user?: any }) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Date début</label>
-                  <input required type="date" value={newLeave.startDate} onChange={e => setNewLeave({...newLeave, startDate: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" />
+                  <input required type="date" value={newLeave.startDate} onChange={e => setNewLeave({...newLeave, startDate: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Date fin</label>
-                  <input required type="date" value={newLeave.endDate} onChange={e => setNewLeave({...newLeave, endDate: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" />
+                  <input required type="date" value={newLeave.endDate} onChange={e => setNewLeave({...newLeave, endDate: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Type d'absence</label>
-                <select required value={newLeave.type} onChange={e => setNewLeave({...newLeave, type: e.target.value as any})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none">
+                <select required value={newLeave.type} onChange={e => setNewLeave({...newLeave, type: e.target.value as any})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900">
                   <option value="leave">Congé Payé</option>
                   <option value="absence">Absence Injustifiée</option>
                   <option value="medical">Arrêt Maladie</option>
@@ -1118,7 +1118,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Motif / Commentaire</label>
-                <textarea value={newLeave.reason} onChange={e => setNewLeave({...newLeave, reason: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none resize-none h-24" />
+                <textarea value={newLeave.reason} onChange={e => setNewLeave({...newLeave, reason: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none resize-none h-24 text-slate-900" />
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-6">
@@ -1146,7 +1146,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
             <form onSubmit={handleCreateTimeEntry} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Collaborateur</label>
-                <select required value={newTimeEntry.staffId} onChange={e => setNewTimeEntry({...newTimeEntry, staffId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none">
+                <select required value={newTimeEntry.staffId} onChange={e => setNewTimeEntry({...newTimeEntry, staffId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900">
                   <option value="">Sélectionner...</option>
                   {staffList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
@@ -1154,23 +1154,23 @@ export default function PersonnelModule({ user }: { user?: any }) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Date</label>
-                  <input required type="date" value={newTimeEntry.date} onChange={e => setNewTimeEntry({...newTimeEntry, date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" />
+                  <input required type="date" value={newTimeEntry.date} onChange={e => setNewTimeEntry({...newTimeEntry, date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Heures</label>
-                  <input required type="number" step="0.5" value={newTimeEntry.hours} onChange={e => setNewTimeEntry({...newTimeEntry, hours: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" />
+                  <input required type="number" step="0.5" value={newTimeEntry.hours} onChange={e => setNewTimeEntry({...newTimeEntry, hours: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Projet</label>
-                <select value={newTimeEntry.projectId} onChange={e => setNewTimeEntry({...newTimeEntry, projectId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none">
+                <select value={newTimeEntry.projectId} onChange={e => setNewTimeEntry({...newTimeEntry, projectId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900">
                   <option value="">Hors Projet</option>
                   {projectsList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Description du travail</label>
-                <textarea required value={newTimeEntry.description} onChange={e => setNewTimeEntry({...newTimeEntry, description: e.target.value})} placeholder="Détaillez les tâches accomplies..." className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none resize-none h-24" />
+                <textarea required value={newTimeEntry.description} onChange={e => setNewTimeEntry({...newTimeEntry, description: e.target.value})} placeholder="Détaillez les tâches accomplies..." className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none resize-none h-24 text-slate-900" />
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-6">
@@ -1198,7 +1198,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
             <form onSubmit={handleCreateAdvanceRequest} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Collaborateur</label>
-                <select required value={newAdvance.staffId} onChange={e => setNewAdvance({...newAdvance, staffId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none">
+                <select required value={newAdvance.staffId} onChange={e => setNewAdvance({...newAdvance, staffId: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900">
                   <option value="">Sélectionner...</option>
                   {staffList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
@@ -1206,16 +1206,16 @@ export default function PersonnelModule({ user }: { user?: any }) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Montant (FCFA)</label>
-                  <input required type="number" value={newAdvance.amount} onChange={e => setNewAdvance({...newAdvance, amount: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" />
+                  <input required type="number" value={newAdvance.amount} onChange={e => setNewAdvance({...newAdvance, amount: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Mois de déduction</label>
-                  <input required type="month" value={newAdvance.deductionMonth} onChange={e => setNewAdvance({...newAdvance, deductionMonth: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" />
+                  <input required type="month" value={newAdvance.deductionMonth} onChange={e => setNewAdvance({...newAdvance, deductionMonth: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Motif de la demande</label>
-                <textarea required value={newAdvance.reason} onChange={e => setNewAdvance({...newAdvance, reason: e.target.value})} placeholder="Expliquez brièvement le besoin..." className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none resize-none h-24" />
+                <textarea required value={newAdvance.reason} onChange={e => setNewAdvance({...newAdvance, reason: e.target.value})} placeholder="Expliquez brièvement le besoin..." className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none resize-none h-24 text-slate-900" />
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-6">
@@ -1310,7 +1310,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                   <input 
                     value={newStaff.firstName} 
                     onChange={e => setNewStaff({...newStaff, firstName: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" 
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1318,7 +1318,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                   <input 
                     value={newStaff.lastName} 
                     onChange={e => setNewStaff({...newStaff, lastName: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" 
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1327,7 +1327,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                     type="email"
                     value={newStaff.email} 
                     onChange={e => setNewStaff({...newStaff, email: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" 
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1336,7 +1336,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                     type="tel"
                     value={newStaff.phone} 
                     onChange={e => setNewStaff({...newStaff, phone: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" 
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1345,7 +1345,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                     value={newStaff.department} 
                     onChange={e => setNewStaff({...newStaff, department: e.target.value})}
                     placeholder="e.g. Logistique, Commercial"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none" 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" 
                   />
                 </div>
                 {!editingStaff && (
@@ -1370,7 +1370,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                   <select 
                     value={newStaff.role} 
                     onChange={e => setNewStaff({...newStaff, role: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm appearance-none outline-none focus:border-blue-400"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm appearance-none outline-none focus:border-blue-400 text-slate-900"
                   >
                     {roleOptions.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
@@ -1381,7 +1381,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                     value={newStaff.notes} 
                     onChange={e => setNewStaff({...newStaff, notes: e.target.value})}
                     placeholder="Informations supplémentaires..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-blue-400 resize-none h-20"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm outline-none focus:border-blue-400 resize-none h-20 text-slate-900"
                   />
                 </div>
               </div>

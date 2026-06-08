@@ -1741,7 +1741,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                         setSavingSettings(false);
                       }
                     }}
-                    className="bg-transparent border-none text-xs font-black w-14 outline-none tabular-nums"
+                    className="bg-transparent border-none text-xs font-black w-14 outline-none tabular-nums text-nexus-text"
                   />
                 </div>
               </div>
@@ -2301,7 +2301,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                     <input 
                       type="text" 
                       placeholder="Tapez le nom ou la référence..."
-                      className="w-full bg-slate-50 border-2 border-transparent rounded-2xl py-5 pl-12 pr-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none transition-all shadow-inner"
+                      className="w-full bg-slate-50 border-2 border-transparent rounded-2xl py-5 pl-12 pr-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none transition-all shadow-inner text-slate-900"
                       onChange={(e) => {
                         const term = e.target.value.toLowerCase();
                         if (term.length > 1) {
@@ -2332,7 +2332,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                       <input 
                         type="number" 
                         placeholder="Ex: 50"
-                        className="w-full bg-slate-50 border-2 border-transparent rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none shadow-inner"
+                        className="w-full bg-slate-50 border-2 border-transparent rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none shadow-inner text-slate-900"
                         value={replenishmentQty}
                         onChange={e => setReplenishmentQty(e.target.value)}
                       />
@@ -2343,7 +2343,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                         <input 
                           type="number" 
                           placeholder={replenishmentProduct.purchasePrice?.toString() || "0"}
-                          className="w-full bg-slate-50 border-2 border-transparent rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none shadow-inner"
+                          className="w-full bg-slate-50 border-2 border-transparent rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none shadow-inner text-slate-900"
                           value={replenishmentPurchasePrice}
                           onChange={e => setReplenishmentPurchasePrice(e.target.value)}
                         />
@@ -2655,7 +2655,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                     <select 
                       value={selectedLocation}
                       onChange={(e) => setSelectedLocation(e.target.value)}
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl py-6 px-8 text-sm font-black appearance-none outline-none focus:bg-white focus:border-blue-500 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm"
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl py-6 px-8 text-sm font-black appearance-none outline-none focus:bg-white focus:border-blue-500 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm text-slate-900"
                       required
                     >
                       <option value="">Sélectionnez votre ville / zone...</option>
@@ -2777,7 +2777,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               </div>
 
               <textarea 
-                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-[11px] font-bold outline-none focus:bg-white focus:border-blue-600 transition-all h-24"
+                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-[11px] font-bold outline-none focus:bg-white focus:border-blue-600 transition-all h-24 text-slate-900"
                 placeholder="Commentaire public pour le client..."
                 value={statusComment}
                 onChange={e => setStatusComment(e.target.value)}
@@ -2786,7 +2786,7 @@ export default function EcommerceModule({ user }: { user: any }) {
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1 italic">Notes Internes (Privé Nexus)</label>
                 <textarea 
-                  className="w-full bg-slate-100/50 border border-slate-200 rounded-2xl p-4 text-[11px] font-black outline-none focus:bg-white transition-all h-20"
+                  className="w-full bg-slate-100/50 border border-slate-200 rounded-2xl p-4 text-[11px] font-black outline-none focus:bg-white transition-all h-20 text-slate-900"
                   placeholder="Notes de coordination, détails livreur..."
                   defaultValue={(updatingStatusOrder.order as any).internalNotes || ''}
                   onChange={e => setInternalNotes(e.target.value)}
@@ -2882,7 +2882,7 @@ export default function EcommerceModule({ user }: { user: any }) {
 
               {cancellationReason.includes('Autre') && (
                 <textarea 
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-[11px] font-bold outline-none focus:bg-white focus:border-red-600 transition-all h-20"
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-[11px] font-bold outline-none focus:bg-white focus:border-red-600 transition-all h-20 text-slate-900"
                   placeholder="Détails du motif..."
                   value={otherReason}
                   onChange={e => setOtherReason(e.target.value)}
@@ -2944,7 +2944,7 @@ export default function EcommerceModule({ user }: { user: any }) {
             >
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Nom de la solution</label>
-                <input name="name" defaultValue={editingProduct.name} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none" required />
+                <input name="name" defaultValue={editingProduct.name} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none text-slate-900" required />
               </div>
               <div className="relative group">
                 <div className="flex justify-between items-center mb-1.5">
@@ -2963,7 +2963,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                   name="description" 
                   value={editingProduct.description}
                   onChange={e => setEditingProduct({...editingProduct, description: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none h-32 resize-none leading-relaxed italic" 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none h-32 resize-none leading-relaxed italic text-slate-900" 
                   required 
                 />
                 <div className="absolute bottom-3 right-3 text-[9px] font-black text-slate-400 uppercase tracking-widest opacity-0 group-focus-within:opacity-100 transition-opacity">
@@ -2973,22 +2973,22 @@ export default function EcommerceModule({ user }: { user: any }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Prix de Vente (FCFA)</label>
-                  <input name="price" type="number" defaultValue={editingProduct.price} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                  <input name="price" type="number" defaultValue={editingProduct.price} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none text-slate-900" required />
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Prix d'Achat (Confidentiel)</label>
-                  <input name="purchasePrice" type="number" defaultValue={editingProduct.purchasePrice || 0} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                  <input name="purchasePrice" type="number" defaultValue={editingProduct.purchasePrice || 0} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none text-slate-900" required />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Inventaire / Stock</label>
-                    <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                    <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none text-slate-900" required />
                   </div>
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Seuil d'Alerte</label>
-                    <input name="stockThreshold" type="number" defaultValue={editingProduct.stockThreshold || 5} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                    <input name="stockThreshold" type="number" defaultValue={editingProduct.stockThreshold || 5} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none text-slate-900" required />
                   </div>
                 </div>
                 <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
@@ -3002,13 +3002,13 @@ export default function EcommerceModule({ user }: { user: any }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Classification</label>
-                  <select name="category" defaultValue={editingProduct.category} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-600 outline-none">
+                  <select name="category" defaultValue={editingProduct.category} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-600 outline-none text-slate-900">
                     {(companyCategories as any[]).map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Allocation Points</label>
-                  <input name="points" type="number" defaultValue={editingProduct.points} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                  <input name="points" type="number" defaultValue={editingProduct.points} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none text-slate-900" required />
                 </div>
               </div>
 
@@ -3169,7 +3169,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                     value={newOrderMessage}
                     onChange={(e) => setNewOrderMessage(e.target.value)}
                     placeholder="Message opérationnel..."
-                    className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-200 transition-all text-sm font-medium"
+                    className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-blue-100 focus:bg-white focus:border-blue-200 transition-all text-sm font-medium text-slate-900"
                   />
                   <button 
                     disabled={!newOrderMessage.trim() || sendingMessage}

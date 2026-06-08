@@ -542,7 +542,7 @@ export default function AccountingModule() {
                   value={newExpense.description}
                   onChange={e => setNewExpense({...newExpense, description: e.target.value})}
                   placeholder="Ex: Facture d'électricité"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-red-600/20 focus:border-red-600 font-bold text-sm transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-red-600/20 focus:border-red-600 font-bold text-sm transition-all text-slate-900"
                 />
               </div>
 
@@ -550,7 +550,7 @@ export default function AccountingModule() {
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Catégorie</label>
                   <select 
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 font-bold text-sm appearance-none cursor-pointer"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 font-bold text-sm appearance-none cursor-pointer text-slate-900"
                     value={newExpense.category}
                     onChange={e => setNewExpense({...newExpense, category: e.target.value})}
                   >
@@ -566,7 +566,7 @@ export default function AccountingModule() {
                     value={newExpense.amount || ''}
                     onChange={e => setNewExpense({...newExpense, amount: Number(e.target.value)})}
                     placeholder="0.00"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-red-600/20 focus:border-red-600 font-mono font-bold text-sm transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-red-600/20 focus:border-red-600 font-mono font-bold text-sm transition-all text-slate-900"
                   />
                 </div>
               </div>

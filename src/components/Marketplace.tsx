@@ -1111,7 +1111,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                               required
                               type="text"
                               placeholder="Ex: Amadou Maroua"
-                              className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm"
+                              className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm text-slate-900"
                               value={checkoutData.name}
                               onChange={(e) =>
                                 setCheckoutData({
@@ -1127,7 +1127,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                               required
                               type="tel"
                               placeholder="6xx xx xx xx"
-                              className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm"
+                              className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm text-slate-900"
                               value={checkoutData.phone}
                               onChange={(e) =>
                                 setCheckoutData({
@@ -1146,7 +1146,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                               required
                               type="text"
                               placeholder="Ex: Hardé, face École du Centre"
-                              className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm"
+                              className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 focus:ring-8 focus:ring-blue-50 transition-all shadow-sm text-slate-900"
                               value={checkoutData.quartier}
                               onChange={(e) =>
                                 setCheckoutData({
@@ -1162,7 +1162,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                             <div className="relative">
                               <select 
                                 required
-                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 pr-12 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 appearance-none transition-all shadow-sm"
+                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl px-6 py-5 pr-12 text-sm font-bold outline-none focus:bg-white focus:border-blue-600 appearance-none transition-all shadow-sm text-slate-900"
                                 value={selectedLocation}
                                 onChange={(e) => setSelectedLocation(e.target.value)}
                               >

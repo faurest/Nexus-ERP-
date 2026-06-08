@@ -436,36 +436,36 @@ export default function ResourceModule({ user }: { user: any }) {
                >
                  <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Désignation</label>
-                    <input name="name" placeholder="ex: Serveur Nexus V3" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none" required />
+                    <input name="name" placeholder="ex: Serveur Nexus V3" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-600 outline-none text-slate-900" required />
                  </div>
                  <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Spécifications & Détails</label>
-                    <textarea name="description" placeholder="Détails techniques du produit..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none h-28" required />
+                    <textarea name="description" placeholder="Détails techniques du produit..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none h-28 text-slate-900" required />
                  </div>
                  <div className="space-y-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Options de Configuration (Variantes)</label>
-                    <textarea name="configOptions" placeholder="ex: Couleurs: Noir, Blanc; Stockage: 512GB, 1TB" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[10px] focus:ring-2 focus:ring-blue-600 outline-none h-24" />
+                    <textarea name="configOptions" placeholder="ex: Couleurs: Noir, Blanc; Stockage: 512GB, 1TB" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[10px] focus:ring-2 focus:ring-blue-600 outline-none h-24 text-slate-900" />
                  </div>
                  <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Prix (XAF)</label>
-                      <input name="price" type="number" placeholder="0" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                      <input name="price" type="number" placeholder="0" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none text-slate-900" required />
                    </div>
                    <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Stock Initial</label>
-                      <input name="stock" type="number" placeholder="0" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                      <input name="stock" type="number" placeholder="0" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none text-slate-900" required />
                    </div>
                  </div>
                  <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Secteur</label>
-                      <select name="category" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-600 outline-none">
+                      <select name="category" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-600 outline-none text-slate-900">
                         {['Hardware', 'Software', 'Office', 'Services'].map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                    </div>
                    <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Poids Fidélité</label>
-                      <input name="points" type="number" placeholder="Pts" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none" required />
+                      <input name="points" type="number" placeholder="Pts" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none text-slate-900" required />
                    </div>
                  </div>
                  <div className="space-y-1">
@@ -757,35 +757,35 @@ export default function ResourceModule({ user }: { user: any }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nom de l'Article</label>
-                  <input name="name" defaultValue={editingProduct.name} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <input name="name" defaultValue={editingProduct.name} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" required />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Catégorie</label>
-                  <select name="category" defaultValue={editingProduct.category} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none">
+                  <select name="category" defaultValue={editingProduct.category} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none text-slate-900">
                     {['Hardware', 'Software', 'Office', 'Services'].map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Prix (XAF)</label>
-                  <input name="price" type="number" defaultValue={editingProduct.price} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <input name="price" type="number" defaultValue={editingProduct.price} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" required />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Stock</label>
-                  <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" required />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Description Technique</label>
-                <textarea name="description" defaultValue={editingProduct.description} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none h-28" required />
+                <textarea name="description" defaultValue={editingProduct.description} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none h-28 text-slate-900" required />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Options & Variantes (Configuration)</label>
-                <textarea name="configOptions" defaultValue={editingProduct.configOptions} placeholder="ex: Couleurs: Rouge, Bleu; Tailles: M, L, XL" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500 outline-none h-24" />
+                <textarea name="configOptions" defaultValue={editingProduct.configOptions} placeholder="ex: Couleurs: Rouge, Bleu; Tailles: M, L, XL" className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs focus:ring-2 focus:ring-blue-500 outline-none h-24 text-slate-900" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Points Fidélité</label>
-                  <input name="points" type="number" defaultValue={editingProduct.points} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <input name="points" type="number" defaultValue={editingProduct.points} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" required />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Visuel de l'Article</label>
@@ -836,7 +836,7 @@ export default function ResourceModule({ user }: { user: any }) {
                   <input 
                     type="text" 
                     required
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all text-slate-900" 
                     value={formData.name || ''} 
                     onChange={e => setFormData({...formData, name: e.target.value})} 
                   />
@@ -844,7 +844,7 @@ export default function ResourceModule({ user }: { user: any }) {
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Catégorie Nexus</label>
                   <select 
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" 
                     value={formData.type} 
                     onChange={e => setFormData({...formData, type: e.target.value})}
                   >
@@ -859,7 +859,7 @@ export default function ResourceModule({ user }: { user: any }) {
                   <input 
                     type="number" 
                     required
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" 
                     value={formData.quantity} 
                     onChange={e => setFormData({...formData, quantity: e.target.value})} 
                   />
@@ -869,7 +869,7 @@ export default function ResourceModule({ user }: { user: any }) {
                   <input 
                     type="text" 
                     placeholder="Ex: Entrepôt A, Bureau 102"
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" 
                     value={formData.location || ''} 
                     onChange={e => setFormData({...formData, location: e.target.value})} 
                   />
@@ -905,7 +905,7 @@ export default function ResourceModule({ user }: { user: any }) {
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Sélectionner l'Actif</label>
                 <select 
                   required
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" 
                   value={restockData.resourceId} 
                   onChange={e => setRestockData({...restockData, resourceId: e.target.value})}
                 >
@@ -921,7 +921,7 @@ export default function ResourceModule({ user }: { user: any }) {
                   <input 
                     type="number" 
                     required
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" 
                     value={restockData.quantity} 
                     onChange={e => setRestockData({...restockData, quantity: Number(e.target.value)})} 
                   />
@@ -930,7 +930,7 @@ export default function ResourceModule({ user }: { user: any }) {
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Source / Fournisseur</label>
                   <input 
                     type="text" 
-                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" 
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none text-slate-900" 
                     value={restockData.supplier} 
                     onChange={e => setRestockData({...restockData, supplier: e.target.value})} 
                   />
@@ -939,7 +939,7 @@ export default function ResourceModule({ user }: { user: any }) {
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1 text-left block w-full">Notes de Mouvement</label>
                 <textarea 
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none h-24" 
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none h-24 text-slate-900" 
                   value={restockData.notes} 
                   onChange={e => setRestockData({...restockData, notes: e.target.value})}
                   placeholder="Justificatif, numéro de bon, etc."

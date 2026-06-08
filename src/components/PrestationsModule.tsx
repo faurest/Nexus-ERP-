@@ -225,7 +225,7 @@ export default function PrestationsModule() {
                   type="text" 
                   value={serviceForm.name}
                   onChange={e => setServiceForm({...serviceForm, name: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:border-purple-400"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:border-purple-400 text-slate-900"
                   placeholder="Ex: Impression Couleur"
                   required
                 />
@@ -236,7 +236,7 @@ export default function PrestationsModule() {
                   type="number" 
                   value={serviceForm.price}
                   onChange={e => setServiceForm({...serviceForm, price: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:border-purple-400 font-mono"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:border-purple-400 font-mono text-slate-900"
                   placeholder="Ex: 50"
                   required
                 />
@@ -258,7 +258,7 @@ export default function PrestationsModule() {
                   type="text" 
                   value={serviceForm.description}
                   onChange={e => setServiceForm({...serviceForm, description: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:border-purple-400"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm outline-none focus:border-purple-400 text-slate-900"
                   placeholder="Ex: Par page A4"
                 />
               </div>
@@ -349,8 +349,8 @@ export default function PrestationsModule() {
                  <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
                     <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2"><PenTool size={18} className="text-indigo-600" /> Lancer un Design</h3>
                     <form onSubmit={(e) => handleCreateTask(e, 'Design')} className="space-y-3">
-                      <input name="client" placeholder="Nom du Client / Téléphone" required className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400" />
-                      <input name="desc" placeholder="Ex: Logo restaurant + charte graphique" required className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400" />
+                      <input name="client" placeholder="Nom du Client / Téléphone" required className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 text-slate-900" />
+                      <input name="desc" placeholder="Ex: Logo restaurant + charte graphique" required className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-400 text-slate-900" />
                       <button 
                         disabled={submitting}
                         className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm disabled:opacity-50"
@@ -362,8 +362,8 @@ export default function PrestationsModule() {
                  <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
                     <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2"><PenTool size={18} className="text-teal-600" /> Lancer une Correction</h3>
                     <form onSubmit={(e) => handleCreateTask(e, 'Saisie')} className="space-y-3">
-                      <input name="client" placeholder="Nom de l'étudiant / Client" required className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-teal-400" />
-                      <input name="desc" placeholder="Ex: Rapport de stage de 50 pages" required className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-teal-400" />
+                      <input name="client" placeholder="Nom de l'étudiant / Client" required className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-teal-400 text-slate-900" />
+                      <input name="desc" placeholder="Ex: Rapport de stage de 50 pages" required className="w-full bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-teal-400 text-slate-900" />
                       <button 
                         disabled={submitting}
                         className="w-full py-3 bg-teal-600 text-white font-bold rounded-xl text-sm disabled:opacity-50"
