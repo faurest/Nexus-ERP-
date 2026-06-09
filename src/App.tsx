@@ -29,8 +29,7 @@ import {
   MessageSquare,
   ShoppingBag,
   Store,
-  BookOpen,
-  Headphones
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
@@ -50,7 +49,6 @@ import CollaborationModule from './components/CollaborationModule';
 import CommunicationModule from './components/CommunicationModule';
 import Marketplace from './components/Marketplace';
 import GuideModule from './components/GuideModule';
-import SupportModule from './components/SupportModule';
 import ContextualHelp from './components/ContextualHelp';
 import NotificationBell from './components/NotificationBell';
 import CriticalNotificationOverlay from './components/CriticalNotificationOverlay';
@@ -656,12 +654,10 @@ export default function App() {
     { id: 'projects', label: 'Projets & Tâches', icon: FolderKanban },
     { id: 'collaboration', label: 'Collaboration & Comm', icon: Handshake },
     { id: 'accounting', label: 'Comptabilité & Finance', icon: Calculator },
-    { id: 'support', label: 'Support Numérique', icon: Headphones },
     { id: 'guide', label: 'Guide & Performance', icon: BookOpen },
     ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
   ].filter(item => {
     if (item.id === 'admin') return true;
-    if (item.id === 'support') return true;
     const allowedByRole = (currentCompany.roles || DEFAULT_ROLES)[user.role] || ['dashboard'];
     const customPermissions = user.customPermissions || [];
     return allowedByRole.includes(item.id) || customPermissions.includes(item.id);
@@ -936,7 +932,6 @@ export default function App() {
                 {activeTab === 'projects' && <ProjectModule />}
                 {activeTab === 'accounting' && <AccountingModule />}
                 {activeTab === 'collaboration' && <CollaborationModule />}
-                {activeTab === 'support' && <SupportModule user={user} />}
                 {activeTab === 'guide' && <GuideModule />}
                 {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') && <AdminModule />}
               </motion.div>
