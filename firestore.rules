@@ -177,7 +177,7 @@ service cloud.firestore {
           'sales_invoices', 'invoices', 'payments', 'collaborations',
           'messages', 'project_discussions', 'leave_requests', 'time_entries', 'salary_advances',
           'ecommerce_orders', 'resource_movements', 'products', 'order_messages', 'compagnie', 'notification_configs', 'order_history',
-          'internal_resources', 'stock_history'
+          'internal_resources', 'stock_history', 'support_tickets'
         ];
       }
 
