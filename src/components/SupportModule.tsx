@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Headphones, MessageCircle, Phone, Mail, Send, CheckCircle2, Clock, AlertCircle, LifeBuoy } from 'lucide-react';
+import { Headphones, MessageCircle, Phone, Mail, Send, CheckCircle2, Clock, AlertCircle, LifeBuoy, ChevronDown, ChevronUp } from 'lucide-react';
 import { db } from '../lib/firebase';
-import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
+
+interface TicketResponse {
+  id: string;
+  text: string;
+  senderEmail: string;
+  createdAt: number;
+}
 
 interface Ticket {
   id: string;
@@ -13,7 +20,8 @@ interface Ticket {
   status: 'PENDING' | 'IN_PROGRESS' | 'RESOLVED';
   priority: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
   createdAt: any;
-  responses?: any[];
+  userEmail: string;
+  responses?: TicketResponse[];
 }
 
 const SUPPORT_NUMBER = "237640790996";
@@ -24,16 +32,27 @@ export default function SupportModule({ user }: { user: any }) {
   const [isNewTicket, setIsNewTicket] = useState(false);
   const [form, setForm] = useState({ subject: '', message: '', priority: 'NORMAL' as const });
   const [submitting, setSubmitting] = useState(false);
+  
+  const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+
+  const isAdmin = user?.email === 'hackeurfaurest@gmail.com' || user?.email === 'dangafelicite@gmail.com' || user?.email === 'yaoubaboubakary43@gmail.com' || user?.role === 'Admin';
 
   useEffect(() => {
     if (!currentCompany) return;
     const q = query(
       collection(db, 'support_tickets'),
-      where('companyId', '==', currentCompany.id),
-      orderBy('createdAt', 'desc')
+      where('companyId', '==', currentCompany.id)
     );
     const unsub = onSnapshot(q, snap => {
-      setTickets(snap.docs.map(d => ({ id: d.id, ...d.data() } as Ticket)));
+      const fetchedTickets = snap.docs.map(d => ({ id: d.id, ...d.data() } as Ticket));
+      // Sort descending by createdAt locally
+      fetchedTickets.sort((a, b) => {
+        const aTime = a.createdAt?.seconds || 0;
+        const bTime = b.createdAt?.seconds || 0;
+        return bTime - aTime;
+      });
+      setTickets(fetchedTickets);
     });
     return () => unsub();
   }, [currentCompany]);
@@ -58,6 +77,41 @@ export default function SupportModule({ user }: { user: any }) {
       alert("Erreur lors de la création du ticket.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleReply = async (ticketId: string) => {
+    if (!replyText.trim()) return;
+    try {
+      setSubmitting(true);
+      const newResponse: TicketResponse = {
+        id: Math.random().toString(36).substring(2, 9),
+        text: replyText.trim(),
+        senderEmail: user.email,
+        createdAt: Date.now()
+      };
+      await updateDoc(doc(db, 'support_tickets', ticketId), {
+        responses: arrayUnion(newResponse),
+        updatedAt: serverTimestamp()
+      });
+      setReplyText('');
+    } catch (err) {
+      console.error('Error adding reply:', err);
+      alert('Impossible d\'envoyer la réponse.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleStatusChange = async (ticketId: string, newStatus: Ticket['status']) => {
+    try {
+      await updateDoc(doc(db, 'support_tickets', ticketId), {
+        status: newStatus,
+        updatedAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.error('Error changing status:', err);
+      alert('Impossible de changer le statut.');
     }
   };
 
@@ -240,35 +294,93 @@ export default function SupportModule({ user }: { user: any }) {
             ) : (
               tickets.map(ticket => (
                 <div key={ticket.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:border-blue-100 hover:shadow-md transition-all">
-                  <div className="flex justify-between items-start mb-4">
+                  <div 
+                    className="flex justify-between items-start mb-4 cursor-pointer"
+                    onClick={() => setExpandedTicket(expandedTicket === ticket.id ? null : ticket.id)}
+                  >
                     <div>
                       <div className="flex items-center gap-3 mb-1">
                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">TICKET #{ticket.id.slice(0, 6)}</span>
                         <span className={cn("px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border", getStatusColor(ticket.status))}>
                           {ticket.status === 'PENDING' ? 'En Attente' : ticket.status === 'IN_PROGRESS' ? 'En Cours' : 'Résolu'}
                         </span>
+                        {isAdmin && (
+                          <div className="flex gap-1 ml-2">
+                            <button onClick={(e) => { e.stopPropagation(); handleStatusChange(ticket.id, 'PENDING'); }} className="text-[10px] uppercase font-bold text-slate-400 hover:text-amber-500">Attente</button>
+                            <button onClick={(e) => { e.stopPropagation(); handleStatusChange(ticket.id, 'IN_PROGRESS'); }} className="text-[10px] uppercase font-bold text-slate-400 hover:text-blue-500">En Cours</button>
+                            <button onClick={(e) => { e.stopPropagation(); handleStatusChange(ticket.id, 'RESOLVED'); }} className="text-[10px] uppercase font-bold text-slate-400 hover:text-emerald-500">Résolu</button>
+                          </div>
+                        )}
                       </div>
                       <h3 className="font-black text-slate-800 text-lg">{ticket.subject}</h3>
+                      <p className="text-xs text-slate-500 font-medium">De: {ticket.userEmail}</p>
                     </div>
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
                       <Clock size={12} />
                       {ticket.createdAt?.toDate().toLocaleDateString('fr-FR')}
+                      {expandedTicket === ticket.id ? <ChevronUp size={16} className="ml-2" /> : <ChevronDown size={16} className="ml-2" />}
                     </div>
                   </div>
                   
-                  <p className="text-sm text-slate-600 leading-relaxed mb-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    {ticket.message}
-                  </p>
+                  <AnimatePresence>
+                    {expandedTicket === ticket.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <p className="text-sm text-slate-600 leading-relaxed mb-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 whitespace-pre-wrap">
+                          {ticket.message}
+                        </p>
 
-                  <div className="flex items-center justify-between border-t border-slate-100 pt-4">
-                    <span className={cn("text-[10px] font-black uppercase tracking-widest flex items-center gap-1", getPriorityColor(ticket.priority))}>
-                      <AlertCircle size={12} />
-                      Priorité: {ticket.priority}
-                    </span>
-                    {ticket.status === 'PENDING' && (
-                      <span className="text-[10px] font-bold text-slate-400 italic">Notre équipe vous contactera bientôt</span>
+                        {ticket.responses && ticket.responses.length > 0 && (
+                          <div className="space-y-3 mb-4 mt-6">
+                            <h4 className="text-[10px] font-black tracking-widest uppercase text-slate-400 ml-2">Historique des échanges</h4>
+                            {ticket.responses.map(resp => (
+                              <div key={resp.id} className={cn("p-4 rounded-2xl border w-[90%]", resp.senderEmail === user.email ? "bg-blue-50 border-blue-100 ml-auto rounded-tr-sm" : "bg-white border-slate-100 mr-auto rounded-tl-sm")}>
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="text-xs font-bold text-slate-700">{resp.senderEmail}</span>
+                                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{new Date(resp.createdAt).toLocaleString('fr-FR')}</span>
+                                </div>
+                                <p className="text-sm text-slate-600">{resp.text}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {ticket.status !== 'RESOLVED' && (
+                          <div className="flex gap-3 mt-4 pt-4 border-t border-slate-100">
+                            <input
+                              type="text"
+                              value={replyText}
+                              onChange={e => setReplyText(e.target.value)}
+                              onKeyDown={e => e.key === 'Enter' && handleReply(ticket.id)}
+                              placeholder="Votre réponse..."
+                              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900"
+                            />
+                            <button
+                              onClick={() => handleReply(ticket.id)}
+                              disabled={!replyText.trim() || submitting}
+                              className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-bold disabled:opacity-50"
+                            >
+                              <Send size={18} />
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-4">
+                          <span className={cn("text-[10px] font-black uppercase tracking-widest flex items-center gap-1", getPriorityColor(ticket.priority))}>
+                            <AlertCircle size={12} />
+                            Priorité: {ticket.priority}
+                          </span>
+                          {ticket.status === 'PENDING' && (
+                            <span className="text-[10px] font-bold text-slate-400 italic">Notre équipe vous contactera bientôt</span>
+                          )}
+                        </div>
+                      </motion.div>
                     )}
-                  </div>
+                  </AnimatePresence>
                 </div>
               ))
             )}
