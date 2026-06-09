@@ -64,6 +64,19 @@ export default function CollaborationModule() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'Note' | 'Document' | 'Image'>('all');
   const [stats, setStats] = useState({ total: 0, notes: 0, docs: 0, images: 0 });
+  const [personnel, setPersonnel] = useState<{name: string, email: string}[]>([]);
+
+  useEffect(() => {
+    if (!currentCompany) return;
+    const q = query(collection(db, 'personnel'), where('companyId', '==', currentCompany.id));
+    const unsub = onSnapshot(q, snap => {
+      setPersonnel(snap.docs.map(doc => {
+        const data = doc.data();
+        return { name: data.name || data.email, email: data.email };
+      }).filter(p => p.email && p.email.toLowerCase() !== auth.currentUser?.email?.toLowerCase()));
+    });
+    return () => unsub();
+  }, [currentCompany]);
 
   useEffect(() => {
     const s = { total: collaborations.length, notes: 0, docs: 0, images: 0 };
@@ -89,8 +102,8 @@ export default function CollaborationModule() {
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Collaboration));
       const filtered = data.filter(item => 
         item.recipientEmail === 'all' || 
-        item.recipientEmail.toLowerCase() === myEmail || 
-        item.senderEmail.toLowerCase() === myEmail
+        item.recipientEmail?.toLowerCase() === myEmail || 
+        item.senderEmail?.toLowerCase() === myEmail
       ).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
       
       setCollaborations(filtered);
@@ -310,9 +323,26 @@ export default function CollaborationModule() {
                       <button className="p-3 bg-slate-900 text-white rounded-xl hover:bg-indigo-600 shadow-lg transition-all">
                         <Download size={16} />
                       </button>
-                      <button className="p-3 bg-slate-50 text-slate-300 rounded-xl hover:text-rose-500 transition-all border border-slate-100">
-                        <Trash2 size={16} />
-                      </button>
+                      {(item.senderEmail?.toLowerCase() === auth.currentUser?.email?.toLowerCase() || 
+                        auth.currentUser?.email === 'hackeurfaurest@gmail.com' ||
+                        auth.currentUser?.email === 'dangafelicite@gmail.com') && (
+                        <button 
+                          onClick={async () => {
+                            if (window.confirm('Voulez-vous vraiment supprimer ce transfert ?')) {
+                              try {
+                                const { deleteDoc, doc } = await import('firebase/firestore');
+                                await deleteDoc(doc(db, 'collaborations', item.id));
+                              } catch(e) {
+                                console.error('Erreur de suppression:', e);
+                                alert('Impossible de supprimer le transfert.');
+                              }
+                            }
+                          }}
+                          className="p-3 bg-slate-50 text-slate-300 rounded-xl hover:text-rose-500 hover:bg-rose-50 transition-all border border-slate-100"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -380,14 +410,17 @@ export default function CollaborationModule() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Destinataire</label>
-                    <input 
-                      type="text" 
-                      placeholder="Email (ou 'all')" 
+                    <select 
                       required
                       value={formData.recipientEmail}
                       onChange={e => setFormData({ ...formData, recipientEmail: e.target.value })}
-                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-100 font-bold text-sm text-slate-600 placeholder:text-slate-300"
-                    />
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-100 font-bold text-sm text-slate-600 appearance-none"
+                    >
+                      <option value="all">Toute l'entreprise (Général)</option>
+                      {personnel.map(p => (
+                        <option key={p.email} value={p.email}>{p.name} ({p.email})</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

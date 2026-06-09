@@ -172,7 +172,7 @@ export default function CommunicationModule() {
 
     const qContacts = query(collection(db, 'personnel'), where('companyId', '==', currentCompany.id));
     const unsubContacts = onSnapshot(qContacts, (snap) => {
-      setContacts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Contact)).filter(c => c.email !== auth.currentUser?.email));
+      setContacts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Contact)).filter(c => c.email && c.email.toLowerCase() !== auth.currentUser?.email?.toLowerCase()));
     });
 
     const qProjects = query(collection(db, 'projects'), where('companyId', '==', currentCompany.id));
