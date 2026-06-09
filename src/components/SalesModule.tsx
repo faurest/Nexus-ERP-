@@ -8,6 +8,7 @@ import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
+import { useSubNavigation } from '../hooks/useSubNavigation';
 
 interface Sale {
   id: string;
@@ -57,7 +58,7 @@ export default function SalesModule({ user }: { user: any }) {
   const [isAddingOrder, setIsAddingOrder] = useState(false);
   const [newOrderName, setNewOrderName] = useState('');
   const [newOrderTable, setNewOrderTable] = useState('');
-  const [activeTab, setActiveTab] = useState<'sales' | 'invoices' | 'reports' | 'pos' | 'orders' | 'payments' | 'catalog'>('pos');
+  const [activeTab, setActiveTab] = useSubNavigation<'sales' | 'invoices' | 'reports' | 'pos' | 'orders' | 'payments' | 'catalog'>('sales', 'pos');
   const [payments, setPayments] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [isAdding, setIsAdding] = useState(false);

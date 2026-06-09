@@ -5,6 +5,7 @@ import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2,
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { cn } from '../lib/utils';
+import { useSubNavigation } from '../hooks/useSubNavigation';
 import { useCompany } from '../lib/CompanyContext';
 import { DEFAULT_ROLES } from '../core/permissions/roles';
 
@@ -65,7 +66,7 @@ interface SalaryAdvance {
 
 export default function PersonnelModule({ user }: { user?: any }) {
   const { currentCompany } = useCompany();
-  const [activeTab, setActiveTab] = useState<'employees' | 'roles' | 'time' | 'advances'>('employees');
+  const [activeTab, setActiveTab] = useSubNavigation<'employees' | 'roles' | 'time' | 'advances'>('personnel', 'employees');
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);

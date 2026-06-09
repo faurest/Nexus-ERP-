@@ -36,6 +36,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import Table, { TableRow } from './ui/Table';
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
+import { useSubNavigation } from '../hooks/useSubNavigation';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { getFinancialSuggestions } from '../lib/gemini';
 import Markdown from 'react-markdown';
@@ -63,7 +64,7 @@ export default function AccountingModule() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [newExpense, setNewExpense] = useState({ description: '', amount: 0, category: 'Autres' });
-  const [activeTab, setActiveTab] = useState<'report' | 'expenses'>('report');
+  const [activeTab, setActiveTab] = useSubNavigation<'report' | 'expenses'>('accounting', 'report');
   const [aiSuggestions, setAiSuggestions] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 

@@ -5,6 +5,7 @@ import { Plus, Search, Package, ShieldCheck, AlertTriangle, ArrowRightLeft, Edit
 import Table, { TableRow } from './ui/Table';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { cn } from '../lib/utils';
+import { useSubNavigation } from '../hooks/useSubNavigation';
 import { useCompany } from '../lib/CompanyContext';
 import { createNotification } from '../lib/notifications';
 
@@ -26,7 +27,7 @@ export default function ResourceModule({ user }: { user: any }) {
   const [resources, setResources] = useState<Resource[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'inventory' | 'ecommerce' | 'movements' | 'analytics'>('inventory');
+  const [activeTab, setActiveTab] = useSubNavigation<'inventory' | 'ecommerce' | 'movements' | 'analytics'>('resources', 'inventory');
   const [activeFilter, setActiveFilter] = useState('Tous les actifs');
   const [isAdding, setIsAdding] = useState(false);
   const [viewingResource, setViewingResource] = useState<Resource | null>(null);

@@ -34,6 +34,7 @@ import {
 } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
+import { useSubNavigation } from '../hooks/useSubNavigation';
 import { createNotification } from '../lib/notifications';
 
 interface DirectMessage {
@@ -105,7 +106,7 @@ const getAvatarColor = (name: string) => {
 
 export default function CommunicationModule() {
   const { currentCompany } = useCompany();
-  const [activeTab, setActiveTab] = useState<'direct' | 'project'>('direct');
+  const [activeTab, setActiveTab] = useSubNavigation<'direct' | 'project'>('collaboration', 'direct');
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);

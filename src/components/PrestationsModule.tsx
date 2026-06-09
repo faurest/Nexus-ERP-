@@ -4,11 +4,12 @@ import { db } from '../lib/firebase';
 import { Activity, Printer, PenTool, LayoutDashboard, Search, Plus, Play, CheckCircle2, AlertCircle, ShoppingCart, User, Users, Tags, ArrowRight, Trash2 } from 'lucide-react';
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
+import { useSubNavigation } from '../hooks/useSubNavigation';
 import Table, { TableRow } from './ui/Table';
 
 export default function PrestationsModule() {
   const { currentCompany } = useCompany();
-  const [activeTab, setActiveTab] = useState<'pos' | 'tracking' | 'catalog' | 'growth'>('pos');
+  const [activeTab, setActiveTab] = useSubNavigation<'pos' | 'tracking' | 'catalog' | 'growth'>('services', 'pos');
   const [submitting, setSubmitting] = useState(false);
   const [isAddingService, setIsAddingService] = useState(false);
   const [serviceForm, setServiceForm] = useState({ name: '', price: '', description: '', image: '' });

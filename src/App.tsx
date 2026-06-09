@@ -72,7 +72,35 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [slowLoading, setSlowLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTabState] = useState(() => {
+    const hash = window.location.hash.replace('#', '');
+    const [mainTab] = hash.split('/');
+    return mainTab || 'dashboard';
+  });
+
+  const setActiveTab = (tab: string) => {
+    setActiveTabState(tab);
+    const hash = window.location.hash.replace('#', '');
+    const [mainTab] = hash.split('/');
+    if (mainTab !== tab) {
+      window.history.pushState(null, '', `#${tab}`);
+    }
+  };
+
+  useEffect(() => {
+    const handleNavigationOptions = () => {
+      const hash = window.location.hash.replace('#', '');
+      const [mainTab] = hash.split('/');
+      setActiveTabState(mainTab || 'dashboard');
+    };
+    window.addEventListener('popstate', handleNavigationOptions);
+    window.addEventListener('hashchange', handleNavigationOptions);
+    return () => {
+      window.removeEventListener('popstate', handleNavigationOptions);
+      window.removeEventListener('hashchange', handleNavigationOptions);
+    };
+  }, []);
+
   const [helpTopic, setHelpTopic] = useState<string | undefined>(undefined);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [showMarketplace, setShowMarketplace] = useState(false);
