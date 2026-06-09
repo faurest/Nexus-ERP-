@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Headphones, MessageCircle, Phone, Mail, Send, CheckCircle2, Clock, AlertCircle, LifeBuoy, ChevronDown, ChevronUp } from 'lucide-react';
+import { Headphones, MessageCircle, Phone, Mail, Send, CheckCircle2, Clock, AlertCircle, LifeBuoy, ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { useCompany } from '../lib/CompanyContext';
@@ -36,6 +36,9 @@ export default function SupportModule({ user }: { user: any }) {
   const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
 
+  const [filterStatus, setFilterStatus] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+
   const isAdmin = user?.email === 'hackeurfaurest@gmail.com' || user?.email === 'dangafelicite@gmail.com' || user?.email === 'yaoubaboubakary43@gmail.com' || user?.role === 'Admin';
 
   useEffect(() => {
@@ -45,7 +48,13 @@ export default function SupportModule({ user }: { user: any }) {
       where('companyId', '==', currentCompany.id)
     );
     const unsub = onSnapshot(q, snap => {
-      const fetchedTickets = snap.docs.map(d => ({ id: d.id, ...d.data() } as Ticket));
+      let fetchedTickets = snap.docs.map(d => ({ id: d.id, ...d.data() } as Ticket));
+      
+      // Filter out other users' tickets if not admin
+      if (!isAdmin) {
+        fetchedTickets = fetchedTickets.filter(t => t.userEmail === user.email);
+      }
+
       // Sort descending by createdAt locally
       fetchedTickets.sort((a, b) => {
         const aTime = a.createdAt?.seconds || 0;
@@ -55,7 +64,7 @@ export default function SupportModule({ user }: { user: any }) {
       setTickets(fetchedTickets);
     });
     return () => unsub();
-  }, [currentCompany]);
+  }, [currentCompany, isAdmin, user.email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,6 +142,14 @@ export default function SupportModule({ user }: { user: any }) {
       default: return 'text-slate-500';
     }
   };
+
+  const filteredTickets = tickets.filter(ticket => {
+    const matchesSearch = ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          ticket.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = filterStatus === 'ALL' || ticket.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="p-8 pb-32 max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -284,15 +301,43 @@ export default function SupportModule({ user }: { user: any }) {
             </motion.div>
           )}
 
+          {tickets.length > 0 && (
+            <div className="flex gap-4 mb-4">
+              <div className="relative flex-1">
+                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un ticket..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900"
+                />
+              </div>
+              <div className="relative w-48">
+                <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 appearance-none font-bold"
+                >
+                  <option value="ALL">Tous les statuts</option>
+                  <option value="PENDING">En Attente</option>
+                  <option value="IN_PROGRESS">En Cours</option>
+                  <option value="RESOLVED">Résolu</option>
+                </select>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
-            {tickets.length === 0 ? (
+            {filteredTickets.length === 0 ? (
               <div className="bg-white p-12 rounded-3xl text-center border border-slate-100 border-dashed">
                 <CheckCircle2 size={40} className="mx-auto text-slate-300 mb-4" />
-                <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Aucun ticket en cours</p>
-                <p className="text-xs text-slate-400 mt-2">Tout fonctionne parfaitement, ou vous n'avez pas encore demandé d'aide.</p>
+                <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Aucun ticket trouvé</p>
+                <p className="text-xs text-slate-400 mt-2">Vérifiez vos critères de recherche ou ouvrez un nouveau ticket.</p>
               </div>
             ) : (
-              tickets.map(ticket => (
+              filteredTickets.map(ticket => (
                 <div key={ticket.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:border-blue-100 hover:shadow-md transition-all">
                   <div 
                     className="flex justify-between items-start mb-4 cursor-pointer"
