@@ -48,12 +48,13 @@ service cloud.firestore {
     }
 
     function isMemberOfCompany(companyId) {
+      let company = get(/databases/$(database)/documents/companies/$(companyId)).data;
       return isSignedIn() && companyId != null && (
         isAdmin() ||
-        (get(/databases/$(database)/documents/companies/$(companyId)).data.ownerEmail == currentUserEmail() || 
-         get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid) ||
-        (exists(/databases/$(database)/documents/personnel/$(currentUserEmail())) && 
-         get(/databases/$(database)/documents/personnel/$(currentUserEmail())).data.companyId == companyId)
+        (company.ownerEmail.lower() == currentUserEmail() || company.ownerId == request.auth.uid) ||
+        (company.memberEmails != null && currentUserEmail() in company.memberEmails) ||
+        (exists(/databases/$(database)/documents/personnel/$(companyId + '_' + currentUserEmail())) && 
+         get(/databases/$(database)/documents/personnel/$(companyId + '_' + currentUserEmail())).data.companyId == companyId)
       );
     }
 
@@ -110,8 +111,8 @@ service cloud.firestore {
           incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees', 'updatedAt']) &&
           incoming().memberEmails.size() == existing().memberEmails.size() + 1 &&
           currentUserEmail() in incoming().memberEmails &&
-          exists(/databases/$(database)/documents/personnel/$(currentUserEmail())) &&
-          get(/databases/$(database)/documents/personnel/$(currentUserEmail())).data.companyId == companyId
+          exists(/databases/$(database)/documents/personnel/$(companyId + '_' + currentUserEmail())) &&
+          get(/databases/$(database)/documents/personnel/$(companyId + '_' + currentUserEmail())).data.companyId == companyId
         ) ||
         // Action: Standard update for existing members
         (currentUserEmail() in resource.data.memberEmails && incoming().diff(existing()).affectedKeys().hasOnly(['memberEmails', 'employees', 'whatsappNumber', 'category', 'logo', 'nairaRate', 'updatedAt']))

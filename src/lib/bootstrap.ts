@@ -1,8 +1,8 @@
-import { collection, getDocs, addDoc, serverTimestamp } from './firebase';
+import { collection, getDocs, addDoc, serverTimestamp, query, where } from './firebase';
 import { db } from './firebase';
 
 export async function bootstrapDemoData(companyId: string) {
-  const clientsSnap = await getDocs(collection(db, 'clients'));
+  const clientsSnap = await getDocs(query(collection(db, 'clients'), where('companyId', '==', companyId)));
   if (clientsSnap.empty) {
     console.log('Bootstrapping clients...');
     await addDoc(collection(db, 'clients'), {
@@ -25,7 +25,7 @@ export async function bootstrapDemoData(companyId: string) {
     });
   }
 
-  const personnelSnap = await getDocs(collection(db, 'personnel'));
+  const personnelSnap = await getDocs(query(collection(db, 'personnel'), where('companyId', '==', companyId)));
   if (personnelSnap.empty) {
     console.log('Bootstrapping personnel...');
     await addDoc(collection(db, 'personnel'), {
@@ -50,7 +50,7 @@ export async function bootstrapDemoData(companyId: string) {
     });
   }
 
-  const resourcesSnap = await getDocs(collection(db, 'resources'));
+  const resourcesSnap = await getDocs(query(collection(db, 'resources'), where('companyId', '==', companyId)));
   if (resourcesSnap.empty) {
     console.log('Bootstrapping resources...');
     await addDoc(collection(db, 'resources'), {
@@ -73,7 +73,7 @@ export async function bootstrapDemoData(companyId: string) {
     });
   }
 
-  const partnersSnap = await getDocs(collection(db, 'partners'));
+  const partnersSnap = await getDocs(query(collection(db, 'partners'), where('companyId', '==', companyId)));
   if (partnersSnap.empty) {
     console.log('Bootstrapping partners...');
     const google = await addDoc(collection(db, 'partners'), {
