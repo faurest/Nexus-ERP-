@@ -48,11 +48,11 @@ service cloud.firestore {
     }
 
     function isMemberOfCompany(companyId) {
-      let company = get(/databases/$(database)/documents/companies/$(companyId)).data;
-      return isSignedIn() && companyId != null && (
+      return isSignedIn() && companyId != null && exists(/databases/$(database)/documents/companies/$(companyId)) && (
         isAdmin() ||
-        (company.ownerEmail.lower() == currentUserEmail() || company.ownerId == request.auth.uid) ||
-        (company.memberEmails != null && currentUserEmail() in company.memberEmails) ||
+        get(/databases/$(database)/documents/companies/$(companyId)).data.ownerEmail.lower() == currentUserEmail() || 
+        get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid ||
+        ('memberEmails' in get(/databases/$(database)/documents/companies/$(companyId)).data && currentUserEmail() in get(/databases/$(database)/documents/companies/$(companyId)).data.memberEmails) ||
         (exists(/databases/$(database)/documents/personnel/$(companyId + '_' + currentUserEmail())) && 
          get(/databases/$(database)/documents/personnel/$(companyId + '_' + currentUserEmail())).data.companyId == companyId)
       );
@@ -205,20 +205,20 @@ service cloud.firestore {
 
       function isValidEntity(data) {
         return (collectionName == 'global_orders') || (
-          data.companyId is string && isValidId(data.companyId) && 
+          'companyId' in data && data.companyId is string && isValidId(data.companyId) && 
           (isAdmin() || collectionName in ['ecommerce_orders', 'order_history'] || isMemberOfCompany(data.companyId))
         );
       }
 
       function isSelf(data) {
-        return (data.email != null && data.email == currentUserEmail()) ||
-               (data.customerEmail != null && data.customerEmail == currentUserEmail()) ||
-               (data.senderId != null && data.senderId == request.auth.uid) ||
-               (data.senderEmail != null && data.senderEmail == currentUserEmail()) ||
-               (data.recipientId != null && data.recipientId == request.auth.uid) ||
-               (data.uid != null && data.uid == request.auth.uid) ||
-               (data.userId != null && data.userId == request.auth.uid) ||
-               (data.userIds != null && request.auth.uid in data.userIds);
+        return ('email' in data && data.email == currentUserEmail()) ||
+               ('customerEmail' in data && data.customerEmail == currentUserEmail()) ||
+               ('senderId' in data && data.senderId == request.auth.uid) ||
+               ('senderEmail' in data && data.senderEmail == currentUserEmail()) ||
+               ('recipientId' in data && data.recipientId == request.auth.uid) ||
+               ('uid' in data && data.uid == request.auth.uid) ||
+               ('userId' in data && data.userId == request.auth.uid) ||
+               ('userIds' in data && request.auth.uid in data.userIds);
       }
 
       // Read access: Admin, Company Member, or the User themselves (self-access)
@@ -230,7 +230,7 @@ service cloud.firestore {
           docId == currentUserEmail() ||
           docId == request.auth.uid ||
           (resource != null && isSelf(resource.data)) ||
-          (resource != null && resource.data.companyId != null && isMemberOfCompany(resource.data.companyId))
+          (resource != null && 'companyId' in resource.data && isMemberOfCompany(resource.data.companyId))
         ))
       );
       
@@ -239,7 +239,7 @@ service cloud.firestore {
         (isSignedIn() && (
           isAdmin() || 
           (resource != null && isSelf(resource.data)) ||
-          (resource != null && resource.data.companyId != null && isMemberOfCompany(resource.data.companyId))
+          (resource != null && 'companyId' in resource.data && isMemberOfCompany(resource.data.companyId))
         ))
       );
 
@@ -263,20 +263,19 @@ service cloud.firestore {
       allow update: if isCompanyCollection() && (
                       isAdmin() || 
                       (isSignedIn() && (
-                        isMemberOfCompany(existing().companyId) ||
+                        ('companyId' in existing() && isMemberOfCompany(existing().companyId)) ||
                         isSelf(existing())
                       )) ||
                       // Allow guest order updates (cancellation or simulation)
                       (collectionName == 'ecommerce_orders' && (
-                        existing().customerEmail == 'Marketplace Guest' ||
-                        existing().customerEmail == 'Marketplace Multi-Vendor' ||
-                        incoming().status == 'CANCELLED_BY_CUSTOMER'
+                        ('customerEmail' in existing() && (existing().customerEmail == 'Marketplace Guest' || existing().customerEmail == 'Marketplace Multi-Vendor')) ||
+                        ('status' in incoming() && incoming().status == 'CANCELLED_BY_CUSTOMER')
                       )) ||
                       // Allow anyone to update stock (for order placement/cancellation increment)
                       // In a real app this should be more restricted or server-side
                       (collectionName == 'products' && incoming().diff(existing()).affectedKeys().hasOnly(['stock', 'views', 'soldCount', 'updatedAt']))
                     ) &&
-                    incoming().companyId == existing().companyId &&
+                    ('companyId' in incoming() && 'companyId' in existing() && incoming().companyId == existing().companyId) &&
                     (
                       (collectionName == 'internal_resources' && isValidInternalResource(incoming())) ||
                       (collectionName != 'internal_resources')
@@ -285,7 +284,7 @@ service cloud.firestore {
 
       allow delete: if isSignedIn() && isCompanyCollection() && 
                       (isAdmin() || (
-                        isMemberOfCompany(existing().companyId) ||
+                        ('companyId' in existing() && isMemberOfCompany(existing().companyId)) ||
                         (isSelf(existing()) && collectionName == 'order_messages') // Allow deleting own messages
                       ));
     }
