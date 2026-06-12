@@ -736,8 +736,10 @@ export default function EcommerceModule({ user }: { user: any }) {
             await recordStockHistory(productId, prod.name, updates.stock > prod.stock ? 'ENTREE' : 'SORTIE', Math.abs(updates.stock - prod.stock), prod.stock, updates.stock, updates.purchasePrice || prod.purchasePrice);
           }
         }
+        alert('Produit mis à jour avec succès.');
       } else {
         const docRef = await addDoc(collection(db, 'products'), {
+          image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=600',
           ...updates,
           companyId: currentCompany.id,
           createdAt: serverTimestamp()
@@ -745,9 +747,11 @@ export default function EcommerceModule({ user }: { user: any }) {
         if (updates.stock && updates.stock > 0) {
           await recordStockHistory(docRef.id, updates.name || 'Nouveau Produit', 'ENTREE', updates.stock, 0, updates.stock, updates.purchasePrice, 'Stock initial recrutement');
         }
+        alert('Produit créé avec succès.');
       }
       setEditingProduct(null);
-    } catch (err) {
+    } catch (err: any) {
+      alert("Erreur lors de l'enregistrement du produit : " + (err.message || String(err)));
       handleFirestoreError(err, OperationType.UPDATE, 'products');
     }
   };
@@ -2027,7 +2031,7 @@ export default function EcommerceModule({ user }: { user: any }) {
           <div className="bg-white rounded-[2rem] p-6 border border-slate-100 overflow-x-auto">
             <h3 className="text-sm font-black uppercase italic mb-4 px-2">Top Performance Produits</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               {products.sort((a,b) => ((b as any).soldCount || 0) - ((a as any).soldCount || 0)).slice(0, 3).map(p => (
+               {[...products].sort((a,b) => ((b as any).soldCount || 0) - ((a as any).soldCount || 0)).slice(0, 3).map(p => (
                  <div key={p.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
                     <img src={p.image} className="w-12 h-12 rounded-xl object-cover" />
                     <div>
@@ -2937,7 +2941,8 @@ export default function EcommerceModule({ user }: { user: any }) {
                   allowBackorder: formData.get('allowBackorder') === 'on',
                   description: formData.get('description') as string,
                   category: formData.get('category') as string,
-                  points: Number(formData.get('points'))
+                  points: Number(formData.get('points')),
+                  image: editingProduct.image
                 });
               }}
               className="space-y-4"
