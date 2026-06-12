@@ -427,8 +427,7 @@ export default function ResourceModule({ user }: { user: any }) {
                      (e.target as HTMLFormElement).reset();
                      setImagePreview(null);
                      alert('Article ajouté au catalogue Nexus.');
-                   } catch(err: any) {
-                     alert("Erreur lors de l'enregistrement de l'article : " + (err.message || String(err)));
+                   } catch(err) {
                      handleFirestoreError(err, OperationType.CREATE, 'products');
                    } finally {
                      setSubmitting(false);
@@ -748,8 +747,7 @@ export default function ResourceModule({ user }: { user: any }) {
                   setEditingProduct(null);
                   setImagePreview(null);
                   alert('Article mis à jour avec succès.');
-                } catch(err: any) {
-                  alert("Erreur lors de la mise à jour de l'article : " + (err.message || String(err)));
+                } catch(err) {
                   handleFirestoreError(err, OperationType.UPDATE, 'products');
                 } finally {
                   setSubmitting(false);

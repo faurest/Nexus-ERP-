@@ -164,9 +164,7 @@ export default function PrestationsModule() {
        setIsAddingService(false);
        setServiceForm({ name: '', price: '', description: '', image: '' });
        setImagePreview(null);
-       alert('Service ajouté avec succès.');
-    } catch (err: any) {
-       alert("Erreur lors de l'ajout du service : " + (err.message || String(err)));
+    } catch (err) {
        console.error(err);
     } finally {
        setSubmitting(false);
