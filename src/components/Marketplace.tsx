@@ -352,9 +352,10 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
       const matchesCompany =
         activeCompanyId === "all" || p.companyId === activeCompanyId;
       const matchesCategory = activeCategory === "Tous" || p.category === activeCategory;
-      return matchesSearch && matchesCompany && matchesCategory;
+      const companyExists = companies.some(c => c.id === p.companyId);
+      return matchesSearch && matchesCompany && matchesCategory && companyExists;
     });
-  }, [products, searchTerm, activeCompanyId, activeCategory]);
+  }, [products, searchTerm, activeCompanyId, activeCategory, companies]);
 
   const groupedProducts = useMemo(() => {
     const groups: Record<string, Record<string, Product[]>> = {};
@@ -435,6 +436,12 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   const removeFromCart = (id: string) => {
     setCart((prev) => prev.filter((item) => item.id !== id));
   };
+
+  useEffect(() => {
+    if (!loading && companies.length > 0 && cart.length > 0) {
+      setCart((prev) => prev.filter((item) => companies.some((c) => c.id === item.companyId)));
+    }
+  }, [companies, loading]);
 
   const cartTotal = cart.reduce(
     (acc, item) => acc + item.price * item.cartQuantity,
