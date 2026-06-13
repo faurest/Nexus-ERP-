@@ -71,6 +71,7 @@ interface Product {
   companyId: string;
   location?: string;
   allowBackorder?: boolean;
+  views?: number;
 }
 
 interface Company {
@@ -852,7 +853,11 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                     if (!existing.companies.includes(product.companyId)) existing.companies.push(product.companyId);
                   }
                 });
-                const groupedProductsList = Array.from(groupedMap.values());
+                const groupedProductsList = Array.from(groupedMap.values()).sort((a, b) => {
+                  const viewsA = a.originalProduct.views || 0;
+                  const viewsB = b.originalProduct.views || 0;
+                  return viewsB - viewsA;
+                });
 
                 return groupedProductsList.map((groupedProduct) => {
                   // For the card, we pick the original product but display summary info
@@ -1806,8 +1811,16 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                </div>
                
                <div className="flex-1 overflow-y-auto p-8 space-y-12">
-                  {companies.map(company => {
-                    const companyProducts = filteredProducts.filter(p => p.companyId === company.id);
+                  {[...companies]
+                    .sort((a, b) => {
+                      const viewsA = products.filter(p => p.companyId === a.id).reduce((sum, p) => sum + (p.views || 0), 0);
+                      const viewsB = products.filter(p => p.companyId === b.id).reduce((sum, p) => sum + (p.views || 0), 0);
+                      return viewsB - viewsA;
+                    })
+                    .map(company => {
+                    const companyProducts = filteredProducts
+                      .filter(p => p.companyId === company.id)
+                      .sort((a,b) => (b.views || 0) - (a.views || 0));
                     if (companyProducts.length === 0) return null;
                     return (
                       <div key={company.id} className="space-y-6">
