@@ -24,7 +24,6 @@ export function MarketplaceCompanyList({
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-xl font-black text-slate-900 tracking-tight italic uppercase">Vitrines Partenaires</h2>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Découvrez les meilleures boutiques</p>
           </div>
           <button className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1 hover:text-slate-900 transition-colors">
             Voir tout <ChevronRight size={14} />

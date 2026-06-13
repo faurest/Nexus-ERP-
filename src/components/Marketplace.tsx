@@ -776,15 +776,6 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
         setActiveCategory={setActiveCategory}
       />
 
-      {/* Companies / Shops */}
-      <MarketplaceCompanyList 
-        companies={companies}
-        activeCompanyId={activeCompanyId}
-        setActiveCompanyId={setActiveCompanyId}
-        favorites={favorites}
-        toggleFavorite={toggleFavorite}
-      />
-
       {/* Product Grid */}
       <div className="max-w-7xl mx-auto px-6 py-12">
         <div className="flex items-center justify-between mb-8">
@@ -919,6 +910,15 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           </div>
         )}
       </div>
+
+      {/* Companies / Shops */}
+      <MarketplaceCompanyList 
+        companies={companies}
+        activeCompanyId={activeCompanyId}
+        setActiveCompanyId={setActiveCompanyId}
+        favorites={favorites}
+        toggleFavorite={toggleFavorite}
+      />
 
 
 

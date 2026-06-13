@@ -83,7 +83,7 @@ export function MarketplaceProductDetail({
             </div>
 
             <p className="text-sm text-slate-600 leading-relaxed">
-              {product.description || "Aucune description longue n'a été fournie pour ce produit."}
+              {product.description || "Aucune description."}
             </p>
 
             {isGrouped ? (
