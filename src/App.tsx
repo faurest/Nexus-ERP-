@@ -597,9 +597,6 @@ export default function App() {
                     <span className="font-black text-slate-800 tracking-tighter">NEXUS MARKETPLACE</span>
                  </div>
                  <div className="flex items-center gap-4">
-                   <span className="hidden sm:inline-flex text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                     Employés Nexus ?
-                   </span>
                    <button 
                      onClick={() => setShowLogin(true)}
                      className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all font-sans shadow-lg hover:shadow-blue-600/20"
@@ -608,11 +605,6 @@ export default function App() {
                    </button>
                  </div>
               </div>
-            </div>
-            <div className="bg-blue-50 border-b border-blue-100 p-3 flex justify-center shadow-inner">
-              <p className="text-[11px] font-bold text-blue-800 tracking-wide text-center">
-                 🚀 Bienvenue sur la Marketplace ! Si vous êtes un employé ou possédez un code d'invitation, cliquez sur "Se connecter" en haut à droite.
-              </p>
             </div>
             <Marketplace />
           </motion.div>

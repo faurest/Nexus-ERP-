@@ -66,10 +66,6 @@ export function MarketplaceHero({
         <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight mb-6">
           Trouvez tout ce dont <br className="hidden md:block" /> vous avez besoin.
         </h1>
-        
-        <p className="text-slate-400 text-sm md:text-base max-w-2xl mx-auto mb-12">
-          Le plus grand marché du Sahel. Ciment, matériaux, équipements électriques, appareils informatiques. Plus de 5000+ références disponibles en livraison immédiate.
-        </p>
 
         {/* Search Bar */}
         <div className="w-full max-w-3xl relative group">

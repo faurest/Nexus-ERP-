@@ -130,15 +130,9 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
                 </div>
               </div>
               
-              <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg flex flex-col gap-1 text-xs text-blue-800">
-                <span className="font-bold mb-1">Authentification Standard</span>
-                <span className="opacity-90 leading-relaxed">
-                  Connectez-vous à l'aide de l'identifiant et la clé d'accès fournis par votre département RH.
-                </span>
-                <div className="flex justify-between mt-2 pt-2 border-t border-blue-200/50">
-                  <span>Demo: <span className="font-mono bg-blue-100 px-1 rounded">demonstration@nexus.com</span></span>
-                  <span>Clé: <span className="font-mono bg-blue-100 px-1 rounded">nexus2026</span></span>
-                </div>
+              <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl text-[10px] text-slate-500 flex justify-between font-medium">
+                  <span>Demo: <span className="font-mono text-slate-900 font-bold">demonstration@nexus.com</span></span>
+                  <span>Clé: <span className="font-mono text-slate-900 font-bold">nexus2026</span></span>
               </div>
 
               <button 

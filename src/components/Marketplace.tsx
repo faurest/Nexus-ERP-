@@ -1009,7 +1009,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                         <div className="space-y-3">
                           <h3 className="text-xl font-black text-slate-900 uppercase italic">Validation USSD Push</h3>
                           <p className="text-xs font-bold text-slate-500 leading-relaxed px-4">
-                            Veuillez consulter votre téléphone <span className="text-slate-900 font-black">({checkoutData.phone})</span> et entrer votre code secret <span className={cn("font-black", paymentOperator === 'MTN' ? "text-[#FFCC00]" : "text-[#FF7900]")}>{paymentOperator}</span> pour autoriser la transaction.
+                            Confirmez sur le numéro <span className="text-slate-900 font-black">{checkoutData.phone}</span>.
                           </p>
                         </div>
                         
@@ -1042,9 +1042,6 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                         
                         <div className="space-y-2">
                           <h3 className="text-2xl font-black text-slate-900 uppercase italic">Succès !</h3>
-                          <p className="text-xs font-bold text-slate-500 leading-relaxed">
-                            Votre commande a été reçue. Nous vous contacterons sous peu pour la confirmation finale.
-                          </p>
                         </div>
 
                         <div className="space-y-3 w-full">
@@ -1883,8 +1880,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                   {guestOrders.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center space-y-4 opacity-40 py-20 text-center">
                       <ShoppingBag size={48} />
-                      <p className="text-sm font-black uppercase tracking-widest">Aucune commande trouvée</p>
-                      <p className="text-[10px] font-medium text-slate-500 max-w-[200px]">Passez une commande pour commencer le suivi en temps réel.</p>
+                      <p className="text-sm font-black uppercase tracking-widest">Aucune commande</p>
                     </div>
                   ) : (
                     (Object.entries(
@@ -2104,7 +2100,6 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-slate-900 uppercase italic">Annuler la commande ?</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Dites-nous pourquoi pour nous améliorer</p>
                 </div>
               </div>
 
