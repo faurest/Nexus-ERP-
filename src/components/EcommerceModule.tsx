@@ -2679,7 +2679,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                 </div>
                 {selectedLocation && (
                    <div className="flex justify-between items-center text-[11px] font-black text-blue-400 uppercase tracking-widest pt-2 border-t border-white/5">
-                    <span className="italic">Expédition Nexus</span>
+                    <span className="italic">Livraison</span>
                     <span>{(currentCompany?.deliveryFees?.[selectedLocation] || 0).toLocaleString()} FCFA</span>
                   </div>
                 )}
@@ -2691,13 +2691,15 @@ export default function EcommerceModule({ user }: { user: any }) {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10 mt-2">
-                   <Award size={20} className="text-blue-400 shrink-0" />
-                   <div>
-                     <p className="text-[10px] font-black text-white uppercase tracking-widest leading-none">Bonus Nexus Loyalty</p>
-                     <p className="text-[9px] font-bold text-blue-300 uppercase mt-1 leading-none italic">+{cart.reduce((acc, item) => acc + (item.points * item.cartQuantity), 0)} pts activés</p>
-                   </div>
-                </div>
+                {cart.reduce((acc, item) => acc + (item.points * item.cartQuantity), 0) > 0 && (
+                  <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10 mt-2">
+                     <Award size={20} className="text-blue-400 shrink-0" />
+                     <div>
+                       <p className="text-[10px] font-black text-white uppercase tracking-widest leading-none">Bonus Parrainage</p>
+                       <p className="text-[9px] font-bold text-blue-300 uppercase mt-1 leading-none italic">+{cart.reduce((acc, item) => acc + (item.points * item.cartQuantity), 0)} pts</p>
+                     </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-4 pt-4">
@@ -2706,13 +2708,12 @@ export default function EcommerceModule({ user }: { user: any }) {
                   disabled={submitting}
                   className="w-full py-7 bg-blue-600 hover:bg-white hover:text-blue-600 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/30 transition-all flex items-center justify-center gap-4 active:scale-95 border-4 border-transparent hover:border-blue-600 group"
                 >
-                  {submitting ? "Traitement Nexus ERP..." : (
+                  {submitting ? "Traitement..." : (
                     <>
                       Confirmer le paiement <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
                     </>
                   )}
                 </button>
-                <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest italic opacity-60">Paiement 100% sécurisé • Protocole Nexus Shield activé</p>
               </div>
             </form>
           </motion.div>

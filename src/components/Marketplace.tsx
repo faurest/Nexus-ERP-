@@ -818,8 +818,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
         {filteredProducts.length === 0 ? (
           <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[3rem] border border-slate-100">
             <Search size={48} className="text-slate-200 mb-6" />
-            <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest mb-2">Aucun produit trouvé</h3>
-            <p className="text-sm text-slate-500 mb-8 max-w-sm">Désolé, nous n'avons rien trouvé correspondant à vos critères de recherche.</p>
+            <h3 className="text-xl font-black text-slate-900 uppercase tracking-widest mb-2">Aucun produit</h3>
             <button 
               onClick={() => { setSearchTerm(""); setActiveCategory("Tous"); setActiveCompanyId("all"); }}
               className="px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all shadow-xl"
@@ -1028,8 +1027,6 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                              />
                            </div>
                         </div>
-
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic">NE FERMEZ PAS CETTE PAGE</p>
                       </motion.div>
                     )}
 
@@ -1070,10 +1067,6 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           >
                             <MessageCircle size={16} /> Confirmation WhatsApp
                           </button>
-                        </div>
-                        
-                        <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                          <p className="text-[8px] font-black text-slate-400 italic uppercase">Redirection automatique dans quelques secondes...</p>
                         </div>
                       </motion.div>
                     )}
@@ -1371,10 +1364,6 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                             Revenir au panier
                           </button>
                         </div>
-                        
-                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest text-center leading-relaxed max-w-[240px] mx-auto">
-                          En confirmant, l'entreprise recevra votre demande sur sa plateforme de gestion.
-                        </p>
                       </form>
                     </div>
                   </div>
@@ -1492,37 +1481,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
               {cart.length > 0 && !showCheckoutForm && (
                 <div className="p-6 border-t border-slate-100 bg-slate-50/50 space-y-6">
-                  {/* WhatsApp Sync Suggestion for Guests */}
-                  <div className="p-5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-3xl border border-emerald-100 flex items-center gap-4 group">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-50 group-hover:scale-110 transition-transform">
-                      <MessageCircle size={24} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-tight">Sécuriser mon Panier</p>
-                      <p className="text-[9px] font-medium text-slate-500 mt-1 italic leading-snug">Liez votre activité à votre WhatsApp pour ne jamais perdre vos articles.</p>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        const message = "Bonjour Nexus, je souhaite lier mon panier Marketplace à mon compte WhatsApp. [SESSION_GUEST]";
-                        window.open(`https://wa.me/237690000000?text=${encodeURIComponent(message)}`, "_blank");
-                      }}
-                      className="p-3 bg-white text-emerald-600 rounded-xl shadow-sm hover:bg-emerald-600 hover:text-white transition-all active:scale-95"
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
 
-                  {Array.from(new Set(cart.map(i => i.companyId))).length > 1 && (
-                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                        <TrendingUp size={14} />
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-black text-blue-900 uppercase tracking-widest leading-none mb-1">Achats Groupés Débloqués</p>
-                        <p className="text-[8px] font-medium text-blue-600 italic">Jusqu'à -50% sur les frais de livraison des boutiques supplémentaires !</p>
-                      </div>
-                    </div>
-                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
                       Total Estimate
@@ -1632,21 +1591,10 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                           </h1>
                         </div>
 
-                        <div className="p-6 bg-slate-950 rounded-[2rem] text-white space-y-4 shadow-xl">
-                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center italic underline underline-offset-8 decoration-blue-500">Dual Pricing Agreement</p>
-                           <div className="grid grid-cols-2 divide-x divide-white/10 items-center">
-                              <div className="text-center group">
-                                 <p className="text-[8px] font-bold text-slate-500 uppercase mb-2">Devise Locale</p>
-                                 <p className="text-2xl font-black tracking-tighter tabular-nums group-hover:text-blue-400 transition-colors">{selectedProduct.price.toLocaleString()}</p>
-                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FCFA</p>
-                              </div>
-                              <div className="text-center group">
-                                 <p className="text-[8px] font-bold text-slate-500 uppercase mb-2 group-hover:text-amber-500 transition-colors">Naira Market</p>
-                                 <p className="text-2xl font-black tracking-tighter tabular-nums text-amber-500">
-                                   ₦ {((selectedProduct.price * (companies.find(c => c.id === selectedProduct.companyId)?.nairaRate || GLOBAL_NAIRA_RATE)) / 1000).toFixed(1)}k
-                                 </p>
-                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Est. Nigeria</p>
-                              </div>
+                        <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-200">
+                           <div className="text-center group">
+                              <p className="text-4xl font-black text-slate-900 tracking-tighter tabular-nums">{selectedProduct.price.toLocaleString()}</p>
+                              <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest mt-1">FCFA</p>
                            </div>
                         </div>
 
@@ -1930,63 +1878,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
                </div>
                
                <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
-                  {/* Notification Settings Section */}
-                  <div className="bg-blue-600 rounded-[2rem] p-6 text-white overflow-hidden relative group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                      <Sparkles size={60} />
-                    </div>
-                    <div className="relative z-10 space-y-4">
-                      <div>
-                        <h3 className="text-xs font-black uppercase tracking-widest italic">Configurations Notifications</h3>
-                        <p className="text-[9px] font-bold opacity-80 uppercase mt-1">Recevez des mises à jour en temps réel</p>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3">
-                        <button 
-                          onClick={() => setNotifSettings(prev => ({ ...prev, push: !prev.push }))}
-                          className={cn(
-                            "p-3 rounded-xl border flex flex-col gap-2 transition-all text-left",
-                            notifSettings.push ? "bg-white/20 border-white/40 shadow-inner" : "bg-white/5 border-white/10 opacity-60"
-                          )}
-                        >
-                          <Smartphone size={14} />
-                          <span className="text-[10px] font-black uppercase">Push App</span>
-                        </button>
-                        <button 
-                          onClick={() => setNotifSettings(prev => ({ ...prev, whatsapp: !prev.whatsapp }))}
-                          className={cn(
-                            "p-3 rounded-xl border flex flex-col gap-2 transition-all text-left",
-                            notifSettings.whatsapp ? "bg-white/20 border-white/40 shadow-inner" : "bg-white/5 border-white/10 opacity-60"
-                          )}
-                        >
-                          <MessageCircle size={14} />
-                          <span className="text-[10px] font-black uppercase">WhatsApp</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* General Support Button */}
-                  <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white">
-                        <MessageCircle size={20} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black uppercase text-emerald-600">Support Nexus 24/7</p>
-                        <p className="text-[8px] font-bold text-emerald-400 uppercase">Contact Direct Maroua</p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        const message = "Bonjour, j'ai besoin d'une assistance sur Nexus Marketplace.";
-                        window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
-                      }}
-                      className="px-4 py-2 bg-white text-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest border border-emerald-100 hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
-                    >
-                      Discuter
-                    </button>
-                  </div>
 
                   {guestOrders.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center space-y-4 opacity-40 py-20 text-center">
