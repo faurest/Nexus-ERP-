@@ -46,15 +46,18 @@ export default function AdminModule() {
   const [companies, setCompanies] = useState<any[]>([]);
   const [globalSales, setGlobalSales] = useState<any[]>([]);
   const [globalExpenses, setGlobalExpenses] = useState<any[]>([]);
+  const [globalOrders, setGlobalOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newCompany, setNewCompany] = useState({ name: '', ownerEmail: '', joinCode: '' });
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeAdminTab, setActiveAdminTab] = useState<'companies' | 'users' | 'tools' | 'guide'>('companies');
+  const [activeAdminTab, setActiveAdminTab] = useState<'companies' | 'users' | 'tools' | 'guide' | 'finances'>('companies');
   const [systemUsers, setSystemUsers] = useState<any[]>([]);
   const [editingCompany, setEditingCompany] = useState<any | null>(null);
   const [showMemberModal, setShowMemberModal] = useState<any | null>(null);
   const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [editingCommission, setEditingCommission] = useState<any | null>(null);
+  const [newCommissionRate, setNewCommissionRate] = useState<number | ''>(4);
   const [showUserAssignModal, setShowUserAssignModal] = useState<any | null>(null);
   const [editingUser, setEditingUser] = useState<any | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -62,15 +65,17 @@ export default function AdminModule() {
   const fetchGlobalData = async () => {
     try {
       setLoading(true);
-      const [compSnap, salesSnap, expSnap] = await Promise.all([
+      const [compSnap, salesSnap, expSnap, ordersSnap] = await Promise.all([
         getDocs(collection(db, 'companies')),
         getDocs(collection(db, 'sales')),
-        getDocs(collection(db, 'expenses'))
+        getDocs(collection(db, 'expenses')),
+        getDocs(collection(db, 'ecommerce_orders'))
       ]);
       
       setCompanies(compSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       setGlobalSales(salesSnap.docs.map(d => d.data()));
       setGlobalExpenses(expSnap.docs.map(d => d.data()));
+      setGlobalOrders(ordersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
       // Fetch users and potential user sources (personnel, clients)
       try {
@@ -176,6 +181,26 @@ export default function AdminModule() {
   })).filter(d => d.revenue > 0).sort((a, b) => b.revenue - a.revenue);
 
   const COLORS = ['#2563eb', '#9333ea', '#10b981', '#f59e0b', '#ef4444'];
+
+  const saveCommissionRate = async () => {
+    if (!editingCommission) return;
+    try {
+      setSubmitting(true);
+      await updateDoc(doc(db, 'companies', editingCommission.id), {
+        nexusCommissionRate: Number(newCommissionRate) || 4
+      });
+      setCompanies(companies.map(c => 
+        c.id === editingCommission.id ? { ...c, nexusCommissionRate: Number(newCommissionRate) || 4 } : c
+      ));
+      setEditingCommission(null);
+      setNewCommissionRate(4);
+    } catch (error) {
+      console.error("Error updating commission rate", error);
+      alert("Erreur lors de la mise à jour de la commission");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleCreateCompany = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -989,7 +1014,7 @@ export default function AdminModule() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex gap-4 border-b border-slate-100 pb-1">
+      <div className="flex gap-4 border-b border-slate-100 pb-1 overflow-x-auto whitespace-nowrap scrollbar-hide">
         <button 
           onClick={() => setActiveAdminTab('companies')}
           className={cn(
@@ -998,6 +1023,15 @@ export default function AdminModule() {
           )}
         >
           Entreprises
+        </button>
+        <button 
+          onClick={() => setActiveAdminTab('finances')}
+          className={cn(
+            "pb-3 px-2 text-sm font-black transition-all border-b-2 uppercase tracking-widest",
+            activeAdminTab === 'finances' ? "text-indigo-600 border-indigo-600" : "text-slate-400 border-transparent hover:text-slate-600"
+          )}
+        >
+          Finances Nexus
         </button>
         <button 
           onClick={() => setActiveAdminTab('users')}
@@ -1157,9 +1191,10 @@ export default function AdminModule() {
             </div>
           </div>
 
-          <Table headers={["Utilisateur", "Email", "Statut", "Entreprise(s)", "Actions"]}>
-            {systemUsers.map((u) => (
-              <TableRow key={u.id} className="border-b border-slate-50 last:border-0 grow">
+          <div className="overflow-x-auto pb-4">
+            <Table headers={["Utilisateur", "Email", "Statut", "Entreprise(s)", "Actions"]}>
+              {systemUsers.map((u) => (
+                <TableRow key={u.id} className="border-b border-slate-50 last:border-0 grow">
                 <div className="py-5">
                   <div className="flex items-center gap-4">
                     <div className={cn(
@@ -1224,6 +1259,7 @@ export default function AdminModule() {
               </TableRow>
             ))}
           </Table>
+          </div>
         </div>
       )}
 
@@ -1916,6 +1952,149 @@ export default function AdminModule() {
                 );
               })}
             </div>
+          </motion.div>
+        </div>
+      )}
+
+      {activeAdminTab === 'finances' && (
+        <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 relative overflow-hidden backdrop-blur-xl bg-white/90">
+          <div className="p-10 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Global Finances & Commissions</h2>
+              <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest flex items-center gap-2">
+                <DollarSign size={14} /> Aperçu consolidé de l'écosystème
+              </p>
+            </div>
+          </div>
+          <div className="p-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+               <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-8 shadow-sm">
+                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Ventes Globales</h3>
+                 <p className="text-3xl font-black text-slate-900 tracking-tight">
+                   {globalOrders.filter(o => o.status === 'COMPLETED').reduce((acc, o) => acc + (o.subtotal || o.total || 0), 0).toLocaleString()} <span className="text-base text-slate-400 font-medium">FCFA</span>
+                 </p>
+               </div>
+               <div className="bg-indigo-50 border border-indigo-100 rounded-[2rem] p-8 shadow-sm">
+                 <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Commissions Nexus (Évolutive)</h3>
+                 <p className="text-3xl font-black text-indigo-700 tracking-tight">
+                   {globalOrders.filter(o => o.status === 'COMPLETED').reduce((acc, o) => acc + (o.nexusCommission || Math.round((o.subtotal || o.total || 0) * 0.04)), 0).toLocaleString()} <span className="text-base text-indigo-400 font-medium">FCFA</span>
+                 </p>
+               </div>
+            </div>
+
+            <h3 className="text-lg font-black text-slate-900 mb-6">Répartition par Entreprise</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Entreprise</th>
+                    <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Volume de Ventes</th>
+                    <th className="py-4 px-6 text-[10px] font-black text-indigo-600 uppercase tracking-widest">Commissions Nexus</th>
+                    <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Taux Actuel</th>
+                    <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                   {companies.map(company => {
+                     const companyOrders = globalOrders.filter(o => o.companyId === company.id && o.status === 'COMPLETED');
+                     const turnover = companyOrders.reduce((sum, o) => sum + (o.subtotal || o.total || 0), 0);
+                     const commission = companyOrders.reduce((sum, o) => sum + (o.nexusCommission || Math.round((o.subtotal || o.total || 0) * 0.04)), 0);
+                     const currentRate = company.nexusCommissionRate || 4;
+                     return (
+                       <tr key={company.id} className="hover:bg-slate-50 transition-colors group">
+                          <td className="py-4 px-6 border-b border-slate-50">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black text-slate-500 uppercase">
+                                {company.name.charAt(0)}
+                              </div>
+                              <span className="font-black text-slate-900 text-sm tracking-tight">{company.name}</span>
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 font-bold text-slate-700 text-sm tracking-tight border-b border-slate-50">{turnover.toLocaleString()} FCFA</td>
+                          <td className="py-4 px-6 font-black text-indigo-600 text-sm tracking-tight border-b border-slate-50">+{commission.toLocaleString()} FCFA</td>
+                          <td className="py-4 px-6 border-b border-slate-50">
+                            <span className="inline-flex items-center justify-center px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-black">
+                              {currentRate}%
+                            </span>
+                          </td>
+                          <td className="py-4 px-6 border-b border-slate-50 text-right">
+                            <button
+                              onClick={() => {
+                                setEditingCommission(company);
+                                setNewCommissionRate(currentRate);
+                              }}
+                              className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors shadow-sm ml-auto"
+                              title="Modifier la commission"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                          </td>
+                       </tr>
+                     );
+                   })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal - Edit Commission */}
+      {editingCommission && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl border border-slate-100"
+          >
+            <div className="p-8 border-b border-slate-100 relative">
+              <button 
+                onClick={() => setEditingCommission(null)}
+                className="absolute top-8 right-8 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X size={24} />
+              </button>
+              <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6">
+                <DollarSign size={24} />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">Modifier Commission</h3>
+              <p className="text-sm font-medium text-slate-500 mt-2">Pour "{editingCommission.name}"</p>
+            </div>
+            
+            <form 
+              onSubmit={(e) => { e.preventDefault(); saveCommissionRate(); }}
+              className="p-8 space-y-6"
+            >
+              <div>
+                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Taux de commission (%)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 text-base font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all placeholder:text-slate-300"
+                  value={newCommissionRate}
+                  onChange={e => setNewCommissionRate(e.target.value ? Number(e.target.value) : "")}
+                />
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setEditingCommission(null)}
+                  className="flex-1 py-4 border border-slate-200 text-slate-600 font-bold text-sm tracking-wide rounded-xl hover:bg-slate-50 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 py-4 bg-indigo-600 text-white font-bold text-sm tracking-wide rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-600/30 transition-all disabled:opacity-50"
+                >
+                  {submitting ? 'Sauvegarde...' : 'Appliquer'}
+                </button>
+              </div>
+            </form>
           </motion.div>
         </div>
       )}

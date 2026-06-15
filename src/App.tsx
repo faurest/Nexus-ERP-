@@ -72,6 +72,18 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [slowLoading, setSlowLoading] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
   const [activeTab, setActiveTabState] = useState(() => {
     const hash = window.location.hash.replace('#', '');
     const [mainTab] = hash.split('/');
@@ -505,53 +517,10 @@ export default function App() {
     }
   }, [user, currentCompany, activeTab]);
 
-  if (loading || (user && companyLoading)) {
+  if (loading) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6">
-        <div className="flex flex-col items-center max-w-sm w-full text-center">
-          <div className="relative mb-8">
-            <NexusLogo className="w-20 h-20 animate-pulse opacity-20" />
-            <div className="absolute inset-0 flex items-center justify-center">
-               <div className="h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-lg shadow-blue-600/20" />
-            </div>
-          </div>
-          
-          <h2 className="text-xl font-black text-slate-900 tracking-tight mb-2 italic uppercase">Symphonie Nexus</h2>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Initialisation de l'écosystème sécurisé...</p>
-          
-          <AnimatePresence>
-            {slowLoading && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-12 space-y-4 w-full"
-              >
-                <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
-                  <p className="text-[10px] font-bold text-amber-700 uppercase tracking-widest leading-loose">
-                    La connexion au Cloud prend plus de temps que prévu. 
-                    Cela peut être dû à votre connexion réseau.
-                  </p>
-                </div>
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl"
-                >
-                  Forcer le Redémarrage
-                </button>
-                <button 
-                  onClick={() => auth.signOut()}
-                  className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
-                >
-                  Changer de Compte
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-        
-        <div className="absolute bottom-10 text-[9px] text-slate-300 font-bold uppercase tracking-[0.2em]">
-          Nexus ERP Architectural Sync v4.2
-        </div>
+      <div className="h-screen w-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin" />
       </div>
     );
   }
@@ -712,27 +681,21 @@ export default function App() {
 
       <aside 
         style={{
-          width: isSidebarOpen ? (windowWidth < 640 ? windowWidth : 320) : (windowWidth < 1024 ? 0 : 100),
-          transform: (windowWidth < 1024 && !isSidebarOpen) ? 'translateX(-320px)' : 'translateX(0)'
+          width: isSidebarOpen ? (windowWidth < 640 ? windowWidth : 280) : (windowWidth < 1024 ? 0 : 88),
+          transform: (windowWidth < 1024 && !isSidebarOpen) ? 'translateX(-280px)' : 'translateX(0)'
         }}
         className={cn(
-          "bg-[#020617] border border-white/5 flex flex-col z-40 shrink-0 transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden",
+          "bg-white border-r border-slate-100 flex flex-col z-40 shrink-0 transition-all duration-300 shadow-xl shadow-slate-200/40 overflow-hidden",
           windowWidth < 1024 
             ? "fixed left-0 top-0 h-screen" 
-            : "h-[calc(100vh-2rem)] my-4 ml-4 rounded-[2.5rem] sticky top-4",
+            : "h-[calc(100vh-2rem)] my-4 ml-4 rounded-[2rem] sticky top-4",
           isSidebarOpen && windowWidth < 1024 && "rounded-r-[2rem]"
         )}
       >
-        {/* Abstract Background Elements for Sidebar */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
-          <div className="absolute -top-24 -left-24 w-64 h-64 bg-indigo-600/30 rounded-full blur-[80px]" />
-          <div className="absolute bottom-48 -right-12 w-40 h-40 bg-blue-600/20 rounded-full blur-[60px]" />
-        </div>
-
-        <div className="p-8 h-28 flex items-center justify-between border-b border-white/5 bg-slate-950/20 relative z-10">
+        <div className="p-6 h-28 flex items-center justify-between border-b border-slate-50 bg-white relative z-10">
           <div className="flex items-center gap-4 w-full">
             <div 
-              className="shrink-0 flex items-center justify-center p-2.5 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl shadow-xl shadow-indigo-900/40 border border-white/10"
+              className="shrink-0 flex items-center justify-center p-2.5 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl shadow-lg shadow-indigo-200"
             >
               <NexusLogo className="w-8 h-8 filter brightness-200" />
             </div>
@@ -742,8 +705,8 @@ export default function App() {
                 className="overflow-hidden flex-1"
               >
                 {activeTab === 'admin' ? (
-                  <div className="font-black text-indigo-400 text-xl tracking-tighter leading-none italic">
-                    NEXUS <span className="text-white not-italic">CORE</span>
+                  <div className="font-black text-indigo-600 text-xl tracking-tighter leading-none italic">
+                    NEXUS <span className="text-slate-900 not-italic">CORE</span>
                   </div>
                 ) : (
                   <div className="space-y-1">
@@ -754,17 +717,17 @@ export default function App() {
                           const c = companies.find(c => c.id === e.target.value);
                           if (c) setCurrentCompany(c);
                         }}
-                        className="font-black text-lg tracking-tight bg-transparent text-white border-none p-0 focus:ring-0 cursor-pointer w-full leading-none appearance-none pr-6 truncate"
+                        className="font-black text-lg tracking-tight bg-transparent text-slate-900 border-none p-0 focus:ring-0 cursor-pointer w-full leading-none appearance-none pr-6 truncate"
                       >
                         {companies.map(c => (
-                          <option key={c.id} value={c.id} className="bg-slate-950 text-white font-sans">{c.name}</option>
+                          <option key={c.id} value={c.id} className="bg-white text-slate-900 font-sans">{c.name}</option>
                         ))}
                       </select>
-                      <ChevronRight size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-500 group-hover/select:text-white transition-colors rotate-90" />
+                      <ChevronRight size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-400 group-hover/select:text-slate-600 transition-colors rotate-90" />
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
-                      <span className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">{currentCompany.joinCode}</span>
+                      <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                      <span className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">{currentCompany.joinCode}</span>
                     </div>
                   </div>
                 )}
@@ -774,14 +737,14 @@ export default function App() {
 
           <button 
             onClick={() => setSidebarOpen(!isSidebarOpen)} 
-            className="p-2.5 hover:bg-white/10 text-slate-500 hover:text-white transition-all rounded-xl ml-2 border border-transparent hover:border-white/5 active:scale-95"
+            className="p-2.5 hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition-all rounded-xl ml-2 border border-transparent hover:border-slate-100 active:scale-95 bg-white"
           >
             {isSidebarOpen ? <ChevronLeft size={20} /> : <Menu size={20} />}
           </button>
         </div>
 
-        <nav className="flex-1 py-8 px-4 space-y-1.5 overflow-y-auto scrollbar-hide relative z-10">
-          <div className="space-y-1.5">
+        <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto scrollbar-hide relative z-10">
+          <div className="space-y-1">
             {navItems.map((item, i) => (
               <button
                 key={item.id}
@@ -790,81 +753,69 @@ export default function App() {
                   if (windowWidth < 1024) setSidebarOpen(false);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-5 px-5 py-4 rounded-2xl transition-all group relative overflow-hidden",
+                  "w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all group relative overflow-hidden",
                   activeTab === item.id 
-                    ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-[0_10px_30px_rgba(79,70,229,0.3)] border border-indigo-500/50" 
-                    : "text-slate-400 hover:bg-white/5 hover:text-slate-100 hover:translate-x-1"
+                    ? "bg-indigo-50 text-indigo-600 font-bold" 
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                 )}
               >
                 <div className={cn(
-                  "transition-all duration-500",
-                  activeTab === item.id ? "text-white scale-110" : "text-slate-500 group-hover:text-indigo-400"
+                  "transition-all duration-300",
+                  activeTab === item.id ? "text-indigo-600 scale-110" : "text-slate-400 group-hover:text-slate-600"
                 )}>
-                  <item.icon size={22} strokeWidth={activeTab === item.id ? 2.5 : 2} />
+                  <item.icon size={20} strokeWidth={activeTab === item.id ? 2.5 : 2} />
                 </div>
                 {isSidebarOpen && (
                   <span className={cn(
-                    "text-[10px] font-black uppercase tracking-[0.2em] shrink-0 transition-colors",
-                    activeTab === item.id ? "text-white" : "text-slate-400 group-hover:text-slate-100"
+                    "text-xs font-black uppercase tracking-widest shrink-0 transition-colors",
+                    activeTab === item.id ? "text-indigo-600" : "text-slate-500 group-hover:text-slate-900"
                   )}>{item.label}</span>
                 )}
-                
-                {activeTab === item.id && (
-                  <div 
-                    className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-white rounded-l-full shadow-[0_0_15px_#fff]" 
-                  />
-                )}
-
-                {/* Hover Highlight Overlay */}
-                <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
               </button>
             ))}
           </div>
         </nav>
 
-        <div className="p-6 border-t border-white/5 flex flex-col gap-3 bg-slate-950/20 relative z-10">
+        <div className="p-4 border-t border-slate-50 flex gap-2 justify-center bg-white relative z-10">
           {user?.role === 'Client' && isSidebarOpen && (
-            <div className="mb-2 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl">
-              <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-1 italic">NEXUS CONNECT</p>
-              <p className="text-[10px] text-slate-400 leading-tight">Votre support prioritaire est actif.</p>
+            <div className="mb-2 w-full p-4 bg-indigo-50 border border-indigo-100 rounded-2xl">
+              <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1 italic">NEXUS CONNECT</p>
+              <p className="text-[10px] text-slate-500 leading-tight">Votre support prioritaire est actif.</p>
               <button 
                 onClick={() => setActiveTab('ecommerce')}
-                className="mt-3 w-full py-2 bg-indigo-600 text-white text-[9px] font-black uppercase rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-indigo-500 transition-colors"
+                className="mt-3 w-full py-2 bg-indigo-600 text-white text-[9px] font-black uppercase rounded-xl hover:bg-indigo-700 transition-colors"
               >
-                Ouvrir Support / Chat
+                Ouvrir Support
               </button>
             </div>
           )}
+          
           <button 
             onClick={() => setCurrentCompany(null)}
-            className="w-full flex items-center gap-5 px-5 py-4 rounded-2xl bg-white/5 text-slate-400 hover:text-white transition-all group border border-white/5 hover:border-white/20 hover:bg-white/10 active:scale-95"
+            className="flex-1 flex justify-center items-center p-3 rounded-xl bg-slate-50 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all border border-slate-100"
+            title="Changer d'Espace"
           >
-            <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-900 border border-white/5 group-hover:border-indigo-500/50 group-hover:text-indigo-400 transition-all">
-              <Database size={16} className="group-hover:rotate-12 transition-transform" />
-            </div>
-            {isSidebarOpen && <span className="text-[10px] font-black uppercase tracking-[0.2em]">Changer d'Espace</span>}
+            <Database size={18} />
           </button>
           
           <button 
             onClick={() => authService.logout().then(() => window.location.reload())}
-            className="w-full flex items-center gap-5 px-5 py-4 rounded-2xl text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-all group border border-transparent hover:border-red-500/20 active:scale-95"
+            className="flex-1 flex justify-center items-center p-3 rounded-xl bg-red-50 text-red-500 hover:text-red-700 hover:bg-red-100 transition-all border border-red-100"
+            title="Fin de Session"
           >
-            <div className="w-8 h-8 flex items-center justify-center rounded-lg group-hover:bg-red-500/10 transition-all">
-              <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" />
-            </div>
-            {isSidebarOpen && <span className="text-[10px] font-black uppercase tracking-[0.2em]">Fin de Session</span>}
+            <LogOut size={18} />
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col h-screen bg-nexus-bg">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col h-screen bg-slate-50">
         {/* Top Header */}
-        <header className="h-24 px-6 sm:px-12 border-b border-white/5 bg-nexus-surface sticky top-0 z-20 flex items-center justify-between">
+        <header className="h-24 px-6 sm:px-12 border-b border-slate-100 bg-white sticky top-0 z-20 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-4 sm:gap-6">
             <button 
               onClick={() => setSidebarOpen(!isSidebarOpen)} 
-              className="lg:hidden p-3 bg-nexus-accent text-white rounded-2xl shadow-lg shadow-blue-600/20 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
+              className="lg:hidden p-3 bg-blue-600 text-white rounded-2xl shadow-sm flex items-center justify-center shrink-0 active:scale-95 transition-transform"
             >
               <Menu size={20} />
             </button>
@@ -872,7 +823,7 @@ export default function App() {
             {activeTab !== 'dashboard' && (
               <button
                 onClick={() => setActiveTab('dashboard')}
-                className="hidden sm:flex items-center justify-center w-10 h-10 bg-white/5 border border-white/10 rounded-xl text-nexus-text-muted hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
+                className="hidden sm:flex items-center justify-center w-10 h-10 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all"
                 title="Retour au Tableau de bord"
               >
                 <ChevronLeft size={18} />
@@ -880,8 +831,8 @@ export default function App() {
             )}
 
             <div className="flex flex-col">
-              <h2 className="text-[10px] font-black text-nexus-accent uppercase tracking-[0.3em] mb-1">Nexus Cockpit</h2>
-              <h1 className="text-xl font-bold text-nexus-text tracking-tight leading-none flex items-center gap-2">
+              <h2 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Nexus Cockpit</h2>
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-none flex items-center gap-2">
                 {activeTab === 'admin' ? "Console Maître" : navItems.find(n => n.id === activeTab)?.label}
               </h1>
             </div>
@@ -890,37 +841,37 @@ export default function App() {
           <div className="flex items-center gap-8">
             <div 
               onClick={() => setIsCommandPaletteOpen(true)}
-              className="hidden lg:flex items-center px-4 py-2 bg-white/5 rounded-2xl border border-white/10 group transition-all cursor-pointer hover:border-nexus-accent/50"
+              className="hidden lg:flex items-center px-4 py-2 bg-slate-50 rounded-2xl border border-slate-200 group transition-all cursor-pointer hover:border-blue-300"
             >
-              <Search className="text-nexus-text-muted group-hover:text-nexus-accent transition-colors" size={18} />
-              <div className="text-[11px] font-bold text-nexus-text-muted w-48 ml-3 flex justify-between items-center">
+              <Search className="text-slate-400 group-hover:text-blue-600 transition-colors" size={18} />
+              <div className="text-[11px] font-bold text-slate-500 w-48 ml-3 flex justify-between items-center">
                 <span>Scanner l'écosystème...</span>
-                <span className="text-[9px] px-1.5 py-0.5 bg-white/10 rounded border border-white/10">⌘K</span>
+                <span className="text-[9px] px-1.5 py-0.5 bg-white rounded shadow-sm border border-slate-200">⌘K</span>
               </div>
             </div>
             
-            <div className="flex items-center gap-2 sm:gap-4 lg:border-l border-white/5 lg:pl-8">
+            <div className="flex items-center gap-2 sm:gap-4 lg:border-l border-slate-100 lg:pl-8">
               <ThemeToggle />
               <NotificationBell user={user} />
               
               <div className="flex items-center gap-2 sm:gap-4">
                 <div className="hidden xs:flex flex-col items-end">
-                  <span className="text-[9px] sm:text-[10px] font-black text-nexus-text uppercase tracking-tighter truncate max-w-[80px] sm:max-w-none">
+                  <span className="text-[9px] sm:text-[10px] font-black text-slate-900 uppercase tracking-tight truncate max-w-[80px] sm:max-w-none">
                     {user?.displayName || user?.email?.split('@')[0] || 'Utilisateur'}
                   </span>
-                  <span className="text-[7px] sm:text-[8px] font-black text-nexus-accent uppercase tracking-[0.1em] px-1.5 sm:px-2 py-0.5 bg-nexus-accent/10 rounded-full border border-nexus-accent/20 mt-0.5">
+                  <span className="text-[7px] sm:text-[8px] font-black text-blue-600 uppercase tracking-widest px-1.5 sm:px-2 py-0.5 bg-blue-50 rounded-full border border-blue-100 mt-0.5">
                     {user?.role}
                   </span>
                 </div>
                 <div className="relative group cursor-pointer">
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt="User" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white/10 shadow-xl shadow-slate-950/20 object-cover" />
+                    <img src={user.photoURL} alt="User" className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-slate-100 shadow-sm object-cover" />
                   ) : (
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-white/10 shadow-xl shadow-slate-950/20 bg-nexus-surface flex items-center justify-center text-nexus-text-muted font-black text-base sm:text-lg">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] border-2 border-slate-100 shadow-sm bg-slate-50 flex items-center justify-center text-slate-500 font-black text-base sm:text-lg">
                       {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
                     </div>
                   )}
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-nexus-success rounded-full border-[3px] border-nexus-surface shadow-sm" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-[3px] border-white shadow-sm" />
                 </div>
               </div>
             </div>
@@ -966,18 +917,20 @@ export default function App() {
         />
 
         {/* Global Footer */}
-        <footer className="mt-auto px-4 sm:px-8 py-6 border-t border-white/5 bg-nexus-surface flex flex-col md:flex-row justify-between items-center gap-4">
+        <footer className="mt-auto px-4 sm:px-8 py-6 border-t border-slate-200 bg-white flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-6">
-            <p className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest">Nexus Cockpit v5.0-LEGENDARY</p>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nexus Cockpit v5.0 Master</p>
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-nexus-success rounded-full animate-pulse" />
-              <span className="text-[10px] font-bold text-nexus-text uppercase">Sync Intelligence Active</span>
+              <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+              <span className="text-[10px] font-bold text-slate-700 uppercase">
+                {isOnline ? 'Sync Interactive Active' : 'Mode Hors Connexion - Sync en attente'}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button className="text-[10px] font-bold text-nexus-text-muted hover:text-nexus-text uppercase transition-colors">Support Principal</button>
-            <span className="text-white/5">|</span>
-            <button className="text-[10px] font-bold text-nexus-text-muted hover:text-nexus-text uppercase transition-colors">Protocole Sécurité</button>
+            <button className="text-[10px] font-bold text-slate-500 hover:text-slate-900 uppercase transition-colors">Support Principal</button>
+            <span className="text-slate-200">|</span>
+            <button className="text-[10px] font-bold text-slate-500 hover:text-slate-900 uppercase transition-colors">Protocole Sécurité</button>
           </div>
         </footer>
       </main>

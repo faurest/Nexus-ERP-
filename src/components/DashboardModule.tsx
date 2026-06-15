@@ -410,60 +410,60 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
   ];
 
   return (
-    <div className="space-y-10 pb-20">
-      {/* Immersive Command Header */}
-      <div className="relative overflow-hidden bg-nexus-surface rounded-[2rem] lg:rounded-[2.5rem] p-6 lg:p-12 text-nexus-text shadow-2xl border border-white/5 group">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-nexus-bg to-nexus-bg z-0 opacity-80" />
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-nexus-accent/5 rounded-full blur-[120px] -mr-48 -mt-48 transition-transform duration-1000 group-hover:scale-110" />
+    <div className="space-y-6 pb-20">
+      {/* Header */}
+      <div className="relative overflow-hidden bg-white rounded-[1.5rem] p-6 text-slate-900 shadow-sm border border-slate-100 group">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white to-white z-0" />
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[80px] -mr-48 -mt-48 transition-transform duration-1000 group-hover:scale-110" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-12">
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div className="max-w-xl">
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-white/5 border border-white/10 rounded-full mb-6">
-                <div className="w-2 h-2 bg-nexus-accent rounded-full shadow-[0_0_8px_rgba(91,140,255,0.6)] animate-pulse" />
-                <span className="text-[9px] font-black uppercase tracking-[0.25em] text-nexus-accent">Nexus OS • Cockpit Intelligence</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 rounded-full mb-4 shadow-sm">
+                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nexus OS • Cockpit Intelligence</span>
               </div>
-              <h1 className="text-3xl lg:text-5xl font-black tracking-tight mb-4 leading-tight">
-                Bonjour, <span className="nexus-gradient-text">{user?.displayName || user?.email?.split('@')[0]}</span>
+              <h1 className="text-2xl lg:text-3xl font-black tracking-tight mb-2 leading-tight">
+                Bonjour, <span className="text-blue-600">{user?.displayName || user?.email?.split('@')[0]}</span>
               </h1>
-              <p className="text-nexus-text-muted text-xs lg:text-sm font-medium leading-relaxed max-w-md italic">
-                {currentCompany?.name} • Analyse prédictive en cours...
+              <p className="text-slate-500 text-xs font-medium leading-relaxed italic">
+                {currentCompany?.name} • Analyse en cours...
               </p>
             </motion.div>
           </div>
           
-          <div className="flex flex-wrap gap-4 shrink-0 bg-white/5 backdrop-blur-md p-2 rounded-[2rem] border border-white/10">
+          <div className="flex flex-wrap gap-2 shrink-0">
              {(!isNewEnterprise || role === 'owner') && (
               <>
                 <button 
                   onClick={() => document.getElementById('import-json')?.click()}
                   disabled={isImporting || isExporting}
-                  className="px-6 py-4 rounded-2xl text-nexus-text text-[9px] font-black uppercase tracking-[0.15em] hover:bg-white/5 transition-all flex items-center gap-3 group/btn"
+                  className="px-4 py-2 rounded-xl text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 border border-slate-200 transition-all flex items-center gap-2 active:scale-95 bg-white shadow-sm"
                 >
-                  <Upload size={14} className="group-hover:-translate-y-1 transition-transform" />
-                  {isImporting ? 'Chargement...' : 'Importation'}
+                  <Upload size={14} />
+                  {isImporting ? '...' : 'Import'}
                 </button>
                 <input type="file" accept=".json" id="import-json" hidden onChange={handleImport} />
                 
                 <button 
                   onClick={() => window.print()}
-                  className="px-6 py-4 rounded-2xl bg-white text-nexus-bg text-[9px] font-black uppercase tracking-[0.15em] hover:bg-blue-50 transition-all shadow-xl flex items-center gap-3 active:scale-95 text-slate-900"
+                  className="px-4 py-2 rounded-xl bg-white text-slate-900 border border-slate-200 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2 active:scale-95"
                 >
                   <BarChart3 size={14} />
-                  Rapport PDF
+                  PDF
                 </button>
                 
                 <button 
                   onClick={handleExport}
                   disabled={isExporting || isImporting}
-                  className="px-6 py-4 rounded-2xl bg-nexus-accent text-white text-[9px] font-black uppercase tracking-[0.15em] hover:bg-blue-500 transition-all shadow-[0_15px_30px_rgba(91,140,255,0.2)] flex items-center gap-3"
+                  className="px-4 py-2 rounded-xl bg-blue-600 text-white border border-transparent text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md flex items-center gap-2 active:scale-95"
                 >
                   <Download size={14} />
-                  {isExporting ? 'Process...' : 'Exportation'}
+                  {isExporting ? '...' : 'Export'}
                 </button>
               </>
             )}
@@ -476,34 +476,34 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
         {quickActions.map((action, idx) => (
           <motion.button 
             key={idx}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
             onClick={() => navigateTo(action.tab)}
-            className="flex flex-col items-center justify-center p-8 bg-nexus-surface border border-white/5 rounded-[2.5rem] hover:border-nexus-accent/50 hover:shadow-2xl hover:shadow-nexus-accent/5 transition-all group active:scale-95"
+            className="flex flex-col items-center justify-center p-5 bg-white border border-slate-100 rounded-2xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-900/5 transition-all group active:scale-95"
           >
-            <div className={`w-16 h-16 ${action.bg} ${action.color} rounded-3xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-              <action.icon size={32} />
+            <div className={`w-12 h-12 ${action.bg} ${action.color} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+              <action.icon size={24} />
             </div>
-            <span className="text-[11px] font-black text-nexus-text-muted uppercase tracking-widest group-hover:text-nexus-text transition-colors">{action.label}</span>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-slate-900 transition-colors">{action.label}</span>
           </motion.button>
         ))}
       </div>
 
       {/* Main Bento Grid */}
       {isEmptyState ? (
-        <div className="grid grid-cols-12 gap-8">
+        <div className="grid grid-cols-12 gap-6">
           {/* Onboarding Guide - Spans 12 cols */}
-          <div className="col-span-12 bg-nexus-surface rounded-[2.5rem] p-10 border-2 border-dashed border-white/10 flex flex-col items-center text-center group hover:border-nexus-accent/30 transition-all">
-            <div className="w-20 h-20 bg-nexus-accent/10 rounded-3xl flex items-center justify-center text-nexus-accent mb-8 animate-bounce transition-transform group-hover:scale-110">
-              <Plus size={40} />
+          <div className="col-span-12 bg-white rounded-2xl p-8 border-2 border-dashed border-blue-500/20 flex flex-col items-center text-center group hover:border-blue-500/40 transition-all shadow-sm">
+            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6 animate-bounce transition-transform group-hover:scale-110">
+              <Plus size={32} />
             </div>
-            <h2 className="text-3xl font-black text-nexus-text uppercase tracking-tight mb-4 italic">Lancez votre symphonie Nexus</h2>
-            <p className="text-nexus-text-muted max-w-lg font-medium leading-relaxed mb-10">
-              Votre tableau de bord est activé. Suivez ces <span className="text-nexus-accent font-bold">3 protocoles</span> pour initialiser l'écosystème.
+            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-3">Initialisation de l'espace</h2>
+            <p className="text-slate-500 max-w-lg font-medium leading-relaxed mb-8 text-sm">
+              Votre tableau de bord est prêt. Suivez ces <span className="text-blue-600 font-bold">3 étapes</span> pour configurer votre environnement.
             </p>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-5xl">
               {[
                 { 
                   step: '01', 
@@ -530,15 +530,15 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                 <button 
                   key={s.step}
                   onClick={() => window.dispatchEvent(new CustomEvent('NAVIGATE_TAB', { detail: s.tab }))}
-                  className="bg-white/5 p-8 rounded-3xl border border-white/5 hover:bg-nexus-accent hover:text-white transition-all text-left flex flex-col h-full group/card"
+                  className="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:bg-blue-600 hover:text-white transition-all text-left flex flex-col h-full group/card"
                 >
-                  <div className="flex items-center justify-between mb-6">
-                    <span className="text-[10px] font-black text-nexus-accent bg-nexus-accent/10 px-2 py-1 rounded group-hover/card:bg-white group-hover/card:text-nexus-accent">{s.step}</span>
-                    <s.icon size={20} className="text-nexus-text-muted group-hover/card:text-white" />
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-[10px] font-black text-blue-600 bg-white px-2 py-1 rounded shadow-sm group-hover/card:text-blue-600">{s.step}</span>
+                    <s.icon size={20} className="text-slate-400 group-hover/card:text-white" />
                   </div>
-                  <h3 className="text-lg font-black uppercase tracking-tight mb-2">{s.title}</h3>
-                  <p className="text-[11px] font-medium opacity-60 leading-relaxed mb-6 flex-1">{s.desc}</p>
-                  <div className="flex items-center gap-2 text-nexus-accent group-hover/card:text-white text-[9px] font-black uppercase tracking-widest">
+                  <h3 className="text-md font-black uppercase tracking-tight mb-2 text-slate-900 group-hover/card:text-white">{s.title}</h3>
+                  <p className="text-xs font-medium text-slate-500 group-hover/card:text-blue-100 leading-relaxed mb-4 flex-1">{s.desc}</p>
+                  <div className="flex items-center gap-2 text-blue-600 group-hover/card:text-white text-[9px] font-black uppercase tracking-widest">
                     Activation <ArrowLeft size={12} className="rotate-180" />
                   </div>
                 </button>
@@ -547,80 +547,80 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
           </div>
 
           {/* Flux Balance Placeholder */}
-          <div className="col-span-12 lg:col-span-6 bg-nexus-panel rounded-[2.5rem] p-10 text-nexus-text relative overflow-hidden flex flex-col justify-center items-center text-center">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
-            <Activity size={48} className="text-emerald-400 mb-6 opacity-40" />
-            <h3 className="text-2xl font-black uppercase tracking-tight mb-2">Balance des Flux</h3>
-            <p className="text-nexus-text-muted text-xs font-medium max-w-xs">
+          <div className="col-span-12 lg:col-span-6 bg-slate-50 rounded-2xl p-8 text-slate-900 relative overflow-hidden flex flex-col justify-center items-center text-center border border-slate-100">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-100 rounded-full blur-3xl -mr-24 -mt-24 opacity-50" />
+            <Activity size={40} className="text-emerald-500 mb-4 opacity-50" />
+            <h3 className="text-xl font-black uppercase tracking-tight mb-2">Balance des Flux</h3>
+            <p className="text-slate-500 text-xs font-medium max-w-xs">
               Une fois vos premières ventes effectuées, vous visualiserez ici l'équilibre entre vos entrées et sorties de marchandises.
             </p>
           </div>
 
           {/* Performance Placeholder */}
-          <div className="col-span-12 lg:col-span-6 bg-nexus-surface rounded-[2.5rem] p-10 border border-nexus-border flex flex-col justify-center items-center text-center">
-             <div className="w-full h-32 flex items-end gap-2 mb-8 px-10">
+          <div className="col-span-12 lg:col-span-6 bg-white rounded-2xl p-8 border border-slate-100 flex flex-col justify-center items-center text-center shadow-sm">
+             <div className="w-full h-24 flex items-end gap-2 mb-6 px-10">
                {[20, 40, 15, 50, 30, 45, 25].map((v, i) => (
-                 <div key={i} className="flex-1 bg-nexus-panel rounded-t-lg transition-all animate-pulse" style={{ height: `${v}%` }} />
+                 <div key={i} className="flex-1 bg-slate-100 rounded-t-lg transition-all animate-pulse" style={{ height: `${v}%` }} />
                ))}
              </div>
-             <h3 className="text-2xl font-black uppercase tracking-tight text-nexus-text mb-2">Insights Prédictifs</h3>
-             <p className="text-nexus-text-muted text-xs font-medium max-w-xs">
+             <h3 className="text-xl font-black uppercase tracking-tight text-slate-900 mb-2">Insights Prédictifs</h3>
+             <p className="text-slate-500 text-xs font-medium max-w-xs">
                Nexus AI analysera vos performances après 7 jours d'activité pour vous suggérer des optimisations de stock.
              </p>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-12 gap-8">
+        <div className="grid grid-cols-12 gap-6">
         
         {/* KPI Row - Top 4 cards */}
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.1 }}
-            className="col-span-12 md:col-span-6 lg:col-span-3 bg-nexus-surface p-7 rounded-[2rem] border border-white/5 shadow-2xl hover:border-nexus-accent/30 transition-all group"
+            className="col-span-12 md:col-span-6 lg:col-span-3 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:border-blue-200 transition-all group"
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
+                "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
                 stat.bg, stat.color
               )}>
-                <stat.icon size={20} />
+                <stat.icon size={18} />
               </div>
               <div className={cn(
-                "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
-                stat.trend === 'Critique' ? 'bg-nexus-danger/20 text-nexus-danger' : 'bg-nexus-accent/10 text-nexus-accent'
+                "px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest",
+                stat.trend === 'Critique' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
               )}>
                 {stat.trend}
               </div>
             </div>
-            <p className="text-[9px] font-black text-nexus-text-muted uppercase tracking-[0.2em] mb-1">{stat.label}</p>
-            <h3 className="text-2xl font-black text-nexus-text leading-none">{stat.value}</h3>
+            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
+            <h3 className="text-xl font-black text-slate-900 leading-none">{stat.value}</h3>
           </motion.div>
         ))}
 
         {/* Top Categories Row */}
         <div className="col-span-12">
-          <div className="bg-nexus-surface rounded-[2.5rem] p-8 border border-white/5 shadow-2xl overflow-hidden relative group">
-             <div className="absolute top-0 right-0 w-64 h-64 bg-nexus-accent/5 rounded-full blur-3xl opacity-50 -mr-32 -mt-32" />
-             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm overflow-hidden relative group">
+             <div className="absolute top-0 right-0 w-48 h-48 bg-blue-50 rounded-full blur-3xl opacity-50 -mr-24 -mt-24" />
+             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div>
-                   <h2 className="text-xl font-black italic uppercase tracking-tight text-nexus-text">Rayons Stratégiques</h2>
-                   <p className="text-[9px] font-bold text-nexus-text-muted uppercase tracking-[0.2em] mt-1">Analyse des actifs circulants</p>
+                   <h2 className="text-lg font-black text-slate-900 uppercase">Rayons Stratégiques</h2>
+                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Analyse des actifs circulants</p>
                 </div>
-                <div className="flex gap-4 overflow-x-auto pb-4 md:pb-0 scrollbar-hide max-w-full">
+                <div className="flex gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide max-w-full">
                    {productCategories.map((cat) => {
                       const Icon = categoryIcons[cat] || Package;
                       const count = products.filter(p => p.category === cat).length;
                       return (
-                         <div key={cat} className="flex items-center gap-4 bg-white/5 px-6 py-4 rounded-3xl border border-white/5 shrink-0 group/cat hover:bg-nexus-accent hover:text-white transition-all cursor-default">
-                            <div className="w-10 h-10 bg-nexus-bg rounded-xl flex items-center justify-center text-nexus-text-muted shadow-sm group-hover/cat:bg-white/10 group-hover/cat:text-white transition-colors">
-                               <Icon size={18} />
+                         <div key={cat} className="flex items-center gap-3 bg-slate-50 px-4 py-3 rounded-xl border border-slate-100 shrink-0 group/cat hover:bg-blue-50 transition-all cursor-default">
+                            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-400 group-hover/cat:text-blue-600 transition-colors shadow-sm">
+                               <Icon size={16} />
                             </div>
                             <div>
-                               <p className="text-[10px] font-black uppercase tracking-widest">{cat}</p>
-                               <p className="text-[8px] font-bold opacity-60 uppercase">{count} Actifs</p>
+                               <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{cat}</p>
+                               <p className="text-[8px] font-bold text-slate-500 uppercase">{count} Actifs</p>
                             </div>
                          </div>
                       );
@@ -630,42 +630,18 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
           </div>
         </div>
 
-        {/* Operational Guide Quick Link */}
-        <div className="col-span-12 bg-nexus-accent rounded-[2rem] p-8 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl shadow-blue-900/20 relative overflow-hidden group">
-           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32 transition-transform duration-700 group-hover:scale-110" />
-           <div className="flex items-center gap-6 relative z-10">
-              <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-md border border-white/20">
-                 <BookOpen size={32} className="text-white" />
-              </div>
-              <div>
-                 <h2 className="text-2xl font-black italic tracking-tighter uppercase mb-1">Nexus Intelligence Briefing</h2>
-                 <p className="text-blue-100 text-xs font-medium max-w-lg">
-                   Consultez vos statistiques prédictives et protocoles de performance pour Maroua.
-                 </p>
-              </div>
-           </div>
-           <button 
-             onClick={() => navigateTo('guide')}
-             className="relative z-10 px-8 py-4 bg-white text-nexus-accent rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg hover:bg-blue-50 transition-colors active:scale-95"
-           >
-              Accéder au Briefing
-           </button>
-        </div>
-
         {/* Intelligence Hub (Chart) - Spans 8 cols */}
-        <div className="col-span-12 xl:col-span-8 bg-nexus-surface rounded-[2.5rem] p-10 border border-white/5 shadow-2xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-nexus-accent/5 rounded-full blur-3xl opacity-30 -mr-32 -mt-32 scale-0 group-hover:scale-100 transition-transform duration-1000" />
-          
-          <div className="flex justify-between items-center mb-10 relative z-10">
+        <div className="col-span-12 xl:col-span-8 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group">
+          <div className="flex justify-between items-center mb-8 relative z-10">
             <div>
-              <h3 className="text-xl font-black text-nexus-text uppercase tracking-tight">Intelligence Flux</h3>
-              <p className="text-[9px] font-bold text-nexus-text-muted uppercase tracking-[0.2em] mt-1">Analyse du CA prédictif</p>
+              <h3 className="text-lg font-black text-slate-900 uppercase">Intelligence Flux</h3>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Analyse du CA prédictif</p>
             </div>
             <div className="flex gap-2">
               {['24h', '7j', '30j'].map((t, i) => (
                 <button key={t} className={cn(
-                  "px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                  i === 2 ? "bg-nexus-accent text-white shadow-lg" : "text-nexus-text-muted hover:bg-white/5"
+                  "px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                  i === 2 ? "bg-blue-600 text-white shadow-sm" : "bg-slate-50 text-slate-500 hover:bg-slate-100"
                 )}>
                   {t}
                 </button>
@@ -673,7 +649,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
             </div>
           </div>
 
-          <div className="h-[280px] flex items-end gap-3.5 relative z-10">
+          <div className="h-[200px] flex items-end gap-2 relative z-10">
             {Array.from({ length: 12 }).map((_, i) => {
               const val = orders.filter(o => {
                 const d = o.date?.toDate ? o.date.toDate() : new Date(o.date);
@@ -681,19 +657,19 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
               }).reduce((sum, o) => sum + (o.total || 0), 0) / 1000;
               
               return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-3 group/bar">
+                <div key={i} className="flex-1 flex flex-col items-center gap-2 group/bar">
                   <div 
                     style={{ height: `${Math.max(val, 5)}%` }}
                     className={cn(
-                      "w-full rounded-t-lg transition-all relative",
-                      i === new Date().getMonth() ? "bg-nexus-accent shadow-[0_0_15px_rgba(91,140,255,0.4)]" : "bg-white/5 group-hover/bar:bg-white/10"
+                      "w-full rounded-t-md transition-all relative",
+                      i === new Date().getMonth() ? "bg-blue-500" : "bg-slate-100 group-hover/bar:bg-blue-200"
                     )}
                   >
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-nexus-bg text-white text-[8px] font-black px-2 py-1 rounded opacity-0 group-hover/bar:opacity-100 whitespace-nowrap border border-white/10">
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[8px] font-black px-1.5 py-0.5 rounded opacity-0 group-hover/bar:opacity-100 whitespace-nowrap">
                       {Math.round(val)}k
                     </div>
                   </div>
-                  <span className="text-[8px] font-black text-nexus-text-muted uppercase tracking-[0.2em]">{i + 1}</span>
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{i + 1}</span>
                 </div>
               );
             })}
@@ -701,20 +677,19 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
         </div>
 
         {/* Financial Flow Tracker */}
-        <div className="col-span-12 xl:col-span-4 bg-nexus-panel rounded-3xl lg:rounded-[2.5rem] p-7 lg:p-9 text-nexus-text shadow-xl relative overflow-hidden flex flex-col justify-between border border-nexus-border">
-          <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/10 via-transparent to-transparent z-0 pointer-events-none" />
+        <div className="col-span-12 xl:col-span-4 bg-white rounded-2xl p-6 text-slate-900 shadow-sm relative overflow-hidden flex flex-col justify-between border border-slate-100">
           <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
                 <DollarSign size={20} />
               </div>
               <div>
-                <h3 className="text-md font-black uppercase tracking-wider">Trésorerie Digitale</h3>
-                <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Réconciliation Actuelle</p>
+                <h3 className="text-md font-black uppercase text-slate-900">Trésorerie Digitale</h3>
+                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Réconciliation Actuelle</p>
               </div>
             </div>
             
-            <div className="space-y-6">
+            <div className="space-y-4">
               {[
                 { label: 'Solde MoMo (Simulé)', val: `${balanceMomo.toLocaleString()} FCFA`, color: 'bg-violet-500' },
                 { label: 'Solde Orange Money', val: `${balanceOrange.toLocaleString()} FCFA`, color: 'bg-orange-500' },
@@ -722,12 +697,12 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
               ].map(s => (
                 <div key={s.label}>
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-[9px] font-black text-nexus-text-muted uppercase tracking-[0.2em]">{s.label}</span>
-                    <span className="text-[11px] font-black text-nexus-text">{s.val}</span>
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{s.label}</span>
+                    <span className="text-[10px] font-black text-slate-900">{s.val}</span>
                   </div>
-                  <div className="h-1.5 bg-nexus-bg rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div 
-                      className={cn("h-full rounded-full w-full opacity-80", s.color)}
+                      className={cn("h-full rounded-full w-full", s.color)}
                     />
                   </div>
                 </div>
@@ -735,67 +710,67 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
             </div>
           </div>
 
-          <div className="mt-10 p-5 rounded-2xl bg-nexus-bg border border-nexus-border backdrop-blur-md relative z-10">
-             <div className="flex items-center gap-2 mb-2">
-               <Truck size={14} className="text-blue-400" />
-               <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Collecte Terrain</span>
+          <div className="mt-6 p-4 rounded-xl bg-slate-50 border border-slate-100 relative z-10">
+             <div className="flex items-center gap-2 mb-1.5">
+               <Truck size={14} className="text-blue-500" />
+               <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Collecte Terrain</span>
              </div>
-             <p className="text-[11px] font-medium text-slate-300 leading-relaxed italic">
-               "{orders.filter(o => o.status === 'SHIPPED' && o.paymentMethod === 'CASH').length} livreurs sont en route avec des encaissements espèces."
+             <p className="text-[10px] font-medium text-slate-500 leading-relaxed italic">
+               "{orders.filter(o => o.status === 'SHIPPED' && o.paymentMethod === 'CASH').length} livreurs sont en route avec des encaissements."
              </p>
           </div>
         </div>
 
         {/* Logistics Tracking Center */}
         <div className="col-span-12 xl:col-span-8 space-y-6">
-          <div className="bg-nexus-surface rounded-[2.5rem] p-8 border border-white/5 shadow-2xl">
-            <div className="flex justify-between items-center mb-8">
+          <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col h-full">
+            <div className="flex justify-between items-center mb-6">
                <div>
-                  <h3 className="text-xl font-black text-nexus-text uppercase">Logistics Cockpit</h3>
-                  <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mt-1">Alertes et incidents terrain</p>
+                  <h3 className="text-lg font-black text-slate-900 uppercase">Logistics Cockpit</h3>
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">Alertes et incidents terrain</p>
                </div>
-               <div className="p-3 bg-nexus-danger/10 text-nexus-danger rounded-2xl">
-                 <AlertTriangle size={24} />
+               <div className="p-2.5 bg-red-50 text-red-500 rounded-xl">
+                 <AlertTriangle size={20} />
                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
               {logisticsIncidents.length > 0 ? logisticsIncidents.map((incident, idx) => (
                 <div key={idx} className={cn(
-                  "p-5 rounded-3xl border flex flex-col justify-between gap-4 transition-all hover:scale-[1.02]",
-                  incident.newStatus === 'DELIVERY_FAILED' ? "bg-nexus-warning/5 border-nexus-warning/20" : "bg-nexus-danger/5 border-nexus-danger/20"
+                  "p-4 rounded-xl border flex flex-col justify-between gap-3 transition-all bg-white",
+                  incident.newStatus === 'DELIVERY_FAILED' ? "border-orange-200 shadow-sm shadow-orange-100/50" : "border-red-200 shadow-sm shadow-red-100/50"
                 )}>
                   <div className="flex justify-between items-start">
                     <div className={cn(
-                        "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest",
-                        incident.newStatus === 'DELIVERY_FAILED' ? "bg-nexus-warning/20 text-nexus-warning" : "bg-nexus-danger/20 text-nexus-danger"
+                        "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest",
+                        incident.newStatus === 'DELIVERY_FAILED' ? "bg-orange-50 text-orange-600" : "bg-red-50 text-red-600"
                       )}>
                       {incident.newStatus === 'DELIVERY_FAILED' ? 'Échec livraison' : 'Annulation'}
                     </div>
-                    <span className="text-[9px] font-bold text-nexus-text-muted">
+                    <span className="text-[9px] font-bold text-slate-400">
                       #{incident.orderId.slice(0, 6)}
                     </span>
                   </div>
                   
                   <div className="space-y-1">
-                    <p className="text-xs font-black text-nexus-text uppercase italic">"{incident.reason}"</p>
+                    <p className="text-xs font-bold text-slate-700 italic">"{incident.reason}"</p>
                   </div>
 
                   <div className="flex gap-2">
-                    <button className="flex-1 py-2 bg-white/5 rounded-xl text-[9px] font-black uppercase tracking-widest text-nexus-text-muted border border-white/5 hover:bg-white/10 transition-all">
+                    <button className="flex-1 py-1.5 bg-slate-50 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-500 border border-slate-200 hover:bg-slate-100 transition-all">
                       Logs
                     </button>
-                    <button className="flex-1 py-2 bg-nexus-accent rounded-xl text-[9px] font-black uppercase tracking-widest text-white shadow-lg hover:bg-blue-500 transition-all">
-                      Rectifier
+                    <button className="flex-1 py-1.5 bg-blue-600 rounded-lg text-[9px] font-black uppercase tracking-widest text-white shadow-sm hover:bg-blue-700 transition-all">
+                      Action
                     </button>
                   </div>
                 </div>
               )) : (
-                <div className="col-span-2 py-12 text-center">
-                   <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-nexus-text-muted opacity-20">
-                      <Truck size={32} />
+                <div className="col-span-2 py-8 text-center flex flex-col items-center justify-center">
+                   <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3 text-slate-300">
+                      <CheckCircle2 size={24} />
                    </div>
-                   <p className="text-xs font-bold text-nexus-text-muted uppercase tracking-widest italic leading-relaxed">Intelligence Logistique Optimale : Aucun incident critique détecté sur vos flux actuels.</p>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">Aucun incident critique récent.</p>
                 </div>
               )}
             </div>
@@ -803,37 +778,32 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
         </div>
 
         {/* Marketplace Intelligence */}
-        <div className="col-span-12 xl:col-span-4 bg-nexus-surface rounded-[2.5rem] p-8 border border-white/5 shadow-2xl flex flex-col">
-           <div className="flex justify-between items-center mb-8">
+        <div className="col-span-12 xl:col-span-4 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col">
+           <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-xl font-black text-nexus-text uppercase">Market Intelligence</h3>
-                <p className="text-[10px] font-black text-nexus-text-muted uppercase tracking-widest mt-1">Comportement consommateurs</p>
+                <h3 className="text-lg font-black text-slate-900 uppercase">Top Produits</h3>
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">Demande en temps réel</p>
               </div>
-              <div className="p-3 bg-nexus-accent/10 text-nexus-accent rounded-2xl">
-                <Zap size={24} />
+              <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                <Zap size={20} />
               </div>
            </div>
 
-           <div className="space-y-6 flex-1">
-              <div>
-                <p className="text-[9px] font-black text-nexus-text-muted uppercase tracking-widest mb-4">Top Actifs (Popularité)</p>
-                <div className="space-y-4">
-                   {stars.map((p, i) => (
-                     <div key={p.id} className="flex items-center gap-4 group/star hover:translate-x-1 transition-transform">
-                        <div className="w-10 h-10 rounded-xl bg-nexus-bg border border-white/10 flex items-center justify-center text-nexus-text font-black text-xs group-hover/star:bg-nexus-accent group-hover/star:text-white transition-colors">
-                          {i + 1}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-xs font-black text-nexus-text uppercase tracking-tight truncate">{p.name}</p>
-                          <p className="text-[9px] font-bold text-nexus-text-muted">{p.views || 0} analyses</p>
-                        </div>
-                        <div className="text-xs font-black text-nexus-accent">
-                           {p.price.toLocaleString()}
-                        </div>
-                     </div>
-                   ))}
+           <div className="flex-1 space-y-4">
+              {stars.map((p, i) => (
+                <div key={p.id} className="flex items-center gap-3 group/star hover:translate-x-1 transition-transform">
+                   <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-600 font-black text-xs group-hover/star:bg-blue-600 group-hover/star:text-white transition-colors">
+                     {i + 1}
+                   </div>
+                   <div className="flex-1 overflow-hidden">
+                     <p className="text-xs font-black text-slate-900 uppercase truncate">{p.name}</p>
+                     <p className="text-[9px] font-bold text-slate-500">{p.views || 0} vues</p>
+                   </div>
+                   <div className="text-[10px] font-black text-blue-600">
+                      {p.price.toLocaleString()}
+                   </div>
                 </div>
-              </div>
+              ))}
            </div>
         </div>
       </div>
@@ -841,10 +811,10 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       )}
 
       {/* Simplified Advantages with ERP Benefits */}
-      <div className="py-12 bg-nexus-panel border-y border-nexus-border">
-        <div className="text-center mb-12">
-          <h2 className="text-xl font-black text-nexus-text tracking-tight uppercase">Performance NEXUS ERP</h2>
-          <div className="w-12 h-1 bg-nexus-accent rounded-full mx-auto mt-3" />
+      <div className="py-12 bg-slate-50 border-y border-slate-100">
+        <div className="text-center mb-10">
+          <h2 className="text-lg font-black text-slate-900 tracking-tight uppercase">Performance NEXUS ERP</h2>
+          <div className="w-8 h-1 bg-blue-600 rounded-full mx-auto mt-3" />
         </div>
 
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -852,13 +822,13 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
             <motion.div 
               key={i} 
               whileHover={{ y: -5 }}
-              className="p-6 rounded-2xl bg-nexus-surface border border-nexus-border shadow-sm group"
+              className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm group hover:border-blue-200 transition-colors"
             >
-              <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-nexus-accent/10 text-nexus-accent mb-4 font-black text-xs group-hover:scale-110 transition-transform">
+              <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600 mb-4 font-black text-xs group-hover:bg-blue-600 group-hover:text-white transition-colors">
                 0{i + 1}
               </div>
-              <h3 className="text-lg font-black text-nexus-text mb-2 uppercase tracking-tight">{adv.title}</h3>
-              <p className="text-xs font-medium text-nexus-text-muted leading-relaxed">{adv.desc}</p>
+              <h3 className="text-md font-black text-slate-900 mb-2 uppercase tracking-tight">{adv.title}</h3>
+              <p className="text-xs font-medium text-slate-500 leading-relaxed">{adv.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -866,41 +836,41 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
 
       {/* Cross-tenant Global Overview */}
       {companies.filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email).length > 0 && (
-        <div className="mt-12 bg-nexus-surface rounded-3xl border border-nexus-border p-8 shadow-xl">
-          <div className="flex items-center justify-between mb-8">
+        <div className="mt-8 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-black text-nexus-text tracking-tight">Vue d'ensemble de vos opérations</h3>
-              <p className="text-sm font-medium text-nexus-text-muted mt-1">Status et performances des entités sous votre direction.</p>
+              <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase">Vue d'ensemble de vos opérations</h3>
+              <p className="text-xs font-medium text-slate-500 mt-1">Status et performances des entités sous votre direction.</p>
             </div>
-            <div className="p-3 bg-nexus-accent/10 text-nexus-accent rounded-2xl">
-              <Briefcase size={24} />
+            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+              <Briefcase size={20} />
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {companies
               .filter(c => c.ownerId === user?.uid || c.ownerEmail === user?.email)
               .map(c => (
-              <div key={c.id} className="p-5 border border-nexus-border rounded-2xl flex flex-col gap-4 hover:border-nexus-accent transition-colors bg-nexus-panel relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-nexus-accent/10 rounded-bl-full -mr-12 -mt-12 group-hover:bg-nexus-accent/20 transition-colors" />
+              <div key={c.id} className="p-5 border border-slate-100 rounded-xl flex flex-col gap-4 hover:border-blue-200 transition-colors bg-slate-50 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-100 rounded-bl-full -mr-12 -mt-12 group-hover:bg-blue-200 transition-colors opacity-50" />
                 <div className="flex items-center gap-4 relative z-10">
-                  <div className="w-12 h-12 bg-nexus-surface rounded-xl shadow-sm border border-nexus-border flex items-center justify-center font-black text-nexus-text-muted group-hover:text-nexus-accent transition-colors">
+                  <div className="w-10 h-10 bg-white rounded-lg shadow-sm border border-slate-100 flex items-center justify-center font-black text-slate-400 group-hover:text-blue-600 transition-colors">
                     {c.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h4 className="font-bold text-nexus-text">{c.name}</h4>
-                    <span className="text-[10px] font-bold text-nexus-text-muted uppercase tracking-widest">{c.joinCode}</span>
+                    <h4 className="font-bold text-slate-900 leading-tight">{c.name}</h4>
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{c.joinCode}</span>
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-between mt-auto relative z-10 pt-4 border-t border-nexus-border">
+                <div className="flex items-center justify-between mt-auto relative z-10 pt-4 border-t border-slate-200">
                   <div className="flex flex-col">
-                    <span className="text-xs text-nexus-text-muted">Membres</span>
-                    <span className="font-bold text-nexus-text">{Array.isArray(c.employees) ? c.employees.length : (c.memberEmails?.length || 1)}</span>
+                    <span className="text-[10px] text-slate-500 uppercase font-bold">Membres</span>
+                    <span className="font-black text-slate-900">{Array.isArray(c.employees) ? c.employees.length : (c.memberEmails?.length || 1)}</span>
                   </div>
                   <div className="flex flex-col text-right">
-                    <span className="text-xs text-slate-500">Status</span>
-                    <span className="font-bold text-emerald-600">Actif</span>
+                    <span className="text-[10px] text-slate-500 uppercase font-bold">Status</span>
+                    <span className="font-black text-emerald-600 uppercase text-[10px]">Actif</span>
                   </div>
                 </div>
               </div>
