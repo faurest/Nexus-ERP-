@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { X, ShoppingCart, ShoppingBag, MapPin, Building2, ShieldCheck, Share2 } from 'lucide-react';
+import { X, ShoppingCart, ShoppingBag, MapPin, Building2, ShieldCheck, Share2, Store, ExternalLink } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { CATEGORY_ICONS } from './MarketplaceCategories';
 
@@ -103,15 +103,59 @@ export function MarketplaceProductDetail({
                 </div>
               </div>
             ) : (
-              <div className="bg-slate-50 p-4 rounded-2xl flex flex-col gap-2 mt-6">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                  <ShieldCheck size={16} className="text-emerald-500" /> Vendeur vérifié
+              <div className="bg-slate-50 p-6 rounded-[2rem] flex flex-col gap-4 mt-6 border border-slate-100 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <Building2 size={64} />
                 </div>
-                {company?.location && (
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                    <MapPin size={16} className="text-blue-500" /> Expédié depuis: {company.location}
+                <div className="flex items-center gap-4 relative z-10">
+                  <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-2 shadow-sm shrink-0 border border-slate-100">
+                    {company?.logo ? (
+                      <img src={company.logo} alt={company.name} className="w-full h-full object-contain" />
+                    ) : (
+                      <Store size={24} className="text-slate-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900 tracking-tight">{company?.name || "Boutique Partenaire"}</h4>
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-widest">
+                      <ShieldCheck size={12} className="text-emerald-500" /> Vendeur vérifié
+                    </div>
+                  </div>
+                </div>
+
+                {company?.description && (
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium mt-2 relative z-10">
+                    {company.description}
+                  </p>
+                )}
+                
+                {company?.objectives && (
+                  <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100/50 relative z-10">
+                    <p className="text-[10px] uppercase font-black text-blue-600 mb-1 tracking-widest">Notre Mission</p>
+                    <p className="text-xs text-slate-700 italic font-medium">{company.objectives}</p>
                   </div>
                 )}
+
+                <div className="flex items-center justify-between mt-2 relative z-10">
+                  {company?.location && (
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                      <MapPin size={12} className="text-blue-500" /> {company.location}
+                    </div>
+                  )}
+                  {/* Visiter implies opening their profile, for now we will just visually show a button that triggers a toast or closes the modal and filters by them */}
+                  <button 
+                    onClick={() => {
+                      if (company?.id) {
+                        // Assuming window.filterMarketplace is not defined, we'll dispatch a custom event
+                        window.dispatchEvent(new CustomEvent('NEXUS_FILTER_MARKETPLACE', { detail: company.id }));
+                        onClose();
+                      }
+                    }}
+                    className="ml-auto flex items-center gap-2 text-[10px] font-black text-blue-600 uppercase tracking-widest hover:text-slate-900 transition-colors"
+                  >
+                    Visiter la Boutique <ExternalLink size={12} />
+                  </button>
+                </div>
               </div>
             )}
           </div>

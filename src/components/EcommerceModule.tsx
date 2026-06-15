@@ -47,7 +47,8 @@ import {
   TrendingUp,
   DollarSign,
   Activity,
-  ShieldCheck
+  ShieldCheck,
+  Store
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -1723,8 +1724,8 @@ export default function EcommerceModule({ user }: { user: any }) {
         <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Paramètres de Livraison</h2>
-              <p className="text-slate-500 font-medium mt-1">Gérez vos zones de chalandise et frais d'expédition au Cameroun.</p>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Paramètres de la Boutique</h2>
+              <p className="text-slate-500 font-medium mt-1">Gérez votre vitrine Marketplace et la logistique.</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="p-4 bg-blue-50 rounded-2xl flex items-center gap-3">
@@ -1758,6 +1759,61 @@ export default function EcommerceModule({ user }: { user: any }) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="lg:col-span-2 space-y-6">
+              {/* Company Profile Settings */}
+              <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm space-y-8">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                    <Store size={16} className="text-blue-600" /> Profil Marketplace
+                  </h3>
+                  <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase">Informations visibles par les clients de la Marketplace</p>
+                </div>
+                
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Lien du Logo (URL)</label>
+                    <input 
+                      type="url" 
+                      placeholder="https://..."
+                      defaultValue={currentCompany.logo || ""}
+                      onBlur={async (e) => {
+                        setSavingSettings(true);
+                        await updateDoc(doc(db, 'companies', currentCompany.id), { logo: e.target.value });
+                        setSavingSettings(false);
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-300"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Description courte de l'entreprise</label>
+                    <textarea 
+                      placeholder="Votre expertise, vos années d'expérience..."
+                      defaultValue={currentCompany.description || ""}
+                      onBlur={async (e) => {
+                        setSavingSettings(true);
+                        await updateDoc(doc(db, 'companies', currentCompany.id), { description: e.target.value });
+                        setSavingSettings(false);
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-300 min-h-[100px]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Objectifs / Mission / Vision</label>
+                    <textarea 
+                      placeholder="Notre mission est de fournir..."
+                      defaultValue={currentCompany.objectives || ""}
+                      onBlur={async (e) => {
+                        setSavingSettings(true);
+                        await updateDoc(doc(db, 'companies', currentCompany.id), { objectives: e.target.value });
+                        setSavingSettings(false);
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-300 min-h-[100px]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="lg:col-span-1 space-y-6">
               <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm space-y-8">
                 <div>

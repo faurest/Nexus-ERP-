@@ -24,6 +24,9 @@ export interface Company {
   nairaRate?: number;
   totalProfit?: number;
   categories?: CompanyCategory[];
+  logo?: string;
+  description?: string;
+  objectives?: string;
 }
 
 interface CompanyContextType {

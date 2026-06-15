@@ -177,6 +177,15 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   }, [showCart, showTracking, showCatalogue, showTransportCalc, selectedProduct]);
 
   useEffect(() => {
+    const handleFilter = (e: any) => {
+       setActiveCompanyId(e.detail);
+       window.scrollTo({ top: 300, behavior: 'smooth' });
+    };
+    window.addEventListener('NEXUS_FILTER_MARKETPLACE', handleFilter);
+    return () => window.removeEventListener('NEXUS_FILTER_MARKETPLACE', handleFilter);
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem("nexus_cart", JSON.stringify(cart));
   }, [cart]);
 
