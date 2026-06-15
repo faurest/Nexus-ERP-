@@ -47,6 +47,8 @@ import {
   Zap,
   LayoutGrid,
   Award,
+  ShieldCheck,
+  MapPin
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -79,6 +81,8 @@ interface Company {
   name: string;
   description?: string;
   logo?: string;
+  objectives?: string;
+  location?: string;
   whatsappNumber?: string;
   category?: string;
   nairaRate?: number;
@@ -784,6 +788,58 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
         activeCategory={activeCategory}
         setActiveCategory={setActiveCategory}
       />
+
+      {/* Active Company Banner */}
+      {activeCompanyId !== 'all' && (
+        <div className="max-w-7xl mx-auto px-6 mt-8">
+          {(() => {
+            const activeCompany = companies.find(c => c.id === activeCompanyId);
+            if (!activeCompany) return null;
+            return (
+              <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden flex flex-col md:flex-row gap-6 items-start md:items-center">
+                <div className="absolute top-0 right-0 p-8 opacity-5">
+                  <Store size={120} />
+                </div>
+                <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center p-2 shrink-0 relative z-10 border-4 border-white/10">
+                  {activeCompany.logo ? (
+                    <img src={activeCompany.logo} alt={activeCompany.name} className="w-full h-full object-contain" />
+                  ) : (
+                    <Store size={40} className="text-slate-400" />
+                  )}
+                </div>
+                <div className="flex-1 relative z-10">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h2 className="text-2xl font-black tracking-tight">{activeCompany.name}</h2>
+                    <ShieldCheck size={20} className="text-emerald-400" />
+                  </div>
+                  {activeCompany.location && (
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
+                      <MapPin size={12} className="text-blue-400" /> {activeCompany.location}
+                    </div>
+                  )}
+                  {activeCompany.description && (
+                    <p className="text-sm text-slate-300 font-medium max-w-2xl leading-relaxed mb-4">
+                      {activeCompany.description}
+                    </p>
+                  )}
+                  {activeCompany.objectives && (
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-4 max-w-2xl">
+                      <p className="text-[10px] text-blue-300 uppercase tracking-widest font-black mb-1">Notre Mission / Objectifs</p>
+                      <p className="text-xs text-white/80 font-medium italic">
+                        "{activeCompany.objectives}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="shrink-0 relative z-10 hidden md:block text-right">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Produits liés</p>
+                  <p className="text-3xl font-black tracking-tight text-white">{filteredProducts.length}</p>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {/* Product Grid */}
       <div className="max-w-7xl mx-auto px-6 py-12">
