@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, or, getDocs, updateDoc, doc, arrayUnion, serverTimestamp } from '../lib/firebase';
+import { collection, query, where, onSnapshot, or, getDocs, updateDoc, setDoc, doc, arrayUnion, serverTimestamp } from '../lib/firebase';
 import { db } from './firebase';
 import { authService } from '../core/auth/AuthService';
 
@@ -176,11 +176,11 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
               personnelCompanyIds.forEach(async (cid) => {
                 if (!mainCompanies.find(c => c.id === cid)) {
                   try {
-                    await updateDoc(doc(db, 'companies', cid), {
+                    await setDoc(doc(db, 'companies', cid), {
                       memberEmails: arrayUnion(cleanEmail),
                       employees: arrayUnion(user.uid),
                       updatedAt: serverTimestamp()
-                    });
+                    }, { merge: true });
                   } catch (e) {
                     // Silently fail if we can't update
                   }

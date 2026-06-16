@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, getDocs, getDoc, serverTimestamp, handleFirestoreError, OperationType, orderBy, limit } from '../lib/firebase';
+import { db, auth, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, setDoc, getDocs, getDoc, serverTimestamp, handleFirestoreError, OperationType, orderBy, limit } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
 import { HelpTrigger } from './ContextualHelp';
 import { 
@@ -677,9 +677,9 @@ export default function EcommerceModule({ user }: { user: any }) {
         });
         
         const currentTotalProfit = currentCompany.totalProfit || 0;
-        await updateDoc(doc(db, 'companies', currentCompany.id), {
+        await setDoc(doc(db, 'companies', currentCompany.id), {
           totalProfit: currentTotalProfit + netProfit
-        });
+        }, { merge: true });
         
         await recordOrderHistory(order.id, nextStatus, nextStatus, 'PAIEMENT', `Paiement auto-validé à la livraison - Bénéfice Net: ${netProfit} FCFA`);
       }
@@ -1748,7 +1748,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                       const val = Number(e.target.value);
                       if (val > 0) {
                         setSavingSettings(true);
-                        await updateDoc(doc(db, 'companies', currentCompany.id), { nairaRate: val });
+                        await setDoc(doc(db, 'companies', currentCompany.id), { nairaRate: val }, { merge: true });
                         setSavingSettings(false);
                       }
                     }}
@@ -1796,7 +1796,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                               const reader = new FileReader();
                               reader.onloadend = async () => {
                                 const base64String = reader.result as string;
-                                await updateDoc(doc(db, 'companies', currentCompany.id), { logo: base64String });
+                                await setDoc(doc(db, 'companies', currentCompany.id), { logo: base64String }, { merge: true });
                                 setSavingSettings(false);
                               };
                               reader.readAsDataURL(file);
@@ -1816,7 +1816,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                       defaultValue={currentCompany.location || ""}
                       onBlur={async (e) => {
                         setSavingSettings(true);
-                        await updateDoc(doc(db, 'companies', currentCompany.id), { location: e.target.value });
+                        await setDoc(doc(db, 'companies', currentCompany.id), { location: e.target.value }, { merge: true });
                         setSavingSettings(false);
                       }}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-300"
@@ -1829,7 +1829,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                       defaultValue={currentCompany.description || ""}
                       onBlur={async (e) => {
                         setSavingSettings(true);
-                        await updateDoc(doc(db, 'companies', currentCompany.id), { description: e.target.value });
+                        await setDoc(doc(db, 'companies', currentCompany.id), { description: e.target.value }, { merge: true });
                         setSavingSettings(false);
                       }}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-300 min-h-[100px]"
@@ -1842,7 +1842,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                       defaultValue={currentCompany.objectives || ""}
                       onBlur={async (e) => {
                         setSavingSettings(true);
-                        await updateDoc(doc(db, 'companies', currentCompany.id), { objectives: e.target.value });
+                        await setDoc(doc(db, 'companies', currentCompany.id), { objectives: e.target.value }, { merge: true });
                         setSavingSettings(false);
                       }}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-300 min-h-[100px]"
@@ -1889,9 +1889,9 @@ export default function EcommerceModule({ user }: { user: any }) {
                     onClick={async () => {
                       if (!newLocation || !newFee) return;
                       const fees = currentCompany.deliveryFees || {};
-                      await updateDoc(doc(db, 'companies', currentCompany.id), {
+                      await setDoc(doc(db, 'companies', currentCompany.id), {
                         deliveryFees: { ...fees, [newLocation]: Number(newFee) }
-                      });
+                      }, { merge: true });
                       setNewLocation('');
                       setNewFee('');
                     }}
@@ -1930,9 +1930,9 @@ export default function EcommerceModule({ user }: { user: any }) {
                       
                       if (formatted.find(c => c.name === newCategoryName.trim())) return;
                       
-                      await updateDoc(doc(db, 'companies', currentCompany.id), {
+                      await setDoc(doc(db, 'companies', currentCompany.id), {
                         categories: [...formatted, { name: newCategoryName.trim(), isPriority: false }]
-                      });
+                      }, { merge: true });
                       setNewCategoryName('');
                     }}
                     className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
@@ -1955,9 +1955,9 @@ export default function EcommerceModule({ user }: { user: any }) {
                               const updated = companyCategories.map(c => 
                                 (c as any).name === catObj.name ? { ...c, isPriority: !catObj.isPriority } : c
                               );
-                              await updateDoc(doc(db, 'companies', currentCompany.id), {
+                              await setDoc(doc(db, 'companies', currentCompany.id), {
                                 categories: updated
-                              });
+                              }, { merge: true });
                             }}
                             className={cn("p-1 transition-colors", catObj.isPriority ? "text-amber-500" : "text-slate-300 hover:text-amber-500")}
                           >
@@ -1967,9 +1967,9 @@ export default function EcommerceModule({ user }: { user: any }) {
                           <button 
                             onClick={async () => {
                                const updated = companyCategories.filter(c => (c as any).name !== catObj.name);
-                               await updateDoc(doc(db, 'companies', currentCompany.id), {
+                               await setDoc(doc(db, 'companies', currentCompany.id), {
                                  categories: updated
-                               });
+                               }, { merge: true });
                             }}
                             className="p-1 hover:text-red-500 text-slate-300 transition-colors"
                           >
@@ -2067,9 +2067,9 @@ export default function EcommerceModule({ user }: { user: any }) {
                         onClick={async () => {
                           const fees = { ...currentCompany.deliveryFees };
                           delete fees[loc];
-                          await updateDoc(doc(db, 'companies', currentCompany.id), {
+                          await setDoc(doc(db, 'companies', currentCompany.id), {
                             deliveryFees: fees
-                          });
+                          }, { merge: true });
                         }}
                         className="p-2.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                       >
@@ -2393,9 +2393,9 @@ export default function EcommerceModule({ user }: { user: any }) {
                              
                              // Update company total profit
                              const currentTotalProfit = currentCompany.totalProfit || 0;
-                             await updateDoc(doc(db, 'companies', currentCompany.id), {
+                             await setDoc(doc(db, 'companies', currentCompany.id), {
                                totalProfit: currentTotalProfit + netProfit
-                             });
+                             }, { merge: true });
 
                              // Log history
                              await recordOrderHistory(order.id, order.status, order.status, 'PAIEMENT', `Paiement validé - Bénéfice Net: ${netProfit} FCFA (Frais: ${transactionFee})`);
