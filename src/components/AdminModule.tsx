@@ -1716,9 +1716,9 @@ export default function AdminModule() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
+            className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden max-h-[90vh] flex flex-col"
           >
-            <div className="flex items-center gap-4 mb-8">
+            <div className="flex items-center gap-4 mb-8 shrink-0">
               <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl">
                 <Edit2 size={28} />
               </div>
@@ -1728,133 +1728,135 @@ export default function AdminModule() {
               </div>
             </div>
 
-            <form onSubmit={handleUpdateCompany} className="space-y-5">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nom de l'entité</label>
-                <input 
-                  type="text" 
-                  required
-                  value={editingCompany.name}
-                  onChange={e => setEditingCompany({...editingCompany, name: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all text-slate-900"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email Propriétaire</label>
-                <input 
-                  type="email" 
-                  required
-                  value={editingCompany.ownerEmail}
-                  onChange={e => setEditingCompany({...editingCompany, ownerEmail: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all text-slate-900"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Code Nexus</label>
-                <input 
-                  type="text" 
-                  required
-                  value={editingCompany.joinCode}
-                  onChange={e => setEditingCompany({...editingCompany, joinCode: e.target.value.toUpperCase()})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all text-slate-900"
-                />
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 space-y-4">
-                <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest italic">Configuration Marketplace</h4>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Numéro WhatsApp</label>
-                    <input 
-                      type="text" 
-                      placeholder="Ex: 237690000000"
-                      value={editingCompany.whatsappNumber || ''}
-                      onChange={e => setEditingCompany({...editingCompany, whatsappNumber: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Catégorie Marché</label>
-                    <input 
-                      type="text" 
-                      placeholder="Ex: IT, BTP, Santé"
-                      value={editingCompany.category || ''}
-                      onChange={e => setEditingCompany({...editingCompany, category: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900"
-                    />
-                  </div>
-                </div>
-
+            <form onSubmit={handleUpdateCompany} className="flex flex-col flex-1 min-h-0">
+              <div className="grid grid-cols-1 gap-5 overflow-y-auto px-2 pb-4 flex-1">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Lieu / Ville (Expédié depuis)</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nom de l'entité</label>
                   <input 
                     type="text" 
-                    placeholder="Ex: Douala, Cameroun"
-                    value={editingCompany.location || ''}
-                    onChange={e => setEditingCompany({...editingCompany, location: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900"
+                    required
+                    value={editingCompany.name}
+                    onChange={e => setEditingCompany({...editingCompany, name: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all text-slate-900"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email Propriétaire</label>
+                  <input 
+                    type="email" 
+                    required
+                    value={editingCompany.ownerEmail}
+                    onChange={e => setEditingCompany({...editingCompany, ownerEmail: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-bold text-sm transition-all text-slate-900"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Code Nexus</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={editingCompany.joinCode}
+                    onChange={e => setEditingCompany({...editingCompany, joinCode: e.target.value.toUpperCase()})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all text-slate-900"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Description courte de l'entreprise</label>
-                  <textarea 
-                    placeholder="Votre expertise..."
-                    value={editingCompany.description || ''}
-                    onChange={e => setEditingCompany({...editingCompany, description: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900 min-h-[80px]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Objectifs / Mission</label>
-                  <textarea 
-                    placeholder="Notre mission est de..."
-                    value={editingCompany.objectives || ''}
-                    onChange={e => setEditingCompany({...editingCompany, objectives: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900 min-h-[80px]"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Logo de l'entreprise (Image)</label>
-                  <div className="flex items-center gap-4 mt-2">
-                    <div className="w-16 h-16 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
-                      {editingCompany.logo ? (
-                        <img src={editingCompany.logo} alt="Logo" className="w-full h-full object-contain" />
-                      ) : (
-                        <Building2 className="text-slate-300" size={24} />
-                      )}
-                    </div>
-                    <div className="flex-1">
+                <div className="pt-4 border-t border-slate-100 space-y-4">
+                  <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest italic">Configuration Marketplace</h4>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Numéro WhatsApp</label>
                       <input 
-                        type="file" 
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            if (file.size > 2 * 1024 * 1024) {
-                              alert("L'image est trop volumineuse (max 2MB)");
-                              return;
-                            }
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              const base64String = reader.result as string;
-                              setEditingCompany({...editingCompany, logo: base64String});
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                        className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        type="text" 
+                        placeholder="Ex: 237690000000"
+                        value={editingCompany.whatsappNumber || ''}
+                        onChange={e => setEditingCompany({...editingCompany, whatsappNumber: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900"
                       />
-                      <p className="text-[10px] text-slate-400 mt-1">Format: JPG, PNG, GIF (Max 2MB)</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Catégorie Marché</label>
+                      <input 
+                        type="text" 
+                        placeholder="Ex: IT, BTP, Santé"
+                        value={editingCompany.category || ''}
+                        onChange={e => setEditingCompany({...editingCompany, category: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Lieu / Ville (Expédié depuis)</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: Douala, Cameroun"
+                      value={editingCompany.location || ''}
+                      onChange={e => setEditingCompany({...editingCompany, location: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Description courte de l'entreprise</label>
+                    <textarea 
+                      placeholder="Votre expertise..."
+                      value={editingCompany.description || ''}
+                      onChange={e => setEditingCompany({...editingCompany, description: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900 min-h-[80px]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Objectifs / Mission</label>
+                    <textarea 
+                      placeholder="Notre mission est de..."
+                      value={editingCompany.objectives || ''}
+                      onChange={e => setEditingCompany({...editingCompany, objectives: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900 min-h-[80px]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Logo de l'entreprise (Image)</label>
+                    <div className="flex items-center gap-4 mt-2">
+                      <div className="w-16 h-16 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                        {editingCompany.logo ? (
+                          <img src={editingCompany.logo} alt="Logo" className="w-full h-full object-contain" />
+                        ) : (
+                          <Building2 className="text-slate-300" size={24} />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 2 * 1024 * 1024) {
+                                alert("L'image est trop volumineuse (max 2MB)");
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                const base64String = reader.result as string;
+                                setEditingCompany({...editingCompany, logo: base64String});
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                        <p className="text-[10px] text-slate-400 mt-1">Format: JPG, PNG, GIF (Max 2MB)</p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-6">
+              <div className="flex gap-4 pt-4 border-t border-slate-100 mt-4">
                 <button 
                   type="button" 
                   onClick={() => setEditingCompany(null)}
@@ -2160,11 +2162,11 @@ export default function AdminModule() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden"
+            className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-10 relative overflow-hidden max-h-[90vh] flex flex-col"
           >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 rounded-bl-full -mr-16 -mt-16" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 rounded-bl-full -mr-16 -mt-16 pointer-events-none" />
             
-                <div className="flex items-center gap-4 mb-8">
+                <div className="flex items-center gap-4 mb-8 shrink-0">
                   <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-600/30">
                     <Plus size={28} />
                   </div>
@@ -2174,8 +2176,8 @@ export default function AdminModule() {
                   </div>
                 </div>
 
-            <form onSubmit={handleCreateCompany} className="space-y-5">
-              <div className="grid grid-cols-1 gap-5 max-h-[60vh] overflow-y-auto px-2">
+            <form onSubmit={handleCreateCompany} className="flex flex-col flex-1 min-h-0">
+              <div className="grid grid-cols-1 gap-5 overflow-y-auto px-2 pb-4 flex-1">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nom de l'entité</label>
                   <input 
@@ -2281,7 +2283,7 @@ export default function AdminModule() {
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-6">
+              <div className="flex gap-4 pt-4 border-t border-slate-100 mt-4 shrink-0">
                 <button 
                   type="button" 
                   onClick={() => setShowCreateModal(false)}
