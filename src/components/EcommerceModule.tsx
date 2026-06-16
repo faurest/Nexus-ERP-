@@ -2284,31 +2284,26 @@ export default function EcommerceModule({ user }: { user: any }) {
                 order.status === 'PENDING' ? "border-amber-200 shadow-lg shadow-amber-50" : "border-slate-100 shadow-sm"
               )}>
                 {order.status === 'PENDING' && (
-                  <div className="absolute top-4 left-4 flex gap-2">
+                  <div className="absolute top-4 left-4 flex gap-1.5 items-center">
                     <div className="w-2 h-2 bg-amber-500 rounded-full animate-ping" />
-                    <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest">Urgent: Nouveau Flux</span>
+                    <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest">Nouveau</span>
                   </div>
                 )}
                 {order.checkoutSource === 'MARKETPLACE' && (
-                  <div className="absolute top-0 right-0 px-6 py-2 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-bl-2xl">
-                    Portail Nexus
+                  <div className="absolute top-0 right-0 px-4 py-1.5 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-bl-2xl">
+                    Marketplace
                   </div>
                 )}
                 
                 <div className="flex flex-col lg:flex-row gap-10">
                   <div className="flex-1">
                     {order.globalOrderId && (
-                      <div className="mb-6 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl flex gap-3 items-start">
-                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                          <Package size={14} />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black text-emerald-900 uppercase tracking-widest leading-none mb-1">Partie d'un Achat Sécurisé</p>
-                          <p className="text-[10px] font-medium text-emerald-700 leading-relaxed">Il s'agit de votre <span className="font-bold">facture unique</span> pour cette commande globale. Préparez vos articles {order.status === 'PENDING' && "dès maintenant "}pour l'enlèvement logistique.</p>
-                        </div>
+                      <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-lg">
+                          <Package size={12} className="text-emerald-600" />
+                          <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Commande Globale</span>
                       </div>
                     )}
-                    <div className="flex flex-wrap justify-between items-start gap-4 mb-8">
+                    <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
                       <div className="space-y-1">
                         <div className="flex items-center gap-3">
                           <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase">CMD-{order.id.slice(0, 8)}</h3>
@@ -2352,39 +2347,35 @@ export default function EcommerceModule({ user }: { user: any }) {
 
                       <div className="space-y-4">
                         <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                          <CheckCircle2 size={12} /> Client & Livraison
+                          <CheckCircle2 size={12} /> Info Client
                         </h4>
-                        <div className="bg-slate-50 rounded-2xl p-5 space-y-3">
+                        <div className="bg-slate-50 rounded-xl p-4 space-y-2">
                           <p className="text-sm font-bold text-slate-900">{order.customerName}</p>
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-1.5">
                             {order.customerPhone && (
                               <p className="text-xs text-slate-500 flex items-center gap-2">
                                 <Smartphone size={12} /> {order.customerPhone}
                               </p>
                             )}
-                            {order.customerQuartier && (
-                              <p className="text-xs text-slate-500 flex items-center gap-2">
-                                <Truck size={12} /> {order.customerQuartier}
-                              </p>
-                            )}
-                            {order.deliveryLocation && (
-                              <div className="mt-2 p-2 bg-blue-100/50 rounded-lg">
-                                <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Livraison: {order.deliveryLocation}</p>
-                                <p className="text-[10px] font-black text-slate-900">{order.deliveryFee?.toLocaleString() || 0} FCFA</p>
-                              </div>
-                            )}
                             <p className="text-xs text-slate-500 flex items-center gap-2">
                                <Bell size={12} /> {order.customerEmail}
                             </p>
+                            {(order.customerQuartier || order.deliveryLocation) && (
+                              <div className="mt-1 pt-2 border-t border-slate-200">
+                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Livraison</p>
+                                {order.customerQuartier && <p className="text-xs text-slate-900 font-medium mb-0.5">{order.customerQuartier}</p>}
+                                {order.deliveryLocation && <p className="text-xs text-slate-900 font-medium">{order.deliveryLocation}</p>}
+                                <p className="text-xs font-black text-slate-900 mt-1">{order.deliveryFee?.toLocaleString() || 0} FCFA</p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="lg:w-64 space-y-4">
-                    <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest hidden lg:block">Actions Opérationnelles</h4>
-                    <div className="grid grid-cols-2 gap-2">
+                  <div className="lg:w-48 space-y-3">
+                    <div className="grid grid-cols-4 gap-1.5">
                        <button 
                          onClick={async () => {
                            if (!currentCompany) return;
@@ -2414,12 +2405,12 @@ export default function EcommerceModule({ user }: { user: any }) {
                          }}
                          disabled={order.paymentStatus === 'PAID'}
                          className={cn(
-                           "col-span-2 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 mb-2",
+                           "col-span-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 mb-1",
                            order.paymentStatus === 'PAID' ? "bg-emerald-600 text-white" : "bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50"
                          )}
                          title={order.paymentStatus === 'PAID' ? 'Paiement Validé' : 'Valider Paiement'}
                        >
-                         <CreditCard size={14} /> {order.paymentStatus === 'PAID' ? 'Paiement Validé' : 'Valider'}
+                         <CreditCard size={14} /> {order.paymentStatus === 'PAID' ? 'Payé' : 'Payer'}
                        </button>
                        <button 
                          onClick={() => {
@@ -2429,54 +2420,54 @@ export default function EcommerceModule({ user }: { user: any }) {
                          }}
                          disabled={order.status !== 'PENDING'}
                          className={cn(
-                           "col-span-2 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+                           "col-span-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5",
                            order.status === 'PROCESSING' || order.status === 'SHIPPED' || order.status === 'DELIVERED' ? "bg-blue-600 text-white" : "bg-slate-900 text-white hover:bg-blue-600 disabled:opacity-30"
                          )}
-                         title={order.status === 'PENDING' ? 'Prise en charge' : 'En traitement'}
+                         title={order.status === 'PENDING' ? 'Accepter la commande' : 'En traitement'}
                        >
-                         {order.status === 'PENDING' ? 'Prise en charge' : 'En traitement'}
+                         {order.status === 'PENDING' ? 'Accepter' : 'En cours'}
                        </button>
                        <button 
                          onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'SHIPPED' })}
                          disabled={['SHIPPED', 'DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status)}
-                         className="py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all flex items-center justify-center gap-1.5 disabled:opacity-30"
-                         title="Expédition"
+                         className="col-span-1 aspect-square bg-white border border-slate-200 text-slate-600 rounded-lg hover:border-blue-500 hover:text-blue-600 transition-all flex items-center justify-center disabled:opacity-30"
+                         title="Expédier"
                        >
-                         <Truck size={14} /> Expédier
+                         <Truck size={14} />
                        </button>
                        <button 
                          onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'DELIVERED' })}
                          disabled={['DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status)}
-                         className="py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-1.5 disabled:opacity-30"
-                         title="Terminer"
+                         className="col-span-1 aspect-square bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center disabled:opacity-30"
+                         title="Livré"
                        >
-                         <CheckCircle2 size={14} /> Livré
+                         <CheckCircle2 size={14} />
                        </button>
                        <button 
                          onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'DELIVERY_FAILED' })}
                          disabled={['DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status) || order.status === 'PENDING'}
-                         className="py-2 bg-amber-50 text-amber-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-amber-600 hover:text-white transition-all flex items-center justify-center gap-1.5 disabled:opacity-30"
+                         className="col-span-1 aspect-square bg-amber-50 border border-amber-100 text-amber-600 rounded-lg hover:bg-amber-600 hover:text-white transition-all flex items-center justify-center disabled:opacity-30"
                          title="Échec Livraison"
                        >
-                         <AlertTriangle size={14} /> Échec
+                         <AlertTriangle size={14} />
                        </button>
                        <button 
                          onClick={() => setCancellingOrder(order)}
                          disabled={['DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status)}
-                         className="py-2 bg-red-50 text-red-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-1.5 disabled:opacity-30"
-                         title="Annuler / Refuser"
+                         className="col-span-1 aspect-square bg-red-50 border border-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all flex items-center justify-center disabled:opacity-30"
+                         title="Annuler"
                        >
-                         <X size={14} /> Annuler
+                         <X size={14} />
                        </button>
                     </div>
                     <button 
-                      onClick={() => setActiveChatOrder(order)}
-                      className="w-full py-2 bg-blue-50 text-blue-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all flex items-center justify-center gap-2 relative mt-2"
-                      title="Chat & Support"
+                      onClick={() => setChatOrder(order)}
+                      className="w-full py-2 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all flex items-center justify-center gap-1.5 relative mt-1"
+                      title="Chat"
                     >
                       <MessageCircle size={14} /> Chat
                       {unreadMessages[order.id] > 0 && (
-                        <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white">
+                        <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] font-black border border-white">
                           {unreadMessages[order.id]}
                         </span>
                       )}
