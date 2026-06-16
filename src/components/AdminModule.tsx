@@ -49,7 +49,7 @@ export default function AdminModule() {
   const [globalOrders, setGlobalOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newCompany, setNewCompany] = useState({ name: '', ownerEmail: '', joinCode: '' });
+  const [newCompany, setNewCompany] = useState({ name: '', ownerEmail: '', joinCode: '', location: '', description: '', objectives: '', logo: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [activeAdminTab, setActiveAdminTab] = useState<'companies' | 'users' | 'tools' | 'guide' | 'finances'>('companies');
   const [systemUsers, setSystemUsers] = useState<any[]>([]);
@@ -232,7 +232,7 @@ export default function AdminModule() {
       });
 
       setShowCreateModal(false);
-      setNewCompany({ name: '', ownerEmail: '', joinCode: '' });
+      setNewCompany({ name: '', ownerEmail: '', joinCode: '', location: '', description: '', objectives: '', logo: '' });
       fetchGlobalData();
       alert(`Entreprise ${newCompany.name} créée avec succès ! Code d'accès : ${joinCode}`);
     } catch (err) {
@@ -2175,7 +2175,7 @@ export default function AdminModule() {
                 </div>
 
             <form onSubmit={handleCreateCompany} className="space-y-5">
-              <div className="grid grid-cols-1 gap-5">
+              <div className="grid grid-cols-1 gap-5 max-h-[60vh] overflow-y-auto px-2">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nom de l'entité</label>
                   <input 
@@ -2207,6 +2207,77 @@ export default function AdminModule() {
                     placeholder="AUTO-GENERATED"
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all text-slate-900"
                   />
+                </div>
+                
+                <div className="pt-4 border-t border-slate-100">
+                  <p className="text-[10px] font-bold text-blue-600 mb-4 tracking-widest uppercase">Configuration Vitrine Marketplace (Optionnel)</p>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Lieu / Ville (Expédié depuis)</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: Douala, Cameroun"
+                      value={newCompany.location || ''}
+                      onChange={e => setNewCompany({...newCompany, location: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all text-slate-900"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 mt-4">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Description courte de l'entreprise</label>
+                    <textarea 
+                      placeholder="Votre expertise..."
+                      value={newCompany.description || ''}
+                      onChange={e => setNewCompany({...newCompany, description: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all text-slate-900 min-h-[80px]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 mt-4">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Objectifs / Mission</label>
+                    <textarea 
+                      placeholder="Notre mission est de..."
+                      value={newCompany.objectives || ''}
+                      onChange={e => setNewCompany({...newCompany, objectives: e.target.value})}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all text-slate-900 min-h-[80px]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 mt-4">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Logo de l'entreprise (Image)</label>
+                    <div className="flex items-center gap-4 mt-2">
+                      <div className="w-16 h-16 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                        {newCompany.logo ? (
+                          <img src={newCompany.logo} alt="Logo" className="w-full h-full object-contain" />
+                        ) : (
+                          <Building2 className="text-slate-300" size={24} />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 2 * 1024 * 1024) {
+                                alert("L'image est trop volumineuse (max 2MB)");
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                const base64String = reader.result as string;
+                                setNewCompany({...newCompany, logo: base64String});
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                        <p className="text-[10px] text-slate-400 mt-1">Format: JPG, PNG, GIF (Max 2MB)</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 

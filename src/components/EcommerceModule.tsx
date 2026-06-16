@@ -1808,6 +1808,20 @@ export default function EcommerceModule({ user }: { user: any }) {
                     </div>
                   </div>
                   <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Lieu / Ville (Expédié depuis)</label>
+                    <input 
+                      type="text"
+                      placeholder="Ex: Douala, Cameroun"
+                      defaultValue={currentCompany.location || ""}
+                      onBlur={async (e) => {
+                        setSavingSettings(true);
+                        await updateDoc(doc(db, 'companies', currentCompany.id), { location: e.target.value });
+                        setSavingSettings(false);
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-300"
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Description courte de l'entreprise</label>
                     <textarea 
                       placeholder="Votre expertise, vos années d'expérience..."
