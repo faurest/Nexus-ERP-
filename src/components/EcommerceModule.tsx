@@ -139,6 +139,7 @@ export default function EcommerceModule({ user }: { user: any }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [orderFilterAdmin, setOrderFilterAdmin] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('Tous');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -2255,8 +2256,29 @@ export default function EcommerceModule({ user }: { user: any }) {
             </div>
           </div>
 
+          <div className="flex flex-wrap gap-2 mb-4">
+             {['ALL', 'PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map((status) => (
+               <button
+                 key={status}
+                 onClick={() => setOrderFilterAdmin(status)}
+                 className={cn(
+                   "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                   orderFilterAdmin === status 
+                     ? "bg-slate-900 text-white" 
+                     : "bg-white border border-slate-200 text-slate-500 hover:border-slate-300"
+                 )}
+               >
+                 {status === 'ALL' ? 'Toutes' : 
+                  status === 'PENDING' ? 'En Attente' :
+                  status === 'PROCESSING' ? 'En Traitement' :
+                  status === 'SHIPPED' ? 'Expédiées' :
+                  status === 'DELIVERED' ? 'Livrées' : 'Annulées'}
+               </button>
+             ))}
+          </div>
+
           <div className="space-y-6">
-            {orders.map((order) => (
+            {orders.filter(order => orderFilterAdmin === 'ALL' || order.status === orderFilterAdmin).map((order) => (
               <div key={order.id} className={cn(
                 "bg-white rounded-[2.5rem] p-8 border hover:shadow-2xl transition-all duration-500 group relative overflow-hidden",
                 order.status === 'PENDING' ? "border-amber-200 shadow-lg shadow-amber-50" : "border-slate-100 shadow-sm"
@@ -2361,8 +2383,8 @@ export default function EcommerceModule({ user }: { user: any }) {
                   </div>
 
                   <div className="lg:w-64 space-y-4">
-                    <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Actions Opérationnelles</h4>
-                    <div className="flex flex-col gap-2">
+                    <h4 className="text-[10px] font-black text-slate-300 uppercase tracking-widest hidden lg:block">Actions Opérationnelles</h4>
+                    <div className="grid grid-cols-2 gap-2">
                        <button 
                          onClick={async () => {
                            if (!currentCompany) return;
@@ -2392,11 +2414,12 @@ export default function EcommerceModule({ user }: { user: any }) {
                          }}
                          disabled={order.paymentStatus === 'PAID'}
                          className={cn(
-                           "w-full py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 mb-2",
+                           "col-span-2 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 mb-2",
                            order.paymentStatus === 'PAID' ? "bg-emerald-600 text-white" : "bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50"
                          )}
+                         title={order.paymentStatus === 'PAID' ? 'Paiement Validé' : 'Valider Paiement'}
                        >
-                         <CreditCard size={14} /> {order.paymentStatus === 'PAID' ? 'Paiement Validé' : 'Valider Paiement'}
+                         <CreditCard size={14} /> {order.paymentStatus === 'PAID' ? 'Paiement Validé' : 'Valider'}
                        </button>
                        <button 
                          onClick={() => {
@@ -2406,46 +2429,52 @@ export default function EcommerceModule({ user }: { user: any }) {
                          }}
                          disabled={order.status !== 'PENDING'}
                          className={cn(
-                           "w-full py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
+                           "col-span-2 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2",
                            order.status === 'PROCESSING' || order.status === 'SHIPPED' || order.status === 'DELIVERED' ? "bg-blue-600 text-white" : "bg-slate-900 text-white hover:bg-blue-600 disabled:opacity-30"
                          )}
+                         title={order.status === 'PENDING' ? 'Prise en charge' : 'En traitement'}
                        >
                          {order.status === 'PENDING' ? 'Prise en charge' : 'En traitement'}
                        </button>
                        <button 
                          onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'SHIPPED' })}
                          disabled={['SHIPPED', 'DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status)}
-                         className="w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all flex items-center justify-center gap-2 disabled:opacity-30"
+                         className="py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all flex items-center justify-center gap-1.5 disabled:opacity-30"
+                         title="Expédition"
                        >
-                         <Truck size={14} /> Expédition
+                         <Truck size={14} /> Expédier
                        </button>
                        <button 
                          onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'DELIVERED' })}
                          disabled={['DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status)}
-                         className="w-full py-4 bg-emerald-50 text-emerald-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-30"
+                         className="py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-1.5 disabled:opacity-30"
+                         title="Terminer"
                        >
-                         <CheckCircle2 size={14} /> Terminer
+                         <CheckCircle2 size={14} /> Livré
                        </button>
                        <button 
                          onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'DELIVERY_FAILED' })}
                          disabled={['DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status) || order.status === 'PENDING'}
-                         className="w-full py-4 bg-amber-50 text-amber-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-amber-600 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-30"
+                         className="py-2 bg-amber-50 text-amber-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-amber-600 hover:text-white transition-all flex items-center justify-center gap-1.5 disabled:opacity-30"
+                         title="Échec Livraison"
                        >
-                         <AlertTriangle size={14} /> Échec Livraison
+                         <AlertTriangle size={14} /> Échec
                        </button>
                        <button 
                          onClick={() => setCancellingOrder(order)}
                          disabled={['DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status)}
-                         className="w-full py-4 bg-red-50 text-red-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-30"
+                         className="py-2 bg-red-50 text-red-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-1.5 disabled:opacity-30"
+                         title="Annuler / Refuser"
                        >
-                         <X size={14} /> Annuler / Refuser
+                         <X size={14} /> Annuler
                        </button>
                     </div>
                     <button 
                       onClick={() => setActiveChatOrder(order)}
-                      className="w-full py-4 bg-blue-50 text-blue-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all flex items-center justify-center gap-2 relative mt-4"
+                      className="w-full py-2 bg-blue-50 text-blue-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all flex items-center justify-center gap-2 relative mt-2"
+                      title="Chat & Support"
                     >
-                      <MessageCircle size={14} /> Chat & Support
+                      <MessageCircle size={14} /> Chat
                       {unreadMessages[order.id] > 0 && (
                         <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white">
                           {unreadMessages[order.id]}
@@ -2456,7 +2485,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                 </div>
               </div>
             ))}
-            {orders.length === 0 && (
+            {orders.filter(order => orderFilterAdmin === 'ALL' || order.status === orderFilterAdmin).length === 0 && (
               <div className="p-20 text-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-100">
                 <ShoppingBag size={48} className="mx-auto text-slate-200 mb-6" strokeWidth={1} />
                 <h3 className="text-lg font-black text-slate-900 tracking-tight">Aucune Commande Nexus</h3>
