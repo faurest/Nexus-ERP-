@@ -1771,18 +1771,41 @@ export default function EcommerceModule({ user }: { user: any }) {
                 
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Lien du Logo (URL)</label>
-                    <input 
-                      type="url" 
-                      placeholder="https://..."
-                      defaultValue={currentCompany.logo || ""}
-                      onBlur={async (e) => {
-                        setSavingSettings(true);
-                        await updateDoc(doc(db, 'companies', currentCompany.id), { logo: e.target.value });
-                        setSavingSettings(false);
-                      }}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-4 text-xs font-bold focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-300"
-                    />
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Logo de l'entreprise (Image)</label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                        {currentCompany.logo ? (
+                          <img src={currentCompany.logo} alt="Logo" className="w-full h-full object-contain" />
+                        ) : (
+                          <Store className="text-slate-300" size={24} />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 2 * 1024 * 1024) {
+                                alert("L'image est trop volumineuse (max 2MB)");
+                                return;
+                              }
+                              setSavingSettings(true);
+                              const reader = new FileReader();
+                              reader.onloadend = async () => {
+                                const base64String = reader.result as string;
+                                await updateDoc(doc(db, 'companies', currentCompany.id), { logo: base64String });
+                                setSavingSettings(false);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                        <p className="text-[10px] text-slate-400 mt-1">Format: JPG, PNG, GIF (Max 2MB)</p>
+                      </div>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Description courte de l'entreprise</label>
