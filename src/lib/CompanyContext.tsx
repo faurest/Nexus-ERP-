@@ -27,6 +27,8 @@ export interface Company {
   logo?: string;
   description?: string;
   objectives?: string;
+  phone?: string;
+  location?: string;
 }
 
 interface CompanyContextType {

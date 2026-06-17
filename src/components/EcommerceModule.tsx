@@ -2478,7 +2478,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                     </div>
 
                     <button 
-                      onClick={() => setChatOrder(order)}
+                      onClick={() => setActiveChatOrder(order)}
                       className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all flex items-center justify-center gap-2 relative border border-blue-100"
                       title="Ouvrir le Chat"
                     >

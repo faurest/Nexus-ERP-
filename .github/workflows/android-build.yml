@@ -17,13 +17,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install Dependencies
         run: npm install
 
       - name: Build Web App
         run: npm run build
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+          CI: false
 
       - name: Sync Capacitor
         run: npx cap sync android
@@ -39,7 +42,9 @@ jobs:
 
       - name: Build AAB
         working-directory: ./android
-        run: ./gradlew bundleRelease
+        run: |
+          chmod +x ./gradlew
+          ./gradlew bundleRelease
 
       - name: Upload AAB Artifact
         uses: actions/upload-artifact@v4
