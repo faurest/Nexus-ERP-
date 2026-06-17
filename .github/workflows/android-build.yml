@@ -46,9 +46,19 @@ jobs:
           chmod +x ./gradlew
           ./gradlew bundleRelease
 
-      - name: Upload AAB Artifact
+      - name: Sign AAB
+        id: sign_app
+        uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: android/app/build/outputs/bundle/release
+          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload Signed AAB Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release.aab
-          path: ./android/app/build/outputs/bundle/release/app-release.aab
+          name: app-release-signed.aab
+          path: ${{steps.sign_app.outputs.signedReleaseFile}}
           retention-days: 7
