@@ -683,6 +683,16 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
       await Promise.all(orderPromises);
 
+      // Alert WhatsApp
+      const adminWhatsApp = "237640790996"; // Master or relevant number, wait let's use the first company's phone if single, otherwise master
+      const targetPhone = ordersByCompany && Object.keys(ordersByCompany).length === 1 
+          ? companies.find(c => c.id === Object.keys(ordersByCompany)[0])?.whatsappNumber || "237640790996"
+          : "237640790996";
+          
+      const userHost = window.location.origin;
+      const alertMsg = `🚨 *Alerte Commande !*\n\nUne nouvelle commande a été passée sur la plateforme par ${checkoutData.name}.\nMontant: *${grandTotal.toLocaleString()} FCFA*\nContact client: ${checkoutData.phone}\n\nOuvrez le tableau de bord pour traiter la commande:\n${userHost}`;
+      window.open(`https://wa.me/${targetPhone.replace(/\D/g, '')}?text=${encodeURIComponent(alertMsg)}`, "_blank");
+
       setPaymentStep('SUCCESS');
       setTimeout(() => {
         setCart([]);

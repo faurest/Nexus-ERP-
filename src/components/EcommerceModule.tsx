@@ -3,7 +3,8 @@ import { db, auth, collection, query, where, onSnapshot, addDoc, deleteDoc, doc,
 import { useCompany } from '../lib/CompanyContext';
 import { HelpTrigger } from './ContextualHelp';
 import { 
-  ShoppingBag, 
+  ShoppingBag,
+  Play, 
   ShoppingCart, 
   Package, 
   Truck, 
@@ -889,6 +890,13 @@ export default function EcommerceModule({ user }: { user: any }) {
       setCart([]);
       setCheckoutModalOpen(false);
       setActiveView('tracking');
+
+      // WhatsApp redirection
+      const enterpriseWhatsApp = currentCompany.whatsappNumber || currentCompany.phone || '640790996';
+      const userHost = window.location.origin;
+      const message = `🚨 *Nouvelle Commande !*\n\nUne nouvelle commande a été passée par ${auth.currentUser?.displayName || 'Un client'}.\nMontant: *${totalWithDelivery.toLocaleString()} FCFA*\n\nOuvrez votre espace vendeur pour la traiter:\n${userHost}`;
+      
+      window.open(`https://wa.me/${enterpriseWhatsApp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, "_blank");
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, 'ecommerce_orders');
     }
@@ -1609,26 +1617,29 @@ export default function EcommerceModule({ user }: { user: any }) {
                       </div>
                     </div>
 
-                    <div className="lg:w-48 w-full flex flex-row lg:flex-col gap-3">
+                    <div className="flex flex-row md:flex-col gap-2 items-end shrink-0">
                       {order.status === 'PENDING' && order.paymentStatus !== 'PAID' && (
                         <button 
                           onClick={() => setCancellingOrder(order)}
-                          className="flex-1 py-4 bg-red-50 text-red-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                          className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all flex items-center justify-center"
+                          title="Annuler"
                         >
-                          <X size={14} /> Annuler
+                          <X size={20} />
                         </button>
                       )}
                       <button 
                         onClick={() => setActiveView('loyalty')}
-                        className="flex-1 py-4 bg-slate-900 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
+                        className="p-3 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center"
+                        title="Fidélité"
                       >
-                        <Award size={14} /> Fidélité
+                        <Award size={20} />
                       </button>
                       <button 
                         onClick={() => setActiveChatOrder(order)}
-                        className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2 relative group-hover:border-blue-200"
+                        className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center relative group-hover:border-blue-200"
+                        title="Support"
                       >
-                        <MessageCircle size={14} /> Support
+                        <MessageCircle size={20} />
                         {unreadMessages[order.id] > 0 && (
                           <span className="absolute -top-2 -right-2 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-lg border-2 border-white animate-pulse">
                             {unreadMessages[order.id]}
@@ -2374,8 +2385,8 @@ export default function EcommerceModule({ user }: { user: any }) {
                     </div>
                   </div>
 
-                  <div className="lg:w-48 space-y-3">
-                    <div className="grid grid-cols-4 gap-1.5">
+                  <div className="flex flex-col gap-2 items-end shrink-0">
+                    <div className="flex flex-wrap lg:flex-col gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-100">
                        <button 
                          onClick={async () => {
                            if (!currentCompany) return;
@@ -2405,13 +2416,14 @@ export default function EcommerceModule({ user }: { user: any }) {
                          }}
                          disabled={order.paymentStatus === 'PAID'}
                          className={cn(
-                           "col-span-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 mb-1",
-                           order.paymentStatus === 'PAID' ? "bg-emerald-600 text-white" : "bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50"
+                           "p-2.5 rounded-lg transition-all flex items-center justify-center disabled:opacity-50",
+                           order.paymentStatus === 'PAID' ? "bg-emerald-600 text-white" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white"
                          )}
                          title={order.paymentStatus === 'PAID' ? 'Paiement Validé' : 'Valider Paiement'}
                        >
-                         <CreditCard size={14} /> {order.paymentStatus === 'PAID' ? 'Payé' : 'Payer'}
+                         <CreditCard size={18} />
                        </button>
+                       
                        <button 
                          onClick={() => {
                            if (order.status === 'PENDING') {
@@ -2420,54 +2432,59 @@ export default function EcommerceModule({ user }: { user: any }) {
                          }}
                          disabled={order.status !== 'PENDING'}
                          className={cn(
-                           "col-span-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5",
-                           order.status === 'PROCESSING' || order.status === 'SHIPPED' || order.status === 'DELIVERED' ? "bg-blue-600 text-white" : "bg-slate-900 text-white hover:bg-blue-600 disabled:opacity-30"
+                           "p-2.5 rounded-lg transition-all flex items-center justify-center disabled:opacity-30",
+                           order.status === 'PROCESSING' || order.status === 'SHIPPED' || order.status === 'DELIVERED' ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-700 hover:bg-blue-600 hover:text-white"
                          )}
                          title={order.status === 'PENDING' ? 'Accepter la commande' : 'En traitement'}
                        >
-                         {order.status === 'PENDING' ? 'Accepter' : 'En cours'}
+                         <Play size={18} className={order.status === 'PROCESSING' ? '' : 'ml-0.5'} fill={order.status === 'PROCESSING' ? 'currentColor' : 'none'} />
                        </button>
+                       
                        <button 
                          onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'SHIPPED' })}
                          disabled={['SHIPPED', 'DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status)}
-                         className="col-span-1 aspect-square bg-white border border-slate-200 text-slate-600 rounded-lg hover:border-blue-500 hover:text-blue-600 transition-all flex items-center justify-center disabled:opacity-30"
+                         className="p-2.5 bg-white text-slate-600 rounded-lg hover:bg-slate-200 transition-all flex items-center justify-center disabled:opacity-30"
                          title="Expédier"
                        >
-                         <Truck size={14} />
+                         <Truck size={18} />
                        </button>
+                       
                        <button 
                          onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'DELIVERED' })}
                          disabled={['DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status)}
-                         className="col-span-1 aspect-square bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center disabled:opacity-30"
-                         title="Livré"
+                         className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center disabled:opacity-30"
+                         title="Marquer comme Livré"
                        >
-                         <CheckCircle2 size={14} />
+                         <CheckCircle2 size={18} />
                        </button>
+
                        <button 
                          onClick={() => setUpdatingStatusOrder({ order, nextStatus: 'DELIVERY_FAILED' })}
                          disabled={['DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status) || order.status === 'PENDING'}
-                         className="col-span-1 aspect-square bg-amber-50 border border-amber-100 text-amber-600 rounded-lg hover:bg-amber-600 hover:text-white transition-all flex items-center justify-center disabled:opacity-30"
+                         className="p-2.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-600 hover:text-white transition-all flex items-center justify-center disabled:opacity-30"
                          title="Échec Livraison"
                        >
-                         <AlertTriangle size={14} />
+                         <AlertTriangle size={18} />
                        </button>
+
                        <button 
                          onClick={() => setCancellingOrder(order)}
                          disabled={['DELIVERED', 'CANCELLED', 'CANCELLED_BY_SELLER'].includes(order.status)}
-                         className="col-span-1 aspect-square bg-red-50 border border-red-100 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all flex items-center justify-center disabled:opacity-30"
-                         title="Annuler"
+                         className="p-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all flex items-center justify-center disabled:opacity-30"
+                         title="Annuler/Refuser"
                        >
-                         <X size={14} />
+                         <X size={18} />
                        </button>
                     </div>
+
                     <button 
                       onClick={() => setChatOrder(order)}
-                      className="w-full py-2 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all flex items-center justify-center gap-1.5 relative mt-1"
-                      title="Chat"
+                      className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all flex items-center justify-center gap-2 relative border border-blue-100"
+                      title="Ouvrir le Chat"
                     >
-                      <MessageCircle size={14} /> Chat
+                      <MessageCircle size={18} />
                       {unreadMessages[order.id] > 0 && (
-                        <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] font-black border border-white">
+                        <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white shadow-sm">
                           {unreadMessages[order.id]}
                         </span>
                       )}
