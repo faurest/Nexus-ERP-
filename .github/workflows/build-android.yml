@@ -35,9 +35,11 @@ jobs:
         run: |
           npx cap sync android
 
-      - name: Make Gradle wrapper executable
-        working-directory: ./android
-        run: chmod +x gradlew
+     - name: Make Gradle wrapper executable
+  working-directory: ./android
+  run: |
+    sed -i 's/\r$//' gradlew
+    chmod +x gradlew
 
       - name: Build Release (Unsigned AAB)
         working-directory: ./android
