@@ -115,6 +115,11 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   
+  if (errorMessage.toLowerCase().includes('quota limit exceeded')) {
+    console.warn('Firebase Quota Exceeded for', path, operationType);
+    return; // Fast failing instead of throwing to prevent application crash
+  }
+
   throw new Error(JSON.stringify(errInfo));
 }
 
@@ -328,7 +333,8 @@ export async function getDoc(docRef: any) {
       exists: () => snap.exists(),
       data: () => snap.data()
     };
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message?.toLowerCase().includes('quota limit')) return { id: docRef.id, exists: () => false, data: () => ({}) };
     handleFirestoreError(error, OperationType.GET, docRef.path);
     throw error;
   }
@@ -345,7 +351,8 @@ export async function getDocs(query: any): Promise<any> {
           })),
           empty: result.empty
       };
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message?.toLowerCase().includes('quota limit')) return { docs: [], empty: true };
       handleFirestoreError(error, OperationType.LIST, null);
       throw error;
     }
@@ -369,7 +376,12 @@ export function onSnapshot(queryOrDoc: any, cb: any, errCb?: any) {
         data: () => snapshot.data()
       });
     }
-  }, (error) => {
+  }, (error: any) => {
+    if (error?.message?.toLowerCase().includes('quota limit')) {
+      console.warn("Quota limit exceeded on snapshot. Suppressing crash.");
+      if (errCb) errCb(error);
+      return;
+    }
     if (errCb) {
       errCb(error);
     }
