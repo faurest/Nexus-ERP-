@@ -3,7 +3,9 @@
 Le pipeline `build-android.yml` génèrera automatiquement le fichier `.aab` (Android App Bundle).
 
 ## Instructions pour la Production
-Actuellement, le workflow génère temporairement un keystore de test pour vous permettre d'avoir un `.aab` fonctionnel immédiatement. Pour une mise en production sur le Google Play Store :
+Ce workflow permet de générer de façon sécurisée un `.aab` (Android App Bundle) prêt pour le Play Store, en utilisant un processus de signature recommandé par GitHub (`r0adkll/sign-android-release`).
+
+Pour que la génération fonctionne correctement, vous devez configurer les "Secrets" sur votre dépôt GitHub :
 
 1. Générez votre propre keystore en local :
    `keytool -genkey -v -keystore release.keystore -alias votre_alias -keyalg RSA -keysize 2048 -validity 10000`

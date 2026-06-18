@@ -35,21 +35,25 @@ jobs:
         run: |
           npx cap sync android
 
-      - name: Generate Keystore (For Demo/Testing)
-        # In production, DO NOT generate a keystore on the fly. 
-        # Add a base64 encoded keystore to GitHub Secrets and decode it here.
-        run: |
-          keytool -genkey -v -keystore android/app/release.keystore -alias nexus -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Nexus, OU=IT, O=Nexus, L=Paris, ST=IDF, C=FR" -storepass password -keypass password
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Build Signed AAB
+      - name: Build Release (Unsigned AAB)
         working-directory: ./android
-        run: gradle bundleRelease -Pandroid.injected.signing.store.file=release.keystore -Pandroid.injected.signing.store.password=password -Pandroid.injected.signing.key.alias=nexus -Pandroid.injected.signing.key.password=password
+        run: gradle bundleRelease
 
-      - name: Upload AAB Artifact
+      - name: Sign AAB
+        id: sign_app
+        uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: android/app/build/outputs/bundle/release
+          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
+          alias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload Signed AAB Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release.aab
-          path: android/app/build/outputs/bundle/release/app-release.aab
+          name: app-release-signed.aab
+          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
