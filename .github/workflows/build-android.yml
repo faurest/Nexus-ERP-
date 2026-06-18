@@ -36,7 +36,7 @@ jobs:
           npx cap sync android
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Build Release (Unsigned AAB)
         working-directory: ./android
