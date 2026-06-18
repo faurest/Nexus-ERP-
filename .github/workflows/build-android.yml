@@ -1,0 +1,52 @@
+name: Build Android AAB
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  build:
+    name: Build Signed AAB
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Web App
+        run: npm run build
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Capacitor Sync
+        run: |
+          npx cap sync android
+
+      - name: Generate Keystore (For Demo/Testing)
+        # In production, DO NOT generate a keystore on the fly. 
+        # Add a base64 encoded keystore to GitHub Secrets and decode it here.
+        run: |
+          keytool -genkey -v -keystore android/app/release.keystore -alias nexus -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Nexus, OU=IT, O=Nexus, L=Paris, ST=IDF, C=FR" -storepass password -keypass password
+
+      - name: Build Signed AAB
+        working-directory: ./android
+        run: ./gradlew bundleRelease -Pandroid.injected.signing.store.file=release.keystore -Pandroid.injected.signing.store.password=password -Pandroid.injected.signing.key.alias=nexus -Pandroid.injected.signing.key.password=password
+
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release.aab
+          path: android/app/build/outputs/bundle/release/app-release.aab

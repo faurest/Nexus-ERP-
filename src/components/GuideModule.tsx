@@ -24,7 +24,7 @@ import {
   Calculator
 } from 'lucide-react';
 import { db } from '../lib/firebase';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot } from '../lib/firebase';
 import { cn } from '../lib/utils';
 
 interface GuideStep {

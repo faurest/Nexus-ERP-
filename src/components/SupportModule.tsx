@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Headphones, MessageCircle, Phone, Mail, Send, CheckCircle2, Clock, AlertCircle, LifeBuoy, ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
 import { db } from '../lib/firebase';
-import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, doc, updateDoc, arrayUnion } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
 

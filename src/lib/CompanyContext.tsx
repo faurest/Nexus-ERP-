@@ -117,7 +117,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
 
       return { success: true, message: `Bienvenue chez ${data.name} !` };
     } catch (error) {
-      console.error("Join company error:", error);
+      console.warn("Join company warning:", error);
       return { success: false, message: "Une erreur est survenue lors de l'adhésion." };
     }
   };
@@ -151,7 +151,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
               setCompanies(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
               setLoading(false);
             }, (err) => {
-              console.error("Master onSnapshot error:", err);
+              console.warn("Master onSnapshot warning:", err);
               setLoading(false);
             });
           }
@@ -191,11 +191,11 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
             setCompanies(mainCompanies);
             setLoading(false);
           }, (err) => {
-            console.error("Main onSnapshot error:", err);
+            console.warn("Main onSnapshot warning:", err);
             setLoading(false);
           });
         } catch (error) {
-          console.error("Load companies error:", error);
+          console.warn("Load companies warning:", error);
           setLoading(false);
         }
       };
@@ -209,7 +209,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
         const unsubscribe = await load();
         unsubscribeSnap = unsubscribe;
       } catch (e) {
-        console.error("Critical failure during company load:", e);
+        console.warn("Critical failure during company load warning:", e);
         setLoading(false);
       }
       

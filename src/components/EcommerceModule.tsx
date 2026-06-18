@@ -892,7 +892,7 @@ export default function EcommerceModule({ user }: { user: any }) {
       setActiveView('tracking');
 
       // WhatsApp redirection
-      const enterpriseWhatsApp = currentCompany.whatsappNumber || currentCompany.phone || '640790996';
+      const enterpriseWhatsApp = currentCompany.whatsappNumber || '640790996';
       const userHost = window.location.origin;
       const message = `🚨 *Nouvelle Commande !*\n\nUne nouvelle commande a été passée par ${auth.currentUser?.displayName || 'Un client'}.\nMontant: *${totalWithDelivery.toLocaleString()} FCFA*\n\nOuvrez votre espace vendeur pour la traiter:\n${userHost}`;
       
@@ -1824,7 +1824,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                     <input 
                       type="text"
                       placeholder="Ex: Douala, Cameroun"
-                      defaultValue={currentCompany.location || ""}
+                      defaultValue={(currentCompany as any).location || ""}
                       onBlur={async (e) => {
                         setSavingSettings(true);
                         await setDoc(doc(db, 'companies', currentCompany.id), { location: e.target.value }, { merge: true });
@@ -2478,7 +2478,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                     </div>
 
                     <button 
-                      onClick={() => setChatOrder(order)}
+                      onClick={() => setActiveChatOrder(order)}
                       className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all flex items-center justify-center gap-2 relative border border-blue-100"
                       title="Ouvrir le Chat"
                     >
