@@ -41,9 +41,13 @@ jobs:
         run: |
           keytool -genkey -v -keystore android/app/release.keystore -alias nexus -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Nexus, OU=IT, O=Nexus, L=Paris, ST=IDF, C=FR" -storepass password -keypass password
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Build Signed AAB
         working-directory: ./android
         run: |
+          gradle wrapper --gradle-version 8.14.3
           chmod +x ./gradlew
           ./gradlew bundleRelease -Pandroid.injected.signing.store.file=release.keystore -Pandroid.injected.signing.store.password=password -Pandroid.injected.signing.key.alias=nexus -Pandroid.injected.signing.key.password=password
 
