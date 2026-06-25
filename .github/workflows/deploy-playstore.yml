@@ -39,10 +39,6 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Recover Gradle Wrapper
-        working-directory: ./android
-        run: gradle wrapper
-
       - name: Decode Keystore
         env:
           ENCODED_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}

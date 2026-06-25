@@ -10,8 +10,6 @@ import {
 } from 'firebase/auth';
 import { 
   getFirestore, 
-  initializeFirestore,
-  persistentLocalCache,
   collection as firestoreCollection, 
   doc as firestoreDoc, 
   addDoc as firestoreAddDoc, 
@@ -36,12 +34,7 @@ import firebaseConfig from '../../firebase-applet-config.json';
 const app = initializeApp(firebaseConfig);
 const secondaryApp = initializeApp(firebaseConfig, "Secondary");
 
-// Improved Firestore initialization with resilience settings
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache(),
-  // experimentalForceLongPolling is already set, but we can ensure other settings are robust
-  experimentalForceLongPolling: true,
-}, firebaseConfig.firestoreDatabaseId);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth(app);
 export const secondaryAuth = getAuth(secondaryApp);
@@ -118,28 +111,15 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
-// Test Connection - made more resilient and informative
 export async function testFirestoreConnection() {
-  console.log("Nexus Firebase: Diagnostic de connexion Nexus Cloud...");
-  
   try {
-    const testDoc = firestoreDoc(db, 'companies', 'connection-check-' + Math.random().toString(36).substring(7));
-    // Use the persistent cache version first if available, or a shorter timeout if possible
-    // Note: getDocFromServer is very strict and fails fast on network issues
-    const snap = await getDocFromServer(testDoc);
-    console.log("Nexus Firebase: ✅ Nexus Cloud Link synchronisé.");
+    await getDocFromServer(firestoreDoc(db, 'test', 'connection'));
     return true;
-  } catch (error: any) {
-    const msg = error.message || String(error);
-    if (msg.includes('offline') || msg.includes('reach') || msg.includes('timeout')) {
-      console.warn("Nexus Firebase: ⚠️ Mode Dégradé/Offline - La connexion directe au Nexus Cloud est lente ou absente.");
-      return true; // We return true because the app can still function in offline mode using local cache
-    } else if (msg.includes('permission-denied') || msg.includes('permission')) {
-      console.log("Nexus Firebase: ✅ Link actif (Réponse Sécurisée reçue).");
-      return true;
+  } catch (error) {
+    if(error instanceof Error && error.message.includes('the client is offline')) {
+      console.error("Please check your Firebase configuration.");
     }
-    console.warn("Nexus Firebase: ℹ️ Diagnostic passif :", msg);
-    return true;
+    return false;
   }
 }
 // Do not call immediately at module level to avoid blocking app start or triggering early timeouts
