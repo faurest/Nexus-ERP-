@@ -350,9 +350,21 @@ export function onSnapshot(queryOrDoc: any, cb: any, errCb?: any) {
       });
     }
   }, (error) => {
+    console.error("Master onSnapshot error:", error.message || error);
     if (errCb) {
       errCb(error);
+    } else {
+      console.warn("Unhandled onSnapshot error (no errCb provided)", error);
     }
-    handleFirestoreError(error, OperationType.GET, queryOrDoc.path);
+    
+    // We log the structured error but do not throw, as throwing in this callback 
+    // leads to uncaught exceptions that crash the React app.
+    const errInfo: FirestoreErrorInfo = {
+      error: error.message || String(error),
+      authInfo: { userId: auth.currentUser?.uid },
+      operationType: OperationType.GET,
+      path: queryOrDoc?.path || null
+    };
+    console.error('Firestore Error: ', JSON.stringify(errInfo));
   });
 }
