@@ -891,11 +891,33 @@ export default function EcommerceModule({ user }: { user: any }) {
       setCheckoutModalOpen(false);
       setActiveView('tracking');
 
-      // WhatsApp redirection
       const enterpriseWhatsApp = currentCompany.whatsappNumber || currentCompany.phone || '640790996';
+      
+      // Envoi automatique de notification via Twilio (WhatsApp/SMS)
+      try {
+        const itemsList = cart.map(i => `${i.cartQuantity}x ${i.name}`).join(', ');
+        await fetch('/api/orders/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: orderRef.id,
+            clientName: auth.currentUser?.displayName || 'Client',
+            totalAmount: totalWithDelivery,
+            items: itemsList,
+            messageType: 'whatsapp',
+            companyPhone: enterpriseWhatsApp
+          })
+        });
+      } catch (notifyError) {
+        console.error('Erreur lors de la notification silencieuse (Twilio):', notifyError);
+      }
+
+      // Optionnel: On peut garder la redirection WhatsApp manuelle si demandé, 
+      // mais le script envoie déjà le message de façon automatique au backend.
       const userHost = window.location.origin;
       const message = `🚨 *Nouvelle Commande !*\n\nUne nouvelle commande a été passée par ${auth.currentUser?.displayName || 'Un client'}.\nMontant: *${totalWithDelivery.toLocaleString()} FCFA*\n\nOuvrez votre espace vendeur pour la traiter:\n${userHost}`;
       
+      // On garde le window.open pour s'assurer d'une fallback client si le backend Twilio n'a pas les clés
       window.open(`https://wa.me/${enterpriseWhatsApp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, "_blank");
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, 'ecommerce_orders');

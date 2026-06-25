@@ -6,10 +6,20 @@ import cors from 'cors';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import twilio from 'twilio';
 
 const PORT = 3000;
 const db = new Database('database.sqlite');
 const JWT_SECRET = process.env.JWT_SECRET || 'nexus-fallback-auth-secret-key-2026';
+
+// Twilio Client Lazy Init
+let twilioClient: twilio.Twilio | null = null;
+function getTwilioClient() {
+  if (!twilioClient && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+  }
+  return twilioClient;
+}
 
 // Initialize AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -402,6 +412,58 @@ async function startServer() {
   });
 
   // --- API ROUTES ---
+
+  // Notifications API (WhatsApp/SMS via Twilio)
+  app.post('/api/orders/notify', async (req, res) => {
+    try {
+      const { orderId, clientName, totalAmount, items, messageType = 'whatsapp', companyPhone } = req.body;
+      
+      // Fallback à la variable d'environnement si le client ne fournit pas le numéro de l'entreprise
+      let finalCompanyPhone = companyPhone || process.env.COMPANY_PHONE_NUMBER;
+      
+      // Ensure phone number has a + prefix for international format if it doesn't already
+      if (finalCompanyPhone && !finalCompanyPhone.startsWith('+')) {
+        // Assume it might be a local number, but ideally it should be formatted on the client.
+        // For Twilio, we need standard E.164. We will just pass it, but Twilio might complain if it's not E.164.
+        // We could prepend + if it looks like a country code is there, or let Twilio try it.
+      }
+      
+      // Déterminer le type de message en fonction des variables d'environnement disponibles
+      let finalMessageType = messageType;
+      if (finalMessageType === 'whatsapp' && !process.env.TWILIO_WHATSAPP_NUMBER && process.env.TWILIO_PHONE_NUMBER) {
+        finalMessageType = 'sms';
+      }
+
+      const twilioNumber = finalMessageType === 'whatsapp' ? process.env.TWILIO_WHATSAPP_NUMBER : process.env.TWILIO_PHONE_NUMBER;
+      
+      const messageContent = `🔔 Nouvelle commande reçue !\n\nID: ${orderId}\nClient: ${clientName || 'Anonyme'}\nTotal: ${totalAmount || 0} FCFA\n\nArticles:\n${items || 'Non spécifié'}\n\nMerci de traiter cette commande rapidement.`;
+
+      const client = getTwilioClient();
+      
+      if (!client) {
+        console.warn('Twilio non configuré. Clés manquantes. Le message n\'a pas pu être envoyé.');
+        console.log('Message simulé:', messageContent);
+        return res.json({ success: true, simulated: true, message: 'Twilio n\'est pas configuré. Simulation réussie.' });
+      }
+
+      if (!finalCompanyPhone || !twilioNumber) {
+        return res.status(400).json({ error: 'Numéros d\'envoi ou de destination non configurés.' });
+      }
+
+      const to = finalMessageType === 'whatsapp' ? `whatsapp:${finalCompanyPhone}` : finalCompanyPhone;
+
+      const messageResult = await client.messages.create({
+        body: messageContent,
+        from: twilioNumber,
+        to: to
+      });
+
+      res.json({ success: true, messageId: messageResult.sid, type: finalMessageType });
+    } catch (e: any) {
+      console.error('Erreur Twilio:', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
 
   // Generic CRUD Proxy
   const getPK = (collection: string) => collection === 'users' ? 'uid' : 'id';
