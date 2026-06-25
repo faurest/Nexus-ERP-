@@ -789,7 +789,7 @@ export default function SalesModule({ user }: { user: any }) {
                         }
 
                         // Create a single invoice for the entire order
-                        await addDoc(collection(db, 'sales_invoices'), {
+                        const invoiceRef = await addDoc(collection(db, 'sales_invoices'), {
                            saleId: activeOrderId || `direct-${Date.now()}`,
                            clientName: activeOrder ? activeOrder.clientName : '',
                            tableNumber: activeOrder ? activeOrder.tableNumber : '',
@@ -800,6 +800,25 @@ export default function SalesModule({ user }: { user: any }) {
                            date: serverTimestamp(),
                            items: JSON.stringify(itemsForInvoice)
                         });
+
+                        // Notification Twilio (WhatsApp/SMS)
+                        try {
+                          const itemsList = itemsForInvoice.map(i => `${i.quantity}x ${i.name}`).join(', ');
+                          await fetch('/api/orders/notify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              orderId: invoiceRef.id,
+                              clientName: activeOrder ? activeOrder.clientName : 'Client POS',
+                              totalAmount: totalAmount,
+                              items: itemsList,
+                              messageType: 'whatsapp',
+                              companyPhone: currentCompany.whatsappNumber || currentCompany.phone
+                            })
+                          });
+                        } catch (notifyError) {
+                          console.error('Erreur lors de la notification (Twilio):', notifyError);
+                        }
 
                         if (activeOrderId) {
                           await deleteDoc(doc(db, 'open_orders', activeOrderId));

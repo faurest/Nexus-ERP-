@@ -422,10 +422,8 @@ async function startServer() {
       let finalCompanyPhone = companyPhone || process.env.COMPANY_PHONE_NUMBER;
       
       // Ensure phone number has a + prefix for international format if it doesn't already
-      if (finalCompanyPhone && !finalCompanyPhone.startsWith('+')) {
-        // Assume it might be a local number, but ideally it should be formatted on the client.
-        // For Twilio, we need standard E.164. We will just pass it, but Twilio might complain if it's not E.164.
-        // We could prepend + if it looks like a country code is there, or let Twilio try it.
+      if (finalCompanyPhone && /^\d+$/.test(finalCompanyPhone.replace(/\s+/g, ''))) {
+         finalCompanyPhone = '+' + finalCompanyPhone.replace(/\s+/g, '');
       }
       
       // Déterminer le type de message en fonction des variables d'environnement disponibles

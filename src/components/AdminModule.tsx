@@ -49,7 +49,7 @@ export default function AdminModule() {
   const [globalOrders, setGlobalOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newCompany, setNewCompany] = useState({ name: '', ownerEmail: '', joinCode: '', location: '', description: '', objectives: '', logo: '' });
+  const [newCompany, setNewCompany] = useState({ name: '', ownerEmail: '', joinCode: '', location: '', description: '', objectives: '', logo: '', whatsappNumber: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [activeAdminTab, setActiveAdminTab] = useState<'companies' | 'users' | 'tools' | 'guide' | 'finances'>('companies');
   const [systemUsers, setSystemUsers] = useState<any[]>([]);
@@ -232,7 +232,7 @@ export default function AdminModule() {
       });
 
       setShowCreateModal(false);
-      setNewCompany({ name: '', ownerEmail: '', joinCode: '', location: '', description: '', objectives: '', logo: '' });
+      setNewCompany({ name: '', ownerEmail: '', joinCode: '', location: '', description: '', objectives: '', logo: '', whatsappNumber: '' });
       fetchGlobalData();
       alert(`Entreprise ${newCompany.name} créée avec succès ! Code d'accès : ${joinCode}`);
     } catch (err) {
@@ -2208,6 +2208,17 @@ export default function AdminModule() {
                     onChange={e => setNewCompany({...newCompany, joinCode: e.target.value.toUpperCase()})}
                     placeholder="AUTO-GENERATED"
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-mono font-bold text-sm uppercase tracking-widest transition-all text-slate-900"
+                  />
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Numéro WhatsApp de l'entreprise</label>
+                  <input 
+                    type="text" 
+                    value={newCompany.whatsappNumber}
+                    onChange={e => setNewCompany({...newCompany, whatsappNumber: e.target.value})}
+                    placeholder="Ex: +237690000000"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-bold text-sm transition-all text-slate-900"
                   />
                 </div>
                 
