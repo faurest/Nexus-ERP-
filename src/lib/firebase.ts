@@ -113,12 +113,8 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   }
-  if (errorMessage.toLowerCase().includes('quota limit')) {
-    console.warn('Firebase Quota Warning: ', JSON.stringify({ ...errInfo, error: undefined, reason: errorMessage }));
-    return; // Fast failing instead of throwing to prevent application crash
-  }
-
   console.error('Firestore Error: ', JSON.stringify(errInfo));
+  
   throw new Error(JSON.stringify(errInfo));
 }
 
@@ -291,8 +287,7 @@ export async function addDoc(col: any, data: any) {
   try {
     const result = await firestoreAddDoc(col, { ...data, createdAt: firestoreServerTimestamp() });
     return { id: result.id };
-  } catch (error: any) {
-    if (String(error?.message || error).toLowerCase().includes('quota limit')) return { id: "offline-" + Math.random().toString(36).substring(7) };
+  } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, col.path);
     throw error;
   }
@@ -301,8 +296,7 @@ export async function addDoc(col: any, data: any) {
 export async function setDoc(docRef: any, data: any, options?: any) {
   try {
     await firestoreSetDoc(docRef, { ...data, updatedAt: firestoreServerTimestamp() }, options);
-  } catch (error: any) {
-    if (String(error?.message || error).toLowerCase().includes('quota limit')) return;
+  } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, docRef.path);
     throw error;
   }
@@ -311,8 +305,7 @@ export async function setDoc(docRef: any, data: any, options?: any) {
 export async function updateDoc(docRef: any, data: any) {
   try {
     await firestoreUpdateDoc(docRef, { ...data, updatedAt: firestoreServerTimestamp() });
-  } catch (error: any) {
-    if (String(error?.message || error).toLowerCase().includes('quota limit')) return;
+  } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, docRef.path);
     throw error;
   }
@@ -321,8 +314,7 @@ export async function updateDoc(docRef: any, data: any) {
 export async function deleteDoc(docRef: any) {
   try {
     await firestoreDeleteDoc(docRef);
-  } catch (error: any) {
-    if (String(error?.message || error).toLowerCase().includes('quota limit')) return;
+  } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, docRef.path);
     throw error;
   }
@@ -336,8 +328,7 @@ export async function getDoc(docRef: any) {
       exists: () => snap.exists(),
       data: () => snap.data()
     };
-  } catch (error: any) {
-    if (String(error?.message || error).toLowerCase().includes('quota limit')) return { id: docRef.id, exists: () => false, data: () => ({}) };
+  } catch (error) {
     handleFirestoreError(error, OperationType.GET, docRef.path);
     throw error;
   }
@@ -354,8 +345,7 @@ export async function getDocs(query: any): Promise<any> {
           })),
           empty: result.empty
       };
-    } catch (error: any) {
-      if (String(error?.message || error).toLowerCase().includes('quota limit')) return { docs: [], empty: true };
+    } catch (error) {
       handleFirestoreError(error, OperationType.LIST, null);
       throw error;
     }
@@ -379,12 +369,7 @@ export function onSnapshot(queryOrDoc: any, cb: any, errCb?: any) {
         data: () => snapshot.data()
       });
     }
-  }, (error: any) => {
-    if (String(error?.message || error).toLowerCase().includes('quota limit')) {
-      console.warn("Quota limit exceeded on snapshot. Suppressing crash.");
-      if (errCb) errCb(error);
-      return;
-    }
+  }, (error) => {
     if (errCb) {
       errCb(error);
     }
