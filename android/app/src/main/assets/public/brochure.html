@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS ERP - Rapport Commercial</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #f4f7f6;
+        }
+        .container {
+            background: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h1 { color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 10px; margin-bottom: 5px; font-size: 28px;}
+        h2 { color: #2563eb; margin-top: 30px; font-size: 22px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px;}
+        h3 { color: #3b82f6; font-size: 18px; margin-top: 20px;}
+        .subtitle { font-style: italic; color: #64748b; margin-top: 0; margin-bottom: 30px;}
+        .contact { background: #e0f2fe; padding: 15px; border-radius: 5px; margin-bottom: 30px; border-left: 4px solid #0284c7; }
+        .illustration { background: #f8fafc; padding: 15px; border: 1px dashed #cbd5e1; text-align: center; color: #94a3b8; font-style: italic; margin: 20px 0; border-radius: 5px; font-size: 14px;}
+        ul, ol { padding-left: 20px; }
+        li { margin-bottom: 10px; }
+        .buttons { text-align: right; margin-bottom: 20px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 10px; color: white; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 14px;}
+        .btn-pdf { background-color: #ef4444; }
+        .btn-word { background-color: #2563eb; }
+        .btn:hover { opacity: 0.9; }
+        
+        @media print {
+            .buttons { display: none; }
+            body { background: #fff; padding: 0; }
+            .container { box-shadow: none; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="buttons" id="download-buttons">
+        <button class="btn btn-pdf" onclick="downloadPDF()">⬇ Télécharger PDF</button>
+        <button class="btn btn-word" onclick="downloadWord()">⬇ Télécharger Word</button>
+    </div>
+
+    <div class="container" id="report-content">
+        <h1>NEXUS ERP : Le Cœur Numérique de Votre Entreprise</h1>
+        <p class="subtitle">Document de Présentation Commerciale et Stratégique</p>
+
+        <div class="contact">
+            <strong>Conçu et développé par DINNAMOU PROSPER</strong><br>
+            📍 Maroua, Cameroun<br>
+            📞 Contact : +237 6 40 79 09 96
+        </div>
+
+        <h2>1. Introduction : Qu'est-ce que NEXUS ERP ?</h2>
+        <p>Dans un environnement concurrentiel en constante évolution, la centralisation de l'information est la clé de la réussite. <strong>NEXUS ERP</strong> est un progiciel de gestion intégré de nouvelle génération, conçu pour fluidifier les opérations commerciales, synchroniser les équipes et sécuriser les données de l'entreprise.</p>
+        <p>Que vous soyez dans la vente au détail, les prestations de services ou la gestion de projets de grande envergure, NEXUS ERP s'adapte à votre flux de travail avec une fluidité déconcertante, en se plaçant comme l'assistant numérique dont chaque gérant rêve.</p>
+        
+        <div class="illustration">
+            [Illustration : Une maquette de présentation montrant le tableau de bord NEXUS ERP ouvert simultanément sur un ordinateur de bureau et un smartphone, mettant en avant son design épuré, moderne et adaptatif.]
+        </div>
+
+        <h2>2. Les Avantages Uniques et Facilités de NEXUS ERP</h2>
+        <p>NEXUS ERP a été pensé pour l'utilisateur final. Il élimine la lourdeur et la complexité souvent associées aux logiciels de gestion traditionnels.</p>
+        <ul>
+            <li><strong>Prise en main immédiate :</strong> Une interface utilisateur moderne, claire et intuitive. Aucune formation technique longue n'est requise pour vos employés. Dès le premier jour, vos équipes sont opérationnelles.</li>
+            <li><strong>Gestion Synchronisée en Temps Réel :</strong> Les ventes, les stocks, les ressources et la trésorerie communiquent de manière instantanée. Une vente effectuée à la caisse déduit automatiquement le stock sans aucune intervention humaine supplémentaire.</li>
+            <li><strong>Mobilité Totale :</strong> Accessible et fluide sur n'importe quel écran. Vos données vous suivent partout, vous permettant de piloter votre entreprise à distance.</li>
+            <li><strong>Aide à la Décision Instantanée :</strong> Des tableaux de bord analytiques génèrent des rapports financiers en temps réel (entrées, sorties, bénéfices nets, statistiques des produits les plus vendus).</li>
+            <li><strong>Communication Interne :</strong> Un système de messagerie interne et de notifications en temps réel permet d'informer tous vos collaborateurs de l'activité de l'entreprise en un éclair.</li>
+        </ul>
+
+        <div class="illustration">
+            [Illustration : Icônes circulaires connectées représentant les différents départements (Ventes, Projets, RH, Trésorerie) convergeant vers un noyau central lumineux labellisé "Base NEXUS".]
+        </div>
+
+        <h2>3. Comment Travailler avec NEXUS ERP au Quotidien ?</h2>
+        <p>Le flux de travail dans NEXUS ERP est conçu pour être naturel et logique. Voici un aperçu de l'expérience utilisateur par département :</p>
+        
+        <h3>A. Le Point de Vente (POS) et La Caisse</h3>
+        <ol>
+            <li>L'agent accède au catalogue de produits avec des visuels clairs, affichant la quantité en stock et le prix unitaire mis à jour.</li>
+            <li>D'un simple clic, les articles s'ajoutent au panier interactif avec un calcul automatique du total.</li>
+            <li>À la confirmation, <strong>l'encaissement est validé</strong> : une facture propre est traçable, <strong>le stock est automatiquement déduit</strong>, et les revenus intègrent directement la comptabilité du Dashboard.</li>
+        </ol>
+
+        <h3>B. Gestion des Stocks et des Ressources Matérielles</h3>
+        <ul>
+            <li>Ajout de produits structuré avec des champs précis : <em>Nom du produit, Quantité en stock, Localisation dans l'entrepôt, État, Garantie, et Prix Unitaire.</em></li>
+            <li>Un suivi permanent permet de ne jamais être en rupture de stock et de valoriser le capital matériel de la structure.</li>
+        </ul>
+
+        <h3>C. Suivi des Projets, Prestations et CRM</h3>
+        <ul>
+            <li>Suivi du cycle de vie des projets clients (de la demande initiale à l'achèvement final) grâce à un système Kanban ou liste de statuts.</li>
+            <li>Base de données clients incluse dans chaque facturation pour fidéliser et garder un historique d'achat.</li>
+        </ul>
+
+        <div class="illustration">
+            [Illustration : Capture d'écran stylisée du module "Point de Vente" illustrant le catalogue de produits à gauche et le résumé d'encaissement (panier) à droite avec le bouton "Valider l'Encaissement".]
+        </div>
+
+        <h2>4. Sécurité de Pointe : Du Langage à la Mise en Place</h2>
+        <p>La sécurité du patrimoine numérique de votre entreprise n'est pas une option, c'est le socle de NEXUS ERP. Tout a été pensé pour bloquer les erreurs et les malveillances.</p>
+        <ul>
+            <li><strong>Programmation Robuste et Typée (TypeScript) :</strong> Le code informatique de NEXUS ERP est écrit dans un langage de pointe (<em>TypeScript</em>) qui applique des règles strictes lors du développement. Cela prévient les "plantages" inattendus et offre un système extrêmement stable en production.</li>
+            <li><strong>Architecture de Base de Données Optimisée :</strong> Les transactions (comme une vente liée à une baisse de stock) sont traitées de manière sécurisée. Si une étape échoue (ex: coupure de connexion), l'autre ne passe pas de manière isolée, évitant les incohérences comptables (respect des normes d'intégrité).</li>
+            <li><strong>Authentification et Contrôles d'Accès (RBAC) :</strong> Le système intègre des hiérarchies claires (<em>Propriétaire / Employés</em>). Un simple caissier ne peut pas accéder aux bilans financiers globaux ni supprimer des données sensibles du stock. Chaque accès est segmenté et cloisonné.</li>
+            <li><strong>Traçabilité des Actions (Audit) :</strong> Les opérations critiques génèrent des empreintes. Savoir "Qui a fait quoi et quand" devient un jeu d'enfant en cas de litige financier ou logistique.</li>
+            <li><strong>Déploiement Cloud Chiffré :</strong> Hébergé sur des infrastructures cloud modernes, l'entièreté du trafic entre vos appareils et les serveurs est sous protection cryptographique (chiffrement des communications de bout en bout).</li>
+        </ul>
+
+        <div class="illustration">
+            [Illustration : Un bouclier numérique avec des verrous, symbolisant le typage strict, le chiffrement des données, et les accès basés sur les rôles protégeant le serveur de données.]
+        </div>
+
+        <h2>5. Conclusion</h2>
+        <p>S'équiper de <strong>NEXUS ERP</strong>, c'est faire le double choix de l'innovation et de la sérénité. C'est doter votre structure d'un outil de niveau mondial, conçu de manière souveraine, pour répondre exactement aux exigences de flexibilité et de robustesse des entreprises d'aujourd'hui.</p>
+        <p>Passez de la gestion sur papier et tableurs approximatifs à une ère d'automatisation intelligente et sécurisée.</p>
+        <p><strong>Propulsez vos opérations vers l'avant. Contactez-nous pour une intégration dès aujourd'hui.</strong></p>
+
+        <hr style="margin-top:40px; border:0; border-top:1px solid #e2e8f0;">
+        <p style="text-align:center; color:#94a3b8; font-size:12px; margin-top:20px;">
+            Document Généré Automatiquement | NEXUS ERP © 2026<br>
+            Création par DINNAMOU PROSPER | Maroua, Cameroun | Mobile : 640790996
+        </p>
+    </div>
+
+    <script>
+        function downloadPDF() {
+            const element = document.getElementById('report-content');
+            const opt = {
+                margin:       10,
+                filename:     'Rapport_Commercial_NEXUS_ERP.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        function downloadWord() {
+            const element = document.getElementById('report-content').innerHTML;
+            const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>NEXUS ERP Rapport Commercial</title></head><body>";
+            const footer = "</body></html>";
+            const sourceHTML = header + element + footer;
+            
+            const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+            const fileDownload = document.createElement("a");
+            document.body.appendChild(fileDownload);
+            fileDownload.href = source;
+            fileDownload.download = 'Rapport_Commercial_NEXUS_ERP.doc';
+            fileDownload.click();
+            document.body.removeChild(fileDownload);
+        }
+    </script>
+</body>
+</html>
