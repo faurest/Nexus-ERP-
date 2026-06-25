@@ -7,6 +7,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import twilio from 'twilio';
+import { createClient } from '@supabase/supabase-js';
 
 const PORT = 3000;
 const db = new Database('database.sqlite');
@@ -20,6 +21,32 @@ function getTwilioClient() {
   }
   return twilioClient;
 }
+
+// Supabase Lazy Init & Keep Alive
+let supabaseClient: any = null;
+function getSupabaseClient() {
+  if (!supabaseClient && process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_ANON_KEY) {
+    supabaseClient = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY);
+  }
+  return supabaseClient;
+}
+
+// Keep Supabase project from pausing (free tier inactivity)
+async function pingSupabase() {
+  const supabase = getSupabaseClient();
+  if (!supabase) return;
+  try {
+    // Lightweight query to register activity on the database
+    // Even if the table doesn't exist, the API request registers as activity
+    await supabase.from('users').select('uid').limit(1);
+    console.log('[Supabase Keep-Alive] Ping réussi à', new Date().toISOString());
+  } catch (err: any) {
+    console.error('[Supabase Keep-Alive] Erreur lors du ping:', err.message);
+  }
+}
+
+// Periodic ping locally every 6 hours
+setInterval(pingSupabase, 1000 * 60 * 60 * 6);
 
 // Initialize AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -412,6 +439,20 @@ async function startServer() {
   });
 
   // --- API ROUTES ---
+
+  // Supabase Keep-Alive API (Can be called by cron-job.org or Cloud Scheduler)
+  app.get('/api/supabase/keep-alive', async (req, res) => {
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        return res.json({ status: 'ignored', message: 'Supabase n\'est pas configuré.' });
+      }
+      await pingSupabase();
+      res.json({ status: 'ok', message: 'Ping Supabase exécuté avec succès.' });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
 
   // Notifications API (WhatsApp/SMS via Twilio)
   app.post('/api/orders/notify', async (req, res) => {
