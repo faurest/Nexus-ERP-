@@ -5,7 +5,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 1. COMPANIES
-CREATE TABLE companies (
+CREATE TABLE IF NOT EXISTS companies (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name VARCHAR(255) NOT NULL,
   owner_id UUID NOT NULL, -- references users(id)
@@ -20,7 +20,7 @@ CREATE TABLE companies (
 );
 
 -- 2. PERSONNEL
-CREATE TABLE personnel (
+CREATE TABLE IF NOT EXISTS personnel (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
   first_name VARCHAR(255),
@@ -37,7 +37,7 @@ CREATE TABLE personnel (
 );
 
 -- 3. CLIENTS
-CREATE TABLE clients (
+CREATE TABLE IF NOT EXISTS clients (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
@@ -50,7 +50,7 @@ CREATE TABLE clients (
 );
 
 -- 4. PRODUCTS
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE products (
 );
 
 -- 5. SALES & ORDERS
-CREATE TABLE ecommerce_orders (
+CREATE TABLE IF NOT EXISTS ecommerce_orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
   global_order_id UUID,
@@ -86,7 +86,7 @@ CREATE TABLE ecommerce_orders (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE order_history (
+CREATE TABLE IF NOT EXISTS order_history (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   order_id UUID REFERENCES ecommerce_orders(id) ON DELETE CASCADE,
   company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
@@ -100,7 +100,7 @@ CREATE TABLE order_history (
 );
 
 -- 6. TASKS
-CREATE TABLE tasks (
+CREATE TABLE IF NOT EXISTS tasks (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
@@ -112,7 +112,7 @@ CREATE TABLE tasks (
 );
 
 -- 7. STOCK HISTORY & RESOURCE MOVEMENTS
-CREATE TABLE stock_history (
+CREATE TABLE IF NOT EXISTS stock_history (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
   product_id UUID REFERENCES products(id) ON DELETE CASCADE,
@@ -128,7 +128,7 @@ CREATE TABLE stock_history (
 );
 
 -- 8. NOTIFICATIONS
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
   user_id UUID, -- References users(id)
@@ -140,9 +140,9 @@ CREATE TABLE notifications (
 );
 
 -- Indexes for performance on common queries
-CREATE INDEX idx_personnel_company ON personnel(company_id);
-CREATE INDEX idx_clients_company ON clients(company_id);
-CREATE INDEX idx_products_company ON products(company_id);
-CREATE INDEX idx_ecommerce_orders_company ON ecommerce_orders(company_id);
-CREATE INDEX idx_tasks_company ON tasks(company_id);
-CREATE INDEX idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_personnel_company ON personnel(company_id);
+CREATE INDEX IF NOT EXISTS idx_clients_company ON clients(company_id);
+CREATE INDEX IF NOT EXISTS idx_products_company ON products(company_id);
+CREATE INDEX IF NOT EXISTS idx_ecommerce_orders_company ON ecommerce_orders(company_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_company ON tasks(company_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
