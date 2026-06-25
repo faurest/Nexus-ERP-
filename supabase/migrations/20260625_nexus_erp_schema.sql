@@ -6,9 +6,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 1. COMPANIES
 CREATE TABLE IF NOT EXISTS companies (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id TEXT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
-  owner_id UUID NOT NULL, -- references users(id)
+  owner_id TEXT NOT NULL, -- references users(id)
   owner_email VARCHAR(255) NOT NULL,
   join_code VARCHAR(50) UNIQUE NOT NULL,
   delivery_fees JSONB,
@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS companies (
 
 -- 2. PERSONNEL
 CREATE TABLE IF NOT EXISTS personnel (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY,
+  company_id TEXT REFERENCES companies(id) ON DELETE CASCADE,
   first_name VARCHAR(255),
   last_name VARCHAR(255),
   name VARCHAR(255) NOT NULL,
@@ -38,8 +38,8 @@ CREATE TABLE IF NOT EXISTS personnel (
 
 -- 3. CLIENTS
 CREATE TABLE IF NOT EXISTS clients (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY,
+  company_id TEXT REFERENCES companies(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255),
   phone VARCHAR(50),
@@ -51,8 +51,8 @@ CREATE TABLE IF NOT EXISTS clients (
 
 -- 4. PRODUCTS
 CREATE TABLE IF NOT EXISTS products (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY,
+  company_id TEXT REFERENCES companies(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
   description TEXT,
   price DECIMAL NOT NULL,
@@ -69,9 +69,9 @@ CREATE TABLE IF NOT EXISTS products (
 
 -- 5. SALES & ORDERS
 CREATE TABLE IF NOT EXISTS ecommerce_orders (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
-  global_order_id UUID,
+  id TEXT PRIMARY KEY,
+  company_id TEXT REFERENCES companies(id) ON DELETE CASCADE,
+  global_order_id TEXT,
   items JSONB NOT NULL,
   total DECIMAL NOT NULL,
   payment_method VARCHAR(50),
@@ -87,9 +87,9 @@ CREATE TABLE IF NOT EXISTS ecommerce_orders (
 );
 
 CREATE TABLE IF NOT EXISTS order_history (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  order_id UUID REFERENCES ecommerce_orders(id) ON DELETE CASCADE,
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY,
+  order_id TEXT REFERENCES ecommerce_orders(id) ON DELETE CASCADE,
+  company_id TEXT REFERENCES companies(id) ON DELETE CASCADE,
   previous_status VARCHAR(50),
   new_status VARCHAR(50) NOT NULL,
   reason TEXT,
@@ -101,10 +101,10 @@ CREATE TABLE IF NOT EXISTS order_history (
 
 -- 6. TASKS
 CREATE TABLE IF NOT EXISTS tasks (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY,
+  company_id TEXT REFERENCES companies(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
-  assigned_to UUID REFERENCES personnel(id) ON DELETE SET NULL,
+  assigned_to TEXT REFERENCES personnel(id) ON DELETE SET NULL,
   start_date DATE,
   end_date DATE,
   status VARCHAR(50) DEFAULT 'pending',
@@ -113,9 +113,9 @@ CREATE TABLE IF NOT EXISTS tasks (
 
 -- 7. STOCK HISTORY & RESOURCE MOVEMENTS
 CREATE TABLE IF NOT EXISTS stock_history (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
-  product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY,
+  company_id TEXT REFERENCES companies(id) ON DELETE CASCADE,
+  product_id TEXT REFERENCES products(id) ON DELETE CASCADE,
   product_name VARCHAR(255),
   type VARCHAR(50) NOT NULL, -- ENTREE, SORTIE, AJUSTEMENT
   quantity INT NOT NULL,
@@ -129,9 +129,9 @@ CREATE TABLE IF NOT EXISTS stock_history (
 
 -- 8. NOTIFICATIONS
 CREATE TABLE IF NOT EXISTS notifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
-  user_id UUID, -- References users(id)
+  id TEXT PRIMARY KEY,
+  company_id TEXT REFERENCES companies(id) ON DELETE CASCADE,
+  user_id TEXT, -- References users(id)
   title VARCHAR(255) NOT NULL,
   message TEXT NOT NULL,
   type VARCHAR(50),
