@@ -107,8 +107,6 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  
-  throw new Error(JSON.stringify(errInfo));
 }
 
 export async function testFirestoreConnection() {
@@ -310,7 +308,11 @@ export async function getDoc(docRef: any) {
     };
   } catch (error) {
     handleFirestoreError(error, OperationType.GET, docRef.path);
-    throw error;
+    return {
+      id: docRef.id,
+      exists: () => false,
+      data: () => undefined
+    };
   }
 }
 
@@ -327,7 +329,7 @@ export async function getDocs(query: any): Promise<any> {
       };
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, null);
-      throw error;
+      return { docs: [], empty: true };
     }
 }
 
