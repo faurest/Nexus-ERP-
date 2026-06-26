@@ -117,8 +117,12 @@ async function runMigration() {
 
       console.log(`   └─ Found ${records.length} records. Inserting...`);
 
-      // Generate SQL insert statements
-      const sqlStatements = records.map(record => {
+      const MAX_CHUNK_SIZE = 500000; // 500KB per file
+      let currentChunk = 0;
+      let currentSize = 0;
+      let sqlChunk: string[] = [];
+
+      records.forEach((record, index) => {
         const columns = Object.keys(record).join(', ');
         const values = Object.values(record).map(val => {
           if (val === null || val === undefined) return 'NULL';
@@ -127,11 +131,20 @@ async function runMigration() {
           return val;
         }).join(', ');
         
-        return `INSERT INTO ${collName} (${columns}) VALUES (${values}) ON CONFLICT (id) DO UPDATE SET ${Object.keys(record).filter(k => k !== 'id').map(k => `${k} = EXCLUDED.${k}`).join(', ')};`;
-      });
+        const stmt = `INSERT INTO ${collName} (${columns}) VALUES (${values}) ON CONFLICT (id) DO UPDATE SET ${Object.keys(record).filter(k => k !== 'id').map(k => `${k} = EXCLUDED.${k}`).join(', ')};`;
+        
+        sqlChunk.push(stmt);
+        currentSize += stmt.length;
 
-      fs.appendFileSync('supabase/migrations/migration_data.sql', sqlStatements.join('\n') + '\n\n');
-      console.log(`   ✅ Successfully generated SQL for ${collName}.`);
+        if (currentSize >= MAX_CHUNK_SIZE || index === records.length - 1) {
+          currentChunk++;
+          const fileName = `supabase/migrations/migration_${collName}_part${currentChunk}.sql`;
+          fs.writeFileSync(fileName, `-- Migration for ${collName} (Part ${currentChunk})\n\n${sqlChunk.join('\n\n')}\n`);
+          console.log(`   ✅ Successfully generated SQL chunk for ${collName}: ${fileName}`);
+          sqlChunk = [];
+          currentSize = 0;
+        }
+      });
 
     } catch (err) {
       console.error(`   ❌ Failed to read from Firestore collection ${collName}:`, err);
