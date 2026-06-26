@@ -70,6 +70,8 @@ async function runMigration() {
     console.error("Failed to authenticate with Firebase:", err);
   }
 
+  const validCompanyIds = new Set<string>();
+
   for (const collName of collections) {
     console.log(`\n📦 Migrating collection: ${collName}`);
     try {
@@ -79,7 +81,7 @@ async function runMigration() {
         continue;
       }
 
-      const records = snapshot.docs.map(doc => {
+      let records = snapshot.docs.map(doc => {
         const data = camelToSnakeCase(doc.data());
         
         // Remove undefined fields and fix specific mappings
@@ -115,7 +117,24 @@ async function runMigration() {
         };
       });
 
+      if (collName === 'companies') {
+        records.forEach(r => validCompanyIds.add(r.id));
+      } else {
+        // Filter out orphaned records
+        const beforeCount = records.length;
+        records = records.filter(r => {
+          if (r.company_id && !validCompanyIds.has(r.company_id)) {
+            return false;
+          }
+          return true;
+        });
+        if (records.length < beforeCount) {
+           console.log(`   └─ Skipped ${beforeCount - records.length} orphaned records.`);
+        }
+      }
+
       console.log(`   └─ Found ${records.length} records. Inserting...`);
+
 
       const MAX_CHUNK_SIZE = 500000; // 500KB per file
       let currentChunk = 0;
