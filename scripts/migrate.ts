@@ -56,6 +56,19 @@ function camelToSnakeCase(obj: any): any {
 
 async function runMigration() {
   console.log("🚀 Starting data migration from Firebase to Supabase...");
+  fs.writeFileSync('supabase/migrations/migration_data.sql', '-- Data Migration SQL\n\n');
+  try {
+    try {
+      await signInWithEmailAndPassword(auth, 'migrator2026@nexus.com', 'password123');
+      console.log("🔓 Successfully authenticated with Firebase as migrator.");
+    } catch {
+      const { createUserWithEmailAndPassword } = await import('firebase/auth');
+      await createUserWithEmailAndPassword(auth, 'migrator2026@nexus.com', 'password123');
+      console.log("🔓 Successfully created and authenticated new migrator user.");
+    }
+  } catch (err) {
+    console.error("Failed to authenticate with Firebase:", err);
+  }
 
   for (const collName of collections) {
     console.log(`\n📦 Migrating collection: ${collName}`);
@@ -75,6 +88,25 @@ async function runMigration() {
              data.categories = data.category;
              delete data.category;
           }
+          delete data.description;
+          delete data.employees;
+          delete data.roles;
+          delete data.member_emails;
+        } else if (collName === 'personnel') {
+          delete data.custom_permissions;
+        } else if (collName === 'clients') {
+          delete data.interactions;
+        } else if (collName === 'products') {
+          delete data.allow_backorder;
+          delete data.config_options;
+        } else if (collName === 'ecommerce_orders') {
+          delete data.checkout_source;
+          delete data.customer_name;
+        } else if (collName === 'notifications') {
+          delete data.read;
+          if (data.is_read === undefined && data.read !== undefined) {
+            data.is_read = data.read;
+          }
         }
         
         return {
@@ -85,16 +117,21 @@ async function runMigration() {
 
       console.log(`   └─ Found ${records.length} records. Inserting...`);
 
-      // Batch insert into Supabase
-      const { error } = await supabase
-        .from(collName)
-        .upsert(records, { onConflict: 'id' });
+      // Generate SQL insert statements
+      const sqlStatements = records.map(record => {
+        const columns = Object.keys(record).join(', ');
+        const values = Object.values(record).map(val => {
+          if (val === null || val === undefined) return 'NULL';
+          if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+          if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'::jsonb`;
+          return val;
+        }).join(', ');
+        
+        return `INSERT INTO ${collName} (${columns}) VALUES (${values}) ON CONFLICT (id) DO UPDATE SET ${Object.keys(record).filter(k => k !== 'id').map(k => `${k} = EXCLUDED.${k}`).join(', ')};`;
+      });
 
-      if (error) {
-        console.error(`   ❌ Supabase insert error for ${collName}:`, error.message);
-      } else {
-        console.log(`   ✅ Successfully migrated ${collName}.`);
-      }
+      fs.appendFileSync('supabase/migrations/migration_data.sql', sqlStatements.join('\n') + '\n\n');
+      console.log(`   ✅ Successfully generated SQL for ${collName}.`);
 
     } catch (err) {
       console.error(`   ❌ Failed to read from Firestore collection ${collName}:`, err);

@@ -154,6 +154,16 @@ service cloud.firestore {
     }
 
 
+    match /tasks/{taskId} {
+      allow read: if true;
+    }
+    match /stock_history/{docId} {
+      allow read: if true;
+    }
+    match /notifications/{docId} {
+      allow read: if true;
+    }
+    
     // Notification access
     match /notifications/{docId} {
       allow list: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid || resource.data.email == currentUserEmail());
