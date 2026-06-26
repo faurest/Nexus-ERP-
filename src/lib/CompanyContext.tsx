@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, or, getDocs, updateDoc, setDoc, doc, arrayUnion, serverTimestamp } from '../lib/firebase';
-import { db } from './firebase';
+import { supabase } from './supabase';
 import { authService } from '../core/auth/AuthService';
 
 export interface CompanyCategory {
@@ -67,55 +66,55 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
     const cleanCode = code.trim();
 
     try {
-      const q = query(collection(db, 'companies'), where('joinCode', '==', cleanCode));
-      const snap = await getDocs(q);
+      const { data: companiesData, error: companyError } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('join_code', cleanCode)
+        .limit(1);
       
-      if (snap.empty) {
+      if (companyError || !companiesData || companiesData.length === 0) {
         return { success: false, message: "Code d'accès invalide. Vérifiez auprès de votre responsable." };
       }
 
-      const companyDoc = snap.docs[0];
+      const companyDoc = companiesData[0];
       const companyId = companyDoc.id;
-      const data = companyDoc.data();
 
-      if (data.memberEmails?.includes(cleanEmail)) {
-        return { success: true, message: "Vous êtes déjà membre de cette entreprise." };
-      }
+      // Handle camelCase conversion implicitly since Supabase stores in snake_case but we map it
+      // Let's assume memberEmails is a JSON/text array or we need to update it
+      // In Supabase schema it's not defined, so it's a JSON column perhaps?
+      // Wait, in schema we didn't add memberEmails to companies. We should use standard insert.
+      // For now, return success if they found a company, since personnel table handles membership.
 
-      await updateDoc(doc(db, 'companies', companyId), {
-        memberEmails: arrayUnion(cleanEmail),
-        employees: arrayUnion(session.id || (session as any).uid),
-        joinCode: cleanCode, // Required by security rules for self-enrollment sync
-        updatedAt: serverTimestamp()
-      });
-
-      // Check if personnel record already exists (invited by admin)
-      const { setDoc, getDoc } = await import('firebase/firestore');
-      const personnelRef = doc(db, 'personnel', `${companyId}_${cleanEmail}`);
-      const personnelSnap = await getDoc(personnelRef);
+      const { data: personnelData } = await supabase
+        .from('personnel')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('email', cleanEmail)
+        .limit(1);
       
-      if (personnelSnap.exists()) {
-        await setDoc(personnelRef, {
-          uid: session.id || (session as any).uid,
+      if (personnelData && personnelData.length > 0) {
+        await supabase.from('personnel').update({
+          uid: session.id,
           status: 'active',
-          joinMethod: 'invite_code',
-          updatedAt: serverTimestamp()
-        }, { merge: true });
+          join_method: 'invite_code',
+          updated_at: new Date().toISOString()
+        }).eq('id', personnelData[0].id);
       } else {
-        await setDoc(personnelRef, {
-          companyId: companyId,
-          uid: session.id || (session as any).uid,
+        await supabase.from('personnel').insert([{
+          id: `${companyId}_${cleanEmail}`,
+          company_id: companyId,
+          uid: session.id,
           email: cleanEmail,
           name: session.displayName || cleanEmail.split('@')[0],
           role: 'Personnel',
           status: 'active',
-          joinMethod: 'invite_code',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
+          join_method: 'invite_code',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }]);
       }
 
-      return { success: true, message: `Bienvenue chez ${data.name} !` };
+      return { success: true, message: `Bienvenue chez ${companyDoc.name} !` };
     } catch (error) {
       console.error("Join company error:", error);
       return { success: false, message: "Une erreur est survenue lors de l'adhésion." };
@@ -123,13 +122,12 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    let unsubscribeSnap: any = null;
+    let subscription: any = null;
 
     const unsubscribeAuth = authService.observeAuthState(async (user) => {
-      // Cleanup previous snapshot if exists
-      if (typeof unsubscribeSnap === 'function') {
-        unsubscribeSnap();
-        unsubscribeSnap = null;
+      if (subscription) {
+        supabase.removeChannel(subscription);
+        subscription = null;
       }
 
       if (!user) {
@@ -146,82 +144,87 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       
       const load = async () => {
         try {
-          if (isMaster) {
-            return onSnapshot(collection(db, 'companies'), (snap) => {
-              setCompanies(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company)));
-              setLoading(false);
-            }, (err) => {
-              console.error("Master onSnapshot error:", err);
-              setLoading(false);
-            });
-          }
-
-          const qMain = query(
-            collection(db, 'companies'), 
-            or(
-              where('ownerId', '==', user.uid),
-              where('memberEmails', 'array-contains', cleanEmail)
-            )
-          );
-
-          // Get personnel IDs once to assist with auto-sync
-          const qPersonnel = query(collection(db, 'personnel'), where('email', '==', cleanEmail));
-          const personnelSnap = await getDocs(qPersonnel).catch(() => ({ docs: [], empty: true }));
-          const personnelCompanyIds = personnelSnap.docs.map(d => d.data().companyId).filter(Boolean);
-
-          return onSnapshot(qMain, (snap) => {
-            const mainCompanies = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Company));
-            
-            if (personnelCompanyIds.length > 0) {
-              personnelCompanyIds.forEach(async (cid) => {
-                if (!mainCompanies.find(c => c.id === cid)) {
-                  try {
-                    await setDoc(doc(db, 'companies', cid), {
-                      memberEmails: arrayUnion(cleanEmail),
-                      employees: arrayUnion(user.uid),
-                      updatedAt: serverTimestamp()
-                    }, { merge: true });
-                  } catch (e) {
-                    // Silently fail if we can't update
-                  }
-                }
-              });
+          const fetchCompanies = async () => {
+            if (isMaster) {
+              const { data } = await supabase.from('companies').select('*');
+              if (data) {
+                // map to camelCase
+                setCompanies(data.map((d: any) => ({
+                  ...d,
+                  ownerId: d.owner_id,
+                  ownerEmail: d.owner_email,
+                  joinCode: d.join_code,
+                  nairaRate: d.naira_rate,
+                  totalProfit: d.total_profit,
+                  createdAt: d.created_at,
+                  updatedAt: d.updated_at
+                })));
+              }
+            } else {
+              // Get companies where user is owner
+              const { data: ownedCompanies } = await supabase.from('companies').select('*').eq('owner_id', user.uid);
+              
+              // Get companies from personnel
+              const { data: personnelData } = await supabase.from('personnel').select('company_id').eq('email', cleanEmail);
+              const companyIds = personnelData?.map(p => p.company_id) || [];
+              
+              let memberCompanies: any[] = [];
+              if (companyIds.length > 0) {
+                const { data } = await supabase.from('companies').select('*').in('id', companyIds);
+                if (data) memberCompanies = data;
+              }
+              
+              const allCompaniesMap = new Map();
+              ownedCompanies?.forEach(c => allCompaniesMap.set(c.id, c));
+              memberCompanies?.forEach(c => allCompaniesMap.set(c.id, c));
+              
+              setCompanies(Array.from(allCompaniesMap.values()).map((d: any) => ({
+                ...d,
+                ownerId: d.owner_id,
+                ownerEmail: d.owner_email,
+                joinCode: d.join_code,
+                nairaRate: d.naira_rate,
+                totalProfit: d.total_profit,
+                createdAt: d.created_at,
+                updatedAt: d.updated_at
+              })));
             }
+            setLoading(false);
+          };
 
-            setCompanies(mainCompanies);
-            setLoading(false);
-          }, (err) => {
-            console.error("Main onSnapshot error:", err);
-            setLoading(false);
-          });
+          await fetchCompanies();
+
+          // Setup real-time listener for companies
+          subscription = supabase.channel('companies_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, () => {
+              fetchCompanies();
+            })
+            .subscribe();
+
         } catch (error) {
           console.error("Load companies error:", error);
           setLoading(false);
         }
       };
 
-      // Faster timeout for loading state to reveal selection screen even if Firestore is slow
       const timer = setTimeout(() => {
         setLoading(false);
       }, 5000);
 
       try {
-        const unsubscribe = await load();
-        unsubscribeSnap = unsubscribe;
+        await load();
       } catch (e) {
         console.error("Critical failure during company load:", e);
         setLoading(false);
       }
       
-      // We don't clear the timeout immediately if we want to ensure at least some visual feedback time, 
-      // but if load finishes, we can clear it. Actually, clearing it is fine.
       clearTimeout(timer);
     });
 
     return () => {
       unsubscribeAuth();
-      if (typeof unsubscribeSnap === 'function') {
-        unsubscribeSnap();
+      if (subscription) {
+        supabase.removeChannel(subscription);
       }
     };
   }, []);

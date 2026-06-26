@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, setDoc, serverTimestamp, where, doc, updateDoc, deleteDoc, arrayUnion } from '../lib/firebase';
-import { db } from '../lib/firebase';
+import { supabase } from '../lib/supabase';
 import { Plus, Search, Filter, Phone, Mail, Award, TrendingUp, UserPlus, Edit2, Trash2 } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
-import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { cn } from '../lib/utils';
 import { useCompany } from '../lib/CompanyContext';
 
@@ -30,14 +28,35 @@ export default function ClientModule() {
 
   useEffect(() => {
     if (!currentCompany) return;
-    const q = query(collection(db, 'clients'), where('companyId', '==', currentCompany.id));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
-      setClients(data);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'clients');
-    });
-    return unsubscribe;
+
+    const fetchClients = async () => {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('company_id', currentCompany.id);
+      
+      if (data) {
+        setClients(data.map((d: any) => ({
+          ...d,
+          salesTotal: d.sales_total || 0,
+          loyaltyPoints: d.loyalty_points || 0
+        } as Client)));
+      } else if (error) {
+        console.error("Fetch clients error", error);
+      }
+    };
+
+    fetchClients();
+
+    const subscription = supabase.channel('clients_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clients', filter: `company_id=eq.${currentCompany.id}` }, () => {
+        fetchClients();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, [currentCompany]);
 
   const handleAddClient = async (e: React.FormEvent) => {
@@ -49,46 +68,36 @@ export default function ClientModule() {
         ...newClient,
         email: newClient.email.trim().toLowerCase().replace(/\s+/g, '')
       };
-      if (editingClient) {
-        await updateDoc(doc(db, 'clients', editingClient.id), {
-          ...normalizedClient,
-          updatedAt: serverTimestamp(),
-        });
-      } else {
-        // Use email as doc ID for security rule verification
-        await setDoc(doc(db, 'clients', normalizedClient.email), {
-          ...normalizedClient,
-          companyId: currentCompany.id,
-          salesTotal: 0,
-          loyaltyPoints: 0,
-          createdAt: serverTimestamp(),
-        });
 
-        // Create Ghost Profile for global visibility
-        try {
-          const ghostUserRef = doc(db, 'users', normalizedClient.email);
-          await setDoc(ghostUserRef, {
-            email: normalizedClient.email,
-            displayName: normalizedClient.name,
-            status: 'invited',
-            invitationDate: serverTimestamp(),
-            role: 'Client'
-          }, { merge: true });
-        } catch (ghostErr) {
-          console.warn("Ghost profile creation skipped:", ghostErr);
-        }
-        
-        // Also enroll client in company member emails to satisfy security rules
-        await setDoc(doc(db, 'companies', currentCompany.id), {
-          memberEmails: arrayUnion(normalizedClient.email),
-          updatedAt: serverTimestamp()
-        }, { merge: true }).catch(e => console.error("Could not enroll client in company members:", e));
+      if (editingClient) {
+        await supabase.from('clients').update({
+          name: normalizedClient.name,
+          email: normalizedClient.email,
+          phone: normalizedClient.phone,
+          address: normalizedClient.address,
+          // interactions: normalizedClient.interactions, // uncomment if added to schema
+          updated_at: new Date().toISOString()
+        }).eq('id', editingClient.id);
+      } else {
+        const clientId = normalizedClient.email;
+        await supabase.from('clients').upsert({
+          id: clientId,
+          company_id: currentCompany.id,
+          name: normalizedClient.name,
+          email: normalizedClient.email,
+          phone: normalizedClient.phone,
+          address: normalizedClient.address,
+          // interactions: normalizedClient.interactions,
+          sales_total: 0,
+          loyalty_points: 0,
+          created_at: new Date().toISOString()
+        });
       }
       setNewClient({ name: '', email: '', phone: '', address: '', interactions: '' });
       setIsAdding(false);
       setEditingClient(null);
     } catch (error) {
-      handleFirestoreError(error, editingClient ? OperationType.UPDATE : OperationType.CREATE, 'clients');
+      console.error("Action clients error", error);
     } finally {
       setSubmitting(false);
     }
@@ -97,9 +106,9 @@ export default function ClientModule() {
   const handleDeleteClient = async (clientId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) return;
     try {
-      await deleteDoc(doc(db, 'clients', clientId));
+      await supabase.from('clients').delete().eq('id', clientId);
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, 'clients');
+      console.error("Delete client error", error);
     }
   };
 

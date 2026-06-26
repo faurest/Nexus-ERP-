@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, setDoc, updateDoc, doc, arrayUnion, deleteDoc, getDocs, addDoc, serverTimestamp, registerUserWithoutLogin } from '../lib/firebase';
-import { db } from '../lib/firebase';
+import { supabase } from '../lib/supabase';
 import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save, Ban, Clock, CalendarRange, CheckCircle2, XCircle, Timer, FileText, Key } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
-import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { cn } from '../lib/utils';
 import { useSubNavigation } from '../hooks/useSubNavigation';
 import { useCompany } from '../lib/CompanyContext';
@@ -168,31 +166,37 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
   useEffect(() => {
     if (!currentCompany) return;
-    const unsubStaff = onSnapshot(query(collection(db, 'personnel'), where('companyId', '==', currentCompany.id)), (snapshot) => {
-      setStaffList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff)));
-    });
-    const unsubTasks = onSnapshot(query(collection(db, 'tasks'), where('companyId', '==', currentCompany.id)), (snapshot) => {
-      setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
-    });
-    const unsubLeave = onSnapshot(query(collection(db, 'leave_requests'), where('companyId', '==', currentCompany.id)), (snapshot) => {
-      setLeaveRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaveRequest)));
-    });
-    const unsubTime = onSnapshot(query(collection(db, 'time_entries'), where('companyId', '==', currentCompany.id)), (snapshot) => {
-      setTimeEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TimeEntry)));
-    });
-    const unsubAdvances = onSnapshot(query(collection(db, 'salary_advances'), where('companyId', '==', currentCompany.id)), (snapshot) => {
-      setSalaryAdvances(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SalaryAdvance)));
-    });
-    const unsubProjects = onSnapshot(query(collection(db, 'projects'), where('companyId', '==', currentCompany.id)), (snapshot) => {
-      setProjectsList(snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name })));
-    });
+
+    const fetchData = async () => {
+      const { data: personnel } = await supabase.from('personnel').select('*').eq('company_id', currentCompany.id);
+      if (personnel) setStaffList(personnel.map(p => ({ ...p, tasksAssignedCount: p.tasks_assigned_count || 0 }) as Staff));
+
+      const { data: tasksData } = await supabase.from('tasks').select('*').eq('company_id', currentCompany.id);
+      if (tasksData) setTasks(tasksData.map(t => ({ ...t, assignedTo: t.assigned_to, startDate: t.start_date, endDate: t.end_date } as Task)));
+
+      const { data: leave } = await supabase.from('leave_requests').select('*').eq('company_id', currentCompany.id);
+      if (leave) setLeaveRequests(leave.map(l => ({ ...l, staffId: l.staff_id, startDate: l.start_date, endDate: l.end_date } as LeaveRequest)));
+
+      const { data: time } = await supabase.from('time_entries').select('*').eq('company_id', currentCompany.id);
+      if (time) setTimeEntries(time.map(t => ({ ...t, staffId: t.staff_id, projectId: t.project_id } as TimeEntry)));
+
+      const { data: advances } = await supabase.from('salary_advances').select('*').eq('company_id', currentCompany.id);
+      if (advances) setSalaryAdvances(advances.map(a => ({ ...a, staffId: a.staff_id, requestDate: a.request_date, deductionMonth: a.deduction_month } as SalaryAdvance)));
+
+      const { data: projects } = await supabase.from('projects').select('*').eq('company_id', currentCompany.id);
+      if (projects) setProjectsList(projects);
+    };
+
+    fetchData();
+
+    // Basic subscription to personnel changes
+    const channel = supabase.channel('personnel_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'personnel', filter: `company_id=eq.${currentCompany.id}` }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `company_id=eq.${currentCompany.id}` }, () => fetchData())
+      .subscribe();
+
     return () => { 
-      unsubStaff(); 
-      unsubTasks(); 
-      unsubLeave();
-      unsubTime();
-      unsubAdvances();
-      unsubProjects();
+      supabase.removeChannel(channel);
     };
   }, [currentCompany]);
 

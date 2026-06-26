@@ -1,24 +1,30 @@
 import { sessionManager } from './SessionManager';
 import { tokenManager } from './TokenManager';
-import { userRepository } from './UserRepository';
 import { AuthCredentials, AuthenticatedUser } from './types';
-import { loginWithGoogle, loginWithEmail as firebaseLoginWithEmail, registerWithEmail as firebaseRegisterWithEmail, logout as firebaseLogout, auth } from '../../lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { supabase, supabaseAuth } from '../../lib/supabase';
+// Maintain dummy export for existing code compatibility if needed, or remove completely
 
 class AuthService {
   async loginWithEmail(credentials: AuthCredentials): Promise<AuthenticatedUser | null> {
     try {
-      const result = await firebaseLoginWithEmail(credentials.email, credentials.password);
+      const { data, error } = await supabaseAuth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password
+      });
+
+      if (error) throw error;
       
+      if (!data.user) return null;
+
       const customUser: AuthenticatedUser = {
-          id: result.user.uid,
-          email: result.user.email || '',
-          displayName: result.user.displayName,
+          id: data.user.id,
+          email: data.user.email || '',
+          displayName: data.user.user_metadata?.full_name || null,
           role: 'Personnel',
       };
       return customUser;
     } catch (e: any) {
-      if (credentials.email === 'demonstration@nexus.com' && (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential' || e.code === 'auth/invalid-login-credentials' || !e.code)) {
+      if (credentials.email === 'demonstration@nexus.com') {
          console.log("Demo user not found or invalid, auto-registering...");
          return this.registerWithEmail(credentials);
       }
@@ -29,12 +35,19 @@ class AuthService {
 
   async registerWithEmail(credentials: AuthCredentials): Promise<AuthenticatedUser | null> {
     try {
-      const result = await firebaseRegisterWithEmail(credentials.email, credentials.password);
+      const { data, error } = await supabaseAuth.signUp({
+        email: credentials.email,
+        password: credentials.password
+      });
+
+      if (error) throw error;
       
+      if (!data.user) return null;
+
       const customUser: AuthenticatedUser = {
-          id: result.user.uid,
-          email: result.user.email || '',
-          displayName: result.user.displayName,
+          id: data.user.id,
+          email: data.user.email || '',
+          displayName: null,
           role: 'Admin', // Give them admin access by default for demo
       };
       return customUser;
@@ -46,7 +59,10 @@ class AuthService {
 
   async loginWithGoogle(): Promise<boolean> {
     try {
-      await loginWithGoogle();
+      const { data, error } = await supabaseAuth.signInWithOAuth({
+        provider: 'google',
+      });
+      if (error) throw error;
       return true;
     } catch (e) {
       console.error('Google login failed:', e);
@@ -56,7 +72,7 @@ class AuthService {
 
   async logout(): Promise<void> {
     sessionManager.clearSession();
-    await firebaseLogout();
+    await supabaseAuth.signOut();
   }
 
   getCurrentUser(): AuthenticatedUser | null {
@@ -65,36 +81,43 @@ class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return tokenManager.hasValidToken() || auth.currentUser !== null;
+    return tokenManager.hasValidToken();
   }
 
-  // Permet la transition en douceur - écoute Firebase mais synchronise avec notre SessionManager local
   observeAuthState(callback: (user: any | null) => void): () => void {
-    return onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // En transition, on simule une session locale à partir du token Firebase
-        const token = await firebaseUser.getIdToken();
+    const { data: { subscription } } = supabaseAuth.onAuthStateChange(async (event, session) => {
+      if (session && session.user) {
         const customUser: AuthenticatedUser = {
-          id: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          displayName: firebaseUser.displayName,
-          role: 'Personnel', // Role par defaut
+          id: session.user.id,
+          email: session.user.email || '',
+          displayName: session.user.user_metadata?.full_name || null,
+          role: 'Personnel',
         };
         
         sessionManager.setSession({
-          token,
-          refreshToken: firebaseUser.refreshToken,
-          expiresAt: Date.now() + 3600 * 1000,
+          token: session.access_token,
+          refreshToken: session.refresh_token,
+          expiresAt: session.expires_at ? session.expires_at * 1000 : Date.now() + 3600 * 1000,
           user: customUser
         });
         
-        callback(firebaseUser);
+        // Return an object compatible with Firebase user for existing components
+        callback({
+          uid: session.user.id,
+          email: session.user.email,
+          displayName: session.user.user_metadata?.full_name,
+        });
       } else {
         sessionManager.clearSession();
         callback(null);
       }
     });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }
 }
 
 export const authService = new AuthService();
+
