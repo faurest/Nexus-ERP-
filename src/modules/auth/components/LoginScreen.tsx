@@ -1,75 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, AlertCircle, Key, User, ArrowLeft } from 'lucide-react';
-import { motion } from 'motion/react';
-import { loginWithGoogle, registerUserWithoutLogin } from '../../../lib/firebase';
+import { AlertCircle, Key, User, ArrowLeft } from 'lucide-react';
 import { NexusLogo } from '../../../components/NexusLogo';
-import { authService } from '../../../core/auth/AuthService';
+import { useLogin } from '../hooks/useLogin';
 
 export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
-  const [authError, setAuthError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
+  const { login, loginWithGoogle, registerDemo, loading, error: authError, loginMode, setLoginMode, checkHealth } = useLogin();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loginMode, setLoginMode] = useState<'google' | 'email'>('email');
 
   useEffect(() => {
-    import('../../../lib/firebase').then(({ testFirestoreConnection }) => {
-      testFirestoreConnection().then((ok: boolean) => setConnStatus(ok ? 'ok' : 'fail'));
-    });
-  }, []);
+    checkHealth();
+  }, [checkHealth]);
 
   const handleGoogleLogin = async () => {
-    setAuthError('');
-    setLoading(true);
-    try {
-      await authService.loginWithGoogle();
-    } catch (err: any) {
-      console.error(err);
-      setAuthError('Échec de la connexion avec Google. Réessayez.');
-    } finally {
-      setLoading(false);
-    }
+    await loginWithGoogle();
   };
   
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setAuthError('');
-    setLoading(true);
-    try {
-      const user = await authService.loginWithEmail({ email, password });
-      
-      if (!user) {
-        setAuthError('Identifiants incorrects ou échec de connexion.');
-      } else {
-        // Trigger a fake Firebase user event or reload to pick up the local session
-        window.location.reload(); 
-      }
-    } catch (err: any) {
-      console.error(err);
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
-        if (email.trim().toLowerCase() === 'demonstration@nexus.com') {
-          // Create the demo user on the fly if it doesn't exist
-          try {
-            await registerUserWithoutLogin(email, password);
-            const retryUser = await authService.loginWithEmail({ email, password });
-            if (retryUser) {
-              window.location.reload();
-              return;
-            }
-          } catch (createErr) {
-            console.error("Failed to auto-create demo user", createErr);
-          }
+    
+    const success = await login(email, password);
+    
+    if (!success) {
+      if (email.trim().toLowerCase() === 'demonstration@nexus.com') {
+        // Create the demo user on the fly if it doesn't exist
+        const registered = await registerDemo(email, password);
+        if (registered) {
+           await login(email, password);
         }
-        setAuthError('Identifiants incorrects ou compte inexistant.');
-      } else if (err.code === 'auth/wrong-password') {
-        setAuthError('Clé d\'accès incorrecte.');
-      } else {
-        setAuthError('Erreur de connexion : ' + (err.message || 'Serveur indisponible.'));
       }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -104,6 +64,7 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
                   <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:border-slate-500 focus:ring-4 focus:ring-slate-500/10 outline-none transition-all text-slate-900" placeholder="votre@email.com" />
                 </div>
               </div>
+
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Clé d'Accès</label>
                 <div className="relative">
