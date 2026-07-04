@@ -1,6 +1,6 @@
 import { ICustomerRepository } from '../../domain/repositories/ICustomerRepository';
 import { db } from '../../../lib/firebase';
-import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, limit } from 'firebase/firestore';
 
 export class FirebaseCustomerRepository implements ICustomerRepository {
   async getCustomers(companyId: string): Promise<any[]> {
@@ -36,6 +36,22 @@ export class FirebaseCustomerRepository implements ICustomerRepository {
     return onSnapshot(q, (snapshot) => {
       const customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       callback(customers);
+    });
+  }
+
+  observeCustomerByEmail(companyId: string, email: string, callback: (customer: any | null) => void): () => void {
+    const q = query(
+      collection(db, 'clients'),
+      where('companyId', '==', companyId),
+      where('email', '==', email),
+      limit(1)
+    );
+    return onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
+        callback(null);
+      } else {
+        callback({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() });
+      }
     });
   }
 }

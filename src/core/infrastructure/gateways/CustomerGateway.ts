@@ -51,4 +51,11 @@ export class CustomerGateway extends BaseGateway implements ICustomerRepository 
     }
     return this.firebaseRepo.subscribeToCustomers(companyId, callback);
   }
+
+  observeCustomerByEmail(companyId: string, email: string, callback: (customer: any | null) => void): () => void {
+    if (this.featureFlags.getProviderMode() === 'SUPABASE') {
+      return this.supabaseRepo.observeCustomerByEmail(companyId, email, callback);
+    }
+    return this.firebaseRepo.observeCustomerByEmail(companyId, email, callback);
+  }
 }

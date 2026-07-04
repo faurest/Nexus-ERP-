@@ -6,4 +6,5 @@ export interface ICompanyRepository {
   deleteCompany(id: string): Promise<void>;
   subscribeToCompanies(callback: (companies: any[]) => void): () => void;
   observeUserCompanies(userId: string, callback: (companies: any[]) => void): () => void;
+  addMemberToCompany(companyId: string, memberEmail: string, userId: string): Promise<void>;
 }

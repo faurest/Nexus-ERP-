@@ -162,8 +162,8 @@ export const DependencyProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const observeSession = new ObserveSessionUseCase(authGateway);
     const refreshSession = new RefreshSessionUseCase(authGateway);
     const syncProfile = new SyncProfileUseCase(authGateway);
-    const observeAccess = new ObserveAccessUseCase(null, null);
-    const autoEnroll = new AutoEnrollMemberUseCase(null, null);
+    const observeAccess = new ObserveAccessUseCase(staffRepo, customerRepo);
+    const autoEnroll = new AutoEnrollMemberUseCase(companyRepo, staffRepo);
 
     const createProject = new CreateProjectUseCase(projectRepo);
     const listProjects = new ListProjectsUseCase(projectRepo);
