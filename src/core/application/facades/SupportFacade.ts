@@ -1,19 +1,21 @@
 import { ISupportFacade } from '../interfaces/ISupportFacade';
+import { CreateTicketUseCase } from '../usecases/support/CreateTicketUseCase';
+import { ObserveTicketsUseCase } from '../usecases/support/ObserveTicketsUseCase';
 
 export class SupportFacade implements ISupportFacade {
   constructor(
-    private createTicketUseCase: any,
+    private createTicketUseCase: CreateTicketUseCase,
     private updateTicketUseCase: any,
     private deleteTicketUseCase: any,
     private getTicketUseCase: any,
     private listTicketsUseCase: any,
-    private observeTicketsUseCase: any
+    private observeTicketsUseCase: ObserveTicketsUseCase
   ) {}
 
-  async createTicket(ticket: any): Promise<string> { return this.createTicketUseCase.execute(ticket); }
-  async updateTicket(id: string, data: any): Promise<void> { return this.updateTicketUseCase.execute(id, data); }
-  async deleteTicket(id: string): Promise<void> { return this.deleteTicketUseCase.execute(id); }
-  async getTicket(id: string): Promise<any> { return this.getTicketUseCase.execute(id); }
-  async listTickets(companyId: string): Promise<any[]> { return this.listTicketsUseCase.execute(companyId); }
+  async createTicket(companyId: string, ticket: any): Promise<void> { return this.createTicketUseCase.execute(companyId, ticket); }
+  async updateTicket(companyId: string, id: string, data: any): Promise<void> { /* Not implemented yet */ }
+  async deleteTicket(companyId: string, id: string): Promise<void> { /* Not implemented yet */ }
+  async getTicket(companyId: string, id: string): Promise<any> { /* Not implemented yet */ return null; }
+  async listTickets(companyId: string): Promise<any[]> { /* Not implemented yet */ return []; }
   observeTickets(companyId: string, callback: (tickets: any[]) => void): () => void { return this.observeTicketsUseCase.execute(companyId, callback); }
 }

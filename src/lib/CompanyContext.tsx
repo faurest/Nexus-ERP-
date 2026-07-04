@@ -20,6 +20,8 @@ export interface Company {
   employees?: any[];
   createdAt?: any;
   whatsappNumber?: string;
+  phone?: string;
+  location?: string;
   nairaRate?: number;
   totalProfit?: number;
   categories?: CompanyCategory[];

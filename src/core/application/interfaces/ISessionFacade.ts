@@ -6,4 +6,5 @@ export interface ISessionFacade {
   login(email: string, password?: string): Promise<any>;
   loginWithGoogle(): Promise<any>;
   registerDemo(email: string, password?: string): Promise<any>;
+  observeSession(callback: (user: any) => void): () => void;
 }

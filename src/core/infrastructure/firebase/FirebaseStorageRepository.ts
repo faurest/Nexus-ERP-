@@ -14,4 +14,9 @@ export class FirebaseStorageRepository implements IStorageRepository {
     console.warn('Storage not implemented');
     return '';
   }
+
+  async listFiles(path: string): Promise<any[]> {
+    console.warn('Storage not implemented');
+    return [];
+  }
 }

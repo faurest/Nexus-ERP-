@@ -5,4 +5,5 @@ export interface ICompanyFacade {
   getCompany(id: string): Promise<any>;
   listCompanies(): Promise<any[]>;
   observeCompanies(callback: (companies: any[]) => void): () => void;
+  observeUserCompanies(userId: string, callback: (companies: any[]) => void): () => void;
 }

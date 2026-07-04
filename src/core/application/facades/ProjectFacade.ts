@@ -1,19 +1,21 @@
 import { IProjectFacade } from '../interfaces/IProjectFacade';
+import { CreateProjectUseCase } from '../usecases/projects/CreateProjectUseCase';
+import { ListProjectsUseCase } from '../usecases/projects/ListProjectsUseCase';
 
 export class ProjectFacade implements IProjectFacade {
   constructor(
-    private createProjectUseCase: any,
+    private createProjectUseCase: CreateProjectUseCase,
     private updateProjectUseCase: any,
     private deleteProjectUseCase: any,
     private getProjectUseCase: any,
-    private listProjectsUseCase: any,
+    private listProjectsUseCase: ListProjectsUseCase,
     private observeProjectsUseCase: any
   ) {}
 
-  async createProject(project: any): Promise<string> { return this.createProjectUseCase.execute(project); }
-  async updateProject(id: string, data: any): Promise<void> { return this.updateProjectUseCase.execute(id, data); }
-  async deleteProject(id: string): Promise<void> { return this.deleteProjectUseCase.execute(id); }
-  async getProject(id: string): Promise<any> { return this.getProjectUseCase.execute(id); }
+  async createProject(companyId: string, project: any): Promise<void> { return this.createProjectUseCase.execute(companyId, project); }
+  async updateProject(companyId: string, id: string, data: any): Promise<void> { /* Not implemented yet */ }
+  async deleteProject(companyId: string, id: string): Promise<void> { /* Not implemented yet */ }
+  async getProject(companyId: string, id: string): Promise<any> { /* Not implemented yet */ return null; }
   async listProjects(companyId: string): Promise<any[]> { return this.listProjectsUseCase.execute(companyId); }
-  observeProjects(companyId: string, callback: (projects: any[]) => void): () => void { return this.observeProjectsUseCase.execute(companyId, callback); }
+  observeProjects(companyId: string, callback: (projects: any[]) => void): () => void { return () => {}; /* Not implemented yet */ }
 }

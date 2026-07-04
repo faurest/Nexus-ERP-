@@ -48,4 +48,8 @@ export class SessionFacade implements ISessionFacade {
     if (!password) throw new Error("Password required");
     return this.registerUseCase.execute(email, password);
   }
+
+  observeSession(callback: (user: any) => void): () => void {
+    return this.observeSessionUseCase.execute(callback);
+  }
 }

@@ -1,6 +1,6 @@
 import { ICompanyRepository } from '../../domain/repositories/ICompanyRepository';
 import { db } from '../../../lib/firebase';
-import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, query, where } from 'firebase/firestore';
 
 export class FirebaseCompanyRepository implements ICompanyRepository {
   async getCompanies(): Promise<any[]> {
@@ -32,6 +32,14 @@ export class FirebaseCompanyRepository implements ICompanyRepository {
 
   subscribeToCompanies(callback: (companies: any[]) => void): () => void {
     return onSnapshot(collection(db, 'companies'), (snapshot) => {
+      const companies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      callback(companies);
+    });
+  }
+
+  observeUserCompanies(userId: string, callback: (companies: any[]) => void): () => void {
+    const q = query(collection(db, 'companies'), where('members', 'array-contains', userId));
+    return onSnapshot(q, (snapshot) => {
       const companies = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       callback(companies);
     });

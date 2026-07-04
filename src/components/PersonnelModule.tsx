@@ -1,3 +1,4 @@
+import { db, handleFirestoreError, OperationType, updateDoc, doc, arrayUnion, serverTimestamp, getDocs, setDoc, deleteDoc, addDoc, collection, query, where, limit, onSnapshot, registerUserWithoutLogin } from '../lib/firebase';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save, Ban, Clock, CalendarRange, CheckCircle2, XCircle, Timer, FileText, Key } from 'lucide-react';

@@ -33,4 +33,8 @@ export class CompanyFacade implements ICompanyFacade {
   observeCompanies(callback: (companies: any[]) => void): () => void {
     return this.observeCompaniesUseCase.execute(callback);
   }
+
+  observeUserCompanies(userId: string, callback: (companies: any[]) => void): () => void {
+    return this.observeCompaniesUseCase.executeForUser(userId, callback);
+  }
 }

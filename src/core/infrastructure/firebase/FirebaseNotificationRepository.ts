@@ -1,6 +1,6 @@
 import { INotificationRepository } from '../../domain/repositories/INotificationRepository';
 import { db } from '../../../lib/firebase';
-import { collection, doc, getDocs, addDoc, updateDoc, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, onSnapshot } from 'firebase/firestore';
 
 export class FirebaseNotificationRepository implements INotificationRepository {
   async getNotifications(companyId: string, userId?: string): Promise<any[]> {
@@ -10,6 +10,23 @@ export class FirebaseNotificationRepository implements INotificationRepository {
     }
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  }
+
+  async getNotificationById(id: string): Promise<any | null> {
+    const docRef = doc(db, 'notifications', id);
+    const snapshot = await getDoc(docRef);
+    if (!snapshot.exists()) return null;
+    return { id: snapshot.id, ...snapshot.data() };
+  }
+
+  async updateNotification(id: string, data: any): Promise<void> {
+    const docRef = doc(db, 'notifications', id);
+    await updateDoc(docRef, data);
+  }
+
+  async deleteNotification(id: string): Promise<void> {
+    const docRef = doc(db, 'notifications', id);
+    await deleteDoc(docRef);
   }
 
   async markAsRead(id: string): Promise<void> {
