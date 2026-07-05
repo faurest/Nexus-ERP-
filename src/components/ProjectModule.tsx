@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, addDoc, serverTimestamp, where, doc, updateDoc, deleteDoc } from '../lib/firebase';
-import { db } from '../lib/firebase';
+import { useDependencies } from '../core/di/DependencyProvider';
+
 import { FolderKanban, Handshake, Search, Plus, Calendar, DollarSign, ExternalLink, Filter, CreditCard, Receipt, TrendingDown, ArrowUpRight, ArrowDownRight, Edit2, Trash2, MoreVertical } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
-import { handleFirestoreError, OperationType } from '../lib/firebase';
+
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
 import { createNotification } from '../lib/notifications';
@@ -58,6 +58,8 @@ interface Payment {
 }
 
 export default function ProjectModule() {
+  const { facades } = useDependencies();
+  const { project: projectFacade, partner: partnerFacade, finance: financeFacade, invoice: invoiceFacade } = facades;
   const { currentCompany } = useCompany();
   const [projects, setProjects] = useState<Project[]>([]);
   const [partners, setPartners] = useState<Partner[]>([]);
@@ -74,37 +76,20 @@ export default function ProjectModule() {
   useEffect(() => {
     if (!currentCompany) return;
 
-    const queryWithCompany = (collectionName: string) => 
-      query(collection(db, collectionName), where('companyId', '==', currentCompany.id));
-
-    const unsubProjects = onSnapshot(query(collection(db, 'projects'), where('companyId', '==', currentCompany.id)), (snap) => {
-      setProjects(snap.docs.map(d => ({ id: d.id, ...d.data() } as Project)));
-    }, err => handleFirestoreError(err, OperationType.LIST, 'projects'));
-
-    const unsubPartners = onSnapshot(query(collection(db, 'partners'), where('companyId', '==', currentCompany.id)), (snap) => {
-      setPartners(snap.docs.map(d => ({ id: d.id, ...d.data() } as Partner)));
-    }, err => handleFirestoreError(err, OperationType.LIST, 'partners'));
-
-    const unsubExpenses = onSnapshot(query(collection(db, 'expenses'), where('companyId', '==', currentCompany.id)), (snap) => {
-      setExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() } as Expense)));
-    }, err => handleFirestoreError(err, OperationType.LIST, 'expenses'));
-
-    const unsubInvoices = onSnapshot(query(collection(db, 'invoices'), where('companyId', '==', currentCompany.id)), (snap) => {
-      setInvoices(snap.docs.map(d => ({ id: d.id, ...d.data() } as Invoice)));
-    }, err => handleFirestoreError(err, OperationType.LIST, 'invoices'));
-
-    const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('companyId', '==', currentCompany.id)), (snap) => {
-      setPayments(snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment)));
-    }, err => handleFirestoreError(err, OperationType.LIST, 'payments'));
+    const unsubProjects = projectFacade.observeProjects(currentCompany.id, setProjects);
+    const unsubPartners = partnerFacade.observePartners(currentCompany.id, setPartners);
+    const unsubExpenses = financeFacade.observeExpenses(currentCompany.id, setExpenses);
+    const unsubInvoices = invoiceFacade.observeInvoices(currentCompany.id, setInvoices);
+    const unsubPayments = financeFacade.observePayments(currentCompany.id, setPayments);
 
     return () => { 
-      unsubProjects(); 
-      unsubPartners(); 
-      unsubExpenses();
-      unsubInvoices();
-      unsubPayments();
+      if (unsubProjects) unsubProjects(); 
+      if (unsubPartners) unsubPartners(); 
+      if (unsubExpenses) unsubExpenses();
+      if (unsubInvoices) unsubInvoices();
+      if (unsubPayments) unsubPayments();
     };
-  }, [currentCompany]);
+  }, [currentCompany, projectFacade, partnerFacade, financeFacade, invoiceFacade]);
 
   const handleAddFinancial = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,20 +97,25 @@ export default function ProjectModule() {
 
     setSubmitting(true);
     try {
-      const collectionName = isAddingFinancial === 'expense' ? 'expenses' : 
-                            isAddingFinancial === 'invoice' ? 'invoices' : 'payments';
-      
-      await addDoc(collection(db, collectionName), {
+      const payload = {
         ...formData,
         amount: Number(formData.amount),
-        companyId: currentCompany.id,
-        createdAt: serverTimestamp(),
-      });
+        createdAt: new Date().toISOString()
+      };
+      
+      if (isAddingFinancial === 'expense') {
+        await financeFacade.createExpense(currentCompany.id, payload);
+      } else if (isAddingFinancial === 'invoice') {
+        await invoiceFacade.createInvoice({ ...payload, companyId: currentCompany.id });
+      } else if (isAddingFinancial === 'payment') {
+        await financeFacade.createPayment(currentCompany.id, payload);
+      }
 
       setIsAddingFinancial(null);
       setFormData({});
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, isAddingFinancial);
+      console.error(err);
+      alert("Une erreur est survenue lors de l'ajout.");
     } finally {
       setSubmitting(false);
     }
@@ -140,14 +130,14 @@ export default function ProjectModule() {
       const recipients = [...(currentCompany.employees || [])];
       if (!recipients.includes(currentCompany.ownerId)) recipients.push(currentCompany.ownerId);
 
+      const projectData = {
+        ...formData,
+        budget: Number(formData.budget || 0)
+      };
+
       if (editingProject) {
-        await updateDoc(doc(db, 'projects', editingProject.id), {
-          ...formData,
-          budget: Number(formData.budget || 0),
-          updatedAt: serverTimestamp(),
-        });
+        await projectFacade.updateProject(currentCompany.id, editingProject.id, projectData);
         if (editingProject.status !== formData.status) {
-          // If the status is completed or on_hold, we consider it an alert (critical)
           const isAlert = ['completed', 'on_hold', 'active'].includes(formData.status);
           await createNotification(
             currentCompany.id,
@@ -158,13 +148,7 @@ export default function ProjectModule() {
           );
         }
       } else {
-        await addDoc(collection(db, 'projects'), {
-          ...formData,
-          budget: Number(formData.budget || 0),
-          companyId: currentCompany.id,
-          createdAt: serverTimestamp(),
-          status: 'planned'
-        });
+        await projectFacade.createProject(currentCompany.id, { ...projectData, status: 'planned' });
         await createNotification(
           currentCompany.id,
           recipients,
@@ -177,7 +161,8 @@ export default function ProjectModule() {
       setEditingProject(null);
       setFormData({});
     } catch(err) {
-      handleFirestoreError(err, editingProject ? OperationType.UPDATE : OperationType.WRITE, 'projects');
+      console.error(err);
+      alert("Une erreur est survenue lors de l'enregistrement du projet.");
     } finally {
       setSubmitting(false);
     }
@@ -186,9 +171,10 @@ export default function ProjectModule() {
   const handleDeleteProject = async (projectId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')) return;
     try {
-      await deleteDoc(doc(db, 'projects', projectId));
+      await projectFacade.deleteProject(currentCompany.id, projectId);
     } catch(err) {
-      handleFirestoreError(err, OperationType.DELETE, 'projects');
+      console.error(err);
+      alert("Une erreur est survenue lors de la suppression du projet.");
     }
   };
 

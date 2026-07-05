@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { Plus, Search, Filter, Phone, Mail, Award, TrendingUp, UserPlus, Edit2, Trash2 } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
 import { cn } from '../lib/utils';
 import { useCompany } from '../lib/CompanyContext';
+import { useDependencies } from '../core/di/DependencyProvider';
 
 interface Client {
   id: string;
@@ -18,6 +18,7 @@ interface Client {
 
 export default function ClientModule() {
   const { currentCompany } = useCompany();
+  const { facades } = useDependencies();
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -29,35 +30,18 @@ export default function ClientModule() {
   useEffect(() => {
     if (!currentCompany) return;
 
-    const fetchClients = async () => {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('company_id', currentCompany.id);
-      
-      if (data) {
-        setClients(data.map((d: any) => ({
-          ...d,
-          salesTotal: d.sales_total || 0,
-          loyaltyPoints: d.loyalty_points || 0
-        } as Client)));
-      } else if (error) {
-        console.error("Fetch clients error", error);
-      }
-    };
-
-    fetchClients();
-
-    const subscription = supabase.channel('clients_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'clients', filter: `company_id=eq.${currentCompany.id}` }, () => {
-        fetchClients();
-      })
-      .subscribe();
+    const unsubscribe = facades.customer.observeCustomers(currentCompany.id, (data) => {
+      setClients(data.map((d: any) => ({
+        ...d,
+        salesTotal: d.salesTotal || d.sales_total || 0,
+        loyaltyPoints: d.loyaltyPoints || d.loyalty_points || 0
+      } as Client)));
+    });
 
     return () => {
-      supabase.removeChannel(subscription);
+      unsubscribe();
     };
-  }, [currentCompany]);
+  }, [currentCompany, facades]);
 
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,27 +54,25 @@ export default function ClientModule() {
       };
 
       if (editingClient) {
-        await supabase.from('clients').update({
+        await facades.customer.updateCustomer(editingClient.id, {
           name: normalizedClient.name,
           email: normalizedClient.email,
           phone: normalizedClient.phone,
           address: normalizedClient.address,
-          // interactions: normalizedClient.interactions, // uncomment if added to schema
-          updated_at: new Date().toISOString()
-        }).eq('id', editingClient.id);
+          interactions: normalizedClient.interactions,
+          updatedAt: new Date().toISOString()
+        });
       } else {
-        const clientId = normalizedClient.email;
-        await supabase.from('clients').upsert({
-          id: clientId,
-          company_id: currentCompany.id,
+        await facades.customer.createCustomer({
+          companyId: currentCompany.id,
           name: normalizedClient.name,
           email: normalizedClient.email,
           phone: normalizedClient.phone,
           address: normalizedClient.address,
-          // interactions: normalizedClient.interactions,
-          sales_total: 0,
-          loyalty_points: 0,
-          created_at: new Date().toISOString()
+          interactions: normalizedClient.interactions,
+          salesTotal: 0,
+          loyaltyPoints: 0,
+          createdAt: new Date().toISOString()
         });
       }
       setNewClient({ name: '', email: '', phone: '', address: '', interactions: '' });
@@ -106,7 +88,7 @@ export default function ClientModule() {
   const handleDeleteClient = async (clientId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) return;
     try {
-      await supabase.from('clients').delete().eq('id', clientId);
+      await facades.customer.deleteCustomer(clientId);
     } catch (error) {
       console.error("Delete client error", error);
     }
