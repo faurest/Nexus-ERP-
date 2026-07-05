@@ -122,3 +122,20 @@ export class AutoEnrollMemberUseCase {
     return false;
   }
 }
+
+export class ValidateWhitelistUseCase {
+  constructor(private accessRepository: any) {}
+
+  async execute(email: string, userId: string, companiesCount: number, isMaster: boolean): Promise<boolean> {
+    if (isMaster) return true;
+    if (!email || !userId) return false;
+
+    try {
+      const hasSpecificAccess = await this.accessRepository.validateWhitelist(email, userId);
+      return hasSpecificAccess || companiesCount > 0;
+    } catch (err) {
+      console.error("Whitelist check failed:", err);
+      return false;
+    }
+  }
+}

@@ -1,10 +1,9 @@
 export interface ISessionFacade {
-  initialize(): void;
-  refresh(): Promise<void>;
-  logout(): Promise<void>;
-  getCurrentSession(): any;
+  observeSession(callback: (user: any) => void): () => void;
   login(email: string, password?: string): Promise<any>;
   loginWithGoogle(): Promise<any>;
   registerDemo(email: string, password?: string): Promise<any>;
-  observeSession(callback: (user: any) => void): () => void;
+  logout(): Promise<void>;
+  refreshSession(): Promise<void>;
+  syncProfile(user: any): Promise<void>;
 }

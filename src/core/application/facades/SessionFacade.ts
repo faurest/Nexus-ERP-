@@ -1,6 +1,5 @@
 import { ISessionFacade } from '../interfaces/ISessionFacade';
 import { ObserveSessionUseCase, RefreshSessionUseCase, SyncProfileUseCase } from '../usecases/auth/SessionUseCases';
-import { ObserveAccessUseCase, AutoEnrollMemberUseCase } from '../usecases/access/AccessUseCases';
 import { LoginUseCase } from '../usecases/auth/LoginUseCase';
 import { LoginWithGoogleUseCase } from '../usecases/auth/LoginWithGoogleUseCase';
 import { RegisterUseCase } from '../usecases/auth/RegisterUseCase';
@@ -10,30 +9,14 @@ export class SessionFacade implements ISessionFacade {
     private observeSessionUseCase: ObserveSessionUseCase,
     private refreshSessionUseCase: RefreshSessionUseCase,
     private syncProfileUseCase: SyncProfileUseCase,
-    private observeAccessUseCase: ObserveAccessUseCase,
-    private autoEnrollMemberUseCase: AutoEnrollMemberUseCase,
     private loginUseCase: LoginUseCase,
     private loginWithGoogleUseCase: LoginWithGoogleUseCase,
     private registerUseCase: RegisterUseCase,
     private authGateway: any
   ) {}
 
-  initialize(): void {
-    // Orchestrate session initialization
-  }
-
-  async refresh(): Promise<void> {
-    await this.refreshSessionUseCase.execute();
-  }
-
-  async logout(): Promise<void> {
-    if (this.authGateway && this.authGateway.signOut) {
-      await this.authGateway.signOut();
-    }
-  }
-
-  getCurrentSession(): any {
-    return null;
+  observeSession(callback: (user: any) => void): () => void {
+    return this.observeSessionUseCase.execute(callback);
   }
 
   async login(email: string, password?: string): Promise<any> {
@@ -49,7 +32,17 @@ export class SessionFacade implements ISessionFacade {
     return this.registerUseCase.execute(email, password);
   }
 
-  observeSession(callback: (user: any) => void): () => void {
-    return this.observeSessionUseCase.execute(callback);
+  async logout(): Promise<void> {
+    if (this.authGateway && this.authGateway.signOut) {
+      await this.authGateway.signOut();
+    }
+  }
+
+  async refreshSession(): Promise<void> {
+    await this.refreshSessionUseCase.execute();
+  }
+
+  async syncProfile(user: any): Promise<void> {
+    await this.syncProfileUseCase.execute(user);
   }
 }

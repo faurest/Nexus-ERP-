@@ -13,8 +13,11 @@ export class RefreshSessionUseCase {
 }
 
 export class SyncProfileUseCase {
-  constructor(private authRepository: any) {}
+  constructor(private accessRepository: any) {}
+
   async execute(user: any) {
-    // implementation
+    if (user) {
+      await this.accessRepository.syncProfile(user);
+    }
   }
 }

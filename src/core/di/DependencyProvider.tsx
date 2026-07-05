@@ -11,6 +11,7 @@ import { AuthorizationPolicy } from '../security/AuthorizationPolicy';
 
 import { AuthGateway } from '../infrastructure/gateways/AuthGateway';
 import { CustomerGateway } from '../infrastructure/gateways/CustomerGateway';
+import { AccessGateway } from '../infrastructure/gateways/AccessGateway';
 
 import { FirebaseCustomerRepository } from '../infrastructure/firebase/FirebaseCustomerRepository';
 import { FirebaseCompanyRepository } from '../infrastructure/firebase/FirebaseCompanyRepository';
@@ -21,6 +22,7 @@ import { FirebaseProjectRepository } from '../infrastructure/firebase/FirebasePr
 import { FirebaseNotificationRepository } from '../infrastructure/firebase/FirebaseNotificationRepository';
 import { FirebaseSupportRepository } from '../infrastructure/firebase/FirebaseSupportRepository';
 import { FirebaseStorageRepository } from '../infrastructure/firebase/FirebaseStorageRepository';
+import { FirebaseAccessRepository } from '../infrastructure/firebase/FirebaseAccessRepository';
 
 import { ISessionFacade } from '../application/interfaces/ISessionFacade';
 import { ICustomerFacade } from '../application/interfaces/ICustomerFacade';
@@ -32,6 +34,7 @@ import { IProjectFacade } from '../application/interfaces/IProjectFacade';
 import { INotificationFacade } from '../application/interfaces/INotificationFacade';
 import { ISupportFacade } from '../application/interfaces/ISupportFacade';
 import { IStorageFacade } from '../application/interfaces/IStorageFacade';
+import { IAccessFacade } from '../application/interfaces/IAccessFacade';
 
 import { SessionFacade } from '../application/facades/SessionFacade';
 import { CustomerFacade } from '../application/facades/CustomerFacade';
@@ -43,9 +46,10 @@ import { ProjectFacade } from '../application/facades/ProjectFacade';
 import { NotificationFacade } from '../application/facades/NotificationFacade';
 import { SupportFacade } from '../application/facades/SupportFacade';
 import { StorageFacade } from '../application/facades/StorageFacade';
+import { AccessFacade } from '../application/facades/AccessFacade';
 
 import { ObserveSessionUseCase, RefreshSessionUseCase, SyncProfileUseCase } from '../application/usecases/auth/SessionUseCases';
-import { ObserveAccessUseCase, AutoEnrollMemberUseCase } from '../application/usecases/access/AccessUseCases';
+import { ObserveAccessUseCase, AutoEnrollMemberUseCase, ValidateWhitelistUseCase } from '../application/usecases/access/AccessUseCases';
 import { LoginUseCase } from '../application/usecases/auth/LoginUseCase';
 import { LogoutUseCase } from '../application/usecases/auth/LogoutUseCase';
 import { LoginWithGoogleUseCase } from '../application/usecases/auth/LoginWithGoogleUseCase';
@@ -119,9 +123,11 @@ interface DependencyContainer {
   gateways: {
     auth: AuthGateway;
     customer: CustomerGateway;
+    access: AccessGateway;
   };
   facades: {
     session: ISessionFacade;
+    access: IAccessFacade;
     customer: ICustomerFacade;
     company: ICompanyFacade;
     staff: IStaffFacade;
@@ -148,6 +154,7 @@ export const DependencyProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const container = useMemo<DependencyContainer>(() => {
     const authGateway = new AuthGateway();
     const customerGateway = new CustomerGateway();
+    const accessGateway = new AccessGateway();
     
     const customerRepo = new FirebaseCustomerRepository();
     const companyRepo = new FirebaseCompanyRepository();
@@ -161,9 +168,10 @@ export const DependencyProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const observeSession = new ObserveSessionUseCase(authGateway);
     const refreshSession = new RefreshSessionUseCase(authGateway);
-    const syncProfile = new SyncProfileUseCase(authGateway);
+    const syncProfile = new SyncProfileUseCase(accessGateway);
     const observeAccess = new ObserveAccessUseCase(staffRepo, customerRepo);
     const autoEnroll = new AutoEnrollMemberUseCase(companyRepo, staffRepo);
+    const validateWhitelist = new ValidateWhitelistUseCase(accessGateway);
 
     const createProject = new CreateProjectUseCase(projectRepo);
     const listProjects = new ListProjectsUseCase(projectRepo);
@@ -186,9 +194,11 @@ export const DependencyProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       gateways: {
         auth: authGateway,
         customer: customerGateway,
+        access: accessGateway,
       },
       facades: {
-        session: new SessionFacade(observeSession, refreshSession, syncProfile, observeAccess, autoEnroll, new LoginUseCase(authGateway), new LoginWithGoogleUseCase(authGateway), new RegisterUseCase(authGateway), authGateway),
+        session: new SessionFacade(observeSession, refreshSession, syncProfile, new LoginUseCase(authGateway), new LoginWithGoogleUseCase(authGateway), new RegisterUseCase(authGateway), authGateway),
+        access: new AccessFacade(observeAccess, autoEnroll, validateWhitelist),
         customer: new CustomerFacade(new CreateCustomerUseCase(customerRepo), new UpdateCustomerUseCase(customerRepo), new DeleteCustomerUseCase(customerRepo), new GetCustomerUseCase(customerRepo), new ListCustomerUseCase(customerRepo), new ObserveCustomerUseCase(customerRepo)),
         company: new CompanyFacade(new CreateCompanyUseCase(companyRepo), new UpdateCompanyUseCase(companyRepo), new DeleteCompanyUseCase(companyRepo), new GetCompanyUseCase(companyRepo), new ListCompanyUseCase(companyRepo), new ObserveCompanyUseCase(companyRepo)),
         staff: new StaffFacade(new CreateStaffUseCase(staffRepo), new UpdateStaffUseCase(staffRepo), new DeleteStaffUseCase(staffRepo), new GetStaffUseCase(staffRepo), new ListStaffUseCase(staffRepo), new ObserveStaffUseCase(staffRepo)),
