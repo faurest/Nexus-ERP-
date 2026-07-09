@@ -1,3 +1,4 @@
+import { registerUserWithoutLogin } from '../../../lib/firebase';
 import { IAuthRepository } from '../../domain/repositories/IAuthRepository';
 import { BaseGateway } from './BaseGateway';
 import { FirebaseAuthRepository } from '../firebase/FirebaseAuthRepository';
@@ -50,5 +51,9 @@ export class AuthGateway extends BaseGateway implements IAuthRepository {
       return this.supabaseAuth.onAuthStateChanged(callback);
     }
     return this.firebaseAuth.onAuthStateChanged(callback);
+  }
+
+  async registerWithoutLogin(email: string, pass: string): Promise<any> {
+    return registerUserWithoutLogin(email, pass);
   }
 }

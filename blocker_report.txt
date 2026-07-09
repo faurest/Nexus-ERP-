@@ -1,0 +1,30 @@
+**RAPPORT DE BLOCAGE**
+
+**1. Audit de `PersonnelModule.tsx`**
+
+L'audit de `PersonnelModule.tsx` a mis en évidence que plusieurs accès Firebase directs ne possèdent toujours pas d'équivalent dans les Facades existantes.
+
+**Capacités manquantes identifiées :**
+
+1. **`registerUserWithoutLogin` (Auth)** :
+   - Le module utilise `registerUserWithoutLogin` pour créer le compte Firebase Auth d'un employé sans déconnecter l'administrateur courant.
+   - La `SessionFacade` n'expose pas cette méthode (elle ne possède que `login`, `logout`, `registerDemo`, etc.).
+
+2. **Accès direct à la collection `users` (Firestore)** :
+   - Requête : `query(collection(db, 'users'), where('email', '==', ...))` pour trouver le `UID` d'un employé afin de lui assigner une tâche et générer une notification.
+   - Création de "Ghost Profile" : `setDoc(doc(db, 'users', cleanEmail), { ... })` pour inviter un utilisateur.
+   - *Aucune `UserFacade` ou `UserUseCase/Repository` n'existe pour abstraire la collection `users`.*
+
+3. **Opérateurs Firestore spécifiques (`arrayUnion`, `serverTimestamp`)** :
+   - Bien que `CompanyFacade.updateCompany` existe, le module utilise `arrayUnion(cleanEmail)` pour ajouter des emails au tableau `memberEmails` d'une entreprise. Garder cet import Firebase dans la vue viole la contrainte de supprimer les imports Firebase.
+   - Le module utilise `serverTimestamp()` pour gérer les dates.
+
+**2. Décision**
+
+Conformément à la contrainte stricte ("Si une seule capacité manque : STOP immédiatement. Ne modifier aucun fichier. Produire uniquement le rapport de blocage.") :
+
+**STOP.**
+
+Aucun fichier n'a été modifié (ni le module React, ni l'architecture existante). 
+
+Il est nécessaire de créer une abstraction pour les opérations sur les "users" (`UserFacade`, `UserRepository`), d'ajouter `registerUserWithoutLogin` à la `SessionFacade` (et son UseCase associé), ainsi que d'abstraire les opérateurs complexes comme `arrayUnion` dans les Use Cases concernés (ex: `AddMemberEmailUseCase`) avant de poursuivre la migration.

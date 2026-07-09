@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { collection, onSnapshot, query, where, addDoc, setDoc, serverTimestamp, doc, updateDoc, deleteDoc, auth } from '../lib/firebase';
-import { db } from '../lib/firebase';
+import { useDependencies } from '../core/di/DependencyProvider';
 import { Search, Plus, TrendingUp, Filter, ShoppingCart, Receipt, CreditCard, DollarSign, Edit2, Trash2, CheckCircle2, ArrowRight, HelpCircle, FileText, Package } from 'lucide-react';
 import { HelpTrigger } from './ContextualHelp';
 import Table, { TableRow } from './ui/Table';
-import { handleFirestoreError, OperationType } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
 import { useSubNavigation } from '../hooks/useSubNavigation';
@@ -36,6 +34,8 @@ interface Invoice {
 }
 
 export default function SalesModule({ user }: { user: any }) {
+  const { facades } = useDependencies();
+  const { sale: saleFacade, resource: resourceFacade, service: serviceFacade, openOrder: openOrderFacade, customer: customerFacade, invoice: invoiceFacade, finance: financeFacade } = facades;
   const { currentCompany } = useCompany();
   
   const userRole = useMemo(() => {
@@ -100,76 +100,61 @@ export default function SalesModule({ user }: { user: any }) {
   useEffect(() => {
     if (!currentCompany) return;
 
-    const unsubSales = onSnapshot(query(collection(db, 'sales'), where('companyId', '==', currentCompany.id)), snap => {
-      setSales(snap.docs.map(d => ({ id: d.id, ...d.data() } as Sale)));
-    }, err => handleFirestoreError(err, OperationType.LIST, 'sales'));
-
-    const unsubInvoices = onSnapshot(query(collection(db, 'sales_invoices'), where('companyId', '==', currentCompany.id)), snap => {
-      setInvoices(snap.docs.map(d => {
-        const data = d.data();
-        let items = data.items || [];
+    const unsubSales = saleFacade.observeSales(currentCompany.id, setSales);
+    const unsubInvoices = invoiceFacade.observeInvoices(currentCompany.id, snap => {
+      setInvoices(snap.map(d => {
+        let items = d.items || [];
         if (typeof items === 'string') {
           try { items = JSON.parse(items) } catch(e) { items = [] }
         }
-        return { id: d.id, ...data, items } as Invoice;
+        return { ...d, items } as Invoice;
       }));
-    }, err => handleFirestoreError(err, OperationType.LIST, 'sales_invoices'));
-
-    const unsubExpenses = onSnapshot(query(collection(db, 'expenses'), where('companyId', '==', currentCompany.id)), snap => {
-      setExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, err => handleFirestoreError(err, OperationType.LIST, 'expenses'));
-
-    const unsubResources = onSnapshot(query(collection(db, 'resources'), where('companyId', '==', currentCompany.id)), snap => {
-      setResources(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, err => handleFirestoreError(err, OperationType.LIST, 'resources'));
-
-    const unsubClients = onSnapshot(query(collection(db, 'clients'), where('companyId', '==', currentCompany.id)), snap => {
-      setClients(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, err => handleFirestoreError(err, OperationType.LIST, 'clients'));
-
-    const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('companyId', '==', currentCompany.id)), snap => {
-      setPayments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, err => handleFirestoreError(err, OperationType.LIST, 'payments'));
-
-    const unsubServices = onSnapshot(query(collection(db, 'services'), where('companyId', '==', currentCompany.id)), snap => {
-      setServices(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    }, err => handleFirestoreError(err, OperationType.LIST, 'services'));
-
-    const unsubOpenOrders = onSnapshot(query(collection(db, 'open_orders'), where('companyId', '==', currentCompany.id)), snap => {
-      // Need to ensure items is parsed correctly if it's coming from standard firebase mock or sqlite
-      setOpenOrders(snap.docs.map(d => {
-        const data = d.data();
-        let items = data.items || [];
+    });
+    const unsubExpenses = financeFacade.observeExpenses(currentCompany.id, setExpenses);
+    const unsubResources = resourceFacade.observeResources(currentCompany.id, setResources);
+    const unsubClients = customerFacade.observeCustomers(currentCompany.id, setClients);
+    const unsubPayments = financeFacade.observePayments(currentCompany.id, setPayments);
+    const unsubServices = serviceFacade.observeServices(currentCompany.id, setServices);
+    const unsubOpenOrders = openOrderFacade.observeOpenOrders(currentCompany.id, snap => {
+      setOpenOrders(snap.map(d => {
+        let items = d.items || [];
         if (typeof items === 'string') {
           try { items = JSON.parse(items) } catch(e) { items = [] }
         }
-        return { id: d.id, ...data, items };
+        return { ...d, items };
       }));
-    }, err => handleFirestoreError(err, OperationType.LIST, 'open_orders'));
+    });
 
-    return () => { unsubSales(); unsubInvoices(); unsubExpenses(); unsubResources(); unsubClients(); unsubOpenOrders(); unsubPayments(); unsubServices(); };
-  }, [currentCompany]);
+    return () => {
+      if (unsubSales) unsubSales();
+      if (unsubInvoices) unsubInvoices();
+      if (unsubExpenses) unsubExpenses();
+      if (unsubResources) unsubResources();
+      if (unsubClients) unsubClients();
+      if (unsubPayments) unsubPayments();
+      if (unsubServices) unsubServices();
+      if (unsubOpenOrders) unsubOpenOrders();
+    };
+  }, [currentCompany, saleFacade, invoiceFacade, financeFacade, resourceFacade, customerFacade, serviceFacade, openOrderFacade]);
 
   const handleCreatePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentCompany || !selectedInvoice || submitting) return;
+
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'payments'), {
-        companyId: currentCompany.id,
+      await financeFacade.createPayment(currentCompany.id, {
         invoiceId: selectedInvoice.id,
         amount: Number(paymentForm.amount),
         method: paymentForm.method,
         reference: paymentForm.reference,
-        date: serverTimestamp()
+        date: new Date().toISOString()
       });
 
-      // Update invoice status if fully paid (simple check for now)
       const totalPaid = payments.filter(p => p.invoiceId === selectedInvoice.id).reduce((sum, p) => sum + p.amount, 0) + Number(paymentForm.amount);
       if (totalPaid >= selectedInvoice.amount) {
-        await updateDoc(doc(db, 'sales_invoices', selectedInvoice.id), { 
-          status: 'paid',
-          updatedAt: serverTimestamp()
+        await invoiceFacade.updateInvoice(selectedInvoice.id, { 
+          status: 'paid'
         });
       }
 
@@ -177,7 +162,8 @@ export default function SalesModule({ user }: { user: any }) {
       setSelectedInvoice(null);
       setPaymentForm({ amount: 0, method: 'Espèces', reference: '' });
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, 'payments');
+      console.error(err);
+      alert("Une erreur est survenue.");
     } finally {
       setSubmitting(false);
     }
@@ -186,46 +172,42 @@ export default function SalesModule({ user }: { user: any }) {
   const handleUpdateCatalogItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentCompany || submitting) return;
+
     setSubmitting(true);
     try {
       if (catalogType === 'product') {
         if (catalogFormData.id) {
-          await updateDoc(doc(db, 'resources', catalogFormData.id), {
+          await resourceFacade.updateResource(currentCompany.id, catalogFormData.id, {
              ...catalogFormData,
              price: Number(catalogFormData.price),
-             quantity: Number(catalogFormData.quantity),
-             updatedAt: serverTimestamp()
+             quantity: Number(catalogFormData.quantity)
           });
         } else {
-          await addDoc(collection(db, 'resources'), {
+          await resourceFacade.createResource(currentCompany.id, {
             ...catalogFormData,
-            companyId: currentCompany.id,
             price: Number(catalogFormData.price),
             quantity: Number(catalogFormData.quantity),
-            type: 'Stock',
-            createdAt: serverTimestamp()
+            type: 'Stock'
           });
         }
       } else {
         if (catalogFormData.id) {
-          await updateDoc(doc(db, 'services', catalogFormData.id), {
+          await serviceFacade.updateService(currentCompany.id, catalogFormData.id, {
             ...catalogFormData,
-            price: Number(catalogFormData.price),
-            updatedAt: serverTimestamp()
+            price: Number(catalogFormData.price)
           });
         } else {
-          await addDoc(collection(db, 'services'), {
+          await serviceFacade.createService(currentCompany.id, {
             ...catalogFormData,
-            companyId: currentCompany.id,
-            price: Number(catalogFormData.price),
-            createdAt: serverTimestamp()
+            price: Number(catalogFormData.price)
           });
         }
       }
       setIsAddingCatalogItem(false);
       setCatalogFormData({ name: '', price: 0, quantity: 0, type: 'Stock' });
-    } catch (err) {
-       console.error(err);
+    } catch(err) {
+      console.error(err);
+      alert("Une erreur est survenue.");
     } finally {
       setSubmitting(false);
     }
@@ -239,32 +221,30 @@ export default function SalesModule({ user }: { user: any }) {
     try {
       const total = Number(formData.quantity) * Number(formData.price);
       if (editingSale) {
-        await updateDoc(doc(db, 'sales', editingSale.id), {
+        await saleFacade.updateSale(currentCompany.id, editingSale.id, {
           ...formData,
           quantity: Number(formData.quantity),
           price: Number(formData.price),
-          total,
-          updatedAt: serverTimestamp()
+          total
         });
       } else {
-        const saleRef = await addDoc(collection(db, 'sales'), {
+        const saleId = await saleFacade.createSale(currentCompany.id, {
           ...formData,
           quantity: Number(formData.quantity),
           price: Number(formData.price),
           total,
-          companyId: currentCompany.id,
           status: 'pending_payment',
-          date: serverTimestamp()
+          date: new Date().toISOString()
         });
 
         const invoiceNumber = `FA-${Date.now().toString().slice(-6)}`;
-        await addDoc(collection(db, 'sales_invoices'), {
-          saleId: saleRef.id,
+        await invoiceFacade.createInvoice({
+          saleId,
           invoiceNumber,
           amount: total,
           status: 'unpaid',
           companyId: currentCompany.id,
-          date: serverTimestamp(),
+          date: new Date().toISOString(),
           clientName: formData.clientName || '',
           items: JSON.stringify([{
             name: formData.itemName,
@@ -278,26 +258,24 @@ export default function SalesModule({ user }: { user: any }) {
            const existingClient = clients.find(c => c.name.toLowerCase().trim() === formData.clientName.toLowerCase().trim());
            if (!existingClient) {
               const cleanName = formData.clientName.trim();
-              const tempId = `client_guest_${Date.now()}`;
-              await setDoc(doc(db, 'clients', tempId), {
+              await customerFacade.createCustomer({
                  companyId: currentCompany.id,
                  name: cleanName,
                  email: '',
                  phone: '',
                  address: '',
                  salesTotal: total,
-                 loyaltyPoints: Math.floor(total / 1000),
-                 createdAt: serverTimestamp()
+                 loyaltyPoints: Math.floor(total / 1000)
               });
            }
         }
       }
-
       setIsAdding(false);
       setEditingSale(null);
       setFormData({ type: 'product', quantity: 1, price: 0 });
     } catch(err) {
-      handleFirestoreError(err, editingSale ? OperationType.UPDATE : OperationType.WRITE, 'sales');
+      console.error(err);
+      alert("Une erreur est survenue.");
     } finally {
       setSubmitting(false);
     }
@@ -306,9 +284,9 @@ export default function SalesModule({ user }: { user: any }) {
   const handleDeleteSale = async (saleId: string) => {
     if (!confirm('Supprimez cette vente ? Cela ne supprimera pas la facture associée.')) return;
     try {
-      await deleteDoc(doc(db, 'sales', saleId));
+      await saleFacade.deleteSale(currentCompany.id, saleId);
     } catch(err) {
-      handleFirestoreError(err, OperationType.DELETE, 'sales');
+      console.error(err);
     }
   };
 
@@ -322,12 +300,11 @@ export default function SalesModule({ user }: { user: any }) {
   const handleUpdateCart = async (newCart: any[]) => {
     if (activeOrderId) {
       try {
-        await updateDoc(doc(db, 'open_orders', activeOrderId), {
-          items: newCart,
-          updatedAt: serverTimestamp()
+        await openOrderFacade.updateOpenOrder(currentCompany.id, activeOrderId, {
+          items: newCart
         });
       } catch (err) {
-        handleFirestoreError(err, OperationType.UPDATE, 'open_orders');
+        console.error(err);
       }
     } else {
       setCart(newCart);
@@ -337,42 +314,38 @@ export default function SalesModule({ user }: { user: any }) {
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentCompany || (!newOrderName && !newOrderTable) || submitting) return;
+
     setSubmitting(true);
     try {
-      const res = await addDoc(collection(db, 'open_orders'), {
-        companyId: currentCompany.id,
+      const id = await openOrderFacade.createOpenOrder(currentCompany.id, {
         clientName: newOrderName,
         tableNumber: newOrderTable,
         items: [],
-        status: 'open',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        status: 'open'
       });
       
       if (newOrderName) {
          const existingClient = clients.find(c => c.name.toLowerCase().trim() === newOrderName.toLowerCase().trim());
          if (!existingClient) {
             const cleanName = newOrderName.trim();
-            const tempId = `client_order_${Date.now()}`;
-            await setDoc(doc(db, 'clients', tempId), {
+            await customerFacade.createCustomer({
                companyId: currentCompany.id,
                name: cleanName,
                email: '',
                phone: '',
                address: '',
                salesTotal: 0,
-               loyaltyPoints: 0,
-               createdAt: serverTimestamp()
+               loyaltyPoints: 0
             });
          }
       }
 
-      setActiveOrderId(res.id);
+      setActiveOrderId(id);
       setIsAddingOrder(false);
       setNewOrderName('');
       setNewOrderTable('');
     } catch(err) {
-      handleFirestoreError(err, OperationType.WRITE, 'open_orders');
+      console.error(err);
     } finally {
       setSubmitting(false);
     }
@@ -383,9 +356,9 @@ export default function SalesModule({ user }: { user: any }) {
     if (!confirm('Supprimer cette commande en cours ?')) return;
     try {
       if (activeOrderId === id) setActiveOrderId(null);
-      await deleteDoc(doc(db, 'open_orders', id));
+      await openOrderFacade.deleteOpenOrder(currentCompany.id, id);
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, 'open_orders');
+      console.error(err);
     }
   };
 
@@ -582,12 +555,11 @@ export default function SalesModule({ user }: { user: any }) {
                        <button 
                          onClick={async () => {
                            try {
-                             await updateDoc(doc(db, 'sales', sale.id), { 
-                               status: 'completed',
-                               updatedAt: serverTimestamp()
+                             await saleFacade.updateSale(currentCompany.id, sale.id, { 
+                               status: 'completed'
                              });
                            } catch (err) {
-                             handleFirestoreError(err, OperationType.UPDATE, 'sales');
+                             console.error(err);
                            }
                          }}
                          className="p-2 text-nexus-success hover:bg-nexus-success/10 rounded-xl transition-all"
@@ -757,7 +729,7 @@ export default function SalesModule({ user }: { user: any }) {
                           status: 'completed',
                           companyId: currentCompany.id,
                           clientName: activeOrder ? activeOrder.clientName : '',
-                          date: serverTimestamp()
+                          date: new Date().toISOString()
                         }));
 
                         let totalAmount = 0;
@@ -765,15 +737,14 @@ export default function SalesModule({ user }: { user: any }) {
 
                         for (let s of batchSales) {
                            const sData = { ...s };
-                           delete sData.resourceId; // optional, to not clutter sales table, but let's keep it or remove it
+                           delete sData.resourceId;
                            
-                           const res = await addDoc(collection(db, 'sales'), sData);
+                           await saleFacade.createSale(currentCompany.id, sData);
                            
-                           // Décrémenter le stock
                            if (s.resourceId) {
                                const resource = resources.find(r => r.id === s.resourceId);
                                if (resource && typeof resource.quantity === 'number') {
-                                  await updateDoc(doc(db, 'resources', s.resourceId), {
+                                  await resourceFacade.updateResource(currentCompany.id, s.resourceId, {
                                      quantity: Math.max(0, resource.quantity - s.quantity)
                                   });
                                }
@@ -788,8 +759,7 @@ export default function SalesModule({ user }: { user: any }) {
                            });
                         }
 
-                        // Create a single invoice for the entire order
-                        const invoiceRef = await addDoc(collection(db, 'sales_invoices'), {
+                        const invoiceId = await invoiceFacade.createInvoice({
                            saleId: activeOrderId || `direct-${Date.now()}`,
                            clientName: activeOrder ? activeOrder.clientName : '',
                            tableNumber: activeOrder ? activeOrder.tableNumber : '',
@@ -797,18 +767,17 @@ export default function SalesModule({ user }: { user: any }) {
                            amount: totalAmount,
                            status: 'paid',
                            companyId: currentCompany.id,
-                           date: serverTimestamp(),
+                           date: new Date().toISOString(),
                            items: JSON.stringify(itemsForInvoice)
                         });
 
-                        // Notification Twilio (WhatsApp/SMS)
                         try {
                           const itemsList = itemsForInvoice.map(i => `${i.quantity}x ${i.name}`).join(', ');
                           await fetch('/api/orders/notify', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                              orderId: invoiceRef.id,
+                              orderId: invoiceId,
                               clientName: activeOrder ? activeOrder.clientName : 'Client POS',
                               totalAmount: totalAmount,
                               items: itemsList,
@@ -821,7 +790,7 @@ export default function SalesModule({ user }: { user: any }) {
                         }
 
                         if (activeOrderId) {
-                          await deleteDoc(doc(db, 'open_orders', activeOrderId));
+                          await openOrderFacade.deleteOpenOrder(currentCompany.id, activeOrderId);
                           setActiveOrderId(null);
                         } else {
                           setCart([]);

@@ -1,3 +1,4 @@
+import { RegisterUserWithoutLoginUseCase } from '../usecases/auth/RegisterUserWithoutLoginUseCase';
 import { ISessionFacade } from '../interfaces/ISessionFacade';
 import { ObserveSessionUseCase, RefreshSessionUseCase, SyncProfileUseCase } from '../usecases/auth/SessionUseCases';
 import { LoginUseCase } from '../usecases/auth/LoginUseCase';
@@ -12,6 +13,7 @@ export class SessionFacade implements ISessionFacade {
     private loginUseCase: LoginUseCase,
     private loginWithGoogleUseCase: LoginWithGoogleUseCase,
     private registerUseCase: RegisterUseCase,
+    private registerUserWithoutLoginUseCase: RegisterUserWithoutLoginUseCase,
     private authGateway: any
   ) {}
 
@@ -44,5 +46,9 @@ export class SessionFacade implements ISessionFacade {
 
   async syncProfile(user: any): Promise<void> {
     await this.syncProfileUseCase.execute(user);
+  }
+
+  async registerWithoutLogin(email: string, pass: string): Promise<any> {
+    return this.registerUserWithoutLoginUseCase.execute(email, pass);
   }
 }

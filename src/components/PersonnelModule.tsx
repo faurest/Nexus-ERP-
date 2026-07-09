@@ -1,8 +1,7 @@
-import { db, handleFirestoreError, OperationType, updateDoc, doc, arrayUnion, serverTimestamp, getDocs, setDoc, deleteDoc, addDoc, collection, query, where, limit, onSnapshot, registerUserWithoutLogin } from '../lib/firebase';
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { Plus, Search, Activity, Calendar, User, Mail, Briefcase, Edit2, Trash2, Shield, Settings2, Save, Ban, Clock, CalendarRange, CheckCircle2, XCircle, Timer, FileText, Key } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
+import { useDependencies } from '../core/di/DependencyProvider';
 import { cn } from '../lib/utils';
 import { useSubNavigation } from '../hooks/useSubNavigation';
 import { useCompany } from '../lib/CompanyContext';
@@ -64,6 +63,19 @@ interface SalaryAdvance {
 }
 
 export default function PersonnelModule({ user }: { user?: any }) {
+  const {
+    staff: staffFacade,
+    task: taskFacade,
+    leaveRequest: leaveRequestFacade,
+    timeEntry: timeEntryFacade,
+    salaryAdvance: salaryAdvanceFacade,
+    project: projectFacade,
+    notification: notificationFacade,
+    user: userFacade,
+    company: companyFacade,
+    session: sessionFacade
+  } = useDependencies().facades;
+
   const { currentCompany } = useCompany();
   const [activeTab, setActiveTab] = useSubNavigation<'employees' | 'roles' | 'time' | 'advances'>('personnel', 'employees');
   const [staffList, setStaffList] = useState<Staff[]>([]);
@@ -91,6 +103,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
   const [newStaff, setNewStaff] = useState({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: roleOptions[0] || 'Collaborateur', department: 'Général', accessKey: '' });
   const [creationMessage, setCreationMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   const [editingPermissionsStaff, setEditingPermissionsStaff] = useState<Staff | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
@@ -99,14 +112,11 @@ export default function PersonnelModule({ user }: { user?: any }) {
     if (!editingPermissionsStaff || !currentCompany || submitting) return;
     setSubmitting(true);
     try {
-      await updateDoc(doc(db, 'personnel', editingPermissionsStaff.id), {
-        customPermissions: selectedPermissions,
-        updatedAt: serverTimestamp()
-      });
+      await staffFacade.updateStaff(editingPermissionsStaff.id, { customPermissions: selectedPermissions });
       alert('Permissions spécifiques mises à jour avec succès.');
       setEditingPermissionsStaff(null);
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, 'personnel');
+      console.error(err);
     } finally {
       setSubmitting(false);
     }
@@ -130,13 +140,10 @@ export default function PersonnelModule({ user }: { user?: any }) {
         generatedJoinCode += chars.charAt(Math.floor(Math.random() * chars.length));
       }
       
-      await updateDoc(doc(db, 'companies', currentCompany.id), {
-        joinCode: generatedJoinCode,
-        updatedAt: serverTimestamp()
-      });
+      await companyFacade.updateCompany(currentCompany.id, { joinCode: generatedJoinCode });
       alert('Nouveau code généré avec succès : ' + generatedJoinCode);
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, 'companies');
+      console.error(err);
     } finally {
       setSubmitting(false);
     }
@@ -146,13 +153,10 @@ export default function PersonnelModule({ user }: { user?: any }) {
     if (!currentCompany || submitting) return;
     setSubmitting(true);
     try {
-      await updateDoc(doc(db, 'companies', currentCompany.id), {
-        roles: editingRoles,
-        updatedAt: serverTimestamp()
-      });
+      await companyFacade.updateCompany(currentCompany.id, { roles: editingRoles });
       alert('Rôles et permissions mis à jour avec succès.');
     } catch(err) {
-      handleFirestoreError(err, OperationType.UPDATE, 'companies');
+      console.error(err);
     } finally {
       setSubmitting(false);
     }
@@ -165,40 +169,45 @@ export default function PersonnelModule({ user }: { user?: any }) {
     }
   };
 
-  useEffect(() => {
+    useEffect(() => {
     if (!currentCompany) return;
 
-    const fetchData = async () => {
-      const { data: personnel } = await supabase.from('personnel').select('*').eq('company_id', currentCompany.id);
-      if (personnel) setStaffList(personnel.map(p => ({ ...p, tasksAssignedCount: p.tasks_assigned_count || 0 }) as Staff));
+    try {
+      setLoading(true);
 
-      const { data: tasksData } = await supabase.from('tasks').select('*').eq('company_id', currentCompany.id);
-      if (tasksData) setTasks(tasksData.map(t => ({ ...t, assignedTo: t.assigned_to, startDate: t.start_date, endDate: t.end_date } as Task)));
+      const unsubPersonnel = staffFacade.observeStaff(currentCompany.id, (data) => {
+        setStaffList(data.map(p => ({ ...p, tasksAssignedCount: p.tasks_assigned_count || p.tasksAssignedCount || 0 } as Staff)));
+      });
+      const unsubTasks = taskFacade.observe(currentCompany.id, (data) => {
+        setTasks(data.map(t => ({ ...t, assignedTo: t.assigned_to || t.assignedTo, startDate: t.start_date || t.startDate, endDate: t.end_date || t.endDate } as Task)));
+      });
+      const unsubLeave = leaveRequestFacade.observe(currentCompany.id, (data) => {
+        setLeaveRequests(data.map(l => ({ ...l, staffId: l.staff_id || l.staffId, startDate: l.start_date || l.startDate, endDate: l.end_date || l.endDate } as LeaveRequest)));
+      });
+      const unsubTime = timeEntryFacade.observe(currentCompany.id, (data) => {
+        setTimeEntries(data.map(t => ({ ...t, staffId: t.staff_id || t.staffId, projectId: t.project_id || t.projectId } as TimeEntry)));
+      });
+      const unsubAdvances = salaryAdvanceFacade.observe(currentCompany.id, (data) => {
+        setSalaryAdvances(data.map(a => ({ ...a, staffId: a.staff_id || a.staffId, requestDate: a.request_date || a.requestDate, deductionMonth: a.deduction_month || a.deductionMonth } as SalaryAdvance)));
+      });
+      const unsubProjects = projectFacade.observeProjects(currentCompany.id, (data) => {
+        setProjectsList(data.map(p => ({ ...p, clientId: p.client_id || p.clientId, companyId: p.company_id || p.companyId } as any)));
+      });
 
-      const { data: leave } = await supabase.from('leave_requests').select('*').eq('company_id', currentCompany.id);
-      if (leave) setLeaveRequests(leave.map(l => ({ ...l, staffId: l.staff_id, startDate: l.start_date, endDate: l.end_date } as LeaveRequest)));
+      setLoading(false);
 
-      const { data: time } = await supabase.from('time_entries').select('*').eq('company_id', currentCompany.id);
-      if (time) setTimeEntries(time.map(t => ({ ...t, staffId: t.staff_id, projectId: t.project_id } as TimeEntry)));
-
-      const { data: advances } = await supabase.from('salary_advances').select('*').eq('company_id', currentCompany.id);
-      if (advances) setSalaryAdvances(advances.map(a => ({ ...a, staffId: a.staff_id, requestDate: a.request_date, deductionMonth: a.deduction_month } as SalaryAdvance)));
-
-      const { data: projects } = await supabase.from('projects').select('*').eq('company_id', currentCompany.id);
-      if (projects) setProjectsList(projects);
-    };
-
-    fetchData();
-
-    // Basic subscription to personnel changes
-    const channel = supabase.channel('personnel_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'personnel', filter: `company_id=eq.${currentCompany.id}` }, () => fetchData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `company_id=eq.${currentCompany.id}` }, () => fetchData())
-      .subscribe();
-
-    return () => { 
-      supabase.removeChannel(channel);
-    };
+      return () => {
+        unsubPersonnel();
+        unsubTasks();
+        unsubLeave();
+        unsubTime();
+        unsubAdvances();
+        unsubProjects();
+      };
+    } catch (error) {
+      console.error('Error setting up observers:', error);
+      setLoading(false);
+    }
   }, [currentCompany]);
 
   const handleCreateTask = async (e: React.FormEvent) => {
@@ -206,12 +215,10 @@ export default function PersonnelModule({ user }: { user?: any }) {
     if (!currentCompany || !newTask.title || !newTask.assignedTo || submitting) return;
     setSubmitting(true);
     try {
-      const taskDoc = await addDoc(collection(db, 'tasks'), {
-        ...newTask,
+      const taskDocId = await taskFacade.create({ ...newTask,
         companyId: currentCompany.id,
         status: 'todo',
-        createdAt: serverTimestamp()
-      });
+         });
 
       // Trigger notification for the assigned staff MEMBER
       const assignedStaff = staffList.find(s => s.id === newTask.assignedTo);
@@ -221,10 +228,9 @@ export default function PersonnelModule({ user }: { user?: any }) {
         // unless we join with a users collection. 
         // However, the createNotification expects userIds.
         // Let's assume there is a mapping or we can query users collection.
-        const qUser = query(collection(db, 'users'), where('email', '==', assignedStaff.email.toLowerCase()));
-        const userSnap = await getDocs(qUser);
-        if (!userSnap.empty) {
-          const recipientUid = userSnap.docs[0].id;
+        const user = await userFacade.getUserByEmail(assignedStaff.email);
+        if (user) {
+          const recipientUid = user.id;
           await createNotification(
             currentCompany.id,
             [recipientUid],
@@ -238,7 +244,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
       setNewTask({ title: '', assignedTo: '', startDate: '', endDate: '' });
       setIsAddingTask(false);
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, 'tasks');
+      console.error(err);
     } finally {
       setSubmitting(false);
     }
@@ -257,18 +263,14 @@ export default function PersonnelModule({ user }: { user?: any }) {
         
         // If email changed, we need to update the memberEmails array in the company doc
         if (cleanEmail !== oldEmail) {
-          await updateDoc(doc(db, 'companies', currentCompany.id), {
-            memberEmails: arrayUnion(cleanEmail),
-            updatedAt: serverTimestamp()
-          });
+          await companyFacade.addMemberEmail(currentCompany.id, cleanEmail);
           // Note: we don't strictly remove the old email from memberEmails here to avoid accidentally 
           // removing someone who might be sharing an email or if the removal logic is complex,
           // but for strictness we could use arrayRemove.
           // Given the context of fixing the connection for the new email, adding it is the priority.
         }
 
-        await updateDoc(doc(db, 'personnel', editingStaff.id), {
-          firstName: newStaff.firstName,
+        await staffFacade.updateStaff(editingStaff.id, { firstName: newStaff.firstName,
           lastName: newStaff.lastName,
           name: fullName,
           email: cleanEmail,
@@ -276,8 +278,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
           notes: newStaff.notes,
           role: newStaff.role,
           department: newStaff.department,
-          updatedAt: serverTimestamp()
-        });
+           });
         setCreationMessage('Profil mis à jour.');
         setTimeout(() => {
           setIsAdding(false);
@@ -295,7 +296,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
         }
         
         try {
-          await registerUserWithoutLogin(cleanEmail, newStaff.accessKey);
+          await sessionFacade.registerWithoutLogin(cleanEmail, newStaff.accessKey);
         } catch (authErr: any) {
           if (authErr.code === 'auth/email-already-in-use') {
             console.log("Compte Firebase Auth existant. Le compte de connexion est déjà actif.");
@@ -308,8 +309,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
         }
 
         // 2. Create the personnel record
-        await setDoc(doc(db, 'personnel', `${currentCompany.id}_${cleanEmail}`), {
-          firstName: newStaff.firstName,
+        await staffFacade.createStaff({ firstName: newStaff.firstName,
           lastName: newStaff.lastName,
           name: fullName,
           email: cleanEmail,
@@ -320,26 +320,20 @@ export default function PersonnelModule({ user }: { user?: any }) {
           companyId: currentCompany.id,
           status: 'active',
           tasksAssignedCount: 0,
-          createdAt: serverTimestamp()
-        });
+          id: `${currentCompany.id}_${cleanEmail}` });
 
         // Create Ghost Profile for global visibility
         try {
-          const ghostUserRef = doc(db, 'users', cleanEmail);
-          await setDoc(ghostUserRef, {
-            email: cleanEmail,
+          await userFacade.createUser(cleanEmail, { email: cleanEmail,
             displayName: fullName,
             status: 'invited',
-            invitationDate: serverTimestamp(),
-            role: newStaff.role
-          }, { merge: true });
+             role: newStaff.role
+           });
         } catch (ghostErr) {
           console.warn("Ghost profile creation skipped:", ghostErr);
         }
 
-        await setDoc(doc(db, 'companies', currentCompany.id), {
-          memberEmails: arrayUnion(cleanEmail)
-        }, { merge: true });
+        await companyFacade.addMemberEmail(currentCompany.id, cleanEmail);
         setCreationMessage(`Employé ajouté avec succès ! Il peut se connecter avec sa Clé d'Accès Initiale.`);
         setNewStaff({ firstName: '', lastName: '', phone: '', notes: '', email: '', role: roleOptions[0] || 'Collaborateur', department: 'Général', accessKey: '' });
       }
@@ -354,21 +348,18 @@ export default function PersonnelModule({ user }: { user?: any }) {
   const handleDeleteStaff = async (staffId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce membre du personnel ?')) return;
     try {
-      await deleteDoc(doc(db, 'personnel', staffId));
+      await staffFacade.deleteStaff(staffId);
     } catch (err) {
-      handleFirestoreError(err, OperationType.DELETE, 'personnel');
+      console.error(err);
     }
   };
 
   const handleToggleBlockStaff = async (staffId: string, currentStatus: string) => {
     if (!confirm(`Êtes-vous sûr de vouloir ${currentStatus === 'blocked' ? 'débloquer' : 'bloquer'} ce membre du personnel ?`)) return;
     try {
-      await updateDoc(doc(db, 'personnel', staffId), {
-        status: currentStatus === 'blocked' ? 'active' : 'blocked',
-        updatedAt: serverTimestamp()
-      });
+      await staffFacade.updateStaff(staffId, { status: currentStatus === 'blocked' ? 'active' : 'blocked' });
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, 'personnel');
+      console.error(err);
     }
   };
 
@@ -377,16 +368,14 @@ export default function PersonnelModule({ user }: { user?: any }) {
     if (!currentCompany || !newLeave.staffId || !newLeave.startDate || submitting) return;
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'leave_requests'), {
-        ...newLeave,
+      await leaveRequestFacade.create({ ...newLeave,
         companyId: currentCompany.id,
         status: 'pending',
-        createdAt: serverTimestamp()
-      });
+         });
       setIsAddingLeave(false);
       setNewLeave({ staffId: '', startDate: '', endDate: '', type: 'leave', reason: '' });
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, 'leave_requests');
+      console.error(err);
     } finally {
       setSubmitting(false);
     }
@@ -394,7 +383,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
   const handleUpdateLeaveStatus = async (requestId: string, status: 'approved' | 'rejected') => {
     try {
-      await updateDoc(doc(db, 'leave_requests', requestId), { status, updatedAt: serverTimestamp() });
+      await leaveRequestFacade.update(requestId, { status });
       
       // If approved, optionally update staff status
       if (status === 'approved') {
@@ -405,7 +394,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
         }
       }
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, 'leave_requests');
+      console.error(err);
     }
   };
 
@@ -414,16 +403,14 @@ export default function PersonnelModule({ user }: { user?: any }) {
     if (!currentCompany || !newTimeEntry.staffId || !newTimeEntry.date || submitting) return;
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'time_entries'), {
-        ...newTimeEntry,
+      await timeEntryFacade.create({ ...newTimeEntry,
         hours: Number(newTimeEntry.hours),
         companyId: currentCompany.id,
-        createdAt: serverTimestamp()
-      });
+         });
       setIsAddingTime(false);
       setNewTimeEntry({ staffId: '', date: '', hours: 8, description: '', projectId: '' });
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, 'time_entries');
+      console.error(err);
     } finally {
       setSubmitting(false);
     }
@@ -434,18 +421,16 @@ export default function PersonnelModule({ user }: { user?: any }) {
     if (!currentCompany || !newAdvance.staffId || newAdvance.amount <= 0 || submitting) return;
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'salary_advances'), {
-        ...newAdvance,
+      await salaryAdvanceFacade.create({ ...newAdvance,
         amount: Number(newAdvance.amount),
         companyId: currentCompany.id,
         requestDate: new Date().toISOString().split('T')[0],
         status: 'pending',
-        createdAt: serverTimestamp()
-      });
+         });
       setIsAddingAdvance(false);
       setNewAdvance({ staffId: '', amount: 0, reason: '', deductionMonth: new Date().toISOString().slice(0, 7) });
     } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, 'salary_advances');
+      console.error(err);
     } finally {
       setSubmitting(false);
     }
@@ -453,7 +438,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
 
   const handleUpdateAdvanceStatus = async (advanceId: string, status: 'approved' | 'rejected') => {
     try {
-      await updateDoc(doc(db, 'salary_advances', advanceId), { status, updatedAt: serverTimestamp() });
+      await salaryAdvanceFacade.update(advanceId, { status });
       
       const advance = salaryAdvances.find(a => a.id === advanceId);
       const staff = staffList.find(s => s.id === advance?.staffId);
@@ -462,7 +447,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
         // Notification logic could go here
       }
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, 'salary_advances');
+      console.error(err);
     }
   };
 
@@ -792,7 +777,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                               </button>
                             </>
                           )}
-                          <button onClick={() => deleteDoc(doc(db, 'leave_requests', req.id))} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
+                          <button onClick={() => leaveRequestFacade.delete(req.id)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
                             <Trash2 size={16} />
                           </button>
                         </div>
@@ -830,7 +815,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                            <Clock size={14} className="text-blue-500" />
                            <span className="text-xs font-black text-slate-900">{entry.hours}h</span>
                          </div>
-                         <button onClick={() => deleteDoc(doc(db, 'time_entries', entry.id))} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
+                         <button onClick={() => timeEntryFacade.delete(entry.id)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
                             <Trash2 size={16} />
                          </button>
                       </TableRow>
@@ -898,7 +883,7 @@ export default function PersonnelModule({ user }: { user?: any }) {
                              </button>
                            </>
                          )}
-                         <button onClick={() => deleteDoc(doc(db, 'salary_advances', advance.id))} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
+                         <button onClick={() => salaryAdvanceFacade.delete(advance.id)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
                            <Trash2 size={16} />
                          </button>
                        </div>

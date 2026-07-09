@@ -40,6 +40,60 @@ import { UpdatePaymentUseCase } from '../application/usecases/finance/UpdatePaym
 import { DeletePaymentUseCase } from '../application/usecases/finance/DeletePaymentUseCase';
 import { ObservePaymentsUseCase } from '../application/usecases/finance/ObservePaymentsUseCase';
 
+
+// Personnel domains
+import { FirebaseTaskRepository } from '../infrastructure/firebase/FirebaseTaskRepository';
+import { FirebaseLeaveRequestRepository } from '../infrastructure/firebase/FirebaseLeaveRequestRepository';
+import { FirebaseTimeEntryRepository } from '../infrastructure/firebase/FirebaseTimeEntryRepository';
+import { FirebaseSalaryAdvanceRepository } from '../infrastructure/firebase/FirebaseSalaryAdvanceRepository';
+
+import { TaskFacade } from '../application/facades/TaskFacade';
+import { LeaveRequestFacade } from '../application/facades/LeaveRequestFacade';
+import { TimeEntryFacade } from '../application/facades/TimeEntryFacade';
+import { SalaryAdvanceFacade } from '../application/facades/SalaryAdvanceFacade';
+
+import { ITaskFacade } from '../application/interfaces/ITaskFacade';
+import { ILeaveRequestFacade } from '../application/interfaces/ILeaveRequestFacade';
+import { ITimeEntryFacade } from '../application/interfaces/ITimeEntryFacade';
+import { ISalaryAdvanceFacade } from '../application/interfaces/ISalaryAdvanceFacade';
+
+import { CreateTaskUseCase } from '../application/usecases/tasks/CreateTaskUseCase';
+import { UpdateTaskUseCase } from '../application/usecases/tasks/UpdateTaskUseCase';
+import { DeleteTaskUseCase } from '../application/usecases/tasks/DeleteTaskUseCase';
+import { GetTaskUseCase } from '../application/usecases/tasks/GetTaskUseCase';
+import { ListTasksUseCase } from '../application/usecases/tasks/ListTasksUseCase';
+import { ObserveTasksUseCase } from '../application/usecases/tasks/ObserveTasksUseCase';
+
+import { CreateLeaveRequestUseCase } from '../application/usecases/leave_requests/CreateLeaveRequestUseCase';
+import { UpdateLeaveRequestUseCase } from '../application/usecases/leave_requests/UpdateLeaveRequestUseCase';
+import { DeleteLeaveRequestUseCase } from '../application/usecases/leave_requests/DeleteLeaveRequestUseCase';
+import { GetLeaveRequestUseCase } from '../application/usecases/leave_requests/GetLeaveRequestUseCase';
+import { ListLeaveRequestsUseCase } from '../application/usecases/leave_requests/ListLeaveRequestsUseCase';
+import { ObserveLeaveRequestsUseCase } from '../application/usecases/leave_requests/ObserveLeaveRequestsUseCase';
+
+import { CreateTimeEntryUseCase } from '../application/usecases/time_entries/CreateTimeEntryUseCase';
+import { UpdateTimeEntryUseCase } from '../application/usecases/time_entries/UpdateTimeEntryUseCase';
+import { DeleteTimeEntryUseCase } from '../application/usecases/time_entries/DeleteTimeEntryUseCase';
+import { GetTimeEntryUseCase } from '../application/usecases/time_entries/GetTimeEntryUseCase';
+import { ListTimeEntriesUseCase } from '../application/usecases/time_entries/ListTimeEntriesUseCase';
+import { ObserveTimeEntriesUseCase } from '../application/usecases/time_entries/ObserveTimeEntriesUseCase';
+
+import { CreateSalaryAdvanceUseCase } from '../application/usecases/salary_advances/CreateSalaryAdvanceUseCase';
+import { UpdateSalaryAdvanceUseCase } from '../application/usecases/salary_advances/UpdateSalaryAdvanceUseCase';
+import { DeleteSalaryAdvanceUseCase } from '../application/usecases/salary_advances/DeleteSalaryAdvanceUseCase';
+import { GetSalaryAdvanceUseCase } from '../application/usecases/salary_advances/GetSalaryAdvanceUseCase';
+import { ListSalaryAdvancesUseCase } from '../application/usecases/salary_advances/ListSalaryAdvancesUseCase';
+import { ObserveSalaryAdvancesUseCase } from '../application/usecases/salary_advances/ObserveSalaryAdvancesUseCase';
+
+
+import { FirebaseUserRepository } from '../infrastructure/firebase/FirebaseUserRepository';
+import { UserFacade } from '../application/facades/UserFacade';
+import { IUserFacade } from '../application/interfaces/IUserFacade';
+import { CreateUserUseCase } from '../application/usecases/users/CreateUserUseCase';
+import { GetUserByEmailUseCase } from '../application/usecases/users/GetUserByEmailUseCase';
+import { RegisterUserWithoutLoginUseCase } from '../application/usecases/auth/RegisterUserWithoutLoginUseCase';
+import { AddCompanyMemberEmailUseCase } from '../application/usecases/company/AddCompanyMemberEmailUseCase';
+
 import { FirebaseProjectRepository } from '../infrastructure/firebase/FirebaseProjectRepository';
 import { FirebasePartnerRepository } from '../infrastructure/firebase/FirebasePartnerRepository';
 import { FirebaseExpenseRepository } from '../infrastructure/firebase/FirebaseExpenseRepository';
@@ -137,6 +191,50 @@ import { DeleteFileUseCase } from '../application/usecases/storage/DeleteFileUse
 import { GetFileUrlUseCase } from '../application/usecases/storage/GetFileUrlUseCase';
 import { ListFilesUseCase } from '../application/usecases/storage/ListFilesUseCase';
 
+import { ISaleFacade } from '../application/interfaces/ISaleFacade';
+import { IResourceFacade } from '../application/interfaces/IResourceFacade';
+import { IServiceFacade } from '../application/interfaces/IServiceFacade';
+import { IOpenOrderFacade } from '../application/interfaces/IOpenOrderFacade';
+
+import { SaleFacade } from '../application/facades/SaleFacade';
+import { ResourceFacade } from '../application/facades/ResourceFacade';
+import { ServiceFacade } from '../application/facades/ServiceFacade';
+import { OpenOrderFacade } from '../application/facades/OpenOrderFacade';
+
+import { FirebaseSaleRepository } from '../infrastructure/firebase/FirebaseSaleRepository';
+import { FirebaseResourceRepository } from '../infrastructure/firebase/FirebaseResourceRepository';
+import { FirebaseServiceRepository } from '../infrastructure/firebase/FirebaseServiceRepository';
+import { FirebaseOpenOrderRepository } from '../infrastructure/firebase/FirebaseOpenOrderRepository';
+
+import { CreateSaleUseCase } from '../application/usecases/sales/CreateSaleUseCase';
+import { UpdateSaleUseCase } from '../application/usecases/sales/UpdateSaleUseCase';
+import { DeleteSaleUseCase } from '../application/usecases/sales/DeleteSaleUseCase';
+import { GetSaleUseCase } from '../application/usecases/sales/GetSaleUseCase';
+import { ListSalesUseCase } from '../application/usecases/sales/ListSalesUseCase';
+import { ObserveSalesUseCase } from '../application/usecases/sales/ObserveSalesUseCase';
+
+import { CreateResourceUseCase } from '../application/usecases/resources/CreateResourceUseCase';
+import { UpdateResourceUseCase } from '../application/usecases/resources/UpdateResourceUseCase';
+import { DeleteResourceUseCase } from '../application/usecases/resources/DeleteResourceUseCase';
+import { GetResourceUseCase } from '../application/usecases/resources/GetResourceUseCase';
+import { ListResourcesUseCase } from '../application/usecases/resources/ListResourcesUseCase';
+import { ObserveResourcesUseCase } from '../application/usecases/resources/ObserveResourcesUseCase';
+
+import { CreateServiceUseCase } from '../application/usecases/services/CreateServiceUseCase';
+import { UpdateServiceUseCase } from '../application/usecases/services/UpdateServiceUseCase';
+import { DeleteServiceUseCase } from '../application/usecases/services/DeleteServiceUseCase';
+import { GetServiceUseCase } from '../application/usecases/services/GetServiceUseCase';
+import { ListServicesUseCase } from '../application/usecases/services/ListServicesUseCase';
+import { ObserveServicesUseCase } from '../application/usecases/services/ObserveServicesUseCase';
+
+import { CreateOpenOrderUseCase } from '../application/usecases/open_orders/CreateOpenOrderUseCase';
+import { UpdateOpenOrderUseCase } from '../application/usecases/open_orders/UpdateOpenOrderUseCase';
+import { DeleteOpenOrderUseCase } from '../application/usecases/open_orders/DeleteOpenOrderUseCase';
+import { GetOpenOrderUseCase } from '../application/usecases/open_orders/GetOpenOrderUseCase';
+import { ListOpenOrdersUseCase } from '../application/usecases/open_orders/ListOpenOrdersUseCase';
+import { ObserveOpenOrdersUseCase } from '../application/usecases/open_orders/ObserveOpenOrdersUseCase';
+
+
 interface DependencyContainer {
   flags: FeatureFlags;
   logger: Logger;
@@ -159,6 +257,7 @@ interface DependencyContainer {
     access: IAccessFacade;
     customer: ICustomerFacade;
     company: ICompanyFacade;
+    user: IUserFacade;
     staff: IStaffFacade;
     invoice: IInvoiceFacade;
     product: IProductFacade;
@@ -168,6 +267,15 @@ interface DependencyContainer {
     notification: INotificationFacade;
     support: ISupportFacade;
     storage: IStorageFacade;
+    sale: ISaleFacade;
+    resource: IResourceFacade;
+    service: IServiceFacade;
+    openOrder: IOpenOrderFacade;
+    task: ITaskFacade;
+    leaveRequest: ILeaveRequestFacade;
+    timeEntry: ITimeEntryFacade;
+    salaryAdvance: ISalaryAdvanceFacade;
+
   };
   useCases: {
     auth: {
@@ -192,7 +300,14 @@ export const DependencyProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const staffRepo = new FirebaseStaffRepository();
     const invoiceRepo = new FirebaseInvoiceRepository();
     const productRepo = new FirebaseProductRepository();
-    const projectRepo = new FirebaseProjectRepository();
+    
+  const taskRepo = new FirebaseTaskRepository();
+  const leaveRequestRepo = new FirebaseLeaveRequestRepository();
+  const timeEntryRepo = new FirebaseTimeEntryRepository();
+  const salaryAdvanceRepo = new FirebaseSalaryAdvanceRepository();
+  const userRepo = new FirebaseUserRepository();
+
+  const projectRepo = new FirebaseProjectRepository();
 
     const partnerRepo = new FirebasePartnerRepository();
     const expenseRepo = new FirebaseExpenseRepository();
@@ -205,6 +320,11 @@ export const DependencyProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const notificationRepo = new FirebaseNotificationRepository();
     const supportRepo = new FirebaseSupportRepository();
     const storageRepo = new FirebaseStorageRepository();
+    const saleRepo = new FirebaseSaleRepository();
+    const resourceRepo = new FirebaseResourceRepository();
+    const serviceRepo = new FirebaseServiceRepository();
+    const openOrderRepo = new FirebaseOpenOrderRepository();
+
 
     const observeSession = new ObserveSessionUseCase(authGateway);
     const refreshSession = new RefreshSessionUseCase(authGateway);
@@ -237,10 +357,18 @@ export const DependencyProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         access: accessGateway,
       },
       facades: {
-        session: new SessionFacade(observeSession, refreshSession, syncProfile, new LoginUseCase(authGateway), new LoginWithGoogleUseCase(authGateway), new RegisterUseCase(authGateway), authGateway),
+        session: new SessionFacade(observeSession, refreshSession, syncProfile, new LoginUseCase(authGateway), new LoginWithGoogleUseCase(authGateway), new RegisterUseCase(authGateway),
+          new RegisterUserWithoutLoginUseCase(authGateway),
+          authGateway),
         access: new AccessFacade(observeAccess, autoEnroll, validateWhitelist),
         customer: new CustomerFacade(new CreateCustomerUseCase(customerRepo), new UpdateCustomerUseCase(customerRepo), new DeleteCustomerUseCase(customerRepo), new GetCustomerUseCase(customerRepo), new ListCustomerUseCase(customerRepo), new ObserveCustomerUseCase(customerRepo)),
-        company: new CompanyFacade(new CreateCompanyUseCase(companyRepo), new UpdateCompanyUseCase(companyRepo), new DeleteCompanyUseCase(companyRepo), new GetCompanyUseCase(companyRepo), new ListCompanyUseCase(companyRepo), new ObserveCompanyUseCase(companyRepo)),
+        company: new CompanyFacade(new CreateCompanyUseCase(companyRepo), new UpdateCompanyUseCase(companyRepo), new DeleteCompanyUseCase(companyRepo), new GetCompanyUseCase(companyRepo), new ListCompanyUseCase(companyRepo), new ObserveCompanyUseCase(companyRepo),
+          new AddCompanyMemberEmailUseCase(companyRepo)),
+        
+        user: new UserFacade(
+          new CreateUserUseCase(userRepo),
+          new GetUserByEmailUseCase(userRepo)
+        ),
         staff: new StaffFacade(new CreateStaffUseCase(staffRepo), new UpdateStaffUseCase(staffRepo), new DeleteStaffUseCase(staffRepo), new GetStaffUseCase(staffRepo), new ListStaffUseCase(staffRepo), new ObserveStaffUseCase(staffRepo)),
         invoice: new InvoiceFacade(new CreateInvoiceUseCase(invoiceRepo), new UpdateInvoiceUseCase(invoiceRepo), new DeleteInvoiceUseCase(invoiceRepo), new GetInvoiceUseCase(invoiceRepo), new ListInvoiceUseCase(invoiceRepo), new ObserveInvoiceUseCase(invoiceRepo)),
         product: new ProductFacade(new CreateProductUseCase(productRepo), new UpdateProductUseCase(productRepo), new DeleteProductUseCase(productRepo), new GetProductUseCase(productRepo), new ListProductUseCase(productRepo), new ObserveProductUseCase(productRepo)),
@@ -267,6 +395,44 @@ export const DependencyProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
         notification: new NotificationFacade(new CreateNotificationUseCase(notificationRepo), new UpdateNotificationUseCase(notificationRepo), new DeleteNotificationUseCase(notificationRepo), new GetNotificationUseCase(notificationRepo), new ListNotificationUseCase(notificationRepo), new ObserveNotificationUseCase(notificationRepo)),
         support: new SupportFacade(createTicket, null, null, null, null, observeTickets),
+        sale: new SaleFacade(new CreateSaleUseCase(saleRepo), new UpdateSaleUseCase(saleRepo), new DeleteSaleUseCase(saleRepo), new GetSaleUseCase(saleRepo), new ListSalesUseCase(saleRepo), new ObserveSalesUseCase(saleRepo)),
+        resource: new ResourceFacade(new CreateResourceUseCase(resourceRepo), new UpdateResourceUseCase(resourceRepo), new DeleteResourceUseCase(resourceRepo), new GetResourceUseCase(resourceRepo), new ListResourcesUseCase(resourceRepo), new ObserveResourcesUseCase(resourceRepo)),
+        service: new ServiceFacade(new CreateServiceUseCase(serviceRepo), new UpdateServiceUseCase(serviceRepo), new DeleteServiceUseCase(serviceRepo), new GetServiceUseCase(serviceRepo), new ListServicesUseCase(serviceRepo), new ObserveServicesUseCase(serviceRepo)),
+        
+        task: new TaskFacade(
+          new CreateTaskUseCase(taskRepo),
+          new UpdateTaskUseCase(taskRepo),
+          new DeleteTaskUseCase(taskRepo),
+          new GetTaskUseCase(taskRepo),
+          new ListTasksUseCase(taskRepo),
+          new ObserveTasksUseCase(taskRepo)
+        ),
+        leaveRequest: new LeaveRequestFacade(
+          new CreateLeaveRequestUseCase(leaveRequestRepo),
+          new UpdateLeaveRequestUseCase(leaveRequestRepo),
+          new DeleteLeaveRequestUseCase(leaveRequestRepo),
+          new GetLeaveRequestUseCase(leaveRequestRepo),
+          new ListLeaveRequestsUseCase(leaveRequestRepo),
+          new ObserveLeaveRequestsUseCase(leaveRequestRepo)
+        ),
+        timeEntry: new TimeEntryFacade(
+          new CreateTimeEntryUseCase(timeEntryRepo),
+          new UpdateTimeEntryUseCase(timeEntryRepo),
+          new DeleteTimeEntryUseCase(timeEntryRepo),
+          new GetTimeEntryUseCase(timeEntryRepo),
+          new ListTimeEntriesUseCase(timeEntryRepo),
+          new ObserveTimeEntriesUseCase(timeEntryRepo)
+        ),
+        salaryAdvance: new SalaryAdvanceFacade(
+          new CreateSalaryAdvanceUseCase(salaryAdvanceRepo),
+          new UpdateSalaryAdvanceUseCase(salaryAdvanceRepo),
+          new DeleteSalaryAdvanceUseCase(salaryAdvanceRepo),
+          new GetSalaryAdvanceUseCase(salaryAdvanceRepo),
+          new ListSalaryAdvancesUseCase(salaryAdvanceRepo),
+          new ObserveSalaryAdvancesUseCase(salaryAdvanceRepo)
+        ),
+
+        openOrder: new OpenOrderFacade(new CreateOpenOrderUseCase(openOrderRepo), new UpdateOpenOrderUseCase(openOrderRepo), new DeleteOpenOrderUseCase(openOrderRepo), new GetOpenOrderUseCase(openOrderRepo), new ListOpenOrdersUseCase(openOrderRepo), new ObserveOpenOrdersUseCase(openOrderRepo)),
         storage: new StorageFacade(new UploadFileUseCase(storageRepo), new DeleteFileUseCase(storageRepo), new GetFileUrlUseCase(storageRepo), new ListFilesUseCase(storageRepo))
       },
       useCases: {

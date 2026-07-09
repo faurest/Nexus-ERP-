@@ -1,8 +1,8 @@
 export interface ITaskRepository {
-  getTasks(companyId: string): Promise<any[]>;
-  getTaskById(id: string): Promise<any | null>;
-  createTask(task: any): Promise<string>;
-  updateTask(id: string, data: any): Promise<void>;
-  deleteTask(id: string): Promise<void>;
-  subscribeToTasks(companyId: string, callback: (tasks: any[]) => void): () => void;
+  create(data: any): Promise<string>;
+  update(id: string, data: any): Promise<void>;
+  delete(id: string): Promise<void>;
+  getById(id: string): Promise<any>;
+  list(companyId: string): Promise<any[]>;
+  observe(companyId: string, callback: (items: any[]) => void): () => void;
 }

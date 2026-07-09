@@ -1,3 +1,4 @@
+import { AddCompanyMemberEmailUseCase } from '../usecases/company/AddCompanyMemberEmailUseCase';
 import { ICompanyFacade } from '../interfaces/ICompanyFacade';
 
 export class CompanyFacade implements ICompanyFacade {
@@ -7,7 +8,8 @@ export class CompanyFacade implements ICompanyFacade {
     private deleteCompanyUseCase: any,
     private getCompanyUseCase: any,
     private listCompaniesUseCase: any,
-    private observeCompaniesUseCase: any
+    private observeCompaniesUseCase: any,
+    private addCompanyMemberEmailUseCase: AddCompanyMemberEmailUseCase
   ) {}
 
   async createCompany(company: any): Promise<string> {
@@ -36,5 +38,9 @@ export class CompanyFacade implements ICompanyFacade {
 
   observeUserCompanies(userId: string, callback: (companies: any[]) => void): () => void {
     return this.observeCompaniesUseCase.executeForUser(userId, callback);
+  }
+
+  async addMemberEmail(companyId: string, email: string): Promise<void> {
+    return this.addCompanyMemberEmailUseCase.execute(companyId, email);
   }
 }

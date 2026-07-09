@@ -1,5 +1,5 @@
 import { ICompanyRepository } from '../../domain/repositories/ICompanyRepository';
-import { db } from '../../../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../../../lib/firebase';
 import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, arrayUnion, serverTimestamp } from 'firebase/firestore';
 
 export class FirebaseCompanyRepository implements ICompanyRepository {
@@ -52,5 +52,18 @@ export class FirebaseCompanyRepository implements ICompanyRepository {
       employees: arrayUnion(userId),
       updatedAt: serverTimestamp()
     });
+  }
+
+  async addMemberEmail(companyId: string, email: string): Promise<void> {
+    try {
+      const docRef = doc(db, 'companies', companyId);
+      await updateDoc(docRef, {
+        memberEmails: arrayUnion(email),
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'companies');
+      throw error;
+    }
   }
 }

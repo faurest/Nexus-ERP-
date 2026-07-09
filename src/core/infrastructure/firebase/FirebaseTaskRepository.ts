@@ -1,41 +1,78 @@
+import { collection, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, query, where, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../../../lib/firebase';
 import { ITaskRepository } from '../../domain/repositories/ITaskRepository';
-import { db } from '../../../lib/firebase';
-import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, onSnapshot } from 'firebase/firestore';
 
 export class FirebaseTaskRepository implements ITaskRepository {
-  async getTasks(companyId: string): Promise<any[]> {
-    const q = query(collection(db, 'tasks'), where('companyId', '==', companyId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  private collectionName = 'tasks';
+
+  async create(data: any): Promise<string> {
+    try {
+      const docRef = await addDoc(collection(db, this.collectionName), {
+        ...data,
+        createdAt: serverTimestamp()
+      });
+      return docRef.id;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, this.collectionName);
+      throw error;
+    }
   }
 
-  async getTaskById(id: string): Promise<any | null> {
-    const docRef = doc(db, 'tasks', id);
-    const snapshot = await getDoc(docRef);
-    if (!snapshot.exists()) return null;
-    return { id: snapshot.id, ...snapshot.data() };
+  async update(id: string, data: any): Promise<void> {
+    try {
+      const docRef = doc(db, this.collectionName, id);
+      await updateDoc(docRef, {
+        ...data,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, this.collectionName);
+      throw error;
+    }
   }
 
-  async createTask(task: any): Promise<string> {
-    const docRef = await addDoc(collection(db, 'tasks'), task);
-    return docRef.id;
+  async delete(id: string): Promise<void> {
+    try {
+      const docRef = doc(db, this.collectionName, id);
+      await deleteDoc(docRef);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, this.collectionName);
+      throw error;
+    }
   }
 
-  async updateTask(id: string, data: any): Promise<void> {
-    const docRef = doc(db, 'tasks', id);
-    await updateDoc(docRef, data);
+  async getById(id: string): Promise<any> {
+    try {
+      const docRef = doc(db, this.collectionName, id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() };
+      }
+      return null;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, this.collectionName);
+      throw error;
+    }
   }
 
-  async deleteTask(id: string): Promise<void> {
-    const docRef = doc(db, 'tasks', id);
-    await deleteDoc(docRef);
+  async list(companyId: string): Promise<any[]> {
+    try {
+      const q = query(collection(db, this.collectionName), where('companyId', '==', companyId));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, this.collectionName);
+      throw error;
+    }
   }
 
-  subscribeToTasks(companyId: string, callback: (tasks: any[]) => void): () => void {
-    const q = query(collection(db, 'tasks'), where('companyId', '==', companyId));
+  observe(companyId: string, callback: (items: any[]) => void): () => void {
+    const q = query(collection(db, this.collectionName), where('companyId', '==', companyId));
     return onSnapshot(q, (snapshot) => {
-      const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      callback(tasks);
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      callback(items);
+    }, (error) => {
+      console.error(`Error observing ${this.collectionName}:`, error);
     });
   }
 }
