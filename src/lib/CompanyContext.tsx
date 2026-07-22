@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from './supabase';
 import { authService } from '../core/auth/AuthService';
+import { isMasterUser } from './auth';
 
 export interface CompanyCategory {
   name: string;
@@ -142,7 +143,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       
       const cleanEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
-      const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
+      const isMaster = isMasterUser(user);
       
       const load = async () => {
         try {

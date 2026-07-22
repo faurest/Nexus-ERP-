@@ -5,6 +5,7 @@ import { db } from '../lib/firebase';
 import { collection, addDoc, query, where, onSnapshot, orderBy, serverTimestamp, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
+import { isMasterUser } from '../lib/auth';
 
 interface TicketResponse {
   id: string;
@@ -39,7 +40,7 @@ export default function SupportModule({ user }: { user: any }) {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const isAdmin = user?.email === 'hackeurfaurest@gmail.com' || user?.email === 'dangafelicite@gmail.com' || user?.email === 'yaoubaboubakary43@gmail.com' || user?.role === 'Admin';
+  const isAdmin = isMasterUser(user) || user?.role === 'Admin';
 
   useEffect(() => {
     if (!currentCompany) return;

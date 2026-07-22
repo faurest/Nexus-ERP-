@@ -25,7 +25,6 @@ import {
   doc,
   serverTimestamp, 
   getDocs, 
-  auth, 
   OperationType, 
   handleFirestoreError,
   or,
@@ -36,6 +35,7 @@ import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
 import { useSubNavigation } from '../hooks/useSubNavigation';
 import { createNotification } from '../lib/notifications';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 
 interface DirectMessage {
   id: string;
@@ -106,6 +106,7 @@ const getAvatarColor = (name: string) => {
 
 export default function CommunicationModule() {
   const { currentCompany } = useCompany();
+  const currentUser = useCurrentUser();
   const [activeTab, setActiveTab] = useSubNavigation<'direct' | 'project'>('collaboration', 'direct');
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -122,9 +123,9 @@ export default function CommunicationModule() {
 
   // Fetch unread counts
   useEffect(() => {
-    if (!currentCompany || !auth.currentUser) return;
+    if (!currentCompany || !currentUser) return;
 
-    const myEmail = auth.currentUser.email?.toLowerCase().trim() || '';
+    const myEmail = currentUser.email?.toLowerCase().trim() || '';
     const qUnread = query(
       collection(db, 'messages'),
       where('companyId', '==', currentCompany.id),
@@ -173,7 +174,7 @@ export default function CommunicationModule() {
 
     const qContacts = query(collection(db, 'personnel'), where('companyId', '==', currentCompany.id));
     const unsubContacts = onSnapshot(qContacts, (snap) => {
-      setContacts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Contact)).filter(c => c.email && c.email.toLowerCase() !== auth.currentUser?.email?.toLowerCase()));
+      setContacts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Contact)).filter(c => c.email && c.email.toLowerCase() !== currentUser?.email?.toLowerCase()));
     });
 
     const qProjects = query(collection(db, 'projects'), where('companyId', '==', currentCompany.id));
@@ -189,9 +190,9 @@ export default function CommunicationModule() {
 
   // Fetch direct messages
   useEffect(() => {
-    if (!currentCompany || !selectedContact || activeTab !== 'direct' || !auth.currentUser) return;
+    if (!currentCompany || !selectedContact || activeTab !== 'direct' || !currentUser) return;
 
-    const myEmail = auth.currentUser.email?.toLowerCase().trim() || '';
+    const myEmail = currentUser.email?.toLowerCase().trim() || '';
     const contactEmail = selectedContact.email?.toLowerCase().trim() || '';
     const conversationId = [myEmail, contactEmail].sort().join('_');
 
@@ -212,7 +213,7 @@ export default function CommunicationModule() {
       setMessages(fetchedMessages);
 
       // Mark unread messages as read
-      if (auth.currentUser) {
+      if (currentUser) {
         snap.docs.forEach(async (d) => {
           const data = d.data();
           if (data.recipientEmail === myEmail && !data.isRead) {
@@ -261,24 +262,24 @@ export default function CommunicationModule() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !currentCompany || !auth.currentUser || loading) return;
+    if (!newMessage.trim() || !currentCompany || !currentUser || loading) return;
 
     setLoading(true);
     setIsTyping(false);
     try {
       if (activeTab === 'direct' && selectedContact) {
-        const myEmail = auth.currentUser.email?.toLowerCase().trim() || '';
+        const myEmail = currentUser.email?.toLowerCase().trim() || '';
         const contactEmail = selectedContact.email?.toLowerCase().trim() || '';
         const conversationId = [myEmail, contactEmail].sort().join('_');
         
         await addDoc(collection(db, 'messages'), {
           companyId: currentCompany.id,
           conversationId,
-          senderId: auth.currentUser.uid,
+          senderId: currentUser.uid,
           senderEmail: myEmail,
           recipientId: selectedContact.uid || selectedContact.id,
           recipientEmail: contactEmail,
-          senderName: auth.currentUser.displayName || 'Utilisateur',
+          senderName: currentUser.displayName || 'Utilisateur',
           content: newMessage.trim(),
           timestamp: serverTimestamp(),
           isRead: false
@@ -290,7 +291,7 @@ export default function CommunicationModule() {
             currentCompany.id,
             [selectedContact.uid],
             'Nouveau message direct',
-            `${auth.currentUser.displayName || 'Un collègue'} vous a envoyé un message.`,
+            `${currentUser.displayName || 'Un collègue'} vous a envoyé un message.`,
             'general'
           );
         }
@@ -298,8 +299,8 @@ export default function CommunicationModule() {
         await addDoc(collection(db, 'project_discussions'), {
           companyId: currentCompany.id,
           projectId: selectedProject.id,
-          senderId: auth.currentUser.uid,
-          senderName: auth.currentUser.displayName || 'Utilisateur',
+          senderId: currentUser.uid,
+          senderName: currentUser.displayName || 'Utilisateur',
           content: newMessage.trim(),
           timestamp: serverTimestamp()
         });
@@ -310,7 +311,7 @@ export default function CommunicationModule() {
           collection(db, 'personnel'), 
           and(
             where('companyId', '==', currentCompany.id),
-            where('uid', '!=', auth.currentUser.uid)
+            where('uid', '!=', currentUser.uid)
           )
         );
         const membersSnap = await getDocs(qMembers);
@@ -323,7 +324,7 @@ export default function CommunicationModule() {
             currentCompany.id,
             projectMembersUids,
             `Discussion: ${selectedProject.name}`,
-            `${auth.currentUser.displayName || 'Un collègue'} a posté un message.`,
+            `${currentUser.displayName || 'Un collègue'} a posté un message.`,
             'project'
           );
         }
@@ -516,7 +517,7 @@ export default function CommunicationModule() {
                   </div>
                   
                   {msgs.map((msg, i) => {
-                    const isMe = msg.senderId === auth.currentUser?.uid || ('senderEmail' in msg && msg.senderEmail === auth.currentUser?.email?.toLowerCase().trim());
+                    const isMe = msg.senderId === currentUser?.uid || ('senderEmail' in msg && msg.senderEmail === currentUser?.email?.toLowerCase().trim());
                     return (
                       <div key={msg.id} className={cn(
                         "flex flex-col max-w-[80%] gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300",

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { db, auth, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, setDoc, getDocs, getDoc, serverTimestamp, handleFirestoreError, OperationType, orderBy, limit } from '../lib/firebase';
+import { db, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, updateDoc, setDoc, getDocs, getDoc, serverTimestamp, handleFirestoreError, OperationType, orderBy, limit } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
 import { HelpTrigger } from './ContextualHelp';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import { 
   ShoppingBag,
   Play, 
@@ -136,6 +137,7 @@ interface OrderMessage {
 
 export default function EcommerceModule({ user }: { user: any }) {
   const { currentCompany } = useCompany();
+  const currentUser = useCurrentUser();
   const [activeView, setActiveView] = useState<'catalog' | 'cart' | 'tracking' | 'loyalty' | 'admin' | 'settings' | 'commando' | 'replenishment' | 'operations' | 'finances'>('catalog');
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -252,9 +254,9 @@ export default function EcommerceModule({ user }: { user: any }) {
 
   // Fetch unread messages count for all orders
   useEffect(() => {
-    if (!currentCompany || !auth.currentUser) return;
+    if (!currentCompany || !currentUser) return;
 
-    const cleanEmail = auth.currentUser.email?.trim().toLowerCase() || '';
+    const cleanEmail = currentUser.email?.trim().toLowerCase() || '';
     const q = isAdmin 
       ? query(
           collection(db, 'order_messages'),
@@ -265,7 +267,7 @@ export default function EcommerceModule({ user }: { user: any }) {
       : query(
           collection(db, 'order_messages'),
           where('companyId', '==', currentCompany.id),
-          where('recipientId', '==', auth.currentUser.uid),
+          where('recipientId', '==', currentUser.uid),
           where('isRead', '==', false)
         );
 
@@ -283,7 +285,7 @@ export default function EcommerceModule({ user }: { user: any }) {
 
   // Mark as read when chat opens
   useEffect(() => {
-    if (!activeChatOrder || !auth.currentUser) return;
+    if (!activeChatOrder || !currentUser) return;
 
     const markAsRead = async () => {
       const q = isAdmin 
@@ -296,7 +298,7 @@ export default function EcommerceModule({ user }: { user: any }) {
         : query(
             collection(db, 'order_messages'),
             where('orderId', '==', activeChatOrder.id),
-            where('recipientId', '==', auth.currentUser?.uid),
+            where('recipientId', '==', currentUser?.uid),
             where('isRead', '==', false)
           );
 
@@ -334,7 +336,7 @@ export default function EcommerceModule({ user }: { user: any }) {
 
   const sendOrderMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeChatOrder || !newOrderMessage.trim() || !auth.currentUser || sendingMessage) return;
+    if (!activeChatOrder || !newOrderMessage.trim() || !currentUser || sendingMessage) return;
 
     setSendingMessage(true);
     try {
@@ -351,8 +353,8 @@ export default function EcommerceModule({ user }: { user: any }) {
 
       await addDoc(collection(db, 'order_messages'), {
         orderId: activeChatOrder.id,
-        senderId: auth.currentUser.uid,
-        senderName: auth.currentUser.displayName || 'Utilisateur',
+        senderId: currentUser.uid,
+        senderName: currentUser.displayName || 'Utilisateur',
         recipientId,
         content: newOrderMessage.trim(),
         timestamp: serverTimestamp(),
@@ -368,7 +370,7 @@ export default function EcommerceModule({ user }: { user: any }) {
           currentCompany.id,
           targetUids,
           'Nouveau message sur commande',
-          `${auth.currentUser.displayName || 'Nexus'} : ${newOrderMessage.slice(0, 30)}...`,
+          `${currentUser.displayName || 'Nexus'} : ${newOrderMessage.slice(0, 30)}...`,
           'general'
         );
       }
@@ -863,8 +865,8 @@ export default function EcommerceModule({ user }: { user: any }) {
         date: serverTimestamp(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        customerEmail: auth.currentUser?.email || 'Guest',
-        customerName: auth.currentUser?.displayName || 'Client'
+        customerEmail: currentUser?.email || 'Guest',
+        customerName: currentUser?.displayName || 'Client'
       });
 
       // Notify Admin/Owner
@@ -873,7 +875,7 @@ export default function EcommerceModule({ user }: { user: any }) {
           currentCompany.id,
           [currentCompany.ownerId],
           'Nouvelle Commande !',
-          `${auth.currentUser?.displayName || 'Un client'} a passé une commande de ${cartTotal.toLocaleString()} FCFA.`,
+          `${currentUser?.displayName || 'Un client'} a passé une commande de ${cartTotal.toLocaleString()} FCFA.`,
           'general'
         );
       }
@@ -901,7 +903,7 @@ export default function EcommerceModule({ user }: { user: any }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             orderId: orderRef.id,
-            clientName: auth.currentUser?.displayName || 'Client',
+            clientName: currentUser?.displayName || 'Client',
             totalAmount: totalWithDelivery,
             items: itemsList,
             messageType: 'whatsapp',
@@ -915,7 +917,7 @@ export default function EcommerceModule({ user }: { user: any }) {
       // Optionnel: On peut garder la redirection WhatsApp manuelle si demandé, 
       // mais le script envoie déjà le message de façon automatique au backend.
       const userHost = window.location.origin;
-      const message = `🚨 *Nouvelle Commande !*\n\nUne nouvelle commande a été passée par ${auth.currentUser?.displayName || 'Un client'}.\nMontant: *${totalWithDelivery.toLocaleString()} FCFA*\n\nOuvrez votre espace vendeur pour la traiter:\n${userHost}`;
+      const message = `🚨 *Nouvelle Commande !*\n\nUne nouvelle commande a été passée par ${currentUser?.displayName || 'Un client'}.\nMontant: *${totalWithDelivery.toLocaleString()} FCFA*\n\nOuvrez votre espace vendeur pour la traiter:\n${userHost}`;
       
       // On garde le window.open pour s'assurer d'une fallback client si le backend Twilio n'a pas les clés
       window.open(`https://wa.me/${enterpriseWhatsApp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, "_blank");
@@ -932,7 +934,7 @@ export default function EcommerceModule({ user }: { user: any }) {
       });
       
       // Notify client if update is from admin
-      if (isAdmin && (customerEmail || auth.currentUser?.email) && currentCompany) {
+      if (isAdmin && (customerEmail || currentUser?.email) && currentCompany) {
         const targetEmail = customerEmail || '';
         // We find the client UID by email
         const q = query(collection(db, 'users'), where('email', '==', targetEmail.toLowerCase()));
@@ -3402,7 +3404,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                 </div>
 
                 {orderMessages.map((msg, idx) => {
-                  const isMe = msg.senderId === auth.currentUser?.uid;
+                  const isMe = msg.senderId === currentUser?.uid;
                   return (
                     <motion.div 
                       key={msg.id}

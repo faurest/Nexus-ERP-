@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, auth, orderBy, limit } from '../lib/firebase';
+import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, orderBy, limit } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { Plus, Search, Package, ShieldCheck, AlertTriangle, ArrowRightLeft, Edit2, Trash2, RefreshCw, TrendingUp, Activity, Smartphone, CheckCircle2, X } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
@@ -8,6 +8,7 @@ import { cn } from '../lib/utils';
 import { useSubNavigation } from '../hooks/useSubNavigation';
 import { useCompany } from '../lib/CompanyContext';
 import { createNotification } from '../lib/notifications';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 
 interface Resource {
   id: string;
@@ -24,6 +25,7 @@ interface Resource {
 
 export default function ResourceModule({ user }: { user: any }) {
   const { currentCompany } = useCompany();
+  const currentUser = useCurrentUser();
   const [resources, setResources] = useState<Resource[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -166,7 +168,7 @@ export default function ResourceModule({ user }: { user: any }) {
           quantity: restockData.quantity,
           supplier: restockData.supplier,
           notes: restockData.notes,
-          performedBy: auth.currentUser?.email || 'Système',
+          performedBy: currentUser?.email || 'Système',
           date: serverTimestamp()
         });
       }

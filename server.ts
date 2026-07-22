@@ -11,7 +11,39 @@ import { createClient } from '@supabase/supabase-js';
 
 const PORT = 3000;
 const db = new Database('database.sqlite');
-const JWT_SECRET = process.env.JWT_SECRET || 'nexus-fallback-auth-secret-key-2026';
+// Support both legacy local JWT secret and Supabase JWT secret
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || 'nexus-fallback-auth-secret-key-2026';
+
+// Allowed collections whitelist (prevents SQL injection via collection name)
+const ALLOWED_COLLECTIONS = [
+  'companies', 'personnel', 'clients', 'sales', 'projects', 'partners',
+  'sales_invoices', 'expenses', 'invoices', 'payments', 'resources',
+  'users', 'sessions', 'refresh_tokens', 'tasks', 'services',
+  'interventions', 'notifications', 'open_orders'
+];
+
+// JWT Auth Middleware - Supports both Supabase and legacy local tokens
+function authenticateToken(req: any, res: any, next: any) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as Record<string, any>;
+    req.user = {
+      uid: decoded.sub || decoded.uid,
+      email: decoded.email,
+      role: decoded.role || 'Personnel',
+      ...decoded
+    };
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: 'Invalid or expired token' });
+  }
+}
 
 // Twilio Client Lazy Init
 let twilioClient: twilio.Twilio | null = null;
@@ -325,50 +357,35 @@ try {
   )`);
 } catch (e) {}
 
-// Pre-seed Master User and Master Company
+// Pre-seed Master User and Master Company (only if MASTER_EMAIL and MASTER_PASSWORD env vars are set)
 try {
-  const masterEmail = 'hackeurfaurest@gmail.com';
-  const masterUid = 'master_nexus_01';
-  const masterPassword = 'NEXUS-ADMIN'; // Set to the requested access code
+  const masterEmail = process.env.MASTER_EMAIL;
+  const masterPassword = process.env.MASTER_PASSWORD;
   
-  // Create user if not exists
-  const userExists = db.prepare('SELECT * FROM users WHERE email = ?').get(masterEmail);
-  const masterHash = bcrypt.hashSync(masterPassword, 10);
-  if (!userExists) {
-    db.prepare('INSERT INTO users (uid, email, displayName, passwordHash, role) VALUES (?, ?, ?, ?, ?)')
-      .run(masterUid, masterEmail, 'Nexus Master', masterHash, 'owner');
+  if (masterEmail && masterPassword) {
+    const masterUid = 'master_nexus_01';
+    
+    // Create user if not exists
+    const userExists = db.prepare('SELECT * FROM users WHERE email = ?').get(masterEmail);
+    const masterHash = bcrypt.hashSync(masterPassword, 10);
+    if (!userExists) {
+      db.prepare('INSERT INTO users (uid, email, displayName, passwordHash, role) VALUES (?, ?, ?, ?, ?)')
+        .run(masterUid, masterEmail, 'Nexus Master', masterHash, 'owner');
+    } else {
+      // Force updating master password if needed
+      db.prepare('UPDATE users SET passwordHash = ?, role = ? WHERE email = ?')
+        .run(masterHash, 'owner', masterEmail);
+    }
+
+    // Create Master Company if not exists
+    const companyExists = db.prepare('SELECT * FROM companies WHERE ownerId = ?').get(masterUid);
+    if (!companyExists) {
+      const joinCode = process.env.MASTER_JOIN_CODE || 'NEXUS-ADMIN';
+      db.prepare('INSERT INTO companies (id, name, ownerId, ownerEmail, joinCode, createdAt) VALUES (?, ?, ?, ?, ?, ?)')
+        .run('comp_nexus_master', 'Nexus Enterprise Global', masterUid, masterEmail, joinCode, Date.now());
+    }
   } else {
-    // Force updating master password if needed
-    db.prepare('UPDATE users SET passwordHash = ?, role = ? WHERE email = ?')
-      .run(masterHash, 'owner', masterEmail);
-  }
-
-  // Create Master Company if not exists
-  const companyExists = db.prepare('SELECT * FROM companies WHERE joinCode = ?').get('NEXUS-ADMIN');
-  if (!companyExists) {
-    db.prepare('INSERT INTO companies (id, name, ownerId, ownerEmail, joinCode, createdAt) VALUES (?, ?, ?, ?, ?, ?)')
-      .run('comp_nexus_master', 'Nexus Enterprise Global', masterUid, masterEmail, 'NEXUS-ADMIN', Date.now());
-  }
-
-  // Create La PAUSE 237 Company if not exists
-  const pauseExists = db.prepare('SELECT * FROM companies WHERE joinCode = ?').get('PAUSE-237');
-  if (!pauseExists) {
-    db.prepare('INSERT INTO companies (id, name, ownerId, ownerEmail, joinCode, createdAt) VALUES (?, ?, ?, ?, ?, ?)')
-      .run('comp_lapause237', 'La PAUSE 237', masterUid, 'lapause237@gmail.com', 'PAUSE-237', Date.now());
-    
-    // Seed some products/resources for the bar
-    db.prepare('INSERT INTO resources (id, companyId, name, type, quantity, status, location, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .run('res_vin_rouge_01', 'comp_lapause237', 'Bordeaux Rouge - Château Margaux', 'Stock', 24, 'Available', 'Cave à vin', Date.now());
-    
-    db.prepare('INSERT INTO resources (id, companyId, name, type, quantity, status, location, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .run('res_champagne_01', 'comp_lapause237', 'Champagne Dom Pérignon', 'Stock', 5, 'Low', 'Cave à vin', Date.now());
-
-    db.prepare('INSERT INTO resources (id, companyId, name, type, quantity, status, location, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .run('res_whisky_01', 'comp_lapause237', 'Whisky Hibiki 21 ans', 'Stock', 12, 'Available', 'Comptoir', Date.now());
-      
-    // Seed some services for the restaurant
-    db.prepare('INSERT INTO services (id, companyId, name, description, price, createdAt) VALUES (?, ?, ?, ?, ?, ?)')
-      .run('srv_degustation', 'comp_lapause237', 'Dégustation Vins & Fromages', 'Séance de dégustation avec un sommelier pour 2 personnes', '85', Date.now());
+    console.warn('[SECURITY] MASTER_EMAIL and MASTER_PASSWORD env vars not set. Master account not seeded.');
   }
 } catch (e) {
   console.error("Master seeding failed:", e);
@@ -504,12 +521,22 @@ async function startServer() {
     }
   });
 
-  // Generic CRUD Proxy
+  // Generic CRUD Proxy (Protected with JWT Auth)
   const getPK = (collection: string) => collection === 'users' ? 'uid' : 'id';
 
-  app.get('/api/data/:collection', (req, res) => {
+  // Validate collection name against whitelist
+  function validateCollection(collection: string): boolean {
+    return ALLOWED_COLLECTIONS.includes(collection);
+  }
+
+  app.get('/api/data/:collection', authenticateToken, (req, res) => {
     try {
       const { collection } = req.params;
+      
+      if (!validateCollection(collection)) {
+        return res.status(400).json({ error: 'Invalid collection name' });
+      }
+      
       const { requestUserEmail, requestUserId, ownerId, ...otherQuerys } = req.query as any;
       
       // Get table columns
@@ -521,9 +548,8 @@ async function startServer() {
       const conditions: string[] = [];
 
       if (collection === 'companies') {
-        if (requestUserEmail === 'hackeurfaurest@gmail.com' || requestUserEmail === 'dangafelicite@gmail.com') {
-          // All companies
-        } else if (ownerId) {
+        // Only allow querying companies the user owns or is a member of
+        if (ownerId) {
           conditions.push(`(ownerId = ? OR memberEmails LIKE ?)`);
           params.push(ownerId);
           params.push(`%${requestUserEmail}%`);
@@ -576,9 +602,14 @@ async function startServer() {
     }
   });
 
-  app.get('/api/data/:collection/:id', (req, res) => {
+  app.get('/api/data/:collection/:id', authenticateToken, (req, res) => {
     try {
       const { collection, id } = req.params;
+      
+      if (!validateCollection(collection)) {
+        return res.status(400).json({ error: 'Invalid collection name' });
+      }
+      
       const pk = getPK(collection);
       const row = db.prepare(`SELECT * FROM ${collection} WHERE ${pk} = ?`).get(id);
       if (!row) return res.json(null);
@@ -602,9 +633,14 @@ async function startServer() {
     }
   });
 
-  app.post('/api/data/:collection', (req, res) => {
+  app.post('/api/data/:collection', authenticateToken, (req, res) => {
     try {
       const { collection } = req.params;
+      
+      if (!validateCollection(collection)) {
+        return res.status(400).json({ error: 'Invalid collection name' });
+      }
+      
       const data = { ...req.body };
       
       // Normalize companyId
@@ -641,9 +677,14 @@ async function startServer() {
     }
   });
 
-  app.patch('/api/data/:collection/:id', (req, res) => {
+  app.patch('/api/data/:collection/:id', authenticateToken, (req, res) => {
     try {
       const { collection, id } = req.params;
+      
+      if (!validateCollection(collection)) {
+        return res.status(400).json({ error: 'Invalid collection name' });
+      }
+      
       const data = { ...req.body };
 
       // Normalize companyId
@@ -692,9 +733,14 @@ async function startServer() {
     }
   });
 
-  app.delete('/api/data/:collection/:id', (req, res) => {
+  app.delete('/api/data/:collection/:id', authenticateToken, (req, res) => {
     try {
       const { collection, id } = req.params;
+      
+      if (!validateCollection(collection)) {
+        return res.status(400).json({ error: 'Invalid collection name' });
+      }
+      
       const pk = getPK(collection);
       db.prepare(`DELETE FROM ${collection} WHERE ${pk} = ?`).run(id);
       res.json({ success: true });
@@ -706,7 +752,7 @@ async function startServer() {
 
   // --- AI ENDPOINTS ---
 
-  app.post('/api/ai/generate', async (req, res) => {
+  app.post('/api/ai/generate', authenticateToken, async (req, res) => {
     try {
       const { type, context } = req.body;
       

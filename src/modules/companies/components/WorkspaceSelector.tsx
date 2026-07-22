@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { addDoc, collection, db, serverTimestamp } from '../../../lib/firebase';
 import { useCompany } from '../../../lib/CompanyContext';
 import { NexusLogo } from '../../../components/NexusLogo';
+import { isMasterUser } from '../../../lib/auth';
 
 type User = any;
 
@@ -33,7 +34,7 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
   const { joinCompany, loading: companyLoading } = useCompany();
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
-  const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
+  const isMaster = isMasterUser(user);
   
   const ownedCompanies = companies.filter(c => {
     const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');

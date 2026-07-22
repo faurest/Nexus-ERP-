@@ -1525,7 +1525,7 @@ export default function AdminModule() {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Source (Celui qui a l'accès)</label>
                 <input 
                   type="email" 
-                  placeholder="Ex: dangafelicite@gmail.com" 
+                  placeholder="Ex: admin@entreprise.com" 
                   value={cloneSource}
                   onChange={e => setCloneSource(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-blue-600 font-bold text-sm text-slate-900"
@@ -1535,7 +1535,7 @@ export default function AdminModule() {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Cible (Celui qui doit recevoir)</label>
                 <input 
                   type="email" 
-                  placeholder="Ex: hackeurfaurest@gmail.com" 
+                  placeholder="Ex: utilisateur@entreprise.com" 
                   value={cloneTarget}
                   onChange={e => setCloneTarget(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-emerald-600 font-bold text-sm text-slate-900"

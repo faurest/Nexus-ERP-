@@ -24,13 +24,14 @@ import {
   addDoc, 
   serverTimestamp, 
   getDocs, 
-  auth, 
   OperationType, 
   handleFirestoreError 
 } from '../lib/firebase';
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
 import CommunicationModule from './CommunicationModule';
+import { isMasterUser } from '../lib/auth';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 
 import { createNotification } from '../lib/notifications';
 
@@ -50,6 +51,7 @@ interface Collaboration {
 
 export default function CollaborationModule() {
   const { currentCompany } = useCompany();
+  const currentUser = useCurrentUser();
   const [activeView, setActiveView] = useState<'transfers' | 'chat'>('chat');
   const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
   const [isAdding, setIsAdding] = useState(false);
@@ -73,7 +75,7 @@ export default function CollaborationModule() {
       setPersonnel(snap.docs.map(doc => {
         const data = doc.data();
         return { name: data.name || data.email, email: data.email };
-      }).filter(p => p.email && p.email.toLowerCase() !== auth.currentUser?.email?.toLowerCase()));
+      }).filter(p => p.email && p.email.toLowerCase() !== currentUser?.email?.toLowerCase()));
     });
     return () => unsub();
   }, [currentCompany]);
@@ -91,7 +93,7 @@ export default function CollaborationModule() {
   useEffect(() => {
     if (!currentCompany) return;
 
-    const myEmail = auth.currentUser?.email?.toLowerCase() || '';
+    const myEmail = currentUser?.email?.toLowerCase() || '';
     
     const q = query(
       collection(db, 'collaborations'),
@@ -114,10 +116,10 @@ export default function CollaborationModule() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentCompany || !auth.currentUser) return;
+    if (!currentCompany || !currentUser) return;
 
     setLoading(true);
-    const myEmail = auth.currentUser.email?.toLowerCase() || '';
+    const myEmail = currentUser.email?.toLowerCase() || '';
     try {
       const collaborationRef = await addDoc(collection(db, 'collaborations'), {
         ...formData,
@@ -135,7 +137,7 @@ export default function CollaborationModule() {
         
         if (!userSnap.empty) {
           const recipientUid = userSnap.docs[0].id;
-          const senderName = auth.currentUser.displayName || myEmail.split('@')[0];
+          const senderName = currentUser.displayName || myEmail.split('@')[0];
           
           await createNotification(
             currentCompany.id,
@@ -323,9 +325,8 @@ export default function CollaborationModule() {
                       <button className="p-3 bg-slate-900 text-white rounded-xl hover:bg-indigo-600 shadow-lg transition-all">
                         <Download size={16} />
                       </button>
-                      {(item.senderEmail?.toLowerCase() === auth.currentUser?.email?.toLowerCase() || 
-                        auth.currentUser?.email === 'hackeurfaurest@gmail.com' ||
-                        auth.currentUser?.email === 'dangafelicite@gmail.com') && (
+                       {(item.senderEmail?.toLowerCase() === currentUser?.email?.toLowerCase() || 
+                         isMasterUser({ email: currentUser?.email, uid: currentUser?.uid })) && (
                         <button 
                           onClick={async () => {
                             if (window.confirm('Voulez-vous vraiment supprimer ce transfert ?')) {

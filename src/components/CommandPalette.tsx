@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Command, X, LayoutDashboard, Users, Briefcase, Package, FolderKanban, TrendingUp, Calculator, Shield, BookOpen, Layers, ShoppingBag, Store, Handshake, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { isMasterUser } from '../lib/auth';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate, user }: Co
   ];
 
   const filteredActions = actions.filter(action => {
-    if (action.adminOnly && !['hackeurfaurest@gmail.com', 'dangafelicite@gmail.com', 'yaoubaboubakary43@gmail.com'].includes(user?.email)) return false;
+    if (action.adminOnly && !isMasterUser(user)) return false;
     return action.label.toLowerCase().includes(query.toLowerCase()) || 
            action.category.toLowerCase().includes(query.toLowerCase());
   });

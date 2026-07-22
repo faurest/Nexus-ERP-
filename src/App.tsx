@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { auth, loginWithGoogle, logout, db, onAuthStateChanged, addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion, setDoc, serverTimestamp, limit, onSnapshot } from './lib/firebase';
+import { db, addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion, setDoc, serverTimestamp, limit, onSnapshot } from './lib/firebase';
+import { isMasterUser } from './lib/auth';
 type User = any;
+
 import { 
   LayoutDashboard, 
   Users, 
@@ -134,7 +136,7 @@ export default function App() {
   }, [isDark]);
 
   const cleanEmail = user?.email?.trim().toLowerCase().replace(/\s+/g, '') || '';
-  const isMaster = cleanEmail === 'hackeurfaurest@gmail.com' || cleanEmail === 'dangafelicite@gmail.com' || cleanEmail === 'yaoubaboubakary43@gmail.com';
+  const isMaster = isMasterUser(user);
   
   const ownedCompanies = companies.filter(c => {
     const cOwnerEmail = c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '');
@@ -286,7 +288,7 @@ export default function App() {
 
     if (user?.uid && currentCompany?.id) {
       const cleanEmail = user.email?.trim().toLowerCase().replace(/\s+/g, '');
-      const isMaster = currentCompany.ownerEmail === user.email || currentCompany.ownerId === user.uid || user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com';
+      const isMaster = isMasterUser(user, currentCompany);
 
       if (isMaster) {
         setUser(prev => {
@@ -593,7 +595,7 @@ export default function App() {
   }
 
   if (!currentCompany) {
-    return <WorkspaceSelector companies={companies} user={user} onSelect={setCurrentCompany} onMarketplace={() => setShowMarketplace(true)} onLogout={() => auth.signOut()} />;
+    return <WorkspaceSelector companies={companies} user={user} onSelect={setCurrentCompany} onMarketplace={() => setShowMarketplace(true)} onLogout={() => authService.logout().then(() => window.location.reload())} />;
   }
 
   if (isBlocked) {
@@ -618,7 +620,7 @@ export default function App() {
             Changer d'Espace
           </button>
           <button 
-            onClick={() => auth.signOut()}
+            onClick={() => authService.logout().then(() => window.location.reload())}
             className="px-8 py-4 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl shadow-white/5 font-sans"
           >
             Déconnexion
@@ -644,7 +646,7 @@ export default function App() {
     { id: 'collaboration', label: 'Collaboration & Comm', icon: Handshake },
     { id: 'accounting', label: 'Comptabilité & Finance', icon: Calculator },
     { id: 'guide', label: 'Guide & Performance', icon: BookOpen },
-    ...(user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com' ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
+    ...(isMasterUser(user, currentCompany) ? [{ id: 'admin', label: 'Administration', icon: Shield }] : []),
   ].filter(item => {
     if (item.id === 'admin') return true;
     const allowedByRole = (currentCompany.roles || DEFAULT_ROLES)[user.role] || ['dashboard'];
@@ -904,7 +906,7 @@ export default function App() {
                 {activeTab === 'accounting' && <AccountingModule />}
                 {activeTab === 'collaboration' && <CollaborationModule />}
                 {activeTab === 'guide' && <GuideModule />}
-                {activeTab === 'admin' && (user.email === 'hackeurfaurest@gmail.com' || user.email === 'dangafelicite@gmail.com' || user.email === 'yaoubaboubakary43@gmail.com') && <AdminModule />}
+                {activeTab === 'admin' && isMasterUser(user, currentCompany) && <AdminModule />}
               </motion.div>
             </AnimatePresence>
           </div>
