@@ -1,8 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ 
-  apiKey: process.env.GEMINI_API_KEY 
-});
+const apiKey = (import.meta as any).env?.GEMINI_API_KEY || '';
+
+let ai: GoogleGenAI | null = null;
+function getAI(): GoogleGenAI {
+  if (!ai && apiKey) {
+    ai = new GoogleGenAI({ apiKey });
+  }
+  return ai!;
+}
 
 export const geminiModel = "gemini-3-flash-preview";
 
@@ -20,7 +26,9 @@ export async function getFinancialSuggestions(data: { totalRevenue: number, tota
   `;
 
   try {
-    const response = await ai.models.generateContent({
+    const client = getAI();
+    if (!client) return "Gemini AI n'est pas configuré. Ajoutez GEMINI_API_KEY dans vos variables d'environnement.";
+    const response = await client.models.generateContent({
       model: geminiModel,
       contents: prompt,
     });

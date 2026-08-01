@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 import { authService } from '../core/auth/AuthService';
 import { isMasterUser } from './auth';
 
@@ -141,6 +141,12 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       }
 
       setLoading(true);
+      
+      if (!isSupabaseConfigured) {
+        setCompanies([]);
+        setLoading(false);
+        return;
+      }
       
       const cleanEmail = user.email.trim().toLowerCase().replace(/\s+/g, '');
       const isMaster = isMasterUser(user);

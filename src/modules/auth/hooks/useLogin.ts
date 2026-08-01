@@ -26,10 +26,12 @@ export function useLogin() {
     } catch (err: any) {
       // Map domain exception / original error string to user-friendly message
       const errorCode = err?.originalError?.code || err.code;
-      if (errorCode === 'auth/invalid-credential' || errorCode === 'auth/user-not-found') {
+      if (errorCode === 'auth/invalid-credential' || errorCode === 'auth/user-not-found' || errorCode === 'invalid_credentials' || errorCode === 'Invalid login credentials') {
         setError('Identifiants incorrects ou compte inexistant.');
       } else if (errorCode === 'auth/wrong-password') {
         setError('Clé d\'accès incorrecte.');
+      } else if (errorCode === 'email_not_confirmed' || errorCode === 'Email not confirmed') {
+        setError('Votre email n\'a pas encore été confirmé. Vérifiez votre boîte de réception.');
       } else {
         setError('Erreur de connexion : ' + (err.message || 'Serveur indisponible.'));
       }
@@ -46,6 +48,7 @@ export function useLogin() {
       await facades.session.loginWithGoogle();
       return true;
     } catch (err: any) {
+      console.error('Google login error:', err?.originalError || err);
       setError('Échec de la connexion avec Google. Réessayez.');
       return false;
     } finally {

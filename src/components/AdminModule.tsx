@@ -415,7 +415,7 @@ export default function AdminModule() {
   const handleExportData = async () => {
     try {
       const exportData: Record<string, any[]> = { companies };
-      const collectionsToExport = ['clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners', 'services', 'interventions', 'notifications', 'invoices', 'payments', 'open_orders'];
+      const collectionsToExport = ['clients', 'personnel', 'resources', 'projects', 'tasks', 'sales', 'sales_invoices', 'expenses', 'partners', 'services', 'interventions', 'notifications', 'invoices', 'payments', 'open_orders', 'products', 'ecommerce_orders', 'order_history', 'guide_steps', 'global_orders', 'messages', 'project_discussions', 'order_messages', 'collaborations', 'support_tickets', 'time_entries', 'salary_advances', 'leave_requests', 'users'];
       
       for (const coll of collectionsToExport) {
           const snap = await getDocs(collection(db, coll));

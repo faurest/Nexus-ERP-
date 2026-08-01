@@ -8,6 +8,8 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import twilio from 'twilio';
 import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const PORT = 3000;
 const db = new Database('database.sqlite');

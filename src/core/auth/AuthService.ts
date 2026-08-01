@@ -1,11 +1,13 @@
 import { sessionManager } from './SessionManager';
 import { tokenManager } from './TokenManager';
 import { AuthCredentials, AuthenticatedUser } from './types';
-import { supabase, supabaseAuth } from '../../lib/supabase';
+import { supabase, supabaseAuth, isSupabaseConfigured } from '../../lib/supabase';
+import { auth as firebaseAuth, onAuthStateChanged as firebaseOnAuthStateChanged } from '../../lib/firebase';
 // Maintain dummy export for existing code compatibility if needed, or remove completely
 
 class AuthService {
   async loginWithEmail(credentials: AuthCredentials): Promise<AuthenticatedUser | null> {
+    if (!isSupabaseConfigured) throw new Error("Supabase n'est pas configuré. Configurez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY.");
     try {
       const { data, error } = await supabaseAuth.signInWithPassword({
         email: credentials.email,
@@ -34,6 +36,7 @@ class AuthService {
   }
 
   async registerWithEmail(credentials: AuthCredentials): Promise<AuthenticatedUser | null> {
+    if (!isSupabaseConfigured) throw new Error("Supabase n'est pas configuré.");
     try {
       const { data, error } = await supabaseAuth.signUp({
         email: credentials.email,
@@ -58,6 +61,7 @@ class AuthService {
   }
 
   async loginWithGoogle(): Promise<boolean> {
+    if (!isSupabaseConfigured) { console.error("Supabase not configured"); return false; }
     try {
       const { data, error } = await supabaseAuth.signInWithOAuth({
         provider: 'google',
@@ -72,7 +76,12 @@ class AuthService {
 
   async logout(): Promise<void> {
     sessionManager.clearSession();
-    await supabaseAuth.signOut();
+    if (isSupabaseConfigured) {
+      await supabaseAuth.signOut();
+    }
+    if (firebaseAuth?.currentUser) {
+      await firebaseAuth.signOut();
+    }
   }
 
   getCurrentUser(): AuthenticatedUser | null {
@@ -85,36 +94,62 @@ class AuthService {
   }
 
   observeAuthState(callback: (user: any | null) => void): () => void {
-    const { data: { subscription } } = supabaseAuth.onAuthStateChange(async (event, session) => {
-      if (session && session.user) {
+    let supabaseUser: any | null = null;
+    let firebaseUser: any | null = null;
+
+    const toPlain = (user: any) => {
+      if (!user) return null;
+      return {
+        uid: user.id || user.uid,
+        email: user.email || '',
+        displayName: user.displayName || user.user_metadata?.full_name || null,
+        access_token: user.access_token || '',
+        refresh_token: user.refresh_token || '',
+        expires_at: user.expires_at || undefined,
+      };
+    };
+
+    const emit = () => {
+      const effective = toPlain(supabaseUser) || toPlain(firebaseUser);
+      if (effective) {
         const customUser: AuthenticatedUser = {
-          id: session.user.id,
-          email: session.user.email || '',
-          displayName: session.user.user_metadata?.full_name || null,
+          id: effective.uid,
+          email: effective.email || '',
+          displayName: effective.displayName,
           role: 'Personnel',
         };
-        
         sessionManager.setSession({
-          token: session.access_token,
-          refreshToken: session.refresh_token,
-          expiresAt: session.expires_at ? session.expires_at * 1000 : Date.now() + 3600 * 1000,
+          token: effective.access_token,
+          refreshToken: effective.refresh_token,
+          expiresAt: effective.expires_at ? effective.expires_at * 1000 : Date.now() + 3600 * 1000,
           user: customUser
-        });
-        
-        // Return an object compatible with Firebase user for existing components
-        callback({
-          uid: session.user.id,
-          email: session.user.email,
-          displayName: session.user.user_metadata?.full_name,
         });
       } else {
         sessionManager.clearSession();
-        callback(null);
       }
-    });
+      callback(effective);
+    };
+
+    let supabaseUnsub = () => {};
+    if (isSupabaseConfigured) {
+      const { data: { subscription } } = supabaseAuth.onAuthStateChange(async (_event, session) => {
+        supabaseUser = session?.user || null;
+        emit();
+      });
+      supabaseUnsub = () => subscription.unsubscribe();
+    }
+
+    let firebaseUnsub = () => {};
+    if (firebaseAuth) {
+      firebaseUnsub = firebaseOnAuthStateChanged(firebaseAuth, (user: any) => {
+        firebaseUser = user || null;
+        emit();
+      });
+    }
 
     return () => {
-      subscription.unsubscribe();
+      supabaseUnsub();
+      firebaseUnsub();
     };
   }
 }
