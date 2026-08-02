@@ -24,7 +24,9 @@ export class AuthGateway extends BaseGateway implements IAuthRepository {
   }
 
   async signInWithGoogle() {
-    // Google provider not yet enabled in Supabase Auth — fall back to Firebase
+    if (isSupabaseConfigured) {
+      return this.supabaseAuth.signInWithGoogle();
+    }
     return this.firebaseAuth.signInWithGoogle();
   }
 

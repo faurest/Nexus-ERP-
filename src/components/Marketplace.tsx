@@ -43,6 +43,7 @@ import {
   Wheat,
   Settings,
   Hammer,
+  AlertCircle,
   Monitor,
   Zap,
   LayoutGrid,
@@ -99,6 +100,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeCompanyId, setActiveCompanyId] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -315,6 +317,15 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
   useEffect(() => {
     setLoading(true);
+    let loadError: string | null = null;
+
+    const fail = (error: any) => {
+      loadError = error?.message || "Erreur de lecture des données";
+      setProducts([]);
+      setCompanies([]);
+      setLoading(false);
+    };
+
     // Fetch companies
     const unsubscribeCompanies = onSnapshot(
       collection(db, "companies"),
@@ -323,6 +334,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Company),
         );
       },
+      fail,
     );
 
     // Fetch all products
@@ -333,7 +345,11 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
           snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Product),
         );
         setLoading(false);
+        if (loadError) {
+          setErrorMessage(loadError);
+        }
       },
+      fail,
     );
 
     return () => {
@@ -753,11 +769,25 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
-          Chargement du Nexus Marketplace...
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 px-4 text-center">
+        {errorMessage ? (
+          <>
+            <div className="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
+              <AlertCircle size={28} />
+            </div>
+            <p className="text-red-500 font-semibold text-sm">
+              Impossible de charger le Nexus Marketplace.
+            </p>
+            <p className="text-slate-400 text-xs max-w-md">{errorMessage}</p>
+          </>
+        ) : (
+          <>
+            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+              Chargement du Nexus Marketplace...
+            </p>
+          </>
+        )}
       </div>
     );
   }
