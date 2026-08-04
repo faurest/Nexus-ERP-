@@ -46,7 +46,8 @@ const TABLES: Record<string, TableDef> = {
     table: 'companies',
     cols: ['name', 'owner_id', 'owner_email', 'join_code', 'delivery_fees', 'naira_rate',
       'total_profit', 'categories', 'whatsapp_number', 'objectives', 'location', 'logo',
-      'member_emails', 'employees', 'members', 'nexus_commission_rate', 'created_at', 'updated_at'],
+      'member_emails', 'employees', 'members', 'nexus_commission_rate', 'description',
+      'created_at', 'updated_at'],
   },
   personnel: {
     table: 'personnel',
@@ -62,7 +63,7 @@ const TABLES: Record<string, TableDef> = {
     table: 'products',
     cols: ['company_id', 'name', 'description', 'price', 'purchase_price', 'category', 'image',
       'stock', 'points', 'views', 'tags', 'sold_count', 'stock_threshold', 'config_options',
-      'created_at', 'updated_at'],
+      'allow_backorder', 'created_at', 'updated_at'],
   },
   ecommerce_orders: {
     table: 'ecommerce_orders',
@@ -108,7 +109,7 @@ const TABLES: Record<string, TableDef> = {
   projects: {
     table: 'projects',
     cols: ['company_id', 'name', 'description', 'status', 'budget', 'start_date', 'end_date',
-      'client_name', 'progress', 'created_at', 'updated_at'],
+      'client_name', 'progress', 'partner_id', 'created_at', 'updated_at'],
   },
   resources: {
     table: 'resources',
@@ -117,7 +118,8 @@ const TABLES: Record<string, TableDef> = {
   },
   services: {
     table: 'services',
-    cols: ['company_id', 'name', 'price', 'description', 'image', 'created_at', 'updated_at'],
+    cols: ['company_id', 'name', 'price', 'description', 'image', 'quantity', 'type',
+      'created_at', 'updated_at'],
   },
   sales: {
     table: 'sales',
@@ -127,29 +129,34 @@ const TABLES: Record<string, TableDef> = {
   sales_invoices: {
     table: 'sales_invoices',
     cols: ['company_id', 'sale_id', 'order_id', 'invoice_number', 'amount', 'status', 'client_name',
-      'table_number', 'items', 'date', 'created_at', 'updated_at'],
+      'table_number', 'items', 'date', 'project_id', 'partner_id', 'description',
+      'created_at', 'updated_at'],
   },
   invoices: {
     table: 'sales_invoices',
     cols: ['company_id', 'sale_id', 'order_id', 'invoice_number', 'amount', 'status', 'client_name',
-      'table_number', 'items', 'date', 'created_at', 'updated_at'],
+      'table_number', 'items', 'date', 'project_id', 'partner_id', 'description',
+      'created_at', 'updated_at'],
   },
   payments: {
     table: 'payments',
     cols: ['company_id', 'order_id', 'invoice_id', 'amount', 'method', 'status', 'customer_name',
-      'notes', 'date', 'created_at', 'updated_at'],
+      'notes', 'date', 'project_id', 'type', 'description', 'reference', 'created_at', 'updated_at'],
   },
   expenses: {
     table: 'expenses',
-    cols: ['company_id', 'description', 'amount', 'category', 'date', 'created_at', 'updated_at'],
+    cols: ['company_id', 'description', 'amount', 'category', 'date', 'project_id',
+      'created_at', 'updated_at'],
   },
   open_orders: {
     table: 'open_orders',
     cols: ['company_id', 'customer_name', 'customer_phone', 'items', 'total', 'status', 'notes',
-      'date', 'created_at', 'updated_at'],
+      'date', 'table_number', 'created_at', 'updated_at'],
   },
   partners: {
     table: 'partners',
+    aliases: { contactEmail: 'email' },
+    readAliases: { email: 'contactEmail' },
     cols: ['company_id', 'name', 'type', 'email', 'phone', 'address', 'status', 'notes',
       'created_at', 'updated_at'],
   },
@@ -203,7 +210,7 @@ const TABLES: Record<string, TableDef> = {
     table: 'users',
     camel: true,
     cols: ['id', 'uid', 'email', 'displayName', 'createdAt', 'photoURL', 'updatedAt', 'lastLogin',
-      'status', 'fid'],
+      'status', 'fid', 'role'],
   },
   resource_movements: {
     table: 'resource_movements',
@@ -333,8 +340,11 @@ export function collection(a: any, b?: any) {
 }
 
 export function doc(a: any, b?: any, c?: any) {
-  if (a && a.kind === 'collection' && b !== undefined) {
-    return { kind: 'doc', name: a.name, path: a.name + '/' + b, id: String(b) };
+  if (a && a.kind === 'collection') {
+    if (b !== undefined) {
+      return { kind: 'doc', name: a.name, path: a.name + '/' + b, id: String(b) };
+    }
+    return { kind: 'doc', name: a.name, path: a.name, id: undefined };
   }
   if (a && a.__isDb) {
     const path = String(b);
