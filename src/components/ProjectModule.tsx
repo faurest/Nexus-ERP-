@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDependencies } from '../core/di/DependencyProvider';
 
-import { FolderKanban, Handshake, Search, Plus, Calendar, DollarSign, ExternalLink, Filter, CreditCard, Receipt, TrendingDown, ArrowUpRight, ArrowDownRight, Edit2, Trash2, MoreVertical, ClipboardList, Activity, AlertTriangle } from 'lucide-react';
+import { FolderKanban, Handshake, Search, Plus, Calendar, DollarSign, ExternalLink, Filter, CreditCard, Receipt, TrendingDown, ArrowUpRight, ArrowDownRight, Edit2, Trash2, MoreVertical, ClipboardList, Activity, AlertTriangle, X } from 'lucide-react';
 import { useSubNavigation } from '../hooks/useSubNavigation';
 import Table, { TableRow } from './ui/Table';
 
@@ -85,7 +85,9 @@ export default function ProjectModule() {
   const [evolution, setEvolution] = useState<any>({ status: '', comment: '' });
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [taskFilter, setTaskFilter] = useState<'all' | string>('all');
+  const [taskProjectFilter, setTaskProjectFilter] = useState<string | null>(null);
 
+  const activeProjects = projects.filter(p => p.status === 'active');
   const taskStats = {
     all: tasks.length,
     todo: tasks.filter(t => t.status === 'todo').length,
@@ -93,7 +95,8 @@ export default function ProjectModule() {
     blocked: tasks.filter(t => t.status === 'blocked').length,
     done: tasks.filter(t => t.status === 'done').length,
   };
-  const filteredTasks = taskFilter === 'all' ? tasks : tasks.filter(t => t.status === taskFilter);
+  const filteredTasks = (taskFilter === 'all' ? tasks : tasks.filter(t => t.status === taskFilter))
+    .filter(t => !taskProjectFilter || t.projectId === taskProjectFilter);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -451,6 +454,80 @@ export default function ProjectModule() {
                 </div>
               </div>
 
+              {activeProjects.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                      <FolderKanban size={13} className="text-blue-600" />
+                      Projets en cours
+                      <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">{activeProjects.length}</span>
+                    </h4>
+                    {taskProjectFilter && (
+                      <button
+                        onClick={() => setTaskProjectFilter(null)}
+                        className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-800 transition-all flex items-center gap-1"
+                      >
+                        <X size={10} /> Tous les projets
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {activeProjects.map(p => {
+                      const pTasks = tasks.filter(t => t.projectId === p.id);
+                      const pBlocked = pTasks.filter(t => t.status === 'blocked').length;
+                      const pDone = pTasks.filter(t => t.status === 'done').length;
+                      const pct = pTasks.length ? Math.round((pDone / pTasks.length) * 100) : 0;
+                      const isActive = taskProjectFilter === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => setTaskProjectFilter(isActive ? null : p.id)}
+                          className={cn(
+                            "text-left p-4 rounded-2xl border transition-all group",
+                            isActive
+                              ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100"
+                              : "border-slate-200 bg-white hover:border-blue-300 hover:shadow-md"
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-slate-800 truncate flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0 animate-pulse" />
+                                {p.name}
+                              </p>
+                              <p className="text-[10px] text-slate-400 mt-0.5 truncate flex items-center gap-1">
+                                <Handshake size={10} /> {partners.find(part => part.id === p.partnerId)?.name || 'N/A'}
+                              </p>
+                            </div>
+                            <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase bg-green-100 text-green-700 shrink-0">En cours</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-3">
+                            <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
+                              <Calendar size={10} /> {p.endDate ? new Date((p.endDate.seconds || p.endDate / 1000) * 1000).toLocaleDateString() : '—'}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">{pTasks.length} tâche{pTasks.length > 1 ? 's' : ''}</span>
+                              {pBlocked > 0 && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 animate-pulse">{pBlocked} bloquée{pBlocked > 1 ? 's' : ''}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                              <span>Avancement</span>
+                              <span className="text-blue-600">{pct}%</span>
+                            </div>
+                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {taskStats.blocked > 0 && (
                 <div className="flex items-start gap-3 p-3 rounded-xl border border-red-100 bg-red-50/60">
                   <AlertTriangle size={16} className="text-red-500 mt-0.5 shrink-0" />
@@ -542,7 +619,7 @@ export default function ProjectModule() {
                 })}
                 {filteredTasks.length === 0 && (
                   <div className="p-12 text-center opacity-30 text-slate-400 italic text-xs">
-                    Aucune tâche à afficher. Cliquez sur « DATA ENTRY » pour en créer une.
+                    {taskProjectFilter ? 'Aucune tâche pour ce projet pour le moment.' : 'Aucune tâche à afficher. Cliquez sur « DATA ENTRY » pour en créer une.'}
                   </div>
                 )}
               </Table>
