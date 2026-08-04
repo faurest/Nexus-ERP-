@@ -427,6 +427,11 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
     window.dispatchEvent(new CustomEvent('NAVIGATE_TAB', { detail: tab }));
   };
 
+  const goToTasks = () => {
+    window.history.pushState(null, '', '#projects/tasks');
+    window.dispatchEvent(new CustomEvent('NAVIGATE_TAB', { detail: 'projects' }));
+  };
+
   const quickActions = [
     { label: 'Ventes', tab: 'sales', icon: TrendingUp, color: 'text-nexus-success', bg: 'bg-nexus-success/10' },
     { label: 'Projets', tab: 'projects', icon: FolderKanban, color: 'text-nexus-accent', bg: 'bg-nexus-accent/10' },
@@ -523,21 +528,32 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       </div>
 
       {/* Tasks & Evolutions */}
-      {tasks.length > 0 && (
-        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
-              <Activity size={16} className="text-blue-600" />
-              Tâches & Évolutions
-              <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{tasks.length}</span>
-            </h3>
-            <button onClick={() => navigateTo('projects')} className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-800 transition-all">Tout voir →</button>
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+            <Activity size={16} className="text-blue-600" />
+            Tâches & Évolutions
+            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{tasks.length}</span>
+          </h3>
+          <button onClick={goToTasks} className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-800 transition-all">Tout voir →</button>
+        </div>
+        {tasks.filter(t => t.status === 'blocked').length > 0 && (
+          <div className="flex items-start gap-3 p-3 rounded-xl border border-red-100 bg-red-50/60 mb-3">
+            <AlertTriangle size={15} className="text-red-500 mt-0.5 shrink-0" />
+            <p className="text-[11px] font-bold text-red-600">
+              {tasks.filter(t => t.status === 'blocked').length} tâche{tasks.filter(t => t.status === 'blocked').length > 1 ? 's' : ''} bloquée{tasks.filter(t => t.status === 'blocked').length > 1 ? 's' : ''} à débloquer
+            </p>
           </div>
+        )}
+        {tasks.length > 0 ? (
           <div className="space-y-2">
             {tasks.slice(0, 5).map(t => {
               const assignee = personnel.find(p => p.id === t.assignedTo);
               return (
-                <div key={t.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:border-blue-200 transition-all">
+                <div key={t.id} className={cn(
+                  "flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:border-blue-200 transition-all",
+                  t.status === 'blocked' && "border-red-200 bg-red-50/50"
+                )}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-800 truncate">{t.title}</span>
@@ -563,8 +579,19 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
               );
             })}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-3 p-6 rounded-xl bg-slate-50 border border-dashed border-slate-200">
+            <p className="text-[11px] text-slate-400 italic">Aucune tâche en cours. Lancez-vous !</p>
+            <button
+              onClick={() => { setNewTask({ title: '', description: '', assignedTo: '', priority: 'medium', startDate: '', endDate: '', needs: '', constraints: '' }); setIsAddingTask(true); }}
+              className="px-4 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center gap-2"
+            >
+              <Plus size={14} />
+              Créer une tâche
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Main Bento Grid */}
       {isEmptyState ? (

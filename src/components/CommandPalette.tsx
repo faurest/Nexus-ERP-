@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Command, X, LayoutDashboard, Users, Briefcase, Package, FolderKanban, TrendingUp, Calculator, Shield, BookOpen, Layers, ShoppingBag, Store, Handshake, MessageSquare } from 'lucide-react';
+import { Search, Command, X, LayoutDashboard, Users, Briefcase, Package, FolderKanban, TrendingUp, Calculator, Shield, BookOpen, Layers, ShoppingBag, Store, Handshake, MessageSquare, ClipboardList } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { isMasterUser } from '../lib/auth';
@@ -23,6 +23,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate, user }: Co
     { id: 'personnel', label: 'Ressources Humaines', icon: Briefcase, category: 'Navigation', shortcut: 'R' },
     { id: 'resources', label: 'Stocks & Logistique', icon: Package, category: 'Navigation', shortcut: 'S' },
     { id: 'projects', label: 'Projets & Tâches', icon: FolderKanban, category: 'Navigation', shortcut: 'P' },
+    { id: 'tasks', label: 'Tâches (Suivi)', icon: ClipboardList, category: 'Navigation', shortcut: 'T' },
     { id: 'accounting', label: 'Comptabilité & Finance', icon: Calculator, category: 'Navigation', shortcut: 'F' },
     { id: 'collaboration', label: 'Collaboration', icon: Handshake, category: 'Navigation', shortcut: 'L' },
     { id: 'marketplace', label: 'Marketplace Public', icon: Store, category: 'Navigation', shortcut: 'M' },

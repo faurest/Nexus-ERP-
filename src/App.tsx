@@ -660,7 +660,14 @@ export default function App() {
       <CommandPalette 
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
-        onNavigate={(tab) => setActiveTab(tab)}
+        onNavigate={(tab) => {
+          if (tab === 'tasks') {
+            window.history.pushState(null, '', '#projects/tasks');
+            setActiveTab('projects');
+          } else {
+            setActiveTab(tab);
+          }
+        }}
         user={user}
       />
 

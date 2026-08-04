@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDependencies } from '../core/di/DependencyProvider';
 
 import { FolderKanban, Handshake, Search, Plus, Calendar, DollarSign, ExternalLink, Filter, CreditCard, Receipt, TrendingDown, ArrowUpRight, ArrowDownRight, Edit2, Trash2, MoreVertical, ClipboardList, Activity, AlertTriangle } from 'lucide-react';
+import { useSubNavigation } from '../hooks/useSubNavigation';
 import Table, { TableRow } from './ui/Table';
 
 import { useCompany } from '../lib/CompanyContext';
@@ -68,7 +69,7 @@ export default function ProjectModule() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [activeView, setActiveView] = useState<'projects' | 'partners' | 'financials' | 'tasks'>('projects');
+  const [activeView, setActiveView] = useSubNavigation<'projects' | 'partners' | 'financials' | 'tasks'>('projects', 'projects');
   const [isAddingFinancial, setIsAddingFinancial] = useState<'expense' | 'invoice' | 'payment' | null>(null);
   const [isAddingProject, setIsAddingProject] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -83,6 +84,16 @@ export default function ProjectModule() {
   const [evolvingTask, setEvolvingTask] = useState<any | null>(null);
   const [evolution, setEvolution] = useState<any>({ status: '', comment: '' });
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  const [taskFilter, setTaskFilter] = useState<'all' | string>('all');
+
+  const taskStats = {
+    all: tasks.length,
+    todo: tasks.filter(t => t.status === 'todo').length,
+    in_progress: tasks.filter(t => t.status === 'in_progress').length,
+    blocked: tasks.filter(t => t.status === 'blocked').length,
+    done: tasks.filter(t => t.status === 'done').length,
+  };
+  const filteredTasks = taskFilter === 'all' ? tasks : tasks.filter(t => t.status === taskFilter);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -293,20 +304,35 @@ export default function ProjectModule() {
                { id: 'tasks', label: 'Tâches' },
                { id: 'partners', label: 'Annuaires' },
                { id: 'financials', label: 'Flux Finaux' }
-             ].map(item => (
-               <button 
-                 key={item.id}
-                 onClick={() => setActiveView(item.id as any)}
-                 className={cn(
-                   "px-6 py-2.5 rounded-xl text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap", 
-                   activeView === item.id 
-                    ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
-                    : "text-slate-300 hover:text-white hover:bg-white/5"
-                 )}
-               >
-                 {item.label}
-               </button>
-             ))}
+              ].map(item => (
+                <button 
+                  key={item.id}
+                  onClick={() => setActiveView(item.id as any)}
+                  className={cn(
+                    "px-6 py-2.5 rounded-xl text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap flex items-center gap-2", 
+                    activeView === item.id 
+                     ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
+                     : "text-slate-300 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  {item.label}
+                  {item.id === 'tasks' && (
+                    <>
+                      {tasks.filter(t => t.status === 'blocked').length > 0 && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                      )}
+                      {tasks.length > 0 && (
+                        <span className={cn(
+                          "px-1.5 py-0.5 rounded-full text-[8px] font-black",
+                          activeView === item.id ? "bg-white/20 text-white" : "bg-blue-600/20 text-blue-300"
+                        )}>
+                          {tasks.filter(t => t.status !== 'done').length}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </button>
+              ))}
           </div>
         </div>
       </div>
@@ -425,8 +451,44 @@ export default function ProjectModule() {
                 </div>
               </div>
 
+              {taskStats.blocked > 0 && (
+                <div className="flex items-start gap-3 p-3 rounded-xl border border-red-100 bg-red-50/60">
+                  <AlertTriangle size={16} className="text-red-500 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-[11px] font-bold text-red-600">{taskStats.blocked} tâche{taskStats.blocked > 1 ? 's' : ''} bloquée{taskStats.blocked > 1 ? 's' : ''} nécessitent une action</p>
+                    <p className="text-[10px] text-red-500/80 mt-0.5">Cliquez sur « Évoluer » pour changer le statut ou commenter l'avancement.</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { id: 'all', label: 'Toutes' },
+                  { id: 'todo', label: 'À faire' },
+                  { id: 'in_progress', label: 'En cours' },
+                  { id: 'blocked', label: 'Bloquées' },
+                  { id: 'done', label: 'Terminées' },
+                ].map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => setTaskFilter(f.id)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wide border transition-all",
+                      taskFilter === f.id
+                        ? "bg-slate-900 text-white border-slate-900 shadow-md"
+                        : "bg-white text-slate-500 border-slate-200 hover:border-blue-300 hover:text-blue-600"
+                    )}
+                  >
+                    {f.label}
+                    <span className={cn("ml-1.5 px-1.5 py-0.5 rounded-full text-[8px]", taskFilter === f.id ? "bg-white/20" : "bg-slate-100 text-slate-400")}>
+                      {taskStats[f.id as keyof typeof taskStats]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
               <Table headers={['Tâche', 'Projet', 'Assigné', 'Échéance', 'Statut', 'Actions']}>
-                {tasks.map(t => {
+                {filteredTasks.map(t => {
                   const assignee = personnelList.find(p => p.id === t.assignedTo);
                   const project = projects.find(p => p.id === t.projectId);
                   return (
@@ -478,7 +540,7 @@ export default function ProjectModule() {
                     </TableRow>
                   );
                 })}
-                {tasks.length === 0 && (
+                {filteredTasks.length === 0 && (
                   <div className="p-12 text-center opacity-30 text-slate-400 italic text-xs">
                     Aucune tâche à afficher. Cliquez sur « DATA ENTRY » pour en créer une.
                   </div>
