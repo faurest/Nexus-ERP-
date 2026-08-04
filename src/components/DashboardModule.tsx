@@ -43,7 +43,7 @@ import { exportCompanyDataAsJSON, importCompanyDataFromJSON } from '../lib/expor
 import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
-import { createNotification } from '../lib/notifications';
+import { changeTaskStatus, collectTaskRecipients, createTaskWithTracking, taskStatusBadge, taskStatusLabel, TASK_STATUS_ORDER } from '../lib/taskTracking';
 
 export default function DashboardModule({ user, companies = [] }: { user?: any, companies?: any[] }) {
   const { currentCompany } = useCompany();
@@ -62,7 +62,7 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
   const [editingIntervention, setEditingIntervention] = useState<any | null>(null);
 
   const [tasks, setTasks] = useState<any[]>([]);
-  const [newTask, setNewTask] = useState({ title: '', assignedTo: '', endDate: '' });
+  const [newTask, setNewTask] = useState({ title: '', description: '', assignedTo: '', priority: 'medium', startDate: '', endDate: '', needs: '', constraints: '' });
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [personnel, setPersonnel] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -185,30 +185,55 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
 
   const handleSaveTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentCompany) return;
+    if (!currentCompany || !newTask.title) return;
     try {
-      await addDoc(collection(db, 'tasks'), {
-        ...newTask,
-        companyId: currentCompany.id,
-        status: 'pending',
-        createdAt: serverTimestamp()
+      const assignee = personnel.find(p => p.id === newTask.assignedTo);
+      const recipients = collectTaskRecipients({
+        employees: currentCompany.employees,
+        ownerId: currentCompany.ownerId,
+        assigneeUid: assignee?.uid,
       });
-      
-      const recipients = [...(currentCompany.employees || [])];
-      if (!recipients.includes(currentCompany.ownerId)) recipients.push(currentCompany.ownerId);
 
-      await createNotification(
-        currentCompany.id,
+      await createTaskWithTracking({
+        companyId: currentCompany.id,
+        data: {
+          ...newTask,
+          startDate: newTask.startDate || null,
+          endDate: newTask.endDate || null,
+          dueDate: newTask.endDate || null,
+          projectId: null,
+        },
+        actor: { id: user?.uid, name: user?.displayName || user?.email },
         recipients,
-        'Nouvelle Tâche',
-        `Une nouvelle tâche "${newTask.title}" a été assignée.`,
-        'task'
-      );
+      });
 
       setIsAddingTask(false);
-      setNewTask({ title: '', assignedTo: '', endDate: '' });
+      setNewTask({ title: '', description: '', assignedTo: '', priority: 'medium', startDate: '', endDate: '', needs: '', constraints: '' });
     } catch (err: any) {
       handleFirestoreError(err, OperationType.WRITE, 'tasks');
+    }
+  };
+
+  const handleChangeTaskStatus = async (task: any, toStatus: string) => {
+    if (!currentCompany || task.status === toStatus) return;
+    try {
+      const assignee = personnel.find(p => p.id === task.assignedTo);
+      const recipients = collectTaskRecipients({
+        employees: currentCompany.employees,
+        ownerId: currentCompany.ownerId,
+        assigneeUid: assignee?.uid,
+      });
+      await changeTaskStatus({
+        companyId: currentCompany.id,
+        taskId: task.id,
+        taskTitle: task.title,
+        fromStatus: task.status,
+        toStatus,
+        actor: { id: user?.uid, name: user?.displayName || user?.email },
+        recipients,
+      });
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.UPDATE, 'tasks');
     }
   };
 
@@ -437,6 +462,13 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
           </div>
           
           <div className="flex flex-wrap gap-2 shrink-0">
+            <button
+              onClick={() => { setNewTask({ title: '', description: '', assignedTo: '', priority: 'medium', startDate: '', endDate: '', needs: '', constraints: '' }); setIsAddingTask(true); }}
+              className="px-4 py-2 rounded-xl bg-slate-900 text-white border border-transparent text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-md flex items-center gap-2 active:scale-95"
+            >
+              <Plus size={14} />
+              Nouvelle Tâche
+            </button>
              {(!isNewEnterprise || role === 'owner') && (
               <>
                 <button 
@@ -489,6 +521,50 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
           </motion.button>
         ))}
       </div>
+
+      {/* Tasks & Evolutions */}
+      {tasks.length > 0 && (
+        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+              <Activity size={16} className="text-blue-600" />
+              Tâches & Évolutions
+              <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{tasks.length}</span>
+            </h3>
+            <button onClick={() => navigateTo('projects')} className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-800 transition-all">Tout voir →</button>
+          </div>
+          <div className="space-y-2">
+            {tasks.slice(0, 5).map(t => {
+              const assignee = personnel.find(p => p.id === t.assignedTo);
+              return (
+                <div key={t.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:border-blue-200 transition-all">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-800 truncate">{t.title}</span>
+                      <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-bold uppercase shrink-0", taskStatusBadge(t.status))}>
+                        {taskStatusLabel(t.status)}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                      {assignee ? `Assigné à ${assignee.name}` : 'Non assigné'}
+                      {t.endDate ? ` • Échéance ${new Date(t.endDate.seconds ? t.endDate.seconds * 1000 : t.endDate).toLocaleDateString()}` : ''}
+                    </p>
+                  </div>
+                  {t.status !== 'done' && (
+                    <select
+                      value={t.status}
+                      onChange={e => handleChangeTaskStatus(t, e.target.value)}
+                      className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold text-slate-600 outline-none focus:border-blue-400 shrink-0"
+                    >
+                      {TASK_STATUS_ORDER.map(s => <option key={s} value={s}>{taskStatusLabel(s)}</option>)}
+                    </select>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Main Bento Grid */}
       {isEmptyState ? (
@@ -947,12 +1023,16 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       {/* Task Modal */}
       {isAddingTask && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-slate-900 mb-6">Nouvelle Tâche</h3>
             <form onSubmit={handleSaveTask} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Titre de la tâche</label>
                 <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})} required/>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Description</label>
+                <textarea className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900 h-16" value={newTask.description} onChange={e => setNewTask({...newTask, description: e.target.value})}/>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -963,9 +1043,31 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
                   </select>
                 </div>
                 <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Priorité</label>
+                  <select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" value={newTask.priority} onChange={e => setNewTask({...newTask, priority: e.target.value})}>
+                    <option value="low">Basse</option>
+                    <option value="medium">Moyenne</option>
+                    <option value="high">Haute</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Début</label>
+                  <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" value={newTask.startDate} onChange={e => setNewTask({...newTask, startDate: e.target.value})}/>
+                </div>
+                <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Échéance</label>
                   <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" value={newTask.endDate} onChange={e => setNewTask({...newTask, endDate: e.target.value})}/>
                 </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Besoins (ressources, matériel...)</label>
+                <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" placeholder="e.g. 2 ouvriers, camion, 500 000 FCFA" value={newTask.needs} onChange={e => setNewTask({...newTask, needs: e.target.value})}/>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Contraintes (limites, dépendances...)</label>
+                <input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-400 outline-none text-slate-900" placeholder="e.g. dépend du fournisseur X, budget plafonné" value={newTask.constraints} onChange={e => setNewTask({...newTask, constraints: e.target.value})}/>
               </div>
               <div className="grid grid-cols-2 gap-4 mt-8">
                 <button type="button" onClick={() => setIsAddingTask(false)} className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono">Annuler</button>

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useDependencies } from '../core/di/DependencyProvider';
 
-import { FolderKanban, Handshake, Search, Plus, Calendar, DollarSign, ExternalLink, Filter, CreditCard, Receipt, TrendingDown, ArrowUpRight, ArrowDownRight, Edit2, Trash2, MoreVertical } from 'lucide-react';
+import { FolderKanban, Handshake, Search, Plus, Calendar, DollarSign, ExternalLink, Filter, CreditCard, Receipt, TrendingDown, ArrowUpRight, ArrowDownRight, Edit2, Trash2, MoreVertical, ClipboardList, Activity, AlertTriangle } from 'lucide-react';
 import Table, { TableRow } from './ui/Table';
 
 import { useCompany } from '../lib/CompanyContext';
 import { cn } from '../lib/utils';
 import { createNotification } from '../lib/notifications';
+import { auth, collection, db, handleFirestoreError, onSnapshot, OperationType, query, where } from '../lib/firebase';
+import { changeTaskStatus, collectTaskRecipients, createTaskWithTracking, taskStatusBadge, taskStatusLabel, TASK_STATUS_ORDER } from '../lib/taskTracking';
 
 // ... interface declarations ...
 
@@ -59,19 +61,28 @@ interface Payment {
 
 export default function ProjectModule() {
   const { facades } = useDependencies();
-  const { project: projectFacade, partner: partnerFacade, finance: financeFacade, invoice: invoiceFacade } = facades;
+  const { project: projectFacade, partner: partnerFacade, finance: financeFacade, invoice: invoiceFacade, task: taskFacade, staff: staffFacade } = facades;
   const { currentCompany } = useCompany();
   const [projects, setProjects] = useState<Project[]>([]);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [activeView, setActiveView] = useState<'projects' | 'partners' | 'financials'>('projects');
+  const [activeView, setActiveView] = useState<'projects' | 'partners' | 'financials' | 'tasks'>('projects');
   const [isAddingFinancial, setIsAddingFinancial] = useState<'expense' | 'invoice' | 'payment' | null>(null);
   const [isAddingProject, setIsAddingProject] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState<any>({});
   const [submitting, setSubmitting] = useState(false);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [personnelList, setPersonnelList] = useState<any[]>([]);
+  const [taskUpdates, setTaskUpdates] = useState<any[]>([]);
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [newTask, setNewTask] = useState<any>({ title: '', description: '', assignedTo: '', projectId: '', priority: 'medium', startDate: '', endDate: '', needs: '', constraints: '' });
+  const [taskSubmitting, setTaskSubmitting] = useState(false);
+  const [evolvingTask, setEvolvingTask] = useState<any | null>(null);
+  const [evolution, setEvolution] = useState<any>({ status: '', comment: '' });
+  const [expandedTask, setExpandedTask] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -81,6 +92,11 @@ export default function ProjectModule() {
     const unsubExpenses = financeFacade.observeExpenses(currentCompany.id, setExpenses);
     const unsubInvoices = invoiceFacade.observeInvoices(currentCompany.id, setInvoices);
     const unsubPayments = financeFacade.observePayments(currentCompany.id, setPayments);
+    const unsubTasks = taskFacade.observe(currentCompany.id, setTasks);
+    const unsubPersonnel = staffFacade.observeStaff(currentCompany.id, setPersonnelList);
+    const unsubTaskUpdates = onSnapshot(query(collection(db, 'task_updates'), where('companyId', '==', currentCompany.id)), snap => {
+      setTaskUpdates(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, err => handleFirestoreError(err, OperationType.LIST, 'task_updates'));
 
     return () => { 
       if (unsubProjects) unsubProjects(); 
@@ -88,8 +104,11 @@ export default function ProjectModule() {
       if (unsubExpenses) unsubExpenses();
       if (unsubInvoices) unsubInvoices();
       if (unsubPayments) unsubPayments();
+      if (unsubTasks) unsubTasks();
+      if (unsubPersonnel) unsubPersonnel();
+      if (unsubTaskUpdates) unsubTaskUpdates();
     };
-  }, [currentCompany, projectFacade, partnerFacade, financeFacade, invoiceFacade]);
+  }, [currentCompany, projectFacade, partnerFacade, financeFacade, invoiceFacade, taskFacade, staffFacade]);
 
   const handleAddFinancial = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,6 +197,80 @@ export default function ProjectModule() {
     }
   };
 
+  const actorInfo = () => {
+    const u = auth?.currentUser;
+    return { id: u?.uid || currentCompany?.ownerId, name: u?.displayName || u?.email || currentCompany?.ownerEmail || 'Utilisateur' };
+  };
+
+  const recipientsFor = (assignedTo?: string) => {
+    const assignee = personnelList.find(p => p.id === assignedTo);
+    return collectTaskRecipients({ employees: currentCompany?.employees, ownerId: currentCompany?.ownerId, assigneeUid: assignee?.uid });
+  };
+
+  const resetNewTask = () => setNewTask({ title: '', description: '', assignedTo: '', projectId: '', priority: 'medium', startDate: '', endDate: '', needs: '', constraints: '' });
+
+  const handleAddTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany || !newTask.title || taskSubmitting) return;
+    setTaskSubmitting(true);
+    try {
+      await createTaskWithTracking({
+        companyId: currentCompany.id,
+        data: {
+          ...newTask,
+          startDate: newTask.startDate || null,
+          endDate: newTask.endDate || null,
+          dueDate: newTask.endDate || null,
+          projectId: newTask.projectId || null,
+        },
+        actor: actorInfo(),
+        recipients: recipientsFor(newTask.assignedTo),
+      });
+      setIsAddingTask(false);
+      resetNewTask();
+    } catch (err) {
+      console.error(err);
+      alert("Une erreur est survenue lors de la création de la tâche.");
+    } finally {
+      setTaskSubmitting(false);
+    }
+  };
+
+  const handleTaskEvolution = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany || !evolvingTask || !evolution.status || taskSubmitting) return;
+    setTaskSubmitting(true);
+    try {
+      await changeTaskStatus({
+        companyId: currentCompany.id,
+        taskId: evolvingTask.id,
+        taskTitle: evolvingTask.title,
+        fromStatus: evolvingTask.status,
+        toStatus: evolution.status,
+        comment: evolution.comment,
+        actor: actorInfo(),
+        recipients: recipientsFor(evolvingTask.assignedTo),
+      });
+      setEvolvingTask(null);
+      setEvolution({ status: '', comment: '' });
+    } catch (err) {
+      console.error(err);
+      alert("Une erreur est survenue lors de l'évolution de la tâche.");
+    } finally {
+      setTaskSubmitting(false);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) return;
+    try {
+      await taskFacade.delete(taskId);
+    } catch (err) {
+      console.error(err);
+      alert("Une erreur est survenue lors de la suppression de la tâche.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <datalist id="projects-list">
@@ -197,6 +290,7 @@ export default function ProjectModule() {
           <div className="flex bg-slate-950/40 p-1.5 rounded-2xl border border-white/10 shrink-0 gap-1 overflow-x-auto scrollbar-hide max-w-full">
              {[
                { id: 'projects', label: 'Projets' },
+               { id: 'tasks', label: 'Tâches' },
                { id: 'partners', label: 'Annuaires' },
                { id: 'financials', label: 'Flux Finaux' }
              ].map(item => (
@@ -235,6 +329,7 @@ export default function ProjectModule() {
               onClick={() => {
                 if (activeView === 'financials') setIsAddingFinancial('expense');
                 if (activeView === 'projects') setIsAddingProject(true);
+                if (activeView === 'tasks') { resetNewTask(); setIsAddingTask(true); }
               }}
               className="px-6 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-600 transition-all shadow-xl shadow-slate-200"
             >
@@ -315,6 +410,114 @@ export default function ProjectModule() {
                 </TableRow>
               ))}
             </Table>
+          ) : activeView === 'tasks' ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <ClipboardList size={16} className="text-blue-600" />
+                  Suivi des Tâches
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{tasks.length}</span>
+                </h3>
+                <div className="flex gap-2 flex-wrap">
+                  <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-blue-50 text-blue-600">{tasks.filter(t => t.status === 'in_progress').length} en cours</span>
+                  <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-red-50 text-red-600">{tasks.filter(t => t.status === 'blocked').length} bloquées</span>
+                  <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-green-50 text-green-600">{tasks.filter(t => t.status === 'done').length} terminées</span>
+                </div>
+              </div>
+
+              <Table headers={['Tâche', 'Projet', 'Assigné', 'Échéance', 'Statut', 'Actions']}>
+                {tasks.map(t => {
+                  const assignee = personnelList.find(p => p.id === t.assignedTo);
+                  const project = projects.find(p => p.id === t.projectId);
+                  return (
+                    <TableRow key={t.id}>
+                      <div className="min-w-[220px] max-w-[280px]">
+                        <div className="font-bold text-slate-800 flex items-center gap-2">
+                          <span className="truncate">{t.title}</span>
+                          {t.priority === 'high' && <AlertTriangle size={12} className="text-red-500 shrink-0" />}
+                          {t.priority === 'medium' && <Activity size={12} className="text-amber-500 shrink-0" />}
+                        </div>
+                        {t.description && <p className="text-[10px] text-slate-400 mt-0.5 truncate">{t.description}</p>}
+                        {(t.needs || t.constraints) && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {t.needs && <span className="text-[8px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">Besoin : {t.needs}</span>}
+                            {t.constraints && <span className="text-[8px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Contrainte : {t.constraints}</span>}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-slate-500 text-xs">{project?.name || '—'}</span>
+                      <span className="text-slate-600 text-xs">{assignee?.name || 'Non assigné'}</span>
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {t.endDate ? new Date(t.endDate.seconds ? t.endDate.seconds * 1000 : t.endDate).toLocaleDateString() : '—'}
+                      </span>
+                      <div>
+                        <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase", taskStatusBadge(t.status))}>
+                          {taskStatusLabel(t.status)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => { setEvolvingTask(t); setEvolution({ status: '', comment: '' }); }}
+                          className="p-1 px-2 border rounded-md hover:bg-slate-50 text-slate-400 hover:text-blue-600 transition-all font-bold text-[9px] flex items-center gap-1 uppercase"
+                        >
+                          <Activity size={10} /> Évoluer
+                        </button>
+                        <button
+                          onClick={() => setExpandedTask(expandedTask === t.id ? null : t.id)}
+                          className="p-1 px-2 border rounded-md hover:bg-slate-50 text-slate-400 hover:text-blue-600 transition-all font-bold text-[9px] flex items-center gap-1 uppercase"
+                        >
+                          Suivi
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTask(t.id)}
+                          className="p-1 px-2 border border-red-50 rounded-md hover:bg-red-50 text-slate-300 hover:text-red-600 transition-all font-bold text-[9px] flex items-center gap-1 uppercase"
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
+                    </TableRow>
+                  );
+                })}
+                {tasks.length === 0 && (
+                  <div className="p-12 text-center opacity-30 text-slate-400 italic text-xs">
+                    Aucune tâche à afficher. Cliquez sur « DATA ENTRY » pour en créer une.
+                  </div>
+                )}
+              </Table>
+
+              {expandedTask && (
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                  <h4 className="text-xs font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    <Activity size={14} className="text-blue-600" /> Journal des évolutions
+                  </h4>
+                  <div className="space-y-3">
+                    {taskUpdates
+                      .filter(u => u.taskId === expandedTask)
+                      .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0))
+                      .map(u => (
+                        <div key={u.id} className="flex items-start gap-3">
+                          <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[10px] font-bold text-slate-600">{u.actorName || 'Utilisateur'}</span>
+                              {u.fromStatus && u.toStatus && (
+                                <span className="text-[9px] font-bold text-slate-400">
+                                  {taskStatusLabel(u.fromStatus)} <span className="text-blue-500">→</span> {taskStatusLabel(u.toStatus)}
+                                </span>
+                              )}
+                              <span className="text-[9px] text-slate-400">{u.createdAt ? new Date(u.createdAt.seconds * 1000).toLocaleString() : ''}</span>
+                            </div>
+                            {u.comment && <p className="text-[10px] text-slate-500 mt-0.5">{u.comment}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    {taskUpdates.filter(u => u.taskId === expandedTask).length === 0 && (
+                      <p className="text-[10px] text-slate-400 italic">Aucune évolution enregistrée pour l'instant.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="space-y-8">
               {/* Summary Cards */}
@@ -704,6 +907,195 @@ export default function ProjectModule() {
                   className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
                 >
                   {submitting ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Nouvelle Tâche */}
+      {isAddingTask && (
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <ClipboardList size={24} className="text-blue-600" />
+              Nouvelle Tâche
+            </h3>
+
+            <form onSubmit={handleAddTask} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Titre de la tâche *</label>
+                <input
+                  required
+                  type="text"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                  value={newTask.title}
+                  onChange={e => setNewTask({...newTask, title: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Description</label>
+                <textarea
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 h-16"
+                  value={newTask.description}
+                  onChange={e => setNewTask({...newTask, description: e.target.value})}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Projet lié</label>
+                  <select
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    value={newTask.projectId}
+                    onChange={e => setNewTask({...newTask, projectId: e.target.value})}
+                  >
+                    <option value="">(Optionnel) Choisir...</option>
+                    {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Assigné à</label>
+                  <select
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    value={newTask.assignedTo}
+                    onChange={e => setNewTask({...newTask, assignedTo: e.target.value})}
+                  >
+                    <option value="">Non assigné</option>
+                    {personnelList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Priorité</label>
+                  <select
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    value={newTask.priority}
+                    onChange={e => setNewTask({...newTask, priority: e.target.value})}
+                  >
+                    <option value="low">Basse</option>
+                    <option value="medium">Moyenne</option>
+                    <option value="high">Haute</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Début</label>
+                  <input
+                    type="date"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    value={newTask.startDate}
+                    onChange={e => setNewTask({...newTask, startDate: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Échéance</label>
+                  <input
+                    type="date"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                    value={newTask.endDate}
+                    onChange={e => setNewTask({...newTask, endDate: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Besoins (ressources, matériel...)</label>
+                <input
+                  type="text"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                  placeholder="e.g. 2 ouvriers, camion, 500 000 FCFA"
+                  value={newTask.needs}
+                  onChange={e => setNewTask({...newTask, needs: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Contraintes (limites, dépendances...)</label>
+                <input
+                  type="text"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                  placeholder="e.g. dépend du fournisseur X, budget plafonné"
+                  value={newTask.constraints}
+                  onChange={e => setNewTask({...newTask, constraints: e.target.value})}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <button
+                  type="button"
+                  onClick={() => { setIsAddingTask(false); resetNewTask(); }}
+                  className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={taskSubmitting}
+                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
+                >
+                  {taskSubmitting ? 'Traitement...' : 'Créer la Tâche'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Évolution de tâche */}
+      {evolvingTask && (
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+            <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <Activity size={24} className="text-blue-600" />
+              Évolution de la tâche
+            </h3>
+            <p className="text-xs text-slate-500 mb-4">
+              <span className="font-bold text-slate-700">{evolvingTask.title}</span>
+              <span className="ml-2 text-[10px] font-bold uppercase">({taskStatusLabel(evolvingTask.status)})</span>
+            </p>
+
+            <form onSubmit={handleTaskEvolution} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nouveau statut</label>
+                <select
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900"
+                  value={evolution.status}
+                  onChange={e => setEvolution({...evolution, status: e.target.value})}
+                >
+                  <option value="">Choisir...</option>
+                  {TASK_STATUS_ORDER.map(s => <option key={s} value={s}>{taskStatusLabel(s)}</option>)}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Commentaire / Alerte</label>
+                <textarea
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-900 h-20"
+                  placeholder="Précisez l'évolution, le blocage, la contrainte rencontrée..."
+                  value={evolution.comment}
+                  onChange={e => setEvolution({...evolution, comment: e.target.value})}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <button
+                  type="button"
+                  onClick={() => setEvolvingTask(null)}
+                  className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all font-mono"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={taskSubmitting}
+                  className="px-6 py-3 rounded-xl bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 font-mono disabled:opacity-50"
+                >
+                  {taskSubmitting ? 'Enregistrement...' : "Enregistrer l'évolution"}
                 </button>
               </div>
             </form>

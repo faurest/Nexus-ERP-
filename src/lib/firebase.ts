@@ -90,7 +90,13 @@ const TABLES: Record<string, TableDef> = {
   tasks: {
     table: 'tasks',
     cols: ['company_id', 'title', 'assigned_to', 'start_date', 'end_date', 'status', 'description',
-      'priority', 'due_date', 'completed_at', 'created_at', 'updated_at'],
+      'priority', 'due_date', 'completed_at', 'needs', 'constraints', 'project_id', 'requester_name',
+      'created_at', 'updated_at'],
+  },
+  task_updates: {
+    table: 'task_updates',
+    cols: ['company_id', 'task_id', 'actor_id', 'actor_name', 'from_status', 'to_status', 'comment',
+      'created_at'],
   },
   leave_requests: {
     table: 'leave_requests',
@@ -613,21 +619,22 @@ async function withColumnRetry(
     if (res && res.error) throw toError(res.error);
     return res;
   };
-  try {
-    return await run(row);
-  } catch (e: any) {
-    const msg = (e?.message || e?.details || String(e)) as string;
-    const cols = extractUnknownColumns(msg);
-    if (cols.length > 0) {
+  let current = row;
+  while (true) {
+    try {
+      return await run(current);
+    } catch (e: any) {
+      const msg = (e?.message || e?.details || String(e)) as string;
+      const cols = extractUnknownColumns(msg);
+      if (cols.length === 0) throw e;
       const fixed: Record<string, any> = {};
-      for (const [k, v] of Object.entries(row)) {
+      for (const [k, v] of Object.entries(current)) {
         if (cols.includes(k)) continue;
         fixed[k] = v;
       }
-      if (Object.keys(fixed).length === Object.keys(row).length) throw e;
-      return await run(fixed);
+      if (Object.keys(fixed).length === Object.keys(current).length) throw e;
+      current = fixed;
     }
-    throw e;
   }
 }
 
