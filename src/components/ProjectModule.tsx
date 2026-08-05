@@ -291,83 +291,66 @@ export default function ProjectModule() {
         {projects.map(p => <option key={p.id} value={p.name} />)}
       </datalist>
 
-      <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-          <div className="max-w-xl">
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
-              Nexus <span className="text-blue-500">Projects</span>
-            </h1>
-            <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
-              Gérez vos projets complexes, collaborez avec vos partenaires et suivez vos engagements financiers.
-            </p>
-          </div>
-          <div className="flex bg-slate-950/40 p-1.5 rounded-2xl border border-white/10 shrink-0 gap-1 overflow-x-auto scrollbar-hide max-w-full">
-             {[
-               { id: 'projects', label: 'Projets' },
-               { id: 'tasks', label: 'Tâches' },
-               { id: 'partners', label: 'Annuaires' },
-               { id: 'financials', label: 'Flux Finaux' }
-              ].map(item => (
-                <button 
-                  key={item.id}
-                  onClick={() => setActiveView(item.id as any)}
-                  className={cn(
-                    "px-6 py-2.5 rounded-xl text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap flex items-center gap-2", 
-                    activeView === item.id 
-                     ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
-                     : "text-slate-300 hover:text-white hover:bg-white/5"
+      {/* Navigation */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-2 flex flex-wrap items-center gap-1.5">
+         {[
+           { id: 'projects', label: 'Projets' },
+           { id: 'tasks', label: 'Tâches' },
+           { id: 'partners', label: 'Partenaires' },
+           { id: 'financials', label: 'Finances' }
+          ].map(item => (
+            <button 
+              key={item.id}
+              onClick={() => setActiveView(item.id as any)}
+              className={cn(
+                "px-5 py-2.5 rounded-xl text-[10px] uppercase font-black tracking-[0.1em] transition-all whitespace-nowrap flex items-center gap-2", 
+                activeView === item.id 
+                 ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25" 
+                 : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+              )}
+            >
+              {item.label}
+              {item.id === 'tasks' && (
+                <>
+                  {tasks.filter(t => t.status === 'blocked').length > 0 && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
                   )}
-                >
-                  {item.label}
-                  {item.id === 'tasks' && (
-                    <>
-                      {tasks.filter(t => t.status === 'blocked').length > 0 && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-                      )}
-                      {tasks.length > 0 && (
-                        <span className={cn(
-                          "px-1.5 py-0.5 rounded-full text-[8px] font-black",
-                          activeView === item.id ? "bg-white/20 text-white" : "bg-blue-600/20 text-blue-300"
-                        )}>
-                          {tasks.filter(t => t.status !== 'done').length}
-                        </span>
-                      )}
-                    </>
+                  {tasks.length > 0 && (
+                    <span className={cn(
+                      "px-1.5 py-0.5 rounded-full text-[8px] font-black",
+                      activeView === item.id ? "bg-white/20 text-white" : "bg-blue-600/10 text-blue-600"
+                    )}>
+                      {tasks.filter(t => t.status !== 'done').length}
+                    </span>
                   )}
-                </button>
-              ))}
-          </div>
-        </div>
+                </>
+              )}
+            </button>
+          ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 space-y-6">
-          <div className="flex gap-4 p-2 bg-white rounded-[2rem] shadow-sm border border-slate-100">
-            <div className="flex-1 bg-slate-50/50 rounded-2xl px-4 py-3 flex items-center gap-3 border border-slate-100 transition-all focus-within:border-blue-400 focus-within:bg-white">
-              <Search className="text-slate-400" size={18} />
-              <input 
-                type="text" 
-                placeholder="Scanner les projets ou partenaires..." 
-                className="flex-1 bg-transparent outline-none text-xs font-bold text-slate-600 placeholder:text-slate-300"
-              />
-            </div>
-            <button onClick={() => alert("Indexation avancée...")} className="w-12 h-12 flex items-center justify-center bg-white border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all text-slate-400 shadow-sm">
-              <Filter size={18} />
-            </button>
-            <button 
-              onClick={() => {
-                if (activeView === 'financials') setIsAddingFinancial('expense');
-                if (activeView === 'projects') setIsAddingProject(true);
-                if (activeView === 'tasks') { resetNewTask(); setIsAddingTask(true); }
-              }}
-              className="px-6 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-600 transition-all shadow-xl shadow-slate-200"
-            >
-              <Plus size={16} /> DATA ENTRY
-            </button>
-          </div>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-black text-slate-900 tracking-tight">
+            {activeView === 'projects' ? 'Projets' :
+             activeView === 'tasks' ? 'Tâches' :
+             activeView === 'partners' ? 'Partenaires' : 'Finances'}
+          </h2>
+        </div>
+        <button 
+          onClick={() => {
+            if (activeView === 'financials') setIsAddingFinancial('expense');
+            if (activeView === 'projects') setIsAddingProject(true);
+            if (activeView === 'tasks') { resetNewTask(); setIsAddingTask(true); }
+          }}
+          className="px-5 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/25"
+        >
+          <Plus size={16} /> Nouveau
+        </button>
+      </div>
 
           {activeView === 'projects' ? (
-            <Table headers={['Identifiant', 'Projet', 'Partenaire', 'Échéance', 'Status', 'Budget', 'Actions']}>
+            <Table headers={['Identifiant', 'Projet', 'Partenaire', 'Échéance', 'Statut', 'Budget', 'Actions']}>
               {projects.map((p) => (
                 <TableRow key={p.id}>
                   <span className="font-mono text-[10px] text-slate-400">#PRJ-{p.id.slice(0, 4).toUpperCase()}</span>
@@ -388,7 +371,7 @@ export default function ProjectModule() {
                       p.status === 'on_hold' ? "bg-amber-100 text-amber-700" :
                       "bg-slate-100 text-slate-600"
                     )}>
-                      {p.status}
+                      {p.status === 'active' ? 'En cours' : p.status === 'completed' ? 'Terminé' : p.status === 'on_hold' ? 'En pause' : 'Planifié'}
                     </span>
                   </div>
                   <div className="text-right font-mono text-slate-600 font-bold">
@@ -529,12 +512,11 @@ export default function ProjectModule() {
               )}
 
               {taskStats.blocked > 0 && (
-                <div className="flex items-start gap-3 p-3 rounded-xl border border-red-100 bg-red-50/60">
-                  <AlertTriangle size={16} className="text-red-500 mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-[11px] font-bold text-red-600">{taskStats.blocked} tâche{taskStats.blocked > 1 ? 's' : ''} bloquée{taskStats.blocked > 1 ? 's' : ''} nécessitent une action</p>
-                    <p className="text-[10px] text-red-500/80 mt-0.5">Cliquez sur « Évoluer » pour changer le statut ou commenter l'avancement.</p>
-                  </div>
+                <div className="flex items-center gap-3 p-3 rounded-xl border border-red-100 bg-red-50/60">
+                  <AlertTriangle size={16} className="text-red-500 shrink-0" />
+                  <p className="text-[11px] font-bold text-red-600">
+                    {taskStats.blocked} tâche{taskStats.blocked > 1 ? 's' : ''} bloquée{taskStats.blocked > 1 ? 's' : ''}
+                  </p>
                 </div>
               )}
 
@@ -619,7 +601,7 @@ export default function ProjectModule() {
                 })}
                 {filteredTasks.length === 0 && (
                   <div className="p-12 text-center opacity-30 text-slate-400 italic text-xs">
-                    {taskProjectFilter ? 'Aucune tâche pour ce projet pour le moment.' : 'Aucune tâche à afficher. Cliquez sur « DATA ENTRY » pour en créer une.'}
+                    {taskProjectFilter ? 'Aucune tâche pour ce projet pour le moment.' : 'Aucune tâche. Cliquez sur « Nouveau » pour en créer une.'}
                   </div>
                 )}
               </Table>
@@ -666,7 +648,7 @@ export default function ProjectModule() {
                     <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
                       <Receipt size={18} />
                     </div>
-                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">INVOICED</span>
+                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">FACTURÉ</span>
                   </div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Facturation Totale</p>
                   <h4 className="text-xl font-bold text-slate-900">{invoices.reduce((acc, inv) => acc + inv.amount, 0).toLocaleString()} FCFA</h4>
@@ -676,7 +658,7 @@ export default function ProjectModule() {
                     <div className="p-2 bg-red-50 text-red-600 rounded-lg">
                       <TrendingDown size={18} />
                     </div>
-                    <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">EXPENSES</span>
+                    <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">DÉPENSES</span>
                   </div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dépenses Projets</p>
                   <h4 className="text-xl font-bold text-slate-900">{expenses.reduce((acc, exp) => acc + exp.amount, 0).toLocaleString()} FCFA</h4>
@@ -686,7 +668,7 @@ export default function ProjectModule() {
                     <div className="p-2 bg-green-50 text-green-600 rounded-lg">
                       <CreditCard size={18} />
                     </div>
-                    <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">PAYMENTS</span>
+                    <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">PAIEMENTS</span>
                   </div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Paiements Reçus</p>
                   <h4 className="text-xl font-bold text-slate-900">{payments.filter(p => p.type === 'inbound').reduce((acc, p) => acc + p.amount, 0).toLocaleString()} FCFA</h4>
@@ -773,56 +755,10 @@ export default function ProjectModule() {
               </div>
             </div>
           )}
-        </div>
 
-        <div className="lg:col-span-4 space-y-6">
-          <section className="bg-white border border-slate-200 p-5 rounded-lg shadow-sm">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-50 pb-2">Résumé Budgétaire Projets</h3>
-            <div className="space-y-6">
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Engagement Annuel</p>
-                  <p className="text-3xl font-bold text-slate-900 tracking-tight">128,400 FCFA</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-bold text-green-600 uppercase">+12% vs LY</p>
-                </div>
-              </div>
-              
-              <div className="space-y-3 pt-4 border-t border-slate-50">
-                <div className="flex justify-between text-[10px] font-bold text-slate-500">
-                  <span>RÉPARTITION PAR STATUS</span>
-                  <span className="text-blue-600">6 ACTIVE</span>
-                </div>
-                <div className="flex h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-600 w-[60%]" />
-                  <div className="h-full bg-amber-500 w-[25%]" />
-                  <div className="h-full bg-slate-300 w-[15%]" />
-                </div>
-                <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
-                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span> Actif (60%)</span>
-                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Pause (25%)</span>
-                  <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span> Autre (15%)</span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="bg-indigo-600 text-white p-5 rounded-lg relative overflow-hidden shadow-xl shadow-indigo-100">
-            <h3 className="text-xs font-bold uppercase tracking-widest mb-4 opacity-80">Audit Stratégique</h3>
-            <p className="text-sm font-medium mb-6 leading-relaxed relative z-10 opacity-90">
-              "La revue trimestrielle avec les partenaires clés est prévue pour la semaine prochaine."
-            </p>
-            <button onClick={() => alert("Ouverture du rapport d'audit...")} className="w-full bg-white text-indigo-600 py-2.5 rounded-lg text-xs font-bold shadow-sm relative z-10 hover:bg-slate-50 transition-all">
-              OUVRIR LE DOSSIER
-            </button>
-            <FolderKanban className="absolute -bottom-6 -right-6 opacity-10 rotate-12" size={100} />
-          </section>
-        </div>
-      </div>
       {isAddingProject && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
               <FolderKanban size={24} className="text-blue-600" />
               {editingProject ? 'Modifier le Projet' : 'Nouveau Projet'}
@@ -936,8 +872,8 @@ export default function ProjectModule() {
 
       {/* Modal for adding financials */}
       {isAddingFinancial && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
               <DollarSign size={24} className="text-blue-600" />
               Nouveau {isAddingFinancial === 'expense' ? 'Achat / Dépense' : isAddingFinancial === 'invoice' ? 'Facturation' : 'Flux Paiement'}
@@ -1186,8 +1122,8 @@ export default function ProjectModule() {
 
       {/* Modal Évolution de tâche */}
       {evolvingTask && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
               <Activity size={24} className="text-blue-600" />
               Évolution de la tâche
