@@ -1009,7 +1009,7 @@ export default function EcommerceModule({ user }: { user: any }) {
   return (
     <div className="space-y-6">
       {/* Navigation */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-2 flex items-center gap-1.5 overflow-x-auto scrollbar-hide max-w-full">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-2 flex flex-wrap items-center gap-1.5">
         {[
           { id: 'catalog', label: 'Catalogue', icon: Package },
           { id: 'cart', label: `Panier (${cart.length})`, icon: ShoppingCart },
@@ -1229,7 +1229,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                      </button>
                    )}
                    {/* Mobile Categories (Horizontal Scroll) */}
-                   <div className="flex lg:hidden bg-slate-50 p-1.5 rounded-2xl max-w-[150px] sm:max-w-xs overflow-x-auto scrollbar-hide gap-2 shadow-inner">
+                   <div className="flex flex-wrap lg:hidden bg-slate-50 p-1.5 rounded-2xl gap-2 shadow-inner">
                       {categories.map(cat => {
                         const Icon = getCategoryIcon(cat);
                         return (
@@ -1275,61 +1275,87 @@ export default function EcommerceModule({ user }: { user: any }) {
               )}
             >
               <AnimatePresence mode="popLayout">
-                {filteredProducts.map(product => (
-                  <motion.div 
-                    layout
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    key={product.id} 
-                    className={cn(
-                      "group bg-white border border-slate-100 overflow-hidden hover:shadow-xl hover:shadow-slate-200 transition-all duration-500 flex relative",
-                      viewMode === 'grid' ? "flex-col h-full rounded-3xl" : "flex-row items-center p-4 rounded-2xl gap-6"
-                    )}
-                  >
-                    <div className={cn(
-                      "overflow-hidden relative shrink-0 cursor-pointer",
-                      viewMode === 'grid' ? "aspect-[5/4]" : "w-28 h-28 rounded-xl"
-                    )}
-                    onClick={() => setSelectedProduct(product)}
+                {filteredProducts.map(product => {
+                  const displayPrice = nairaEnabled
+                    ? `${(product.price * (currentCompany?.nairaRate || 0.012)).toLocaleString()} ₦`
+                    : `${product.price.toLocaleString()} FCFA`;
+                  return viewMode === 'grid' ? (
+                    <motion.div
+                      layout
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      key={product.id}
+                      className="group relative aspect-square rounded-3xl overflow-hidden cursor-pointer bg-slate-100 hover:shadow-xl hover:shadow-slate-200 transition-all duration-500"
+                      onClick={() => setSelectedProduct(product)}
                     >
-                      <img 
-                        src={product.image || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800"} 
-                        alt={product.name} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                      <img
+                        src={product.image || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800"}
+                        alt={product.name}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       />
-                      {viewMode === 'grid' && (
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent opacity-40" />
-                      )}
-                      
-                      {viewMode === 'grid' && (
-                        <div className="absolute top-4 left-4">
-                          <span className="px-2.5 py-1 bg-white/95 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-slate-900 shadow-md">
-                            {product.category}
-                          </span>
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                        <p className="text-white font-black text-sm leading-tight line-clamp-1">{product.name}</p>
+                        <p className="text-blue-300 font-black text-xs mt-0.5">{displayPrice}</p>
+                        <div className="flex gap-2 mt-3 translate-y-2 group-hover:translate-y-0 transition-transform">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedProduct(product);
+                            }}
+                            className="flex-1 py-2.5 bg-white text-slate-900 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-colors"
+                          >
+                            Voir
+                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingProduct(product);
+                              }}
+                              className="px-3 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              title="Modifier"
+                            >
+                              <Settings size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {product.stock <= 0 && (
+                        <div className="absolute top-3 left-3 px-2.5 py-1 bg-red-500 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg">
+                          Épuisé
                         </div>
                       )}
-                    </div>
-
-                    <div className={cn(
-                      "flex-1 flex flex-col justify-between",
-                      viewMode === 'grid' ? "p-5" : "py-1 pr-3"
-                    )}>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-start gap-3">
-                          <h3 
-                            className="text-[15px] font-bold text-slate-900 leading-tight group-hover:text-blue-600 transition-colors cursor-pointer line-clamp-2"
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      layout
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      key={product.id}
+                      className="group bg-white border border-slate-100 rounded-2xl p-4 hover:shadow-xl hover:shadow-slate-200 transition-all duration-500 flex items-center gap-6"
+                    >
+                      <div className="w-28 h-28 rounded-xl overflow-hidden shrink-0 cursor-pointer" onClick={() => setSelectedProduct(product)}>
+                        <img
+                          src={product.image || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800"}
+                          alt={product.name}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-3">
+                          <h3
+                            className="text-[15px] font-bold text-slate-900 leading-tight group-hover:text-blue-600 transition-colors cursor-pointer line-clamp-1"
                             onClick={() => setSelectedProduct(product)}
                           >
                             {product.name}
                           </h3>
-                          <span className="text-lg font-black text-slate-900 tracking-tighter shrink-0">
-                            {nairaEnabled 
-                              ? `${(product.price * (currentCompany?.nairaRate || 0.012)).toLocaleString()} ₦`
-                              : `${product.price.toLocaleString()} FCFA`}
-                          </span>
+                          <span className="text-base font-black text-slate-900 tracking-tighter shrink-0">{displayPrice}</span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
                           <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest">{product.category}</span>
                           <div className="flex items-center gap-1 text-blue-400">
                             <Award size={11} />
@@ -1348,50 +1374,46 @@ export default function EcommerceModule({ user }: { user: any }) {
                             <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-red-50 text-red-500">Épuisé</span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                        <p className="text-xs text-slate-400 font-medium leading-relaxed mt-1 line-clamp-1">
                           {product.description}
                         </p>
-                      </div>
-                      
-                      <div className={cn(
-                        "flex gap-2",
-                        viewMode === 'grid' ? "mt-5" : "mt-3"
-                      )}>
-                        {isAdmin && (
+                        <div className="flex gap-2 mt-3">
+                          {isAdmin && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingProduct(product);
+                              }}
+                              className="p-3 bg-slate-100 text-slate-500 hover:text-blue-600 hover:bg-blue-100 rounded-xl transition-all active:scale-95 border border-slate-200 shadow-sm"
+                              title="Modifier"
+                            >
+                              <Settings size={18} />
+                            </button>
+                          )}
+                          {product.stock > 0 ? (
+                            <button
+                              onClick={() => addToCart(product)}
+                              className="flex-1 py-3.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 active:scale-95"
+                            >
+                              <ShoppingCart size={16} /> Acheter
+                            </button>
+                          ) : (
+                            <div className="flex-1 py-3.5 bg-slate-50 text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest text-center">
+                              Stock Épuisé
+                            </div>
+                          )}
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingProduct(product);
-                            }}
-                            className="p-3 bg-slate-100 text-slate-500 hover:text-blue-600 hover:bg-blue-100 rounded-xl transition-all active:scale-95 border border-slate-200 shadow-sm"
-                            title="Modifier"
+                            onClick={() => setSelectedProduct(product)}
+                            className="p-3 bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-blue-100 rounded-xl transition-all active:scale-95 border border-slate-100 shadow-sm"
+                            title="Détails"
                           >
-                            <Settings size={18} />
+                            <Search size={18} />
                           </button>
-                        )}
-                        {product.stock > 0 ? (
-                          <button
-                            onClick={() => addToCart(product)}
-                            className="flex-1 py-3.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 active:scale-95"
-                          >
-                            <ShoppingCart size={16} /> Acheter
-                          </button>
-                        ) : (
-                          <div className="flex-1 py-3.5 bg-slate-50 text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest text-center">
-                            Stock Épuisé
-                          </div>
-                        )}
-                        <button
-                          onClick={() => setSelectedProduct(product)}
-                          className="p-3 bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-blue-100 rounded-xl transition-all active:scale-95 border border-slate-100 shadow-sm"
-                          title="Détails"
-                        >
-                          <Search size={18} />
-                        </button>
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             </motion.div>
           </div>
@@ -3469,11 +3491,22 @@ export default function EcommerceModule({ user }: { user: any }) {
                       <X size={20} />
                     </button>
                     <div>
-                      <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest italic">Détails de la Solution</h2>
-                      <p className="text-[9px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Nexus Corporate Suite</p>
+                      <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">Détails du produit</h2>
                     </div>
                  </div>
                  <div className="flex items-center gap-2">
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          setEditingProduct(selectedProduct);
+                          setSelectedProduct(null);
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-2xl flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/25"
+                      >
+                        <Settings size={14} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Modifier</span>
+                      </button>
+                    )}
                     <div className="px-4 py-2 bg-slate-950 text-white rounded-2xl flex items-center gap-2">
                        <Award size={14} className="text-blue-400" />
                        <span className="text-[10px] font-black uppercase tracking-widest">+{selectedProduct.points} Pts</span>
@@ -3531,7 +3564,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                                addToCart(selectedProduct);
                                setSelectedProduct(null);
                              }}
-                             className="flex-[2] py-6 bg-slate-900 text-white rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-slate-200 hover:bg-blue-600 transition-all active:scale-95 flex items-center justify-center gap-3"
+                             className="flex-[2] py-6 bg-blue-600 text-white rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-600/25 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-3"
                            >
                              <ShoppingCart size={20} /> Acheter Maintenant
                            </button>
