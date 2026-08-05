@@ -91,6 +91,7 @@ const TABLES: Record<string, TableDef> = {
     table: 'tasks',
     cols: ['company_id', 'title', 'assigned_to', 'start_date', 'end_date', 'status', 'description',
       'priority', 'due_date', 'completed_at', 'needs', 'constraints', 'project_id', 'requester_name',
+      'blocked_since', 'reminder_sent_at', 'escalation_sent_at',
       'created_at', 'updated_at'],
   },
   task_updates: {

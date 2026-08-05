@@ -108,6 +108,8 @@ export async function changeTaskStatus(params: {
 
   const patch: Record<string, any> = { status: toStatus };
   patch.completedAt = toStatus === 'done' ? serverTimestamp() : null;
+  if (toStatus === 'blocked') patch.blockedSince = serverTimestamp();
+  if (fromStatus === 'blocked' && toStatus !== 'blocked') patch.blockedSince = null;
   await updateDoc(doc(db, 'tasks', taskId), patch);
 
   await logTaskUpdate(companyId, taskId, {
@@ -142,4 +144,105 @@ export function collectTaskRecipients(
   if (options.ownerId) set.add(String(options.ownerId));
   if (options.assigneeUid) set.add(String(options.assigneeUid));
   return Array.from(set);
+}
+
+function taskDateToMs(ts: any): number | null {
+  if (ts === null || ts === undefined || ts === '') return null;
+  if (typeof ts === 'number') return ts;
+  if (ts.seconds !== undefined && ts.nanoseconds !== undefined) return ts.seconds * 1000;
+  if (typeof ts.toDate === 'function') return ts.toDate().getTime();
+  const parsed = new Date(ts).getTime();
+  return isNaN(parsed) ? null : parsed;
+}
+
+export const TASK_ALERT_DEFAULTS = {
+  dueWindowMs: 24 * 60 * 60 * 1000, // alerte 24h avant échéance
+  blockedAfterMs: 48 * 60 * 60 * 1000, // escalade après 48h de blocage
+  reNotifyAfterMs: 24 * 60 * 60 * 1000, // re-notification max 1x / 24h
+};
+
+export async function checkTaskAlerts(params: {
+  companyId: string;
+  tasks: any[];
+  employees?: any[];
+  ownerId?: string;
+  actorName?: string;
+  overrides?: Partial<typeof TASK_ALERT_DEFAULTS>;
+}): Promise<{ reminders: number; escalations: number }> {
+  const { companyId, tasks, employees, ownerId, actorName, overrides } = params;
+  const cfg = { ...TASK_ALERT_DEFAULTS, ...(overrides || {}) };
+  const now = Date.now();
+  const result = { reminders: 0, escalations: 0 };
+  const patchById: Record<string, Record<string, any>> = {};
+
+  for (const t of tasks || []) {
+    if (!t || t.status === 'done' || t.status === 'pending') continue;
+
+    const due = taskDateToMs(t.endDate);
+    const lastReminder = taskDateToMs(t.reminderSentAt);
+    const lastEscalation = taskDateToMs(t.escalationSentAt);
+    const blockedSince = taskDateToMs(t.blockedSince);
+
+    // 1) Rappel d'échéance : échéance dans < 24h OU en retard, max 1 notification / 24h
+    if (due !== null && (due - now <= cfg.dueWindowMs)) {
+      const shouldRemind = !lastReminder || (now - lastReminder) >= cfg.reNotifyAfterMs;
+      if (shouldRemind) {
+        const isOverdue = due < now;
+        const recipients = collectTaskRecipients({ employees, ownerId, assigneeUid: t.assignedToUid });
+        const day = new Date(due).toLocaleDateString();
+        const msg = isOverdue
+          ? `La tâche "${t.title || ''}" est en RETARD depuis le ${day}.`
+          : `La tâche "${t.title || ''}" arrive à échéance le ${day}.`;
+        await logTaskUpdate(companyId, t.id, {
+          actorName: actorName || 'Système',
+          comment: `Rappel automatique : ${msg}`,
+        });
+        if (recipients.length > 0) {
+          await createNotification(
+            companyId,
+            recipients,
+            isOverdue ? 'Tâche en retard' : 'Échéance proche',
+            msg,
+            'alert',
+          );
+        }
+        patchById[t.id] = { ...(patchById[t.id] || {}), reminderSentAt: serverTimestamp() };
+        result.reminders += 1;
+      }
+    }
+
+    // 2) Escalade : tâche bloquée depuis > 48h, max 1 notification / 24h
+    if (t.status === 'blocked' && blockedSince !== null && (now - blockedSince) >= cfg.blockedAfterMs) {
+      const shouldEscalate = !lastEscalation || (now - lastEscalation) >= cfg.reNotifyAfterMs;
+      if (shouldEscalate) {
+        const hours = Math.floor((now - blockedSince) / (60 * 60 * 1000));
+        const recipients = collectTaskRecipients({ employees, ownerId, assigneeUid: t.assignedToUid });
+        await logTaskUpdate(companyId, t.id, {
+          actorName: actorName || 'Système',
+          comment: `Escalade automatique : tâche bloquée depuis ${hours}h.`,
+        });
+        if (recipients.length > 0) {
+          await createNotification(
+            companyId,
+            recipients,
+            'Tâche bloquée à débloquer',
+            `La tâche "${t.title || ''}" est bloquée depuis ${hours}h.`,
+            'alert',
+          );
+        }
+        patchById[t.id] = { ...(patchById[t.id] || {}), escalationSentAt: serverTimestamp() };
+        result.escalations += 1;
+      }
+    }
+  }
+
+  for (const [taskId, patch] of Object.entries(patchById)) {
+    try {
+      await updateDoc(doc(db, 'tasks', taskId), patch);
+    } catch (err) {
+      console.error('Erreur lors de la persistance du marqueur d\'alerte', err);
+    }
+  }
+
+  return result;
 }

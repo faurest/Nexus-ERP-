@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   TrendingUp, 
   Users, 
@@ -43,7 +43,7 @@ import { exportCompanyDataAsJSON, importCompanyDataFromJSON } from '../lib/expor
 import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from '../lib/firebase';
 import { db } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/firebase';
-import { changeTaskStatus, collectTaskRecipients, createTaskWithTracking, taskStatusBadge, taskStatusLabel, TASK_STATUS_ORDER } from '../lib/taskTracking';
+import { changeTaskStatus, checkTaskAlerts, collectTaskRecipients, createTaskWithTracking, taskStatusBadge, taskStatusLabel, TASK_STATUS_ORDER } from '../lib/taskTracking';
 
 export default function DashboardModule({ user, companies = [] }: { user?: any, companies?: any[] }) {
   const { currentCompany } = useCompany();
@@ -69,6 +69,8 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
   const [orders, setOrders] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [orderHistory, setOrderHistory] = useState<any[]>([]);
+  const tasksRef = useRef<any[]>([]);
+  const alertsRunningRef = useRef(false);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -82,7 +84,9 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
     }, err => handleFirestoreError(err, OperationType.LIST, 'interventions'));
 
     const unsubTasks = onSnapshot(query(collection(db, 'tasks'), where('companyId', '==', currentCompany.id)), snap => {
-      setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setTasks(list);
+      tasksRef.current = list;
     }, err => handleFirestoreError(err, OperationType.LIST, 'tasks'));
 
     const unsubPersonnel = onSnapshot(query(collection(db, 'personnel'), where('companyId', '==', currentCompany.id)), snap => {
@@ -114,6 +118,41 @@ export default function DashboardModule({ user, companies = [] }: { user?: any, 
       unsubOrders(); 
       unsubPayments();
       unsubHistory();
+    };
+  }, [currentCompany]);
+
+  useEffect(() => {
+    if (!currentCompany) return;
+
+    const runAlerts = async () => {
+      if (alertsRunningRef.current) return;
+      alertsRunningRef.current = true;
+      try {
+        const res = await checkTaskAlerts({
+          companyId: currentCompany.id,
+          tasks: tasksRef.current,
+          employees: currentCompany.employees,
+          ownerId: currentCompany.ownerId,
+          actorName: 'Système',
+        });
+        if (res.reminders > 0 || res.escalations > 0) {
+          console.log(`[Alertes tâches] ${res.reminders} rappel(s), ${res.escalations} escalade(s)`);
+        }
+      } catch (err) {
+        console.error('Échec de la vérification des alertes tâches', err);
+      } finally {
+        alertsRunningRef.current = false;
+      }
+    };
+
+    const t1 = setTimeout(runAlerts, 1500);
+    const t2 = setTimeout(runAlerts, 6000);
+    const interval = setInterval(runAlerts, 60 * 60 * 1000);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearInterval(interval);
     };
   }, [currentCompany]);
 
