@@ -3195,14 +3195,14 @@ export default function EcommerceModule({ user }: { user: any }) {
 
       {/* Edit Product Modal */}
       {editingProduct && (
-        <div className="fixed inset-0 bg-slate-900/60 z-[120] flex items-center justify-center p-6">
-          <div className="bg-white rounded-3xl p-10 max-w-lg w-full shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 bg-slate-900/60 z-[120] flex items-start justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl border border-slate-100 my-auto">
             <div className="flex justify-between items-center mb-8">
               <div>
-                <h3 className="text-2xl font-bold text-slate-900">Modifier la Solution</h3>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">ID: {editingProduct.id.slice(0,8)}</p>
+                <h3 className="text-xl font-bold text-slate-900">{editingProduct.id ? 'Modifier le produit' : 'Nouveau produit'}</h3>
+                {editingProduct.id && <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">ID: {editingProduct.id.slice(0,8)}</p>}
               </div>
-              <button onClick={() => setEditingProduct(null)} className="p-2 hover:bg-slate-50 rounded-xl transition-colors"><X size={20} /></button>
+              <button type="button" onClick={() => setEditingProduct(null)} className="p-2 hover:bg-slate-50 rounded-xl transition-colors"><X size={20} /></button>
             </div>
 
             <form 
@@ -3262,22 +3262,20 @@ export default function EcommerceModule({ user }: { user: any }) {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Inventaire / Stock</label>
-                    <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none text-slate-900" required />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Seuil d'Alerte</label>
-                    <input name="stockThreshold" type="number" defaultValue={editingProduct.stockThreshold || 5} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none text-slate-900" required />
-                  </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Inventaire / Stock</label>
+                  <input name="stock" type="number" defaultValue={editingProduct.stock} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none text-slate-900" required />
                 </div>
-                <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  <input name="allowBackorder" type="checkbox" defaultChecked={editingProduct.allowBackorder} className="w-5 h-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500" />
-                  <div>
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-tight">Permettre la surcommande</label>
-                    <p className="text-[9px] font-medium text-slate-500 uppercase">Le produit restera disponible même si le stock est à zéro.</p>
-                  </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Seuil d'Alerte</label>
+                  <input name="stockThreshold" type="number" defaultValue={editingProduct.stockThreshold || 5} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-blue-600 outline-none text-slate-900" required />
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <input name="allowBackorder" type="checkbox" defaultChecked={editingProduct.allowBackorder} className="w-5 h-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500" />
+                <div>
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-tight">Permettre la surcommande</label>
+                  <p className="text-[9px] font-medium text-slate-500 uppercase">Le produit restera disponible même si le stock est à zéro.</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -3350,9 +3348,9 @@ export default function EcommerceModule({ user }: { user: any }) {
                 )}
               </AnimatePresence>
 
-              <div className="flex gap-4 pt-4">
-                <button type="button" onClick={() => setEditingProduct(null)} className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all">Annuler</button>
-                <button type="submit" className="flex-[2] py-4 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest hover:bg-slate-900 shadow-xl shadow-blue-100 transition-all">Mettre à jour Nexus</button>
+              <div className="flex gap-4 pt-4 sticky bottom-0 bg-white border-t border-slate-100 -mx-6 sm:-mx-8 px-6 sm:px-8 py-4">
+                <button type="button" onClick={() => setEditingProduct(null)} className="flex-1 py-4 bg-slate-100 text-slate-700 rounded-xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all">Annuler</button>
+                <button type="submit" className="flex-[2] py-4 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all">Enregistrer les modifications</button>
               </div>
             </form>
           </div>
