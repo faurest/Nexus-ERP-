@@ -1008,53 +1008,41 @@ export default function EcommerceModule({ user }: { user: any }) {
 
   return (
     <div className="space-y-6">
-      {/* Header with Background */}
-      <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-          <div className="max-w-xl">
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
-              Nexus <span className="text-blue-500">Shop</span>
-            </h1>
-            <p className="text-slate-400 text-sm sm:text-base font-medium leading-relaxed">
-              Achats pro simplifiés, livraison rapide à Maroua.
-            </p>
-          </div>
-          <div className="flex bg-slate-950/40 p-1.5 rounded-2xl border border-white/10 shrink-0 overflow-x-auto scrollbar-hide max-w-full">
-            {[
-              { id: 'catalog', label: 'Catalogue', icon: Package },
-              { id: 'cart', label: `Panier (${cart.length})`, icon: ShoppingCart },
-              { id: 'tracking', label: 'Suivi', icon: Truck, unread: Object.values(unreadMessages).reduce((a,b) => a+b, 0) },
-              ...(isAdmin ? [
-                { id: 'admin', label: 'Gestion', icon: LayoutDashboard },
-                { id: 'finances', label: 'Facturation Nexus', icon: DollarSign },
-                { id: 'replenishment', label: 'Stocks', icon: RefreshCw },
-                { id: 'operations', label: 'Opérations', icon: Cpu },
-                { id: 'commando', label: 'Commando', icon: Smartphone },
-                { id: 'settings', label: 'Livraison', icon: Truck }
-              ] : []),
-              { id: 'loyalty', label: 'Fidélité', icon: Award }
-            ].map(item => (
-              <button
-                key={item.id}
-                onClick={() => setActiveView(item.id as any)}
-                className={cn(
-                  "px-6 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap relative", 
-                  activeView === item.id 
-                    ? "bg-blue-600 text-white shadow-xl shadow-blue-600/20" 
-                    : "text-slate-300 hover:text-white hover:bg-white/5"
-                )}
-              >
-                <item.icon size={14} /> 
-                {item.label}
-                {item.unread && item.unread > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[8px] font-black text-white shadow-lg animate-bounce">
-                    {item.unread}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* Navigation */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-2 flex items-center gap-1.5 overflow-x-auto scrollbar-hide max-w-full">
+        {[
+          { id: 'catalog', label: 'Catalogue', icon: Package },
+          { id: 'cart', label: `Panier (${cart.length})`, icon: ShoppingCart },
+          { id: 'tracking', label: 'Suivi', icon: Truck, unread: Object.values(unreadMessages).reduce((a,b) => a+b, 0) },
+          ...(isAdmin ? [
+            { id: 'admin', label: 'Gestion', icon: LayoutDashboard },
+            { id: 'finances', label: 'Facturation', icon: DollarSign },
+            { id: 'replenishment', label: 'Stocks', icon: RefreshCw },
+            { id: 'operations', label: 'Opérations', icon: Cpu },
+            { id: 'commando', label: 'Commando', icon: Smartphone },
+            { id: 'settings', label: 'Livraison', icon: Truck }
+          ] : []),
+          { id: 'loyalty', label: 'Fidélité', icon: Award }
+        ].map(item => (
+          <button
+            key={item.id}
+            onClick={() => setActiveView(item.id as any)}
+            className={cn(
+              "px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase flex items-center gap-2 transition-all whitespace-nowrap relative", 
+              activeView === item.id 
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25" 
+                : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+            )}
+          >
+            <item.icon size={15} /> 
+            {item.label}
+            {item.unread && item.unread > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[8px] font-black text-white shadow-lg animate-bounce">
+                {item.unread}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
       {/* Urgent Order Alerts for Admin */}
@@ -1330,7 +1318,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                       <div className="space-y-2">
                         <div className="flex justify-between items-start gap-3">
                           <h3 
-                            className="text-[15px] font-bold text-slate-900 leading-tight group-hover:text-blue-600 transition-colors cursor-pointer line-clamp-1"
+                            className="text-[15px] font-bold text-slate-900 leading-tight group-hover:text-blue-600 transition-colors cursor-pointer line-clamp-2"
                             onClick={() => setSelectedProduct(product)}
                           >
                             {product.name}
@@ -1341,19 +1329,26 @@ export default function EcommerceModule({ user }: { user: any }) {
                               : `${product.price.toLocaleString()} FCFA`}
                           </span>
                         </div>
-                        {viewMode === 'list' && (
-                          <div className="flex items-center gap-3">
-                             <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest">{product.category}</span>
-                             <div className="flex items-center gap-1.5 text-blue-400">
-                                <Award size={12} />
-                                <span className="text-[8px] font-black uppercase tracking-widest">+{product.points} PTS</span>
-                             </div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest">{product.category}</span>
+                          <div className="flex items-center gap-1 text-blue-400">
+                            <Award size={11} />
+                            <span className="text-[8px] font-black uppercase tracking-widest">+{product.points} PTS</span>
                           </div>
-                        )}
-                        <p className={cn(
-                          "text-xs text-slate-400 font-medium leading-relaxed",
-                          viewMode === 'grid' ? "line-clamp-2" : "line-clamp-1"
-                        )}>
+                          {product.stock > 0 ? (
+                            <span className={cn(
+                              "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest",
+                              product.stock <= (product.stockThreshold ?? 5)
+                                ? "bg-amber-50 text-amber-600"
+                                : "bg-emerald-50 text-emerald-600"
+                            )}>
+                              {product.stock <= (product.stockThreshold ?? 5) ? `Stock faible (${product.stock})` : `En stock (${product.stock})`}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-red-50 text-red-500">Épuisé</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 font-medium leading-relaxed">
                           {product.description}
                         </p>
                       </div>
