@@ -206,6 +206,7 @@ export async function checkTaskAlerts(params: {
             'alert',
           );
         }
+        showSystemNotification(isOverdue ? 'Tâche en retard' : 'Échéance proche', msg);
         patchById[t.id] = { ...(patchById[t.id] || {}), reminderSentAt: serverTimestamp() };
         result.reminders += 1;
       }
@@ -230,6 +231,10 @@ export async function checkTaskAlerts(params: {
             'alert',
           );
         }
+        showSystemNotification(
+          'Tâche bloquée à débloquer',
+          `La tâche "${t.title || ''}" est bloquée depuis ${hours}h.`,
+        );
         patchById[t.id] = { ...(patchById[t.id] || {}), escalationSentAt: serverTimestamp() };
         result.escalations += 1;
       }

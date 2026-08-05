@@ -58,6 +58,7 @@ import CommandPalette from './components/CommandPalette';
 
 import { bootstrapDemoData } from './lib/bootstrap';
 import { useCompany } from './lib/CompanyContext';
+import { checkTaskAlerts } from './lib/taskTracking';
 
 import { authService } from './core/auth/AuthService';
 import { LoginScreen } from './modules/auth/components/LoginScreen';
@@ -174,6 +175,37 @@ export default function App() {
       window.removeEventListener('NAVIGATE_TAB', handleNavigate);
     };
   }, []);
+
+  useEffect(() => {
+    if (!user || !currentCompany?.id) return;
+    let cancelled = false;
+
+    const runTaskAlerts = async () => {
+      try {
+        const tasksSnap = await getDocs(
+          query(collection(db, 'tasks'), where('companyId', '==', currentCompany.id)),
+        );
+        if (cancelled) return;
+        const compSnap = await getDoc(doc(db, 'companies', currentCompany.id));
+        const comp = compSnap.exists() ? compSnap.data() : null;
+        await checkTaskAlerts({
+          companyId: currentCompany.id,
+          tasks: tasksSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+          employees: Array.isArray(comp?.employees) ? comp.employees : [],
+          ownerId: comp?.ownerId,
+        });
+      } catch (err) {
+        console.error('Erreur lors du contrôle des alertes tâches', err);
+      }
+    };
+
+    runTaskAlerts();
+    const interval = setInterval(runTaskAlerts, 60 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [user?.uid, currentCompany?.id]);
 
   useEffect(() => {
     if (isMaster) {
