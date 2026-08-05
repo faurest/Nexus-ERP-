@@ -1015,8 +1015,8 @@ export default function EcommerceModule({ user }: { user: any }) {
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
               Nexus <span className="text-blue-500">Shop</span>
             </h1>
-            <p className="text-slate-400 text-sm sm:text-lg font-medium leading-relaxed">
-              Simplifiez vos achats professionnels. Catalogue intelligent, paiement sécurisé et programme de fidélité intégré.
+            <p className="text-slate-400 text-sm sm:text-base font-medium leading-relaxed">
+              Achats pro simplifiés, livraison rapide à Maroua.
             </p>
           </div>
           <div className="flex bg-slate-950/40 p-1.5 rounded-2xl border border-white/10 shrink-0 overflow-x-auto scrollbar-hide max-w-full">
@@ -1143,7 +1143,6 @@ export default function EcommerceModule({ user }: { user: any }) {
                     <span className="text-[9px] font-black uppercase tracking-widest">Nouveautés Tech</span>
                   </div>
                   <h3 className="text-2xl font-black italic tracking-tighter">Élite Numérique</h3>
-                  <p className="text-[10px] font-medium text-blue-100 max-w-[200px]">Découvrez le meilleur du digital à Maroua au meilleur prix.</p>
                   <button onClick={() => setActiveCategory('Informatique')} className="mt-4 px-6 py-2 bg-white text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg">Voir Tout</button>
                 </div>
               </div>
@@ -1153,7 +1152,7 @@ export default function EcommerceModule({ user }: { user: any }) {
           {/* Enhanced Category Sidebar (Desktop Only) */}
           <aside className="hidden lg:flex flex-col w-64 shrink-0 space-y-8 sticky top-24 h-fit">
             <div className="space-y-4">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] px-2 italic">Naviguer par Rayon</h3>
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] px-2 italic">Catégories</h3>
               <div className="flex flex-col gap-1 p-2 bg-white rounded-3xl border border-slate-100 shadow-sm">
                 {categories.map((cat) => {
                   const count = products.filter(p => p.category === cat || cat === 'Tous').length;
@@ -1191,7 +1190,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                </div>
                <div className="relative z-10 space-y-4">
                  <div className="flex items-center justify-between">
-                    <p className="text-[9px] font-black uppercase text-blue-400 tracking-widest italic">Aide au Change</p>
+                    <p className="text-[9px] font-black uppercase text-blue-400 tracking-widest italic">Devise Nigéria</p>
                     <div 
                       onClick={() => setNairaEnabled(!nairaEnabled)}
                       className={cn(
@@ -1201,10 +1200,6 @@ export default function EcommerceModule({ user }: { user: any }) {
                     >
                       <div className={cn("w-3 h-3 bg-white rounded-full transition-all", nairaEnabled ? "translate-x-5" : "translate-x-0")} />
                     </div>
-                 </div>
-                 <div className="space-y-1">
-                    <p className="text-xl font-black tracking-tighter">Devise Nigéria</p>
-                    <p className="text-[10px] font-bold text-slate-400 leading-snug">Affichez les estimations en Naira pour vos transactions transfrontalières.</p>
                  </div>
                </div>
             </div>
@@ -1300,13 +1295,13 @@ export default function EcommerceModule({ user }: { user: any }) {
                     exit={{ opacity: 0, scale: 0.9 }}
                     key={product.id} 
                     className={cn(
-                      "group bg-white border border-slate-50 overflow-hidden hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 flex relative",
-                      viewMode === 'grid' ? "flex-col h-full rounded-[2.5rem]" : "flex-row items-center p-4 rounded-[2rem] gap-6"
+                      "group bg-white border border-slate-100 overflow-hidden hover:shadow-xl hover:shadow-slate-200 transition-all duration-500 flex relative",
+                      viewMode === 'grid' ? "flex-col h-full rounded-3xl" : "flex-row items-center p-4 rounded-2xl gap-6"
                     )}
                   >
                     <div className={cn(
                       "overflow-hidden relative shrink-0 cursor-pointer",
-                      viewMode === 'grid' ? "aspect-[5/4]" : "w-32 h-32 rounded-2xl"
+                      viewMode === 'grid' ? "aspect-[5/4]" : "w-28 h-28 rounded-xl"
                     )}
                     onClick={() => setSelectedProduct(product)}
                     >
@@ -1316,12 +1311,12 @@ export default function EcommerceModule({ user }: { user: any }) {
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
                       />
                       {viewMode === 'grid' && (
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-40" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent opacity-40" />
                       )}
                       
                       {viewMode === 'grid' && (
-                        <div className="absolute top-6 left-6">
-                          <span className="px-3 py-1 bg-white/95 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-slate-900 shadow-xl italic">
+                        <div className="absolute top-4 left-4">
+                          <span className="px-2.5 py-1 bg-white/95 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-slate-900 shadow-md">
                             {product.category}
                           </span>
                         </div>
@@ -1330,26 +1325,21 @@ export default function EcommerceModule({ user }: { user: any }) {
 
                     <div className={cn(
                       "flex-1 flex flex-col justify-between",
-                      viewMode === 'grid' ? "p-8" : "py-2 pr-4"
+                      viewMode === 'grid' ? "p-5" : "py-1 pr-3"
                     )}>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start gap-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-start gap-3">
                           <h3 
-                            className="font-black text-slate-900 text-lg tracking-tight leading-tight group-hover:text-blue-600 transition-colors uppercase italic cursor-pointer"
+                            className="text-[15px] font-bold text-slate-900 leading-tight group-hover:text-blue-600 transition-colors cursor-pointer line-clamp-1"
                             onClick={() => setSelectedProduct(product)}
                           >
                             {product.name}
                           </h3>
-                          <div className="flex flex-col items-end shrink-0">
-                            <span className="text-xl font-black text-slate-900 tracking-tighter">
-                              {nairaEnabled 
-                                ? (product.price * (currentCompany?.nairaRate || 0.012)).toLocaleString() 
-                                : product.price.toLocaleString()}
-                            </span>
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                              {nairaEnabled ? "Naira Estimate" : "FCFA Nexus"}
-                            </span>
-                          </div>
+                          <span className="text-lg font-black text-slate-900 tracking-tighter shrink-0">
+                            {nairaEnabled 
+                              ? `${(product.price * (currentCompany?.nairaRate || 0.012)).toLocaleString()} ₦`
+                              : `${product.price.toLocaleString()} FCFA`}
+                          </span>
                         </div>
                         {viewMode === 'list' && (
                           <div className="flex items-center gap-3">
@@ -1361,7 +1351,7 @@ export default function EcommerceModule({ user }: { user: any }) {
                           </div>
                         )}
                         <p className={cn(
-                          "text-slate-400 text-xs font-medium leading-relaxed italic",
+                          "text-xs text-slate-400 font-medium leading-relaxed",
                           viewMode === 'grid' ? "line-clamp-2" : "line-clamp-1"
                         )}>
                           {product.description}
@@ -1369,8 +1359,8 @@ export default function EcommerceModule({ user }: { user: any }) {
                       </div>
                       
                       <div className={cn(
-                        "flex gap-3",
-                        viewMode === 'grid' ? "mt-8" : "mt-4"
+                        "flex gap-2",
+                        viewMode === 'grid' ? "mt-5" : "mt-3"
                       )}>
                         {isAdmin && (
                           <button
@@ -1378,28 +1368,30 @@ export default function EcommerceModule({ user }: { user: any }) {
                               e.stopPropagation();
                               setEditingProduct(product);
                             }}
-                            className="p-4 bg-slate-100 text-slate-600 hover:text-blue-600 hover:bg-blue-100 rounded-2xl transition-all active:scale-95 border border-slate-200 shadow-sm"
+                            className="p-3 bg-slate-100 text-slate-500 hover:text-blue-600 hover:bg-blue-100 rounded-xl transition-all active:scale-95 border border-slate-200 shadow-sm"
+                            title="Modifier"
                           >
-                            <Settings size={20} />
+                            <Settings size={18} />
                           </button>
                         )}
                         {product.stock > 0 ? (
                           <button
                             onClick={() => addToCart(product)}
-                            className="flex-1 py-4 bg-slate-900 text-white hover:bg-blue-600 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 active:scale-95 group-hover:shadow-blue-600/20"
+                            className="flex-1 py-3.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 active:scale-95"
                           >
-                            <ShoppingCart size={18} /> Acheter
+                            <ShoppingCart size={16} /> Acheter
                           </button>
                         ) : (
-                          <div className="flex-1 py-4 bg-slate-50 text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center italic">
+                          <div className="flex-1 py-3.5 bg-slate-50 text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest text-center">
                             Stock Épuisé
                           </div>
                         )}
                         <button
                           onClick={() => setSelectedProduct(product)}
-                          className="p-4 bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-blue-100 rounded-2xl transition-all active:scale-95 border border-slate-100 shadow-sm"
+                          className="p-3 bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-blue-100 rounded-xl transition-all active:scale-95 border border-slate-100 shadow-sm"
+                          title="Détails"
                         >
-                          <Search size={20} />
+                          <Search size={18} />
                         </button>
                       </div>
                     </div>
@@ -1411,30 +1403,27 @@ export default function EcommerceModule({ user }: { user: any }) {
 
           {/* Special Loyalty Banner for Clients */}
           {user.role === 'Client' && (
-            <div className="mt-12 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-[3rem] p-12 text-white relative overflow-hidden shadow-2xl shadow-blue-200">
+            <div className="mt-12 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl shadow-blue-200">
               <div className="absolute -right-20 -top-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
               <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-blue-400/20 rounded-full blur-2xl" />
               
-              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
-                <div className="space-y-4 text-center md:text-left">
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-xs font-black uppercase tracking-widest">
-                    <Award size={16} />
-                    Programme privilège Nexus
+              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="space-y-3 text-center md:text-left">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-black uppercase tracking-widest">
+                    <Award size={14} />
+                    Programme privilège
                   </div>
-                  <h3 className="text-4xl font-black tracking-tight">Votre Hub de Performance</h3>
-                  <p className="text-blue-100 font-medium max-w-lg">
-                    Vous avez actuellement <span className="text-white font-black underline decoration-2 underline-offset-4">{loyaltyPoints || 0} Points Fidélité</span>. 
-                    Chaque point vous rapproche de solutions premium gratuites et de remises exclusives.
+                  <h3 className="text-2xl font-black tracking-tight">{loyaltyPoints || 0} Points Fidélité</h3>
+                  <p className="text-blue-100 font-medium text-sm max-w-lg">
+                    Échangez vos points contre des récompenses et remises exclusives.
                   </p>
                 </div>
-                <div className="flex gap-4">
-                  <button 
-                    onClick={() => setActiveView('loyalty')}
-                    className="px-8 py-5 bg-white text-blue-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-xl"
-                  >
-                    Voir mes récompenses
-                  </button>
-                </div>
+                <button 
+                  onClick={() => setActiveView('loyalty')}
+                  className="px-6 py-3.5 bg-white text-blue-600 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-lg shrink-0"
+                >
+                  Voir mes récompenses
+                </button>
               </div>
             </div>
           )}
