@@ -1,24 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Building2, ShieldAlert, AlertCircle, ChevronRight, Layers, Users, Plus, ArrowLeft, Building, Store, LogOut } from 'lucide-react';
 import { motion } from 'motion/react';
 import { addDoc, collection, db, serverTimestamp } from '../../../lib/firebase';
 import { useCompany } from '../../../lib/CompanyContext';
 import { NexusLogo } from '../../../components/NexusLogo';
+import Globe from '../../../components/Globe';
 import { isMasterUser } from '../../../lib/auth';
 
 type User = any;
 
 function SkeletonCard() {
   return (
-    <div className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50 animate-pulse">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-slate-200 rounded-xl" />
-        <div className="space-y-2">
-          <div className="h-4 w-32 bg-slate-200 rounded" />
-          <div className="h-3 w-16 bg-slate-100 rounded" />
-        </div>
+    <div className="w-full flex items-center gap-4 p-4 rounded-2xl border border-slate-200 bg-white animate-pulse">
+      <div className="w-12 h-12 bg-slate-200 rounded-2xl shrink-0" />
+      <div className="flex-1 space-y-2">
+        <div className="h-4 w-32 bg-slate-200 rounded" />
+        <div className="h-3 w-24 bg-slate-100 rounded" />
       </div>
-      <div className="w-4 h-4 bg-slate-200 rounded" />
+      <div className="w-10 h-3 bg-slate-100 rounded" />
     </div>
   );
 }
@@ -50,6 +49,26 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
       testFirestoreConnection().then((ok: boolean) => setConnStatus(ok ? 'ok' : 'fail'));
     });
   }, []);
+
+  const globeProps = useMemo(() => ({
+    speed: 1.5,
+    smoothing: 8,
+    dots: { color: 'rgba(125, 170, 255, 0.55)', size: 3, density: 5, allDots: false },
+    fill: 'dots' as const,
+    scale: 6,
+    stopOnHover: false,
+    direction: 'left' as const,
+    initialLatitude: 18,
+    initialLongitude: -40,
+    oceanColor: '#0a1020',
+    outlineColor: 'rgba(148, 163, 184, 0.4)',
+    showOutline: true,
+    outlineWidth: 2,
+    graticuleColor: 'rgba(148, 163, 184, 0.15)',
+    showGrid: true,
+    detail: 4,
+    dragSpeed: 3,
+  }), []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,12 +142,20 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
   };
 
   return (
-    <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-slate-900 font-sans relative overflow-hidden">
-      <div className="max-w-md w-full bg-white rounded-3xl p-10 shadow-xl border border-slate-200 relative overflow-hidden z-10">
+    <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-950 p-6 text-slate-900 font-sans relative overflow-hidden">
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <Globe {...globeProps} />
+      </div>
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-slate-950/60 via-slate-950/20 to-slate-950/80" />
+
+      <div className="max-w-lg w-full bg-white rounded-3xl p-8 shadow-2xl shadow-black/50 border border-white/50 relative overflow-hidden z-10">
         
         <div className="flex flex-col items-center gap-4 mb-8 justify-center">
           <NexusLogo className="w-16 h-16" />
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">Nexus<span className="text-blue-600">ERP</span></h1>
+          <div className="text-center">
+            <h1 className="text-3xl font-black tracking-tight text-slate-900">Nexus<span className="text-blue-600">ERP</span></h1>
+            <p className="text-sm text-slate-500 font-medium mt-1.5">Sélectionnez votre espace de travail</p>
+          </div>
         </div>
 
         {errorMsg && (
@@ -155,58 +182,71 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
 
         {mode === 'select' && (
           <div className="space-y-4 relative z-10">
-            <div className="flex gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setMode('join')}
-                className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-100 bg-slate-50 text-slate-700 font-black text-[10px] uppercase tracking-[0.2em] hover:border-slate-900 hover:text-slate-900 transition-all active:scale-95 group"
+                className="group flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-black text-[10px] uppercase tracking-[0.18em] hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all active:scale-95"
               >
-                <Users size={14} className="group-hover:scale-110 transition-transform text-indigo-500" />
+                <Users size={15} className="text-blue-500 group-hover:scale-110 transition-transform" />
                 Rejoindre
               </button>
               <button
                 onClick={() => setMode('create')}
-                className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-100 bg-slate-50 text-slate-700 font-black text-[10px] uppercase tracking-[0.2em] hover:border-slate-900 hover:text-slate-900 transition-all active:scale-95 group"
+                className="group flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-black text-[10px] uppercase tracking-[0.18em] hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all active:scale-95"
               >
-                <Plus size={14} className="group-hover:rotate-90 transition-transform text-blue-500" />
-                Créer espace
+                <Plus size={15} className="text-blue-600 group-hover:rotate-90 transition-transform" />
+                Créer un espace
               </button>
             </div>
 
             {companyLoading ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <SkeletonCard />
                 <SkeletonCard />
               </div>
             ) : (ownedCompanies.length > 0 || joinedCompanies.length > 0) && (
-              <div className="space-y-4">
-                <div className="flex justify-between items-end px-1">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Espaces de Travail</h3>
-                  <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">{ownedCompanies.length + joinedCompanies.length} actif(s)</span>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between px-1 mt-4">
+                  <h3 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <Layers size={12} className="text-blue-500" /> Espaces de Travail
+                  </h3>
+                  <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+                    {ownedCompanies.length + joinedCompanies.length} actif{ownedCompanies.length + joinedCompanies.length > 1 ? 's' : ''}
+                  </span>
                 </div>
-                <div className="space-y-2">
-                  {[...ownedCompanies, ...joinedCompanies].map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => onSelect(c)}
-                      className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50/50 transition-all group relative overflow-hidden active:scale-[0.98]"
-                    >
-                      <div className="flex items-center gap-3 relative z-10">
-                        <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center font-black text-slate-700 text-lg group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all shadow-sm">
-                          {c.name.charAt(0).toUpperCase()}
+                <div className="space-y-2.5">
+                  {[...ownedCompanies, ...joinedCompanies].map((c) => {
+                    const isOwner = (c.ownerEmail?.trim().toLowerCase().replace(/\s+/g, '') || '') === cleanEmail;
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => onSelect(c)}
+                        className="w-full group flex items-center gap-4 p-4 rounded-2xl border border-slate-200 bg-white hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-0.5 transition-all active:scale-[0.99] text-left"
+                      >
+                        <div className="relative shrink-0">
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-600/25 group-hover:from-blue-700 group-hover:to-indigo-700 transition-all">
+                            {c.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-blue-600 rounded-full border-2 border-white" />
                         </div>
-                        <div className="text-left">
-                          <span className="block font-black text-slate-900 text-sm tracking-tight group-hover:text-blue-600 transition-colors">{c.name}</span>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[8px] font-black text-slate-500 bg-white px-2 py-0.5 rounded-full border border-slate-200 uppercase tracking-[0.1em]">{c.joinCode}</span>
-                            {c.ownerEmail === cleanEmail && (
-                              <span className="text-[8px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 uppercase tracking-[0.1em]">Propriétaire</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="block font-bold text-slate-900 text-[15px] tracking-tight truncate group-hover:text-blue-600 transition-colors">{c.name}</span>
+                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                            <span className="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md uppercase tracking-widest font-mono">{c.joinCode}</span>
+                            {isOwner ? (
+                              <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md uppercase tracking-widest">Propriétaire</span>
+                            ) : (
+                              <span className="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md uppercase tracking-widest">Membre</span>
                             )}
                           </div>
                         </div>
-                      </div>
-                      <ChevronRight size={18} className="text-slate-400 group-hover:translate-x-1 group-hover:text-blue-500 transition-all" />
-                    </button>
-                  ))}
+                        <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-blue-600 shrink-0">
+                          Entrer
+                          <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

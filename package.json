@@ -24,6 +24,7 @@
     "better-sqlite3": "^12.9.0",
     "clsx": "^2.1.1",
     "cors": "^2.8.6",
+    "d3-geo": "^3.1.1",
     "dotenv": "^17.2.3",
     "express": "^4.22.1",
     "firebase": "^12.13.0",
@@ -36,6 +37,7 @@
     "react-markdown": "^10.1.0",
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0",
+    "three": "^0.185.1",
     "twilio": "^6.0.2",
     "vite": "^6.2.0",
     "zustand": "^5.0.14"
@@ -44,6 +46,7 @@
     "@capacitor/cli": "^8.4.1",
     "@firebase/eslint-plugin-security-rules": "^0.0.2",
     "@types/bcrypt": "^6.0.0",
+    "@types/d3-geo": "^3.1.1",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.14.0",
