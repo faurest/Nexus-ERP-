@@ -5,4 +5,5 @@ export interface IAuthRepository {
   register(email: string, password: string): Promise<any>;
   signOut(): Promise<void>;
   onAuthStateChanged(callback: (user: any) => void): () => void;
+  resetPassword(email: string): Promise<void>;
 }

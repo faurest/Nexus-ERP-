@@ -51,4 +51,11 @@ export class SessionFacade implements ISessionFacade {
   async registerWithoutLogin(email: string, pass: string): Promise<any> {
     return this.registerUserWithoutLoginUseCase.execute(email, pass);
   }
+
+  async resetPassword(email: string): Promise<void> {
+    if (!this.authGateway || !this.authGateway.resetPassword) {
+      throw new Error("Réinitialisation de mot de passe non disponible.");
+    }
+    await this.authGateway.resetPassword(email);
+  }
 }

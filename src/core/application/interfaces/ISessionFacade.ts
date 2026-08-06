@@ -7,4 +7,5 @@ export interface ISessionFacade {
   refreshSession(): Promise<void>;
   syncProfile(user: any): Promise<void>;
   registerWithoutLogin(email: string, pass: string): Promise<any>;
+  resetPassword(email: string): Promise<void>;
 }

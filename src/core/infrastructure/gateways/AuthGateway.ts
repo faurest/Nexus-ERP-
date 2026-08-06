@@ -54,4 +54,11 @@ export class AuthGateway extends BaseGateway implements IAuthRepository {
   async registerWithoutLogin(email: string, pass: string): Promise<any> {
     return registerUserWithoutLogin(email, pass);
   }
+
+  async resetPassword(email: string): Promise<void> {
+    if (isSupabaseConfigured) {
+      return this.supabaseAuth.resetPassword(email);
+    }
+    return this.firebaseAuth.resetPassword(email);
+  }
 }

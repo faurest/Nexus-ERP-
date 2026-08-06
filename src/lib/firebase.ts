@@ -964,6 +964,11 @@ export async function signOut(_auth: any): Promise<void> {
   await supabaseAuth.signOut();
 }
 
+export async function sendPasswordResetEmail(_auth: any, email: string): Promise<void> {
+  const { error } = await supabaseAuth.resetPasswordForEmail(email);
+  if (error) throw error;
+}
+
 export class GoogleAuthProvider {
   addScope(_scope: string) {}
 }

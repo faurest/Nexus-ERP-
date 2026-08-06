@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 import { useSubNavigation } from '../hooks/useSubNavigation';
 import { useCompany } from '../lib/CompanyContext';
 import { DEFAULT_ROLES } from '../core/permissions/roles';
+import { isMasterUser } from '../lib/auth';
 
 import { createNotification } from '../lib/notifications';
 
@@ -104,6 +105,13 @@ export default function PersonnelModule({ user }: { user?: any }) {
   const [creationMessage, setCreationMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [resettingStaffId, setResettingStaffId] = useState<string | null>(null);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const canResetPassword = !!user && (
+    isMasterUser(user, currentCompany) ||
+    user.role === 'Directeur' ||
+    user.role === 'Administrateur'
+  );
   
   const [editingPermissionsStaff, setEditingPermissionsStaff] = useState<Staff | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
@@ -457,6 +465,24 @@ export default function PersonnelModule({ user }: { user?: any }) {
     (s.department && s.department.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const handleResetPassword = async (staff: Staff) => {
+    if (!staff?.email) {
+      setResetMessage("Aucun email associé à ce membre du personnel.");
+      return;
+    }
+    if (!window.confirm(`Envoyer un lien de réinitialisation de mot de passe à ${staff.name} (${staff.email}) ?`)) return;
+    setResettingStaffId(staff.id);
+    setResetMessage(null);
+    try {
+      await sessionFacade.resetPassword(staff.email);
+      setResetMessage(`Lien de réinitialisation envoyé à ${staff.email} (si un compte existe).`);
+    } catch (err: any) {
+      setResetMessage(`Erreur lors de l'envoi : ${err?.message || 'échec de la réinitialisation.'}`);
+    } finally {
+      setResettingStaffId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] p-8 sm:p-12 text-white shadow-xl border border-white/5">
@@ -517,6 +543,13 @@ export default function PersonnelModule({ user }: { user?: any }) {
               </button>
             </div>
 
+          {resetMessage && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2">
+              <Key size={14} className="shrink-0" />
+              <span>{resetMessage}</span>
+            </div>
+          )}
+
           <Table headers={['Employé', 'Service', 'Poste', 'Activité', 'Status', 'Actions']}>
             {filteredStaff.length === 0 ? (
               <div className="p-12 text-center bg-slate-50 border-t border-slate-100 italic text-slate-400 text-sm">
@@ -569,6 +602,20 @@ export default function PersonnelModule({ user }: { user?: any }) {
                   >
                     <Shield size={14} />
                   </button>
+                  {canResetPassword && (
+                    <button 
+                      onClick={() => handleResetPassword(staff)}
+                      disabled={resettingStaffId === staff.id}
+                      className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
+                      title="Réinitialiser le mot de passe"
+                    >
+                      {resettingStaffId === staff.id ? (
+                        <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Key size={14} />
+                      )}
+                    </button>
+                  )}
                   <button 
                     onClick={() => {
                       setEditingStaff(staff);

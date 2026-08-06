@@ -1,6 +1,6 @@
 import { IAuthRepository } from '../../domain/repositories/IAuthRepository';
 import { auth } from '../../../lib/firebase';
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 
 export class FirebaseAuthRepository implements IAuthRepository {
   async getCurrentUser(): Promise<any> {
@@ -22,6 +22,10 @@ export class FirebaseAuthRepository implements IAuthRepository {
   async register(email: string, password: string): Promise<any> {
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     return credential.user;
+  }
+
+  async resetPassword(email: string): Promise<void> {
+    await sendPasswordResetEmail(auth, email);
   }
 
   async signOut(): Promise<void> {
