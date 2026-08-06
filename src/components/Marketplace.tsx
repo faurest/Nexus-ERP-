@@ -316,7 +316,6 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
   }, [showTracking]);
 
   useEffect(() => {
-    setLoading(true);
     let loadError: string | null = null;
 
     const fail = (error: any) => {
@@ -337,9 +336,17 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
       fail,
     );
 
-    // Fetch all products
+    // Fetch products (server-side filter by active company)
+    const productsQuery =
+      activeCompanyId === "all"
+        ? collection(db, "products")
+        : query(
+            collection(db, "products"),
+            where("companyId", "==", activeCompanyId),
+          );
+
     const unsubscribeProducts = onSnapshot(
-      collection(db, "products"),
+      productsQuery,
       (snap) => {
         setProducts(
           snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Product),
@@ -356,7 +363,7 @@ export default function Marketplace({ onBack }: { onBack?: () => void }) {
       unsubscribeCompanies();
       unsubscribeProducts();
     };
-  }, []);
+  }, [activeCompanyId]);
 
   const categoryIcons: Record<string, any> = {
     "Tous": LayoutGrid,

@@ -49,7 +49,7 @@ export function MarketplaceProductCard({
           onClick={() => onViewDetails(product)}
         >
           {product.image ? (
-            <img src={product.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={product.name} />
+            <img src={product.image} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={product.name} />
           ) : (
              <div className="w-full h-full flex items-center justify-center text-slate-300">
                <CategoryIcon size={24} />
@@ -119,7 +119,7 @@ export function MarketplaceProductCard({
         onClick={() => onViewDetails(product)}
       >
         {product.image ? (
-          <img src={product.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={product.name} />
+          <img src={product.image} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={product.name} />
         ) : (
            <div className="w-full h-full flex items-center justify-center text-slate-300 bg-gradient-to-tr from-slate-100 to-slate-50">
              <CategoryIcon size={32} className="opacity-50" />
