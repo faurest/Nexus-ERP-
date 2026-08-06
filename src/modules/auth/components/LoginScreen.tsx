@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Key, User, ArrowLeft } from 'lucide-react';
+import { AlertCircle, Key, User, ArrowLeft, Mail, CheckCircle2 } from 'lucide-react';
 import { NexusLogo } from '../../../components/NexusLogo';
 import { useLogin } from '../hooks/useLogin';
 
 export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
-  const { login, loginWithGoogle, registerDemo, loading, error: authError, loginMode, setLoginMode, checkHealth } = useLogin();
+  const { login, loginWithGoogle, registerDemo, resetPassword, clearError, loading, error: authError, loginMode, setLoginMode, checkHealth } = useLogin();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
 
   useEffect(() => {
     checkHealth();
@@ -33,6 +36,20 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) return;
+    const ok = await resetPassword(forgotEmail.trim());
+    if (ok) setResetSent(true);
+  };
+
+  const handleBackToLogin = () => {
+    setForgotMode(false);
+    setResetSent(false);
+    setForgotEmail('');
+    clearError();
+  };
+
   return (
     <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-slate-900 font-sans relative">
       <div className="max-w-md w-full bg-white rounded-3xl p-12 shadow-xl border border-slate-200 relative overflow-hidden">
@@ -50,6 +67,51 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
             </div>
           )}
 
+          {forgotMode ? (
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-2 mb-4 text-center">
+                <Key size={28} className="text-blue-600" />
+                <h2 className="text-lg font-black tracking-tight text-slate-900">Récupération de compte</h2>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                  Saisissez votre email professionnel. Si un compte existe, un lien de réinitialisation vous sera envoyé par email.
+                </p>
+              </div>
+
+              {resetSent ? (
+                <div className="p-4 bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-xl border border-emerald-100 flex items-start gap-2">
+                  <CheckCircle2 size={16} className="shrink-0" />
+                  <span className="leading-tight">Si un compte existe pour {forgotEmail}, un lien de réinitialisation a été envoyé. Vérifiez votre boîte de réception (et les courriers indésirables).</span>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Email professionnel</label>
+                    <div className="relative">
+                      <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input type="email" required value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-slate-900" placeholder="votre@email.com" />
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-slate-900 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-4 shadow-lg shadow-slate-900/10 disabled:opacity-50"
+                  >
+                    {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Envoyer le lien de réinitialisation'}
+                  </button>
+                </form>
+              )}
+
+              <button 
+                type="button"
+                onClick={handleBackToLogin}
+                className="w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
+              >
+                <ArrowLeft size={14} /> Retour à la connexion
+              </button>
+            </div>
+          ) : (
+          <>
           <div className="flex gap-4 mb-6">
             <button onClick={() => setLoginMode('email')} className={`flex-1 text-[10px] font-black uppercase tracking-[0.2em] py-3 rounded-xl border-2 transition-all ${loginMode === 'email' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-100 text-slate-400 hover:border-slate-200 hover:text-slate-900'}`}>Standard</button>
             <button onClick={() => setLoginMode('google')} className={`flex-1 text-[10px] font-black uppercase tracking-[0.2em] py-3 rounded-xl border-2 transition-all ${loginMode === 'google' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-100 text-slate-400 hover:border-slate-200 hover:text-slate-900'}`}>Google</button>
@@ -71,6 +133,16 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
                   <Key size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:border-slate-500 focus:ring-4 focus:ring-slate-500/10 outline-none transition-all text-slate-900" placeholder="••••••••" />
                 </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => { clearError(); setForgotMode(true); setResetSent(false); }}
+                  className="text-[10px] font-bold text-blue-600 uppercase tracking-widest hover:underline flex items-center gap-1"
+                >
+                  <Key size={11} /> Mot de passe oublié ?
+                </button>
               </div>
               
               <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl text-[10px] text-slate-500 flex justify-between font-medium">
@@ -106,6 +178,8 @@ export function LoginScreen({ onMarketplace }: { onMarketplace: () => void }) {
               </>
             )}
           </button>
+          )}
+          </>
           )}
 
           <button 

@@ -72,10 +72,28 @@ export function useLogin() {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await facades.session.resetPassword(email);
+      return true;
+    } catch (err: any) {
+      setError('Erreur lors de l\'envoi : ' + (err?.message || 'serveur indisponible.'));
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearError = () => setError(null);
+
   return {
     login,
     loginWithGoogle,
     registerDemo,
+    resetPassword,
+    clearError,
     loading,
     error,
     loginMode,
