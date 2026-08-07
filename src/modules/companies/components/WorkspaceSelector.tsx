@@ -148,7 +148,7 @@ export function WorkspaceSelector({ companies, user, onSelect, onMarketplace, on
       </div>
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-slate-950/60 via-slate-950/20 to-slate-950/80" />
 
-      <div className="max-w-lg w-full bg-white rounded-3xl p-8 shadow-2xl shadow-black/50 border border-white/50 relative overflow-hidden z-10">
+      <div className="max-w-lg w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/50 border border-white/50 relative z-10 max-h-[calc(100vh-3rem)] overflow-y-auto scrollbar-hide">
         
         <div className="flex flex-col items-center gap-4 mb-8 justify-center">
           <NexusLogo className="w-16 h-16" />

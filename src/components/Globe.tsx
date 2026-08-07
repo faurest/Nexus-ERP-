@@ -73,6 +73,20 @@ function parseColorToRgba(input: string): Rgba {
     return { r: 0, g: 0, b: 0, a: 1 };
 }
 
+function isWebGLAvailable(): boolean {
+    try {
+        const canvas = document.createElement("canvas");
+        return !!(
+            window.WebGLRenderingContext &&
+            (canvas.getContext("webgl") ||
+                canvas.getContext("webgl2") ||
+                canvas.getContext("experimental-webgl"))
+        );
+    } catch {
+        return false;
+    }
+}
+
 function mapLinear(
     value: number,
     inMin: number,
@@ -213,6 +227,7 @@ export default function Globe({
     const containerRef = useRef<HTMLDivElement>(null);
     const [, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [fatal, setFatal] = useState(false);
 
     const dotColor = dots.color;
     const dotSize = dots.size;
@@ -233,6 +248,10 @@ export default function Globe({
 
     useEffect(() => {
         if (!containerRef.current) return;
+        if (!isWebGLAvailable()) {
+            setFatal(true);
+            return;
+        }
         const container = containerRef.current;
         const containerWidth =
             container.clientWidth || container.offsetWidth || 800;
@@ -252,7 +271,14 @@ export default function Globe({
         camera.position.set(0, 0, cameraDistance);
         camera.lookAt(0, 0, 0);
 
-        const renderer = new WebGLRenderer({ antialias: true, alpha: true });
+        let renderer: WebGLRenderer;
+        try {
+            renderer = new WebGLRenderer({ antialias: true, alpha: true });
+        } catch (err) {
+            console.error("[Globe] WebGL renderer creation failed", err);
+            setFatal(true);
+            return;
+        }
         renderer.setSize(containerWidth, containerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.outputColorSpace = "srgb";
@@ -959,36 +985,8 @@ export default function Globe({
         justifyContent: "center",
     };
 
-    if (error) {
-        return (
-            <div style={containerStyle}>
-                <div
-                    style={{
-                        position: "relative",
-                        width: "100%",
-                        height: "100%",
-                        minWidth: 0,
-                        minHeight: 0,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#ffffff",
-                        textAlign: "center",
-                        padding: "16px",
-                        fontFamily:
-                            "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                    }}
-                >
-                    <div style={{ fontSize: "16px", fontWeight: 600 }}>
-                        Error loading Earth visualization
-                    </div>
-                    <div style={{ fontSize: "13px", opacity: 0.7, marginTop: "4px" }}>
-                        {error}
-                    </div>
-                </div>
-            </div>
-        );
+    if (error || fatal) {
+        return null;
     }
 
     return <div ref={containerRef} style={containerStyle} />;
