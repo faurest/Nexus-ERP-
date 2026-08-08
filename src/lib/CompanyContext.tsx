@@ -172,14 +172,13 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
             } else {
               // Get companies where user is owner (par UID ou par email — le nouvel UID Google
               // Supabase peut différer de l'ancien UID Firebase, d'où la correspondance par email)
-              const [{ data: ownedByUid }, { data: ownedByEmail }] = await Promise.all([
+              // Toutes les requêtes partent en parallèle pour un affichage rapide de la liste
+              const [{ data: ownedByUid }, { data: ownedByEmail }, { data: personnelData }] = await Promise.all([
                 supabase.from('companies').select('*').eq('owner_id', user.uid),
                 supabase.from('companies').select('*').eq('owner_email', cleanEmail),
+                supabase.from('personnel').select('company_id').eq('email', cleanEmail),
               ]);
               const ownedCompanies = [...(ownedByUid || []), ...(ownedByEmail || [])];
-              
-              // Get companies from personnel
-              const { data: personnelData } = await supabase.from('personnel').select('company_id').eq('email', cleanEmail);
               const companyIds = personnelData?.map(p => p.company_id) || [];
               
               let memberCompanies: any[] = [];

@@ -73,3 +73,42 @@
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+@keyframes aurora-drift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes orb-float-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(60px, -40px) scale(1.15); }
+  66% { transform: translate(-40px, 30px) scale(0.95); }
+}
+
+@keyframes orb-float-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-70px, 50px) scale(1.1); }
+}
+
+@keyframes orb-float-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, -60px) scale(1.2); }
+}
+
+@utility animate-aurora {
+  background-size: 200% 200%;
+  animation: aurora-drift 18s ease-in-out infinite;
+}
+
+@utility animate-orb-a {
+  animation: orb-float-a 16s ease-in-out infinite;
+}
+
+@utility animate-orb-b {
+  animation: orb-float-b 20s ease-in-out infinite;
+}
+
+@utility animate-orb-c {
+  animation: orb-float-c 24s ease-in-out infinite;
+}
